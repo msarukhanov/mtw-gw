@@ -262,19 +262,7 @@
 
 <!-- MAIN CONTENT -->
 <main>
-    <!--&lt;!&ndash; HERO SECTION &ndash;&gt;-->
-    <!--<section class="hero">-->
-        <!--<div class="container">-->
-            <!--<h1>8 Lightweight Games. <span>One Seamless API.</span></h1>-->
-            <!--<p>Plug-and-play iGaming catalog optimized for mobile and iframe delivery. Real-time math, robust server-side RTP controls, and instant WebSocket updates.</p>-->
-            <!--<div class="hero-btns">-->
-                <!--<a href="#games" class="btn-primary">Explore 8 Games</a>-->
-                <!--<a href="#integration" class="btn-secondary">View API Docs</a>-->
-            <!--</div>-->
-        <!--</div>-->
-    <!--</section>-->
 
-    <!-- ОБНОВЛЕННАЯ HERO СЕКЦИЯ С ЖИВЫМ НЕОНОВЫМ БАННЕРОМ -->
     <section class="hero" style="position: relative; overflow: hidden; background: #070714; padding: 120px 0 100px 0;">
         <!-- Холст для фоновой графики баннера -->
         <canvas id="heroBannerCanvas" style="position: absolute; top:0; left:0; width:100%; height:100%; z-index:1; pointer-events:none; opacity: 0.4;"></canvas>
@@ -313,7 +301,7 @@
     <!-- GAMES PRESENTATION SECTION -->
     <section id="games" class="games-section">
         <div class="container">
-            <h2>Our Premium <span>8 Game Suite</span></h2>
+            <h2>Our Premium <span>9 Game Suite</span></h2>
             <p class="section-desc">Fully server-verified logic utilizing cryptographic random generators.</p>
 
             <div class="games-grid">
@@ -366,7 +354,14 @@
                     <h3>Classic Slots</h3>
                     <p>Cascade strip rotation matrix. Real-time matching reels and luxury reward drops.</p>
                 </div>
-                <!-- 8 -->
+
+                <div class="game-item">
+                    <span class="game-badge badge-instant">Instant</span>
+                    <span class="game-icon">🎰</span>
+                    <h3>5x3 Slots</h3>
+                    <p>5x3 strip rotation matrix, free spins, wild. Real-time matching reels and luxury reward drops.</p>
+                </div>
+                <!-- 9 -->
                 <div class="game-item">
                     <span class="game-badge badge-instant">Instant</span>
                     <span class="game-icon">🎫</span>
@@ -387,7 +382,8 @@
             <div class="demo-selector" style="display: flex; justify-content: center; gap: 10px; margin-bottom: 30px; flex-wrap: wrap;">
                 <button class="demo-tab-btn active" onclick="switchDemoGame('mines')">💣 Mines</button>
                 <button class="demo-tab-btn" onclick="switchDemoGame('crash')">🚀 Crash</button>
-                <button class="demo-tab-btn" onclick="switchDemoGame('slots')">🎰 Slots</button>
+                <button class="demo-tab-btn" onclick="switchDemoGame('slots3x3')">🎰 Slots 3x3</button>
+                <button class="demo-tab-btn" onclick="switchDemoGame('slots5x3')">🎰 Slots 5x3</button>
                 <button class="demo-tab-btn" onclick="switchDemoGame('hilo')">🃏 Hi-Lo</button>
                 <button class="demo-tab-btn" onclick="switchDemoGame('dice')">🪙 Dice</button>
                 <button class="demo-tab-btn" onclick="switchDemoGame('scratch')">🎫 Scratch</button>
