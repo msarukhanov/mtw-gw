@@ -1,9 +1,8 @@
 // Подключаемся к вашему модульному серверу Node.js
 
-
 const baseUrl = (location.hostname === 'localhost') ? 'http://localhost:3000' : 'https://mtw-gw.onrender.com';
 const baseUrlApi = baseUrl + '/api';
-
+console.log(baseUrl);
 
 const socket = io(baseUrl);
 

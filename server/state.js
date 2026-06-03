@@ -33,12 +33,31 @@ const CONFIG = {
             { label: '6', prize: 10 }, { label: '7', prize: 10 }
         ]
     },
-    scratch: { cost: 15, symbols: ['🦁', '🐯', '🐻', '🍒', '🍀'], rtp: 75 } // 75% отдача
+    scratch: { cost: 15, symbols: ['🦁', '🐯', '🐻', '🍒', '🍀'], rtp: 75 }, // 75% отдача
+    mines: {
+        gridSize: 25,     // Сетка 5х5 (25 ячеек)
+        minMines: 1,      // Минимальное количество бомб
+        maxMines: 24,     // Максимальное количество бомб
+        rtpPercent: 95    // Целевой процент отдачи (например, 95%)
+    }
 };
 
 
 function getRandomInt(max) {
     return crypto.randomBytes(4).readUInt32BE(0) % max;
+}
+
+let minesBankPool = 5000;
+
+// 4. Математическая формула расчета множителя на основе теории вероятностей
+function getMinesMultiplier(totalCells, totalMines, openedCells) {
+    let multiplier = 1;
+    for (let i = 0; i < openedCells; i++) {
+        multiplier *= (totalCells - i) / (totalCells - totalMines - i);
+    }
+    // Слегка корректируем базовый множитель под заложенный RTP
+    const rtpFactor = CONFIG.mines.rtpPercent / 100;
+    return parseFloat((multiplier * rtpFactor).toFixed(2));
 }
 
 module.exports = {
@@ -138,6 +157,20 @@ module.exports = {
     },
     getAllPlayers: async () => {
         return await db.find({});
-    }
+    },
+
+
+    getMinesGame: (username) => activeMinesGames[username],
+    setMinesGame: (username, gameData) => { activeMinesGames[username] = gameData; },
+    deleteMinesGame: (username) => { delete activeMinesGames[username]; },
+    getMinesMultiplier,
+
+    // Методы управления банком игры для контроля RTP
+    getMinesBank: () => minesBankPool,
+    addMinesBank: (amount) => { minesBankPool += amount; },
+    reduceMinesBank: (amount) => { minesBankPool -= amount; },
+
+    // Позволяет админке динамически менять процент RTP
+    setMinesRtp: (newRtp) => { CONFIG.mines.rtpPercent = newRtp; }
 
 };

@@ -7,11 +7,18 @@ const auth = require('./authRoutes'); // импорт middleware
 const slots = require('../controllers/slotsController');
 const wheel = require('../controllers/wheelController');
 const scratch = require('../controllers/scratchController');
+const mines = require('../controllers/minesController');
+
+// 2. Назначаем защищенные роуты (добавьте к остальным играм)
 
 // Назначаем роуты и защищаем их проверкой игрока (auth.checkPlayer)
 router.post('/slots/spin', auth.checkPlayer, slots.spin);
 router.post('/wheel/spin', auth.checkPlayer, wheel.spin);
 router.post('/scratch/buy', auth.checkPlayer, scratch.buy);
+
+router.post('/mines/start', auth.checkPlayer, mines.start);
+router.post('/mines/open', auth.checkPlayer, mines.openCell);
+router.post('/mines/cashout', auth.checkPlayer, mines.cashout);
 
 // Покупка билета лотереи с подгрузкой настроек сервера
 router.post('/lottery/buy', auth.checkPlayer, async (req, res) => {
