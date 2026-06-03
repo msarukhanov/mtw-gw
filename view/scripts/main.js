@@ -5,7 +5,7 @@ const baseUrl = (location.hostname === 'localhost') ? 'http://localhost:3000' : 
 const baseUrlApi = baseUrl + '/api';
 
 
-const socket = io('http://localhost:3000');
+const socket = io(baseUrl);
 
 // Единые глобальные переменные состояния игры на клиенте
 let currentUser = null;

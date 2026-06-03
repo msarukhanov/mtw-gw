@@ -80,7 +80,11 @@
 
 <script>
     // ТВОЙ АДРЕС СЕРВЕРА (измени порт 3000, если у тебя другой)
-    const SERVER_URL = 'http://localhost:3000';
+
+    const baseUrl = (location.hostname === 'localhost') ? 'http://localhost:3000' : 'https://mtw-gw.onrender.com';
+    const baseUrlApi = baseUrl + '/api';
+
+    const SERVER_URL = baseUrl;
 
     // Функция загрузки всех актуальных данных с сервера
     async function loadData() {
