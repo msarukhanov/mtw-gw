@@ -4,12 +4,19 @@ const state = require('../state');
 const auth = require('./authRoutes'); // импорт middleware
 
 // Импорт контроллеров
-const slots = require('../controllers/slotsController');
+const slots3x3 = require('../controllers/slots3x3Controller');
+const slots5x3 = require('../controllers/slots5x3Controller');
 const wheel = require('../controllers/wheelController');
 const scratch = require('../controllers/scratchController');
 const mines = require('../controllers/minesController');
 const crash = require('../controllers/crashController');
-const dice = require('../controllers/diceController');const hilo = require('../controllers/hiloController');
+const dice = require('../controllers/diceController');
+const hilo = require('../controllers/hiloController');
+
+
+// Добавьте к остальным роутам ваших игр
+router.post('/slots5x3/spin', auth.checkPlayer, slots5x3.spin);
+router.post('/slots3x3/spin', auth.checkPlayer, slots3x3.spin);
 
 // Добавьте к остальным роутам ваших игр
 router.post('/hilo/turn', auth.checkPlayer, hilo.turn);
@@ -24,7 +31,7 @@ router.post('/crash/cashout', auth.checkPlayer, crash.cashout);
 // 2. Назначаем защищенные роуты (добавьте к остальным играм)
 
 // Назначаем роуты и защищаем их проверкой игрока (auth.checkPlayer)
-router.post('/slots/spin', auth.checkPlayer, slots.spin);
+
 router.post('/wheel/spin', auth.checkPlayer, wheel.spin);
 router.post('/scratch/buy', auth.checkPlayer, scratch.buy);
 
@@ -100,7 +107,5 @@ router.post('/player/history', auth.checkPlayer, async (req, res) => {
         res.status(500).json({ error: "Failed to load general history" });
     }
 });
-
-
 
 module.exports = router;

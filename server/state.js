@@ -51,6 +51,10 @@ let banks = {
     hilo: 4000
 };
 
+let slots5x3BankPool = 10000;
+
+const activeFreeSpins = {};
+
 // 4. Математическая формула расчета множителя на основе теории вероятностей
 function getMinesMultiplier(totalCells, totalMines, openedCells) {
     let multiplier = 1;
@@ -199,6 +203,20 @@ const hiloMethods = {
     getHiloMultipliers
 };
 
+const slots5x3Methods = {
+    // ... ваши существующие методы
+    getSlots5x3Bank: () => slots5x3BankPool,
+    addSlots5x3Bank: (amount) => { slots5x3BankPool += amount; },
+    reduceSlots5x3Bank: (amount) => { slots5x3BankPool -= amount; },
+};
+
+const freeSpinMethods = {
+    // ... ваши существующие методы
+    getFreeSpins: (username) => activeFreeSpins[username],
+    setFreeSpins: (username, fsData) => { activeFreeSpins[username] = fsData; },
+    deleteFreeSpins: (username) => { delete activeFreeSpins[username]; }
+};
+
 module.exports = {
     getRandomInt,
 
@@ -208,6 +226,9 @@ module.exports = {
     ...crashMethods,
     ...diceMethods,
     ...hiloMethods,
+
+    ...slots5x3Methods,
+    ...freeSpinMethods,
 
     getConfig: () => CONFIG, // Метод для отправки настроек клиенту
 // --- НОВЫЕ МЕТОДЫ ДЛЯ АДМИНКИ ---

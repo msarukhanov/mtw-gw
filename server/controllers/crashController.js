@@ -30,6 +30,41 @@ exports.placeBet = async (req, res) => {
 };
 
 // 2. НАЖАТИЕ КНОПКИ КЭШАУТ (ЗАБРАТЬ В ПОЛЕТЕ)
+// exports.cashout = async (req, res) => {
+//     if (crashService.getStatus() !== "flying") {
+//         return res.status(400).json({ error: "Game is not in flight" });
+//     }
+//
+//     const activeInFlight = state.getActiveInFlight();
+//     if (!activeInFlight[req.username]) {
+//         return res.status(400).json({ error: "You are not in flight or already cashed out" });
+//     }
+//
+//     const currentBets = state.getCrashBets();
+//     const playerBet = currentBets[req.username];
+//     const winMultiplier = crashService.getMultiplier();
+//
+//     // Вычисляем сумму выигрыша
+//     const winAmount = Math.floor(playerBet * winMultiplier);
+//
+//     // Начисляем на баланс и забираем из банка RTP
+//     req.player.balance += winAmount;
+//     await state.updateBalance(req.username, req.player.balance);
+//     state.reduceCrashBank(winAmount);
+//
+//     // Удаляем игрока из списка летящих
+//     state.removePlayerFromFlight(req.username);
+//
+//     // Запись в единую ленту истории действий
+//     await state.savePlayerActionHistory(req.username, {
+//         game: "Crash",
+//         details: `Cashed out at ${winMultiplier}x`,
+//         change: `+${winAmount} 🪙`,
+//         win: true
+//     });
+//
+//     res.json({ message: "Cashed out successfully", prize: winAmount, balance: req.player.balance });
+// };
 exports.cashout = async (req, res) => {
     if (crashService.getStatus() !== "flying") {
         return res.status(400).json({ error: "Game is not in flight" });
@@ -51,6 +86,10 @@ exports.cashout = async (req, res) => {
     req.player.balance += winAmount;
     await state.updateBalance(req.username, req.player.balance);
     state.reduceCrashBank(winAmount);
+
+    // --- КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Мгновенно пушим кэшаут в сокетный сервис ---
+    crashService.forceRegisterCashout(req.username, winMultiplier);
+    // --------------------------------------------------------------------
 
     // Удаляем игрока из списка летящих
     state.removePlayerFromFlight(req.username);

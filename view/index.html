@@ -855,6 +855,97 @@
 
         .hilo-msg { min-height: 20px; font-size: 15px; font-weight: bold; color: #8a8ab0; text-align: center; margin-top: 15px; }
 
+
+        .slots53-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+        /* Рамка игрового автомата */
+        .slots53-machine {
+            position: relative;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+            background: #070714;
+            padding: 10px;
+            border-radius: 18px;
+            border: 3px solid #e94560;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.9), 0 0 20px rgba(233, 69, 96, 0.3);
+            margin-bottom: 15px;
+            width: 100%;
+            overflow: hidden;
+        }
+        /* Вертикальный барабан */
+        .slots53-reel {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            position: relative;
+        }
+        /* Отдельная ячейка с символом */
+        .slots53-cell {
+            aspect-ratio: 1;
+            background: #101026;
+            border: 1px solid #2d2d5f;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            user-select: none;
+            transition: background 0.2s, transform 0.2s;
+        }
+        /* Подсветка выигрышного символа на линии */
+        .slots53-cell.highlight {
+            background: rgba(78, 204, 163, 0.25);
+            border-color: #4ecca3;
+            box-shadow: 0 0 10px rgba(78, 204, 163, 0.5);
+            transform: scale(1.03);
+        }
+        /* Баннер режима бесплатных вращений */
+        .fs-banner {
+            width: 100%;
+            background: linear-gradient(90deg, #951c30, #e94560);
+            padding: 10px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 0 15px rgba(233, 69, 96, 0.4);
+            display: none; /* Включается сервером */
+            text-align: center;
+        }
+
+        .slots53-controls {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        .slots53-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #e94560, #951c30);
+            border: none;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 16px;
+            cursor: pointer;
+            letter-spacing: 1px;
+        }
+        .slots53-btn:disabled { background: #333344; color: #777; cursor: not-allowed; }
+
+        /* Кнопка меняет цвет в режиме фриспинов */
+        .slots53-btn.fs-active {
+            background: linear-gradient(135deg, #4ecca3, #2b9371);
+            color: #12122c;
+        }
+
+        .slots53-msg { min-height: 24px; font-size: 16px; font-weight: bold; color: #8a8ab0; text-align: center; }
+
     </style>
 
     <script src="https://cdn.socket.io/4.8.3/socket.io.min.js" integrity="sha384-kzavj5fiMwLKzzD1f8S7TeoVIEi7uKHvbTA3ueZkrzYq75pNQUiUi6Dy98Q3fxb0" crossorigin="anonymous"></script>
@@ -880,7 +971,8 @@
     <h1 style="color: #4ecca3; text-align: center; margin-bottom: 20px;">🎮 GAME LOBBY</h1>
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
         <button onclick="changeTab('lottery')" style="padding: 20px; background: #0f3460; color: #fff; border: 2px solid #25254d; border-radius: 12px; font-weight: bold; cursor: pointer;">🎰 Lottery 6/49</button>
-        <button onclick="changeTab('slots')" style="padding: 20px; background: #0f3460; color: #fff; border: 2px solid #25254d; border-radius: 12px; font-weight: bold; cursor: pointer;">🎰 Slots Machine</button>
+        <button onclick="changeTab('slots3x3')" style="padding: 20px; background: #0f3460; color: #fff; border: 2px solid #25254d; border-radius: 12px; font-weight: bold; cursor: pointer;">🎰 Slots 3x3</button>
+        <button onclick="changeTab('slots5x3')" style="padding: 20px; background: #0f3460; color: #fff; border: 2px solid #25254d; border-radius: 12px; font-weight: bold; cursor: pointer;">🎰 Slots 5x3</button>
         <button onclick="changeTab('wof')" style="padding: 20px; background: #0f3460; color: #fff; border: 2px solid #25254d; border-radius: 12px; font-weight: bold; cursor: pointer;">🎡 Wheel</button>
         <button onclick="changeTab('scratch')" style="padding: 20px; background: #0f3460; color: #fff; border: 2px solid #25254d; border-radius: 12px; font-weight: bold; cursor: pointer;">🎫 Scratch Cards</button>
         <button onclick="changeTab('mines')" style="padding: 20px; background: #0f3460; color: #fff; border: 2px solid #25254d; border-radius: 12px; font-weight: bold; cursor: pointer;">💣 Mines Sweeper</button>
@@ -942,7 +1034,7 @@
     <div class="msg-box" id="msgBox_Scratch">Buy a card and scratch it!</div>
 </div>
 
-<div class="game-container" id="slots">
+<div class="game-container" id="slots3x3">
     <!-- Верхняя панель игрока -->
     <h1>🎰 CYBER SLOTS</h1>
 
@@ -965,6 +1057,26 @@
 
     <!-- Результат -->
     <div class="msg-box" id="msgBox" style="margin-top: 20px;">Good Luck!</div>
+</div>
+
+<div class="game-container" id="slots5x3">
+    <!-- Верхняя панель игрока -->
+    <div class="slots53-wrapper">
+
+        <!-- Баннер бонусной игры -->
+        <div id="fsBanner" class="fs-banner">🎰 FREE SPINS MODE: <span id="fsCountLabel">10</span> LEFT</div>
+
+        <!-- Игровое поле 5 барабанов на 3 ряда -->
+        <div class="slots53-machine" id="slots53Machine">
+            <!-- Колонки будут сгенерированы через JS динамически -->
+        </div>
+
+        <div style="margin-bottom: 15px; font-size: 14px; color: #8a8ab0;">Cost per spin: <span style="color:#fff; font-weight:bold;">20 🪙</span> | Lines: <span style="color:#fff; font-weight:bold;">20</span></div>
+
+        <!-- Управление -->
+        <button id="slots53SpinBtn" class="slots53-btn">SPIN</button>
+        <div id="slots53Msg" class="slots53-msg">Match lines left to right! Wild (W) replaces all icons!</div>
+    </div>
 </div>
 
 <div class="game-container" id="wof">
@@ -1013,25 +1125,56 @@
 </div>
 
 <div class="game-container" id="crash">
-    <div class="crash-wrapper">
+    <div class="crash-wrapper" style="display: flex; flex-direction: column; gap: 15px; width: 100%;">
+
         <!-- Экран полета -->
-        <div class="crash-display">
+        <div class="crash-display" style="position: relative; width: 100%; height: 220px; background: #070714; border-radius: 18px; border: 2px solid #25254d; overflow: hidden;">
             <canvas id="crashCanvas" width="500" height="220"></canvas>
             <div id="crashLiveMult" class="crash-multiplier-live" style="display: none;">1.00x</div>
             <div id="crashOverlay" class="crash-overlay-msg">Waiting for next round...</div>
         </div>
 
         <!-- Панель ставки -->
-        <div class="crash-panel">
-            <div class="crash-input-box">
+        <div class="crash-panel" style="display: flex; width: 100%; gap: 12px;">
+            <div class="crash-input-box" style="flex: 1;">
                 <label>Bet Amount</label>
                 <input type="number" id="crashBetInput" class="crash-input" value="10" min="1">
             </div>
         </div>
 
-        <!-- Одна универсальная кнопка управления (Ставка / Кэшаут) -->
         <button id="crashActionBtn" class="crash-btn">PLACE BET</button>
+        <div id="crashMsg" class="crash-msg"></div>
+
+        <!-- КЛЮЧЕВОЕ ДОБАВЛЕНИЕ: ТАБЛИЦА LIVE-СТАВОК ОНЛАЙН -->
+        <div style="width: 100%; background: #101026; border-radius: 14px; border: 1px solid #25254d; padding: 15px; text-align: left;">
+            <div style="font-size: 13px; font-weight: bold; color: #4ecca3; margin-bottom: 10px; letter-spacing: 0.5px;">LIVE BETS (ALL PLAYERS)</div>
+            <div id="crashLiveBetsBox" style="max-height: 180px; overflow-y: auto; font-size: 12px; color: #8a8ab0; display: flex; flex-direction: column; gap: 6px;">
+                <!-- Сюда сокеты будут динамически вбрасывать строки игроков -->
+                <div style="text-align: center; color: #555; padding: 10px;">Waiting for bets...</div>
+            </div>
+        </div>
+
     </div>
+
+    <!--<div class="crash-wrapper">-->
+        <!--&lt;!&ndash; Экран полета &ndash;&gt;-->
+        <!--<div class="crash-display">-->
+            <!--<canvas id="crashCanvas" width="500" height="220"></canvas>-->
+            <!--<div id="crashLiveMult" class="crash-multiplier-live" style="display: none;">1.00x</div>-->
+            <!--<div id="crashOverlay" class="crash-overlay-msg">Waiting for next round...</div>-->
+        <!--</div>-->
+
+        <!--&lt;!&ndash; Панель ставки &ndash;&gt;-->
+        <!--<div class="crash-panel">-->
+            <!--<div class="crash-input-box">-->
+                <!--<label>Bet Amount</label>-->
+                <!--<input type="number" id="crashBetInput" class="crash-input" value="10" min="1">-->
+            <!--</div>-->
+        <!--</div>-->
+
+        <!--&lt;!&ndash; Одна универсальная кнопка управления (Ставка / Кэшаут) &ndash;&gt;-->
+        <!--<button id="crashActionBtn" class="crash-btn">PLACE BET</button>-->
+    <!--</div>-->
 </div>
 
 <div class="game-container" id="dice">
@@ -1112,7 +1255,8 @@
 <script src="./scripts/main.js"></script>
 <script src="./scripts/lottery.js"></script>
 <script src="./scripts/scratch.js"></script>
-<script src="./scripts/slots.js"></script>
+<script src="./scripts/slots3x3.js"></script>
+<script src="./scripts/slots5x3.js"></script>
 <script src="./scripts/wof.js"></script>
 <script src="./scripts/mines.js"></script>
 <script src="./scripts/crash.js"></script>

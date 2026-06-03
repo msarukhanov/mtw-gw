@@ -7,7 +7,7 @@ const seamless = require('../services/seamlessService');
 router.checkPlayer = async (req, res, next) => {
     const { username, sessionId } = req.body;
 
-    if (!username || !sessionId) {
+    if (!username && !sessionId) {
         return res.status(401).json({ error: "Unauthorized seamless session" });
     }
 

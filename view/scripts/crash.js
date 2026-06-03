@@ -59,13 +59,17 @@ if (crashActionBtn) {
 
                 if (data.error) return alert(data.error);
 
+
+                // На фронтенде внутри crashActionBtn.onclick в блоке успешного кэшаута:
                 hasCashedOutCrash = true;
                 currentBalance = data.balance;
                 if (typeof updateUIProfile === 'function') updateUIProfile();
 
+                // ИСПРАВЛЕНИЕ: Мгновенно гасим зеленую кнопку кэшаута на клиенте
                 crashActionBtn.disabled = true;
-                crashActionBtn.classList.remove('cashout-active');
+                crashActionBtn.classList.remove('cashout-active'); // Кнопка перестанет быть зеленой
                 crashActionBtn.innerText = `CASHED OUT (+${data.prize} 🪙)`;
+
 
                 if (typeof loadGeneralHistory === 'function') loadGeneralHistory();
             } catch (err) {
@@ -124,10 +128,81 @@ function drawCrashGraph(multiplier, stateStr) {
 }
 
 // --- СЛУШАЕМ СЕРВЕР ЧЕРЕЗ ВЕБСОКЕТЫ (Общий поток для Авиатора) ---
+// socket.on('crash_state', (data) => {
+//     crashClientState = data.status;
+//
+//     // Состояние 1: Идет прием ставок (Обратный отсчет)
+//     if (data.status === "betting") {
+//         cancelAnimationFrame(crashAnimFrame);
+//         crashFlightProgress = 0;
+//         if (crashCtx) crashCtx.clearRect(0, 0, crashCanvas.width, crashCanvas.height);
+//
+//         crashLiveMult.style.display = "none";
+//         crashOverlay.style.display = "block";
+//         crashOverlay.style.color = "#4ecca3";
+//         crashOverlay.innerText = `NEXT FLIGHT IN ${Math.ceil(data.timeLeft / 1000)}s`;
+//
+//         // Если игрок еще не делал ставку в этом раунде, даем ему кнопку
+//         if (!hasPlacedCrashBet) {
+//             crashActionBtn.disabled = false;
+//             crashActionBtn.classList.remove('cashout-active');
+//             crashActionBtn.innerText = "PLACE BET";
+//             crashBetInput.disabled = false;
+//         }
+//     }
+//     // Состояние 2: Самолёт летит в реальном времени!
+//     else if (data.status === "flying") {
+//         crashOverlay.style.display = "none";
+//         crashLiveMult.style.display = "block";
+//         crashLiveMult.innerText = `${data.multiplier.toFixed(2)}x`;
+//
+//         // Если игрок в полете и еще не забрал деньги — активируем кнопку КЭШАУТ
+//         if (hasPlacedCrashBet && !hasCashedOutCrash) {
+//             crashActionBtn.disabled = false;
+//             crashActionBtn.classList.add('cashout-active');
+//             const betVal = parseInt(crashBetInput.value);
+//             const estWin = Math.floor(betVal * data.multiplier);
+//             crashActionBtn.innerText = `TAKE WIN: ${estWin} 🪙`;
+//         }
+//
+//         // Перерисовываем график на Canvas
+//         drawCrashGraph(data.multiplier, "flying");
+//     }
+//     // Состояние 3: Краш (Самолет улетел)
+//     else if (data.status === "crashed") {
+//         crashClientState = "crashed";
+//         crashLiveMult.style.display = "none";
+//         crashOverlay.style.display = "block";
+//         crashOverlay.style.color = "#e94560";
+//         crashOverlay.innerHTML = `FLEW AWAY<br><span style="font-size:32px; font-weight:900;">${data.multiplier.toFixed(2)}x</span>`;
+//
+//         // Окрашиваем график в красный цвет взрыва
+//         if (crashCtx && crashCanvas) {
+//             crashCtx.fillStyle = "rgba(233, 69, 96, 0.1)";
+//             crashCtx.fillRect(0, 0, crashCanvas.width, crashCanvas.height);
+//         }
+//
+//         // Блокируем управление до начала нового раунда
+//         crashActionBtn.disabled = true;
+//         crashActionBtn.classList.remove('cashout-active');
+//         crashActionBtn.innerText = "CRASHED";
+//
+//         // Сбрасываем флаги личной игровой сессии для следующего полета
+//         hasPlacedCrashBet = false;
+//         hasCashedOutCrash = false;
+//
+//         if (typeof loadGeneralHistory === 'function') loadGeneralHistory();
+//     }
+// });
+
+// Хранилище для отрисовки текущей таблицы ставок
+let currentRoundBetsCache = {};
+
 socket.on('crash_state', (data) => {
     crashClientState = data.status;
+    const betsBox = document.getElementById('crashLiveBetsBox');
 
-    // Состояние 1: Идет прием ставок (Обратный отсчет)
+    // Состояние 1: Прием ставок
     if (data.status === "betting") {
         cancelAnimationFrame(crashAnimFrame);
         crashFlightProgress = 0;
@@ -138,21 +213,33 @@ socket.on('crash_state', (data) => {
         crashOverlay.style.color = "#4ecca3";
         crashOverlay.innerText = `NEXT FLIGHT IN ${Math.ceil(data.timeLeft / 1000)}s`;
 
-        // Если игрок еще не делал ставку в этом раунде, даем ему кнопку
         if (!hasPlacedCrashBet) {
             crashActionBtn.disabled = false;
             crashActionBtn.classList.remove('cashout-active');
             crashActionBtn.innerText = "PLACE BET";
             crashBetInput.disabled = false;
         }
+
+        // ОБНОВЛЯЕМ ТАБЛИЦУ СТАВОК (Стадия ожидания)
+        if (betsBox && data.bets) {
+            currentRoundBetsCache = data.bets; // запоминаем кто сколько поставил
+            betsBox.innerHTML = Object.keys(data.bets).map(username => {
+                return `<div style="display: flex; justify-content: space-between; background: rgba(255,255,255,0.02); padding: 6px 10px; border-radius: 6px;">
+                        <span style="color: #fff;">👤 ${username}</span>
+                        <span style="color: #8a8ab0;">${data.bets[username]} 🪙</span>
+                    </div>`;
+            }).join('');
+            if (Object.keys(data.bets).length === 0) {
+                betsBox.innerHTML = `<div style="text-align: center; color: #444; padding: 10px;">Placing bets...</div>`;
+            }
+        }
     }
-    // Состояние 2: Самолёт летит в реальном времени!
+    // Состояние 2: Самолет летит!
     else if (data.status === "flying") {
         crashOverlay.style.display = "none";
         crashLiveMult.style.display = "block";
         crashLiveMult.innerText = `${data.multiplier.toFixed(2)}x`;
 
-        // Если игрок в полете и еще не забрал деньги — активируем кнопку КЭШАУТ
         if (hasPlacedCrashBet && !hasCashedOutCrash) {
             crashActionBtn.disabled = false;
             crashActionBtn.classList.add('cashout-active');
@@ -161,10 +248,29 @@ socket.on('crash_state', (data) => {
             crashActionBtn.innerText = `TAKE WIN: ${estWin} 🪙`;
         }
 
-        // Перерисовываем график на Canvas
         drawCrashGraph(data.multiplier, "flying");
+
+        // ОБНОВЛЯЕМ ТАБЛИЦУ СТАВОК (В полете: подсвечиваем тех, кто нажал Кэшаут)
+        if (betsBox && currentRoundBetsCache) {
+            betsBox.innerHTML = Object.keys(currentRoundBetsCache).map(username => {
+                // Проверяем, зафиксировал ли сервер кэшаут для этого юзера на текущем иксе
+                const cashOutMultiplier = data.cashedOut && data.cashedOut[username];
+                if (cashOutMultiplier) {
+                    const winAmount = Math.floor(currentRoundBetsCache[username] * cashOutMultiplier);
+                    return `<div style="display: flex; justify-content: space-between; background: rgba(78, 204, 163, 0.1); padding: 6px 10px; border-radius: 6px; border-left: 3px solid #4ecca3;">
+                            <span style="color: #4ecca3; font-weight: bold;">👤 ${username}</span>
+                            <span style="color: #4ecca3; font-weight: bold;">Cashed out ${cashOutMultiplier.toFixed(2)}x (+${winAmount} 🪙)</span>
+                        </div>`;
+                }
+                // Если еще летит
+                return `<div style="display: flex; justify-content: space-between; background: rgba(255,255,255,0.02); padding: 6px 10px; border-radius: 6px;">
+                        <span style="color: #fff;">👤 ${username}</span>
+                        <span style="color: #8a8ab0; font-style: italic;">In flight...</span>
+                    </div>`;
+            }).join('');
+        }
     }
-    // Состояние 3: Краш (Самолет улетел)
+    // Состояние 3: Краш
     else if (data.status === "crashed") {
         crashClientState = "crashed";
         crashLiveMult.style.display = "none";
@@ -172,21 +278,38 @@ socket.on('crash_state', (data) => {
         crashOverlay.style.color = "#e94560";
         crashOverlay.innerHTML = `FLEW AWAY<br><span style="font-size:32px; font-weight:900;">${data.multiplier.toFixed(2)}x</span>`;
 
-        // Окрашиваем график в красный цвет взрыва
         if (crashCtx && crashCanvas) {
             crashCtx.fillStyle = "rgba(233, 69, 96, 0.1)";
             crashCtx.fillRect(0, 0, crashCanvas.width, crashCanvas.height);
         }
 
-        // Блокируем управление до начала нового раунда
         crashActionBtn.disabled = true;
         crashActionBtn.classList.remove('cashout-active');
         crashActionBtn.innerText = "CRASHED";
 
-        // Сбрасываем флаги личной игровой сессии для следующего полета
+        // В финальной таблице подсвечиваем красным тех, кто сгорел
+        if (betsBox && currentRoundBetsCache) {
+            betsBox.innerHTML = Object.keys(currentRoundBetsCache).map(username => {
+                const cashOutMultiplier = data.cashedOut && data.cashedOut[username];
+                if (cashOutMultiplier) {
+                    const winAmount = Math.floor(currentRoundBetsCache[username] * cashOutMultiplier);
+                    return `<div style="display: flex; justify-content: space-between; background: rgba(78, 204, 163, 0.05); padding: 6px 10px; border-radius: 6px;">
+                            <span style="color: #666;">👤 ${username}</span>
+                            <span style="color: #4ecca3;">Won +${winAmount} 🪙</span>
+                        </div>`;
+                }
+                return `<div style="display: flex; justify-content: space-between; background: rgba(233, 69, 96, 0.1); padding: 6px 10px; border-radius: 6px; border-left: 3px solid #e94560;">
+                        <span style="color: #e94560;">走 ${username}</span>
+                        <span style="color: #e94560; font-weight: bold;">Crashed (-${currentRoundBetsCache[username]} 🪙)</span>
+                    </div>`;
+            }).join('');
+        }
+
         hasPlacedCrashBet = false;
         hasCashedOutCrash = false;
+        currentRoundBetsCache = {}; // зачищаем раунд
 
         if (typeof loadGeneralHistory === 'function') loadGeneralHistory();
     }
 });
+
