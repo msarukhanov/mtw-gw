@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Панель администратора</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: sans-serif; margin: 30px; background: #f4f6f9; color: #333; }
+        h1 { margin-bottom: 20px; }
+        .container { display: flex; gap: 20px; margin-bottom: 20px; }
+        .card { flex: 1; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .card h2 { margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        input[type="number"] { width: 70px; padding: 6px; margin: 5px 0; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: #007bff; color: white; border: 0; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #0056b3; }
+        button.danger { background: #dc3545; }
+        button.danger:hover { background: #bd2130; }
+        table { width: 100%; border-collapse: collapse; text-align: left; margin-top: 10px; }
+        th, td { padding: 10px; border: 1px solid #ddd; }
+        th { background: #eee; }
+        .jackpot-val { font-size: 28px; color: #dc3545; font-weight: bold; margin: 15px 0; }
+        .game-block { background: #fdfdfd; border: 1px solid #eaeaea; padding: 10px; border-radius: 6px; margin-bottom: 10px; }
+        .game-block h3 { margin: 0 0 8px 0; font-size: 16px; color: #555; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Настройки RTP и стоимости -->
+    <div class="card">
+        <h2>🎰 RTP and limits config</h2>
+        <form id="configForm">
+            <div class="game-block">
+                <h3>Slots</h3>
+                Price: <input type="number" id="slots_cost"> 🪙 | RTP: <input type="number" id="slots_rtp"> %
+            </div>
+            <div class="game-block">
+                <h3>Wheel of Fortune</h3>
+                Price: <input type="number" id="wheel_cost"> 🪙 | RTP: <input type="number" id="wheel_rtp"> %
+            </div>
+            <div class="game-block">
+                <h3>Scratch cards</h3>
+                Price: <input type="number" id="scratch_cost"> 🪙 | RTP: <input type="number" id="scratch_rtp"> %
+            </div>
+            <div class="game-block">
+                <h3>Lottery</h3>
+                Price: <input type="number" id="lottery_ticketPrice"> 🪙 | RTP: <input type="number" id="lottery_rtp"> %
+            </div>
+            <button type="submit">💾 Save config</button>
+        </form>
+    </div>
+
+    <!-- Управление джекпотом -->
+    <div class="card" style="max-width: 400px;">
+        <h2>💰 Global Jackpot</h2>
+        <div class="jackpot-val" id="jackpotDisplay">0 🪙</div>
+        <form id="jackpotForm">
+            New value: <input type="number" id="jackpotInput" style="width: 120px;">
+            <button type="submit" class="danger">Change bank</button>
+        </form>
+    </div>
+</div>
+
+<!-- Управление пользователями -->
+<div class="card">
+    <h2>👥 Player management</h2>
+    <table>
+        <thead>
+        <tr>
+            <th>Username</th>
+            <th>Balance</th>
+            <th>Action (Change balance)</th>
+        </tr>
+        </thead>
+        <tbody id="playersTableBody">
+        <!-- Сюда данные вставит JavaScript -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+    // ТВОЙ АДРЕС СЕРВЕРА (измени порт 3000, если у тебя другой)
+    const SERVER_URL = 'http://localhost:3000';
+
+    // Функция загрузки всех актуальных данных с сервера
+    async function loadData() {
+        try {
+            const res = await fetch(`${SERVER_URL}/api/admin/data`);
+            if (res.status === 401) return alert('No access');
+            const data = await res.json();
+
+            // Заполняем инпуты настроек
+            document.getElementById('slots_cost').value = data.config.slots.cost;
+            document.getElementById('slots_rtp').value = data.config.slots.rtp;
+            document.getElementById('wheel_cost').value = data.config.wheel.cost;
+            document.getElementById('wheel_rtp').value = data.config.wheel.rtp;
+            document.getElementById('scratch_cost').value = data.config.scratch.cost;
+            document.getElementById('scratch_rtp').value = data.config.scratch.rtp;
+            document.getElementById('lottery_ticketPrice').value = data.config.lottery.ticketPrice;
+            document.getElementById('lottery_rtp').value = data.config.lottery.rtp;
+
+            // Отображаем джекпот
+            document.getElementById('jackpotDisplay').innerText = data.jackpot + ' 🪙';
+            document.getElementById('jackpotInput').value = data.jackpot;
+
+            // Заполняем таблицу пользователей
+            const tbody = document.getElementById('playersTableBody');
+            tbody.innerHTML = data.players.map(p => `
+                <tr>
+                    <td><b>${p.username}</b></td>
+                    <td>${p.balance} 🪙</td>
+                    <td>
+                        <input type="number" id="bal_${p.username}" value="${p.balance}" style="width:100px;">
+                        <button onclick="updateBalance('${p.username}')">Change balance</button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (err) {
+            console.error(err);
+            alert('Server connection error.');
+        }
+    }
+
+    // Отправка новой конфигурации
+    document.getElementById('configForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const configData = {
+            slots_cost: document.getElementById('slots_cost').value,
+            slots_rtp: document.getElementById('slots_rtp').value,
+            wheel_cost: document.getElementById('wheel_cost').value,
+            wheel_rtp: document.getElementById('wheel_rtp').value,
+            scratch_cost: document.getElementById('scratch_cost').value,
+            scratch_rtp: document.getElementById('scratch_rtp').value,
+            lottery_ticketPrice: document.getElementById('lottery_ticketPrice').value,
+            lottery_rtp: document.getElementById('lottery_rtp').value,
+        };
+
+        const res = await fetch(`${SERVER_URL}/api/admin/update-config`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(configData)
+        });
+        if (res.ok) { alert('Config changed!'); loadData(); }
+    });
+
+    // Отправка нового джекпота
+    document.getElementById('jackpotForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const val = document.getElementById('jackpotInput').value;
+        const res = await fetch(`${SERVER_URL}/api/admin/update-jackpot`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jackpot: val })
+        });
+        if (res.ok) { alert('Jackpot changed!'); loadData(); }
+    });
+
+    // Отправка нового баланса пользователя
+    async function updateBalance(username) {
+        const bal = document.getElementById('bal_' + username).value;
+        const res = await fetch(`${SERVER_URL}/api/admin/update-balance`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, balance: bal })
+        });
+        if (res.ok) { alert(`Player ${username} balance changed!`); loadData(); }
+    }
+
+    // Первичный запуск при открытии страницы
+    loadData();
+</script>
+
+</body>
+</html>

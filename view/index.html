@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile lottery</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a2e;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 400px;
+            background: #16213e;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        .jackpot-banner {
+            background: linear-gradient(90deg, #951c30, #e94560);
+            padding: 10px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            font-size: 18px;
+            box-shadow: 0 0 15px rgba(233, 69, 96, 0.4);
+            animation: pulse 1.5s infinite alternate;
+        }
+        @keyframes pulse { to { transform: scale(1.02); } }
+
+        .tabs-container {
+            width: 100%;
+            max-width: 380px;
+            background: linear-gradient(145deg, #12122c, #1a1a3a);
+            padding: 25px;
+            border-radius: 24px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7), 0 0 20px rgba(233, 69, 96, 0.2);
+            text-align: center;
+            border: 2px solid #25254d;
+
+            display: flex;
+            justify-content: space-around;
+        }
+
+        .game-tab {
+            display: inline-block;
+            font-size: 24px;
+
+            cursor: pointer;
+        }
+
+        .game-tab.selected {
+            color: #4ecca3;
+        }
+
+        /* Панель пользователя */
+        .auth-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #0f3460;
+            padding: 10px 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .login-btn {
+            background: #e94560;
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .balance-value {
+            color: #4ecca3;
+            font-weight: bold;
+        }
+
+        /* Таймер тиража */
+        .timer-banner {
+            background: #222831;
+            padding: 8px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #393e46;
+        }
+
+        .timer-val {
+            color: #e94560;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        h1 {
+            font-size: 22px;
+            margin-bottom: 15px;
+            color: #e94560;
+        }
+
+        .balls-container {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            min-height: 50px;
+            margin-bottom: 20px;
+        }
+
+        .ball {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #ff4b5c, #ff1f3b);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            transform: scale(0);
+            animation: popIn 0.4s ease forwards;
+        }
+
+        @keyframes popIn {
+            to {
+                transform: scale(1);
+            }
+        }
+
+        .ticket {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .number-btn {
+            aspect-ratio: 1;
+            background: #0f3460;
+            border: none;
+            color: white;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .number-btn.selected {
+            background: #e94560;
+        }
+
+        .number-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 15px;
+            background: #4ecca3;
+            border: none;
+            color: #1a1a2e;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(78, 204, 163, 0.3);
+        }
+
+        .action-btn:disabled {
+            background: #555;
+            color: #888;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        .result {
+            margin-top: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            min-height: 24px;
+            color: #4ecca3;
+        }
+
+
+
+
+
+
+        /* Верхняя панель */
+        .header-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(15, 52, 96, 0.5);
+            padding: 12px 18px;
+            border-radius: 14px;
+            margin-bottom: 25px;
+            font-size: 14px;
+            border: 1px solid #1f1f45;
+        }
+        .balance-box { font-weight: bold; color: #4ecca3; font-size: 16px; }
+
+        h1 {
+            font-size: 26px;
+            margin-bottom: 20px;
+            color: #e94560;
+            text-shadow: 0 0 10px rgba(233, 69, 96, 0.6);
+            letter-spacing: 1px;
+        }
+
+        /* Игровое поле (Барабаны) */
+        .slot-machine {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            background: #070714;
+            padding: 15px;
+            border-radius: 18px;
+            border: 3px solid #e94560;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.9), 0 0 15px rgba(233, 69, 96, 0.3);
+            margin-bottom: 25px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Красивая рамка/визир по центру строки выигрыша */
+        .slot-machine::blur {
+            content: '';
+            position: absolute;
+            left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, rgba(7,7,20,0.8) 0%, transparent 25%, transparent 75%, rgba(7,7,20,0.8) 100%);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .win-line-pointer {
+            position: absolute;
+            left: 0; top: 50%;
+            transform: translateY(-50%);
+            width: 100%; height: 2px;
+            background: rgba(233, 69, 96, 0.5);
+            box-shadow: 0 0 8px #e94560;
+            z-index: 3;
+            pointer-events: none;
+        }
+
+        /* Отдельный барабан */
+        .reel-window {
+            width: 85px;
+            height: 90px; /* Показывает ровно 1 символ по центру */
+            background: #101026;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid #2d2d5f;
+        }
+
+        .reel-strip {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            will-change: transform;
+        }
+
+        /* Слот-символ */
+        .symbol {
+            width: 100%;
+            height: 90px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 42px; /* Под ваши будущие картинки */
+            user-select: none;
+        }
+
+        /* Кнопка вращения */
+        .spin-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #e94560, #951c30);
+            border: none;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 16px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(233, 69, 96, 0.4);
+            transition: transform 0.1s, filter 0.2s;
+            letter-spacing: 1px;
+        }
+        .spin-btn:active { transform: scale(0.98); }
+        .spin-btn:disabled {
+            background: #333344;
+            color: #777;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        /* Информационные плашки */
+        .bet-info { margin-bottom: 15px; font-size: 14px; color: #8a8ab0; }
+        .bet-info span { color: #fff; font-weight: bold; }
+        .msg-box { min-height: 24px; font-size: 18px; font-weight: bold; color: #4ecca3; text-shadow: 0 0 5px rgba(78,204,163,0.3); }
+
+        /* Класс бесконечной быстрой прокрутки (запускается через JS) */
+        .blur-spin {
+            animation: spinningStrip 0.2s linear infinite;
+        }
+
+        @keyframes spinningStrip {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-360px); } /* Смещение на высоту 4 элементов */
+        }
+
+        /* Область колеса со стрелкой */
+        .wheel-box {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            margin: 0 auto 25px auto;
+        }
+
+        /* Маркер/Стрелка сверху */
+        .pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 30px solid #e94560;
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5));
+            z-index: 10;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+
+        /* Кнопка */
+        .spin-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #4ecca3, #2b9371);
+            border: none;
+            color: #12122c;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 16px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(78, 204, 163, 0.3);
+            transition: transform 0.1s, filter 0.2s;
+            letter-spacing: 1px;
+        }
+
+        .spin-btn:active {
+            transform: scale(0.98);
+        }
+
+        .spin-btn:disabled {
+            background: #333344;
+            color: #777;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        .bet-info {
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #8a8ab0;
+        }
+
+        .bet-info span {
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .msg-box {
+            min-height: 24px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #e94560;
+            text-shadow: 0 0 5px rgba(233, 69, 96, 0.3);
+        }
+
+        .card-area {
+            position: relative;
+            width: 260px;
+            height: 260px;
+            margin: 0 auto 20px auto;
+            background: #070714;
+            border-radius: 16px;
+            border: 3px solid #25254d;
+            overflow: hidden;
+        }
+
+        /* Сетка призов под защитным слоем (3х3) */
+        .prizes-grid {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 2px;
+            background: #25254d;
+            z-index: 1;
+        }
+        .cell {
+            background: #101026;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            user-select: none;
+        }
+
+        /* Холст, который мы стираем */
+        canvas {
+            position: absolute;
+            top: 0; left: 0;
+            cursor: crosshair;
+            touch-action: none; /* Отключает скролл экрана при стирании пальцем */
+            border-radius: 12px;
+            z-index: 2;
+        }
+
+        .buy-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #e94560, #951c30);
+            border: none;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 16px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(233, 69, 96, 0.3);
+        }
+        .buy-btn:disabled { background: #333344; color: #777; box-shadow: none; }
+    </style>
+
+    <script src="https://cdn.socket.io/4.8.3/socket.io.min.js" integrity="sha384-kzavj5fiMwLKzzD1f8S7TeoVIEi7uKHvbTA3ueZkrzYq75pNQUiUi6Dy98Q3fxb0" crossorigin="anonymous"></script>
+
+
+
+
+</head>
+<body>
+
+<div class="game-container">
+    <!-- 1. Панель Логина и Баланса -->
+    <div class="auth-panel">
+        <div id="userInfo">Player: <span id="usernameLabel" style="color:#e94560">Guest</span></div>
+        <div>Balance: <span class="balance-value" id="balanceLabel">0</span> 🪙</div>
+        <button class="login-btn" id="authBtn" onclick="handleAuth()">Login</button>
+    </div>
+
+    <div class="jackpot-banner">💥 JACKPOT: <span id="jackpotLabel">1000</span> 🪙</div>
+</div>
+
+<div class="tabs-container">
+    <div class="game-tab" id="tab_lottery" onclick="changeTab('lottery')">Lottery</div>
+    <div class="game-tab" id="tab_scratch" onclick="changeTab('scratch')">Scratch</div>
+    <div class="game-tab" id="tab_slots" onclick="changeTab('slots')">Slots</div>
+    <div class="game-tab" id="tab_wof" onclick="changeTab('wof')">WoF</div>
+</div>
+
+<div class="game-container" id="lottery">
+
+    <!-- 2. Таймер фиксированных розыгрышей -->
+    <div class="timer-banner">
+        Next draw in: <span class="timer-val" id="timerDisplay">05:00</span>
+    </div>
+
+    <h1>🎰 5-Minute Lottery</h1>
+
+    <div class="balls-container" id="ballsBox"></div>
+    <div class="ticket" id="ticketBox"></div>
+
+    <button id="quickPickBtn" style="width: 100%; padding: 10px; background: #0f3460; border: 1px dashed #e94560; color: white; font-size: 14px; font-weight: bold; border-radius: 8px; margin-bottom: 10px; cursor: pointer;">
+        ⚡ Quick Pick (Random 6)
+    </button>
+
+    <!-- Кнопка теперь регистрирует билет на будущий тираж -->
+    <button class="action-btn" id="betBtn" disabled>Choose 6 numbers</button>
+
+    <div class="result" id="resultBox"></div>
+</div>
+
+<div class="game-container" id="scratch">
+
+    <div class="card-area">
+        <!-- Призы под слоем -->
+        <div class="prizes-grid" id="prizesGrid"></div>
+        <!-- Защитный слой -->
+        <canvas id="scratchCanvas" width="260" height="260"></canvas>
+    </div>
+
+    <div style="margin-bottom: 15px; font-size: 14px; color: #8a8ab0;">Ticket price: <span>15 🪙</span></div>
+    <button class="buy-btn" id="buyBtn">BUY SCRATCH CARD</button>
+    <div class="msg-box" id="msgBox_Scratch">Buy a card and scratch it!</div>
+</div>
+
+<div class="game-container" id="slots">
+    <!-- Верхняя панель игрока -->
+    <h1>🎰 CYBER SLOTS</h1>
+
+    <!-- Игровой автомат -->
+    <div class="slot-machine">
+        <div class="win-line-pointer"></div>
+
+        <!-- Барабан 1 -->
+        <div class="reel-window"><div class="reel-strip" id="reel1"></div></div>
+        <!-- Барабан 2 -->
+        <div class="reel-window"><div class="reel-strip" id="reel2"></div></div>
+        <!-- Барабан 3 -->
+        <div class="reel-window"><div class="reel-strip" id="reel3"></div></div>
+    </div>
+
+    <div class="bet-info">Cost per spin: <span>10 🪙</span></div>
+
+    <!-- Управление -->
+    <button class="spin-btn" id="spinBtn">SPIN!</button>
+
+    <!-- Результат -->
+    <div class="msg-box" id="msgBox" style="margin-top: 20px;">Good Luck!</div>
+</div>
+
+<div class="game-container" id="wof">
+
+    <h1>🎰 LUCKY WHEEL</h1>
+
+    <!-- Колесо фортуны -->
+    <div class="wheel-box">
+        <div class="pointer"></div>
+        <canvas id="wheelCanvas" width="560" height="560"></canvas>
+    </div>
+
+    <div class="bet-info">Cost per spin: <span>20 🪙</span></div>
+
+    <button class="spin-btn" id="spinBtnWof">SPIN WHEEL</button>
+
+    <div class="msg-box" id="msgBoxWof" style="margin-top: 20px;">Spin and Win!</div>
+</div>
+
+<script src="./scripts/main.js"></script>
+<script src="./scripts/lottery.js"></script>
+<script src="./scripts/scratch.js"></script>
+<script src="./scripts/slots.js"></script>
+<script src="./scripts/wof.js"></script>
+
+</body>
+</html>
