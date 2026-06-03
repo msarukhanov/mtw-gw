@@ -650,6 +650,211 @@
         .crash-btn:disabled { background: #333344; color: #777; cursor: not-allowed; transform: none; }
 
 
+        .dice-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+        .dice-display {
+            position: relative;
+            width: 100%;
+            background: #070714;
+            border-radius: 18px;
+            border: 2px solid #25254d;
+            padding: 25px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .dice-result-number {
+            font-size: 48px;
+            font-weight: 900;
+            color: #8a8ab0;
+            text-shadow: 0 0 10px rgba(138, 138, 176, 0.2);
+            margin: 10px 0;
+            transition: color 0.2s, text-shadow 0.2s;
+        }
+        .dice-result-number.win { color: #4ecca3; text-shadow: 0 0 15px rgba(78, 204, 163, 0.4); }
+        .dice-result-number.lose { color: #e94560; text-shadow: 0 0 15px rgba(233, 69, 96, 0.4); }
+
+        .dice-stats {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            background: rgba(15, 52, 96, 0.3);
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 13px;
+            color: #8a8ab0;
+        }
+        .dice-stats span { color: #fff; font-weight: bold; }
+
+        .dice-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        .dice-input-box {
+            text-align: left;
+        }
+        .dice-input-box label {
+            display: block;
+            font-size: 12px;
+            color: #8a8ab0;
+            margin-bottom: 4px;
+        }
+        .dice-input {
+            width: 100%;
+            padding: 12px;
+            background: #0f3460;
+            border: 1px solid #25254d;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: bold;
+            font-size: 16px;
+            outline: none;
+        }
+        .dice-condition-toggle {
+            display: flex;
+            background: #070714;
+            padding: 4px;
+            border-radius: 12px;
+            border: 1px solid #25254d;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        .dice-toggle-btn {
+            flex: 1;
+            padding: 10px;
+            background: transparent;
+            border: none;
+            color: #8a8ab0;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: 0.2s;
+        }
+        .dice-toggle-btn.active {
+            background: #e94560;
+            color: #fff;
+        }
+
+        .dice-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #e94560, #951c30);
+            border: none;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 16px;
+            cursor: pointer;
+            letter-spacing: 1px;
+        }
+        .dice-btn:disabled { background: #333344; color: #777; cursor: not-allowed; }
+        .dice-msg { min-height: 20px; font-size: 15px; font-weight: bold; color: #8a8ab0; text-align: center; margin-top: 15px; }
+
+        .hilo-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+        .hilo-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            background: #070714;
+            border-radius: 18px;
+            border: 2px solid #25254d;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+        /* Стиль игральной карты */
+        .hilo-card {
+            width: 100px;
+            height: 145px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5), 0 0 10px rgba(255,255,255,0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 12px;
+            color: #000;
+            font-weight: bold;
+            user-select: none;
+            margin: 10px 0;
+            transition: transform 0.2s;
+        }
+        .hilo-card.red-suit { color: #e94560; }
+        .hilo-card-top { font-size: 24px; text-align: left; line-height: 1; }
+        .hilo-card-center { font-size: 42px; text-align: center; line-height: 1; }
+        .hilo-card-bottom { font-size: 24px; text-align: right; line-height: 1; transform: rotate(180deg); }
+
+        .hilo-panel {
+            display: flex;
+            width: 100%;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        .hilo-input-box {
+            flex: 1;
+            text-align: left;
+        }
+        .hilo-input-box label {
+            display: block;
+            font-size: 12px;
+            color: #8a8ab0;
+            margin-bottom: 4px;
+        }
+        .hilo-input {
+            width: 100%;
+            padding: 12px;
+            background: #0f3460;
+            border: 1px solid #25254d;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: bold;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .hilo-controls {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+        }
+        .hilo-action-btn {
+            flex: 1;
+            padding: 16px;
+            border: none;
+            border-radius: 16px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: transform 0.1s;
+        }
+        .hilo-action-btn:active { transform: scale(0.97); }
+        .hilo-action-btn span { font-size: 12px; opacity: 0.7; font-weight: normal; }
+
+        #hiloHigherBtn { background: linear-gradient(135deg, #4ecca3, #2b9371); color: #12122c; }
+        #hiloLowerBtn { background: linear-gradient(135deg, #e94560, #951c30); }
+        .hilo-action-btn:disabled { background: #333344 !important; color: #777 !important; cursor: not-allowed; box-shadow: none; transform: none; }
+
+        .hilo-msg { min-height: 20px; font-size: 15px; font-weight: bold; color: #8a8ab0; text-align: center; margin-top: 15px; }
+
     </style>
 
     <script src="https://cdn.socket.io/4.8.3/socket.io.min.js" integrity="sha384-kzavj5fiMwLKzzD1f8S7TeoVIEi7uKHvbTA3ueZkrzYq75pNQUiUi6Dy98Q3fxb0" crossorigin="anonymous"></script>
@@ -678,6 +883,8 @@
     <div class="game-tab" id="tab_wof" onclick="changeTab('wof')">WoF</div>
     <div class="game-tab" id="tab_mines" onclick="changeTab('mines')">Mines</div>
     <div class="game-tab" id="tab_crash" onclick="changeTab('crash')">Crash</div>
+    <div class="game-tab" id="tab_dice" onclick="changeTab('dice')">Dice</div>
+    <div class="game-tab" id="tab_hilo" onclick="changeTab('hilo')">HiLo</div>
 </div>
 
 <div class="game-container" id="lottery">
@@ -808,6 +1015,80 @@
     </div>
 </div>
 
+<div class="game-container" id="dice">
+    <div class="dice-wrapper">
+        <!-- Результат броска -->
+        <div class="dice-display">
+            <div style="font-size: 12px; color: #8a8ab0; letter-spacing: 1px;">LATEST ROLL</div>
+            <div id="diceResultNum" class="dice-result-number">--</div>
+
+            <div class="dice-stats">
+                <div>Win Chance: <span id="diceChanceLabel">49%</span></div>
+                <div>Multiplier: <span id="diceMultLabel">1.95x</span></div>
+            </div>
+        </div>
+
+        <!-- Переключатель условий (Больше / Меньше) -->
+        <div class="dice-condition-toggle">
+            <button id="diceToggleUnder" class="dice-toggle-btn active" onclick="setDiceCondition('under')">Roll Under</button>
+            <button id="diceToggleOver" class="dice-toggle-btn" onclick="setDiceCondition('over')">Roll Over</button>
+        </div>
+
+        <!-- Поля ввода числовых значений -->
+        <div class="dice-panel">
+            <div class="dice-input-box">
+                <label>Bet Amount</label>
+                <input type="number" id="diceBetInput" class="dice-input" value="10" min="1">
+            </div>
+            <div class="dice-input-box">
+                <label id="diceTargetLabel">Target Number (< 50)</label>
+                <input type="number" id="diceTargetInput" class="dice-input" value="50" min="2" max="98">
+            </div>
+        </div>
+
+        <!-- Кнопка броска -->
+        <button id="diceRollBtn" class="dice-btn">ROLL DICE</button>
+        <div id="diceMsg" class="dice-msg">Set target, bet and roll!</div>
+    </div>
+</div>
+
+<div class="game-container" id="hilo">
+    <div class="hilo-wrapper">
+        <!-- Экран отображения карты -->
+        <div class="hilo-display">
+            <div style="font-size: 12px; color: #8a8ab0; letter-spacing: 1px;">CURRENT CARD</div>
+
+            <!-- Интерактивный DOM карты -->
+            <div id="hiloCardView" class="hilo-card">
+                <div class="hilo-card-top" id="hiloCardTop">A</div>
+                <div class="hilo-card-center" id="hiloCardCenter">♠</div>
+                <div class="hilo-card-bottom" id="hiloCardBottom">A</div>
+            </div>
+        </div>
+
+        <!-- Поле ввода ставки -->
+        <div class="hilo-panel">
+            <div class="hilo-input-box">
+                <label>Bet Amount</label>
+                <input type="number" id="hiloBetInput" class="hilo-input" value="10" min="1">
+            </div>
+        </div>
+
+        <!-- Кнопки выбора направления -->
+        <div class="hilo-controls">
+            <button id="hiloHigherBtn" class="hilo-action-btn">
+                HIGHER / EQUAL
+                <span id="hiloHigherMult">1.50x</span>
+            </button>
+            <button id="hiloLowerBtn" class="hilo-action-btn">
+                LOWER / EQUAL
+                <span id="hiloLowerMult">1.50x</span>
+            </button>
+        </div>
+
+        <div id="hiloMsg" class="hilo-msg">Guess if the next card is Higher or Lower!</div>
+    </div>
+</div>
 
 <script src="./scripts/main.js"></script>
 <script src="./scripts/lottery.js"></script>
@@ -816,6 +1097,8 @@
 <script src="./scripts/wof.js"></script>
 <script src="./scripts/mines.js"></script>
 <script src="./scripts/crash.js"></script>
+<script src="./scripts/dice.js"></script>
+<script src="./scripts/hilo.js"></script>
 
 </body>
 </html>

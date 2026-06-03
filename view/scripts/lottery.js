@@ -60,7 +60,7 @@ async function handleAuth() {
         if (!name) return;
 
         try {
-            const response = await fetch('http://localhost:3000/api/auth', {
+            const response = await fetch(baseUrlApi + '/auth', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: name })
@@ -141,7 +141,7 @@ betBtn.onclick = async () => {
     const ticket = Array.from(selectedNumbers).sort((a, b) => a - b);
 
     try {
-        const response = await fetch('http://localhost:3000/api/lottery/buy', {
+        const response = await fetch(baseUrlApi + '/lottery/buy', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username: currentUser, numbers: ticket })

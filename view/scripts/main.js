@@ -2,7 +2,6 @@
 
 const baseUrl = (location.hostname === 'localhost') ? 'http://localhost:3000' : 'https://mtw-gw.onrender.com';
 const baseUrlApi = baseUrl + '/api';
-console.log(baseUrl);
 
 const socket = io(baseUrl);
 
@@ -30,7 +29,7 @@ document.body.appendChild(globalHistoryDiv);
 
 // --- Табы / Переключение вкладок ---
 function changeTab(tab) {
-    ['lottery','scratch','slots','wof','mines','crash'].forEach(t => {
+    ['lottery','scratch','slots','wof','mines','crash','dice','hilo'].forEach(t => {
         const element = document.getElementById(t);
         const tabBtn = document.getElementById('tab_' + t);
         if (!element) return;

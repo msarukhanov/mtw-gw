@@ -9,6 +9,14 @@ const wheel = require('../controllers/wheelController');
 const scratch = require('../controllers/scratchController');
 const mines = require('../controllers/minesController');
 const crash = require('../controllers/crashController');
+const dice = require('../controllers/diceController');const hilo = require('../controllers/hiloController');
+
+// Добавьте к остальным роутам ваших игр
+router.post('/hilo/turn', auth.checkPlayer, hilo.turn);
+
+// Добавьте к остальным роутам ваших игр
+router.post('/dice/roll', auth.checkPlayer, dice.roll);
+
 
 router.post('/crash/bet', auth.checkPlayer, crash.placeBet);
 router.post('/crash/cashout', auth.checkPlayer, crash.cashout);

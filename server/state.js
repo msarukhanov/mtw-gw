@@ -44,6 +44,26 @@ const CONFIG = {
         betTime: 8000,     // Время на прием ставок (8 секунд)
         maxMultiplier: 1000, // Максимально возможный икс
         baseRtp: 80        // Базовый RTP игры в %
+    },
+    dice: {
+        minRoll: 1,
+        maxRoll: 100,
+        baseRtp: 96,
+        houseEdge: 0.04 // 4% комиссия дома (RTP игры = 96%)
+    },
+    hilo: {
+        baseRtp: 96,
+        houseEdge: 0.04, // 4% маржа дома (RTP = 96%)
+        // Массив карт от Двойки до Туза (номиналы от 2 до 14 для удобства математики)
+        cards: [
+            { suit: '♠', name: '2', value: 2 }, { suit: '♦', name: '3', value: 3 },
+            { suit: '♣', name: '4', value: 4 }, { suit: '♥', name: '5', value: 5 },
+            { suit: '♠', name: '6', value: 6 }, { suit: '♦', name: '7', value: 7 },
+            { suit: '♣', name: '8', value: 8 }, { suit: '♥', name: '9', value: 9 },
+            { suit: '♠', name: '10', value: 10 }, { suit: '♦', name: 'J', value: 11 },
+            { suit: '♣', name: 'Q', value: 12 }, { suit: '♥', name: 'K', value: 13 },
+            { suit: '♠', name: 'A', value: 14 }
+        ]
     }
 };
 
@@ -60,6 +80,11 @@ let crashBankPool = 5000;         // Копилка (банк) игры Авиа
 let currentCrashBets = {};        // Ставки на текущий раунд: { username: betAmount }
 let currentActivePlayers = {};    // Игроки, которые еще в полете: { username: true }
 
+let diceBankPool = 3000;
+
+let hiloBankPool = 4000;
+const activeHiloCards = {}; // Хранит текущую карту игрока: { username: currentCardObject }
+
 // 4. Математическая формула расчета множителя на основе теории вероятностей
 function getMinesMultiplier(totalCells, totalMines, openedCells) {
     let multiplier = 1;
@@ -69,6 +94,24 @@ function getMinesMultiplier(totalCells, totalMines, openedCells) {
     // Слегка корректируем базовый множитель под заложенный RTP
     const rtpFactor = CONFIG.mines.rtpPercent / 100;
     return parseFloat((multiplier * rtpFactor).toFixed(2));
+}
+
+function getHiloMultipliers(currentValue) {
+    const config = CONFIG.hilo;
+    const totalCards = config.cards.length;
+
+    // Считаем сколько в колоде карт выше/равно и ниже/равно текущей
+    const higherCount = config.cards.filter(c => c.value >= currentValue).length;
+    const lowerCount = config.cards.filter(c => c.value <= currentValue).length;
+
+    // Формула: (Всего карт / Карт, подходящих под условие) * (1 - Комиссия)
+    const multHigher = parseFloat(((totalCards / higherCount) * (1 - config.houseEdge)).toFixed(2));
+    const multLower = parseFloat(((totalCards / lowerCount) * (1 - config.houseEdge)).toFixed(2));
+
+    return {
+        higher: multHigher > 1 ? multHigher : 1.01,
+        lower: multLower > 1 ? multLower : 1.01
+    };
 }
 
 const playerMethods = {
@@ -174,6 +217,22 @@ const crashMethods = {
     clearFlightPlayers: () => { currentActivePlayers = {}; }
 };
 
+const diceMethods = {
+    getDiceBank: () => diceBankPool,
+    addDiceBank: (amount) => { diceBankPool += amount; },
+    reduceDiceBank: (amount) => { diceBankPool -= amount; }
+};
+
+const hiloMethods = {
+    getHiloBank: () => hiloBankPool,
+    addHiloBank: (amount) => { hiloBankPool += amount; },
+    reduceHiloBank: (amount) => { hiloBankPool -= amount; },
+
+    getHiloCard: (username) => activeHiloCards[username],
+    setHiloCard: (username, card) => { activeHiloCards[username] = card; },
+    getHiloMultipliers
+};
+
 module.exports = {
     getRandomInt,
 
@@ -181,6 +240,8 @@ module.exports = {
     ...jackpotMethods,
     ...minesMethods,
     ...crashMethods,
+    ...diceMethods,
+    ...hiloMethods,
 
     getConfig: () => CONFIG, // Метод для отправки настроек клиенту
 // --- НОВЫЕ МЕТОДЫ ДЛЯ АДМИНКИ ---

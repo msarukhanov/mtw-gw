@@ -24,7 +24,7 @@ if (crashActionBtn) {
             if (currentBalance < bet) return alert("Not enough coins");
 
             try {
-                const response = await fetch('http://localhost:3000/api/crash/bet', {
+                const response = await fetch(baseUrlApi + '/crash/bet', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: currentUser, bet })
@@ -50,7 +50,7 @@ if (crashActionBtn) {
         // Режим 2: Нажимаем Кэшаут (Забрать деньги) во время полета
         else if (crashClientState === "flying" && hasPlacedCrashBet && !hasCashedOutCrash) {
             try {
-                const response = await fetch('http://localhost:3000/api/crash/cashout', {
+                const response = await fetch(baseUrlApi + '/crash/cashout', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: currentUser })
