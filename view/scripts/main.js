@@ -1,4 +1,10 @@
 // Подключаемся к вашему модульному серверу Node.js
+
+
+const baseUrl = (location.hostname === 'localhost') ? 'http://localhost:3000' : 'https://mtw-gw.onrender.com';
+const baseUrlApi = baseUrl + '/api';
+
+
 const socket = io('http://localhost:3000');
 
 // Единые глобальные переменные состояния игры на клиенте
@@ -78,7 +84,7 @@ async function handleAuth() {
         if (!name) return;
 
         try {
-            const response = await fetch('http://localhost:3000/api/auth', {
+            const response = await fetch(baseUrlApi + '/auth', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: name })
@@ -128,7 +134,7 @@ function applyServerConfigToUI() {
 async function loadGeneralHistory() {
     if (!currentUser) return;
     try {
-        const response = await fetch('http://localhost:3000/api/player/history', {
+        const response = await fetch(baseUrlApi + '/player/history', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username: currentUser })
