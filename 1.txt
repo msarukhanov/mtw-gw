@@ -1,3 +1,0 @@
-npx neonctl@latest init
-
-postgresql://neondb_owner:npg_Zhnk3VB7aJlE@ep-crimson-recipe-ap7m8bma.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require
