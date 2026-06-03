@@ -876,16 +876,35 @@
     <div class="jackpot-banner">💥 JACKPOT: <span id="jackpotLabel">1000</span> 🪙</div>
 </div>
 
-<div class="tabs-container">
-    <div class="game-tab" id="tab_lottery" onclick="changeTab('lottery')">Lottery</div>
-    <div class="game-tab" id="tab_scratch" onclick="changeTab('scratch')">Scratch</div>
-    <div class="game-tab" id="tab_slots" onclick="changeTab('slots')">Slots</div>
-    <div class="game-tab" id="tab_wof" onclick="changeTab('wof')">WoF</div>
-    <div class="game-tab" id="tab_mines" onclick="changeTab('mines')">Mines</div>
-    <div class="game-tab" id="tab_crash" onclick="changeTab('crash')">Crash</div>
-    <div class="game-tab" id="tab_dice" onclick="changeTab('dice')">Dice</div>
-    <div class="game-tab" id="tab_hilo" onclick="changeTab('hilo')">HiLo</div>
+<div id="lobby" class="game-container" style="display: block; margin: 20px auto;">
+    <h1 style="color: #4ecca3; text-align: center; margin-bottom: 20px;">🎮 GAME LOBBY</h1>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <button onclick="changeTab('lottery')" style="padding: 20px; background: #0f3460; color: #fff; border: 2px solid #25254d; border-radius: 12px; font-weight: bold; cursor: pointer;">🎰 Lottery 6/49</button>
+        <button onclick="changeTab('slots')" style="padding: 20px; background: #0f3460; color: #fff; border: 2px solid #25254d; border-radius: 12px; font-weight: bold; cursor: pointer;">🎰 Slots Machine</button>
+        <button onclick="changeTab('wof')" style="padding: 20px; background: #0f3460; color: #fff; border: 2px solid #25254d; border-radius: 12px; font-weight: bold; cursor: pointer;">🎡 Wheel</button>
+        <button onclick="changeTab('scratch')" style="padding: 20px; background: #0f3460; color: #fff; border: 2px solid #25254d; border-radius: 12px; font-weight: bold; cursor: pointer;">🎫 Scratch Cards</button>
+        <button onclick="changeTab('mines')" style="padding: 20px; background: #0f3460; color: #fff; border: 2px solid #25254d; border-radius: 12px; font-weight: bold; cursor: pointer;">💣 Mines Sweeper</button>
+        <button onclick="changeTab('crash')" style="padding: 20px; background: #0f3460; color: #fff; border: 2px solid #25254d; border-radius: 12px; font-weight: bold; cursor: pointer;">🚀 Crash Aviator</button>
+        <button onclick="changeTab('dice')" style="padding: 20px; background: #0f3460; color: #fff; border: 2px solid #25254d; border-radius: 12px; font-weight: bold; cursor: pointer;">🪙 Dice</button>
+        <button onclick="changeTab('hilo')" style="padding: 20px; background: #0f3460; color: #fff; border: 2px solid #25254d; border-radius: 12px; font-weight: bold; cursor: pointer;">🃏 Hi-Lo Card</button>
+
+    </div>
 </div>
+
+<!-- Кнопка возврата в лобби (показывать внутри игровых вкладок) -->
+<button id="backToLobbyBtn" onclick="goToLobby()" style="display:none; margin: 10px auto; padding: 8px 16px; background: #222831; color: #8a8ab0; border: 1px solid #393e46; border-radius: 8px; cursor: pointer;">⬅ Back to Lobby</button>
+
+
+<!--<div class="tabs-container">-->
+    <!--<div class="game-tab" id="tab_lottery" onclick="changeTab('lottery')">Lottery</div>-->
+    <!--<div class="game-tab" id="tab_scratch" onclick="changeTab('scratch')">Scratch</div>-->
+    <!--<div class="game-tab" id="tab_slots" onclick="changeTab('slots')">Slots</div>-->
+    <!--<div class="game-tab" id="tab_wof" onclick="changeTab('wof')">WoF</div>-->
+    <!--<div class="game-tab" id="tab_mines" onclick="changeTab('mines')">Mines</div>-->
+    <!--<div class="game-tab" id="tab_crash" onclick="changeTab('crash')">Crash</div>-->
+    <!--<div class="game-tab" id="tab_dice" onclick="changeTab('dice')">Dice</div>-->
+    <!--<div class="game-tab" id="tab_hilo" onclick="changeTab('hilo')">HiLo</div>-->
+<!--</div>-->
 
 <div class="game-container" id="lottery">
 

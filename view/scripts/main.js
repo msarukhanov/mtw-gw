@@ -10,7 +10,7 @@ let currentUser = null;
 let currentBalance = 0;
 let jackpot = 1000;
 let serverConfig = null; // Здесь будут храниться цены и настройки с сервера
-let currentTab = 'lottery';
+let currentTab = 'lobby';
 
 let isDrawing = false;
 
@@ -27,27 +27,49 @@ globalHistoryDiv.id = 'globalHistoryBox';
 globalHistoryDiv.style.cssText = "margin-top: 25px; border-top: 1px solid #393e46; padding-top: 15px; text-align: left; max-height: 200px; overflow-y: auto;";
 document.body.appendChild(globalHistoryDiv);
 
+const gameTabs = ['lottery','scratch','slots','wof','mines','crash','dice','hilo'];
+
 // --- Табы / Переключение вкладок ---
 function changeTab(tab) {
-    ['lottery','scratch','slots','wof','mines','crash','dice','hilo'].forEach(t => {
-        const element = document.getElementById(t);
-        const tabBtn = document.getElementById('tab_' + t);
-        if (!element) return;
+    if(tab) {
+        document.getElementById('lobby').style.display = 'none';
+        document.getElementById('backToLobbyBtn').style.display = 'block';
 
-        if (tab === t) {
-            element.style.display = 'block';
-            if (tabBtn) tabBtn.classList.add('selected');
-        } else {
-            element.style.display = 'none';
-            if (tabBtn) tabBtn.classList.remove('selected');
-        }
-    });
-    currentTab = tab;
+        gameTabs.forEach(t => {
+            const element = document.getElementById(t);
+            const tabBtn = document.getElementById('tab_' + t);
+            if (!element) return;
 
-    // При переключении вкладок обновляем общую историю, если игрок залогинен
-    if (currentUser) loadGeneralHistory();
+            if (tab === t) {
+                element.style.display = 'block';
+                if (tabBtn) tabBtn.classList.add('selected');
+            } else {
+                element.style.display = 'none';
+                if (tabBtn) tabBtn.classList.remove('selected');
+            }
+        });
+        currentTab = tab;
+
+        // При переключении вкладок обновляем общую историю, если игрок залогинен
+        if (currentUser) loadGeneralHistory();
+    }
+    else {
+        gameTabs.forEach(t => {
+            const element = document.getElementById(t);
+            if(element) element.style.display = 'none';
+        });
+        document.getElementById('lobby').style.display = 'block';
+        document.getElementById('backToLobbyBtn').style.display = 'none';
+    }
 }
-changeTab(currentTab);
+window.goToLobby = function() {
+    gameTabs.forEach(t => {
+        const element = document.getElementById(t);
+        if(element) element.style.display = 'none';
+    });
+    document.getElementById('lobby').style.display = 'block';
+    document.getElementById('backToLobbyBtn').style.display = 'none';
+};
 
 // --- Функция обновления шапки профиля ---
 function updateUIProfile() {
@@ -184,3 +206,101 @@ socket.on('timer_update', (data) => {
         updateLotteryTimerUI(data.timeLeft);
     }
 });
+
+
+
+let globalSessionId = null;
+
+// Функция парсинга параметров из ссылки (?game=mines&session_id=123)
+function getUrlParams() {
+    const params = {};
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+
+    if(urlParams.has('game')) params.game = urlParams.get('game');
+    if(urlParams.has('session_id')) params.sessionId = urlParams.get('session_id');
+    return params;
+}
+function handleUrlRoutingAndStart() {
+    const urlParams = getUrlParams();
+
+    // МГНОВЕННЫЙ РОУТИНГ: Если в ссылке указана игра, сразу изолируем её на экране
+    if (urlParams.game && gameTabs.includes(urlParams.game)) {
+        // Переключаем табы моментально до выполнения сетевых запросов
+        changeTab(urlParams.game);
+    }
+    else {
+        changeTab('');
+    }
+
+    // Если передан токен сессии, запускаем асинхронный бесшовный логин
+    if (urlParams.sessionId) {
+        globalSessionId = urlParams.sessionId;
+        initSeamlessGame(globalSessionId);
+    } else {
+        // Если сессии нет — просто обновляем интерфейс для гостя
+        updateUIProfile();
+    }
+}
+
+// 4. АСИНХРОННЫЙ СИМЛЕСС ЛОГИН ПРИ ЗАГРУЗКЕ В IFRAME
+async function initSeamlessGame(sessionId) {
+    try {
+        // Блокируем кнопки ставок во всех играх, пока идет проверка баланса на бэкенде
+        toggleAllGameButtons(true);
+
+        const response = await fetch('http://localhost:3000/api/auth/seamless', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId: sessionId })
+        });
+        const data = await response.json();
+
+        if (data.error) {
+            console.error("Seamless login failed:", data.error);
+            // Красиво выводим ошибку вместо лобби или поверх открытой игры
+            document.getElementById('lobby').innerHTML = `<h3 style="color:#e94560; text-align:center;">Session Expired: ${data.error}</h3>`;
+            return;
+        }
+
+        // Успешный бесшовный вход с платформы казино!
+        currentUser = data.username;
+        currentBalance = data.balance;
+        jackpot = data.jackpot;
+        serverConfig = data.config;
+
+        // Подключаем живые вебсокеты для таймеров
+        socket.emit('join_game', currentUser);
+
+        // Синхронизируем шапку WebApp
+        updateUIProfile();
+        updateJackpotUI();
+        if (typeof applyServerConfigToUI === 'function') applyServerConfigToUI();
+
+        // Разблокируем кнопки игр — баланс подгружен, игрок готов ставить монеты
+        toggleAllGameButtons(false);
+        if (typeof updateBetButtonState === 'function') updateBetButtonState();
+
+    } catch (err) {
+        console.error("Seamless connection error:", err);
+        toggleAllGameButtons(true);
+    }
+}
+
+// Вспомогательная функция, чтобы игрок не успел нажать кнопку «Ставка» до того, как бэкенд подгрузит его реальный баланс
+function toggleAllGameButtons(disabledStatus) {
+    const allActionButtons = [
+        document.getElementById('betBtn'),       // Лотерея
+        document.getElementById('spinBtn'),      // Слоты
+        document.getElementById('spinBtnWof'),   // Колесо
+        document.getElementById('buyBtn'),       // Скретч
+        document.getElementById('minesStartBtn'),// Минёр
+        document.getElementById('crashActionBtn')// Авиатор
+    ];
+    allActionButtons.forEach(btn => {
+        if (btn) btn.disabled = disabledStatus;
+    });
+}
+
+// ЗАПУСК СИСТЕМЫ: Выполняется мгновенно при чтении скрипта
+handleUrlRoutingAndStart();

@@ -39,6 +39,7 @@
 
 
 const state = require('../state');
+const seamless = require('../services/seamlessService');
 
 exports.spin = async (req, res) => {
     const config = state.getConfig().slots;
@@ -48,8 +49,16 @@ exports.spin = async (req, res) => {
         return res.status(400).json({ error: "Insufficient funds" });
     }
 
+    if(req.player.sessionId) {
+        await seamless.debit(username, req.player.sessionId, config.cost, 'Slots', state.getRandomInt(10000000) + 1)
+    }
+
     // Списываем ставку сразу
     req.player.balance -= config.cost;
+
+
+
+
     state.addJackpot(1);
 
     // Генерируем случайное число от 0 до 99 для определения категории исхода
