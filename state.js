@@ -1,0 +1,143 @@
+const Datastore = require('nedb-promises');
+const crypto = require('crypto');
+const path = require('path');
+
+// База данных игроков
+const db = Datastore.create({
+    filename: path.join(__dirname, 'game.db'),
+    autoload: true
+});
+
+// Новая база данных для хранения истории лотерейных тиражей
+const historyDb = Datastore.create({
+    filename: path.join(__dirname, 'history.db'),
+    autoload: true
+});
+
+const activeTickets = {};
+let globalJackpot = 1000;
+
+// ЦЕНТРАЛЬНЫЕ НАСТРОЙКИ ИГР (Теперь они живут только на сервере!)
+
+const CONFIG = {
+    lottery: { ticketPrice: 1, totalNumbers: 49, neededChoices: 6, rtp: 75 }, // 75% лимит выплат
+    slots: { cost: 10, symbols: ['🦁', '🐯', '🐻', '💎', '🍒', '🍀'], rtp: 80 }, // 80% отдача
+    wheel: {
+        cost: 20,
+        rtp: 70, // 70% отдача
+        sectors: [
+            { label: '1', prize: 10 }, { label: '💎 JACKPOT', prize: 'JACKPOT' },
+            { label: '2', prize: 10 }, { label: 'Empty', prize: 0 },
+            { label: '3', prize: 10 }, { label: '4', prize: 10 },
+            { label: '5', prize: 10 }, { label: 'Double', prize: 40 },
+            { label: '6', prize: 10 }, { label: '7', prize: 10 }
+        ]
+    },
+    scratch: { cost: 15, symbols: ['🦁', '🐯', '🐻', '🍒', '🍀'], rtp: 75 } // 75% отдача
+};
+
+
+function getRandomInt(max) {
+    return crypto.randomBytes(4).readUInt32BE(0) % max;
+}
+
+module.exports = {
+    getRandomInt,
+    getJackpot: () => globalJackpot,
+    addJackpot: (amount) => { globalJackpot += amount; },
+    resetJackpot: () => { globalJackpot = 1000; },
+    getConfig: () => CONFIG, // Метод для отправки настроек клиенту
+
+    getOrCreatePlayer: async (username) => {
+        let player = await db.findOne({ username: username });
+        if (!player) {
+            player = { username: username, balance: 200 };
+            await db.insert(player);
+        }
+        if (!activeTickets[username]) activeTickets[username] = [];
+        player.tickets = activeTickets[username];
+        return player;
+    },
+
+    updateBalance: async (username, newBalance) => {
+        await db.update({ username: username }, { $set: { balance: newBalance } });
+    },
+
+    clearPlayerTickets: (username) => {
+        activeTickets[username] = [];
+    },
+
+    getGamersWithTickets: async () => {
+        const gamers = [];
+        const usernames = Object.keys(activeTickets);
+        for (const username of usernames) {
+            if (activeTickets[username].length > 0) {
+                let player = await db.findOne({ username: username });
+                if (player) {
+                    player.tickets = activeTickets[username];
+                    gamers.push(player);
+                }
+            }
+        }
+        return gamers;
+    },
+
+    // --- Методы для работы с историей лотереи ---
+    saveDrawToHistory: async (drawData) => {
+        await historyDb.insert(drawData);
+    },
+
+    getLotteryHistory: async (limit = 20) => {
+        // Достаем последние 20 тиражей, сортируем по id или времени (в NeDB делаем через массив)
+        const history = await historyDb.find({});
+        return history.slice(-limit); // Возвращаем последние N записей
+    },
+
+    // --- Методы для работы с личной историей игрока ---
+
+    // --- Единый метод для записи любого действия в историю игрока ---
+    savePlayerActionHistory: async (username, actionData) => {
+        const player = await db.findOne({ username: username });
+        if (player) {
+            if (!player.history) player.history = [];
+
+            // Добавляем время к записи
+            const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+            // Вставляем новое действие в самый верх списка
+            player.history.unshift({
+                time: timeString,
+                ...actionData
+            });
+
+            // Храним только последние 30 любых действий игрока
+            if (player.history.length > 30) player.history.pop();
+
+            await db.update({ username: username }, { $set: { history: player.history } });
+        }
+    },
+
+    // Получить общую историю игрока
+    getPlayerHistory: async (username) => {
+        const player = await db.findOne({ username: username });
+        return player && player.history ? player.history : [];
+    },
+
+
+    // --- НОВЫЕ МЕТОДЫ ДЛЯ АДМИНКИ ---
+    updateConfigParam: (game, param, value) => {
+        if (CONFIG[game] && CONFIG[game][param] !== undefined) {
+            // Если параметр числовой, парсим его
+            CONFIG[game][param] = typeof CONFIG[game][param] === 'number' ? Number(value) : value;
+            return true;
+        }
+        return false;
+    },
+    setJackpot: (amount) => {
+        globalJackpot = Number(amount);
+    },
+    getAllPlayers: async () => {
+        return await db.find({});
+    }
+
+};
