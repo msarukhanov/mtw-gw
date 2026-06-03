@@ -26,11 +26,11 @@ const tabsContainer = document.querySelector('.tabs-container');
 const globalHistoryDiv = document.createElement('div');
 globalHistoryDiv.id = 'globalHistoryBox';
 globalHistoryDiv.style.cssText = "margin-top: 25px; border-top: 1px solid #393e46; padding-top: 15px; text-align: left; max-height: 200px; overflow-y: auto;";
-tabsContainer.appendChild(globalHistoryDiv);
+document.body.appendChild(globalHistoryDiv);
 
 // --- Табы / Переключение вкладок ---
 function changeTab(tab) {
-    ['lottery','scratch','slots','wof'].forEach(t => {
+    ['lottery','scratch','slots','wof','mines','crash'].forEach(t => {
         const element = document.getElementById(t);
         const tabBtn = document.getElementById('tab_' + t);
         if (!element) return;

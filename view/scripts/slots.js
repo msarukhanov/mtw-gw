@@ -60,7 +60,7 @@ spinBtn.onclick = async () => {
 
     try {
         // Отправляем запрос на сервер Node.js
-        const response = await fetch(baseUrlApi + '/slots/spin', {
+        const response = await fetch('http://localhost:3000/api/slots/spin', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username: currentUser })

@@ -7,6 +7,7 @@ const authRoutes = require('./routes/authRoutes');
 const gameRoutes = require('./routes/gameRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const { initLotteryService } = require('./services/lotteryService');
+const { initCrashService } = require('./services/crashService');
 
 const app = express();
 app.use(cors({
@@ -27,6 +28,7 @@ app.use('/api', gameRoutes);
 
 // Запуск фоновой службы лотереи по сокетам
 initLotteryService(io);
+initCrashService(io);
 
 // Подключение сокетов игроков к их комнатам
 io.on('connection', (socket) => {

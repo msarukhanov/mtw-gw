@@ -8,6 +8,10 @@ const slots = require('../controllers/slotsController');
 const wheel = require('../controllers/wheelController');
 const scratch = require('../controllers/scratchController');
 const mines = require('../controllers/minesController');
+const crash = require('../controllers/crashController');
+
+router.post('/crash/bet', auth.checkPlayer, crash.placeBet);
+router.post('/crash/cashout', auth.checkPlayer, crash.cashout);
 
 // 2. Назначаем защищенные роуты (добавьте к остальным играм)
 

@@ -38,7 +38,12 @@ const CONFIG = {
         gridSize: 25,     // Сетка 5х5 (25 ячеек)
         minMines: 1,      // Минимальное количество бомб
         maxMines: 24,     // Максимальное количество бомб
-        rtpPercent: 95    // Целевой процент отдачи (например, 95%)
+        rtpPercent: 80    // Целевой процент отдачи (например, 95%)
+    },
+    crash: {
+        betTime: 8000,     // Время на прием ставок (8 секунд)
+        maxMultiplier: 1000, // Максимально возможный икс
+        baseRtp: 80        // Базовый RTP игры в %
     }
 };
 
@@ -48,6 +53,12 @@ function getRandomInt(max) {
 }
 
 let minesBankPool = 5000;
+const activeMinesGames = {};
+
+// 2. Хранилище для Авиатора в оперативной памяти бэкенда
+let crashBankPool = 5000;         // Копилка (банк) игры Авиатор
+let currentCrashBets = {};        // Ставки на текущий раунд: { username: betAmount }
+let currentActivePlayers = {};    // Игроки, которые еще в полете: { username: true }
 
 // 4. Математическая формула расчета множителя на основе теории вероятностей
 function getMinesMultiplier(totalCells, totalMines, openedCells) {
@@ -60,13 +71,7 @@ function getMinesMultiplier(totalCells, totalMines, openedCells) {
     return parseFloat((multiplier * rtpFactor).toFixed(2));
 }
 
-module.exports = {
-    getRandomInt,
-    getJackpot: () => globalJackpot,
-    addJackpot: (amount) => { globalJackpot += amount; },
-    resetJackpot: () => { globalJackpot = 1000; },
-    getConfig: () => CONFIG, // Метод для отправки настроек клиенту
-
+const playerMethods = {
     getOrCreatePlayer: async (username) => {
         let player = await db.findOne({ username: username });
         if (!player) {
@@ -77,15 +82,9 @@ module.exports = {
         player.tickets = activeTickets[username];
         return player;
     },
-
     updateBalance: async (username, newBalance) => {
         await db.update({ username: username }, { $set: { balance: newBalance } });
     },
-
-    clearPlayerTickets: (username) => {
-        activeTickets[username] = [];
-    },
-
     getGamersWithTickets: async () => {
         const gamers = [];
         const usernames = Object.keys(activeTickets);
@@ -100,20 +99,6 @@ module.exports = {
         }
         return gamers;
     },
-
-    // --- Методы для работы с историей лотереи ---
-    saveDrawToHistory: async (drawData) => {
-        await historyDb.insert(drawData);
-    },
-
-    getLotteryHistory: async (limit = 20) => {
-        // Достаем последние 20 тиражей, сортируем по id или времени (в NeDB делаем через массив)
-        const history = await historyDb.find({});
-        return history.slice(-limit); // Возвращаем последние N записей
-    },
-
-    // --- Методы для работы с личной историей игрока ---
-
     // --- Единый метод для записи любого действия в историю игрока ---
     savePlayerActionHistory: async (username, actionData) => {
         const player = await db.findOne({ username: username });
@@ -142,24 +127,21 @@ module.exports = {
         return player && player.history ? player.history : [];
     },
 
-
-    // --- НОВЫЕ МЕТОДЫ ДЛЯ АДМИНКИ ---
-    updateConfigParam: (game, param, value) => {
-        if (CONFIG[game] && CONFIG[game][param] !== undefined) {
-            // Если параметр числовой, парсим его
-            CONFIG[game][param] = typeof CONFIG[game][param] === 'number' ? Number(value) : value;
-            return true;
-        }
-        return false;
-    },
-    setJackpot: (amount) => {
-        globalJackpot = Number(amount);
-    },
     getAllPlayers: async () => {
         return await db.find({});
     },
+};
 
+const jackpotMethods = {
+    getJackpot: () => globalJackpot,
+    addJackpot: (amount) => { globalJackpot += amount; },
+    resetJackpot: () => { globalJackpot = 1000; },
+    setJackpot: (amount) => {
+        globalJackpot = Number(amount);
+    },
+};
 
+const minesMethods = {
     getMinesGame: (username) => activeMinesGames[username],
     setMinesGame: (username, gameData) => { activeMinesGames[username] = gameData; },
     deleteMinesGame: (username) => { delete activeMinesGames[username]; },
@@ -171,6 +153,63 @@ module.exports = {
     reduceMinesBank: (amount) => { minesBankPool -= amount; },
 
     // Позволяет админке динамически менять процент RTP
-    setMinesRtp: (newRtp) => { CONFIG.mines.rtpPercent = newRtp; }
+    setMinesRtp: (newRtp) => { CONFIG.mines.rtpPercent = newRtp; },
 
+};
+
+const crashMethods = {
+    // Управление банком Авиатора
+    getCrashBank: () => crashBankPool,
+    addCrashBank: (amount) => { crashBankPool += amount; },
+    reduceCrashBank: (amount) => { crashBankPool -= amount; },
+
+    // Управление ставками раунда
+    getCrashBets: () => currentCrashBets,
+    addCrashBet: (username, amount) => { currentCrashBets[username] = amount; },
+    clearCrashBets: () => { currentCrashBets = {}; },
+
+    getActiveInFlight: () => currentActivePlayers,
+    addPlayerToFlight: (username) => { currentActivePlayers[username] = true; },
+    removePlayerFromFlight: (username) => { delete currentActivePlayers[username]; },
+    clearFlightPlayers: () => { currentActivePlayers = {}; }
+};
+
+module.exports = {
+    getRandomInt,
+
+    ...playerMethods,
+    ...jackpotMethods,
+    ...minesMethods,
+    ...crashMethods,
+
+    getConfig: () => CONFIG, // Метод для отправки настроек клиенту
+// --- НОВЫЕ МЕТОДЫ ДЛЯ АДМИНКИ ---
+    updateConfigParam: (game, param, value) => {
+        if (CONFIG[game] && CONFIG[game][param] !== undefined) {
+            // Если параметр числовой, парсим его
+            CONFIG[game][param] = typeof CONFIG[game][param] === 'number' ? Number(value) : value;
+            return true;
+        }
+        return false;
+    },
+
+
+
+
+    clearPlayerTickets: (username) => {
+        activeTickets[username] = [];
+    },
+
+    // --- Методы для работы с историей лотереи ---
+    saveDrawToHistory: async (drawData) => {
+        await historyDb.insert(drawData);
+    },
+
+    getLotteryHistory: async (limit = 20) => {
+        // Достаем последние 20 тиражей, сортируем по id или времени (в NeDB делаем через массив)
+        const history = await historyDb.find({});
+        return history.slice(-limit); // Возвращаем последние N записей
+    },
+
+    // --- Методы для работы с личной историей игрока ---
 };
