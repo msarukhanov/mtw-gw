@@ -26,10 +26,10 @@
 <body>
 
 <div class="container">
-    <!-- Настройки RTP и стоимости -->
     <div class="card">
-        <h2>🎰 RTP and limits config</h2>
+        <h2>🎰 RTP, Prices and Pools config</h2>
         <form id="configForm">
+            <!-- Существующие игры -->
             <div class="game-block">
                 <h3>Slots</h3>
                 Price: <input type="number" id="slots_cost"> 🪙 | RTP: <input type="number" id="slots_rtp"> %
@@ -46,11 +46,28 @@
                 <h3>Lottery</h3>
                 Price: <input type="number" id="lottery_ticketPrice"> 🪙 | RTP: <input type="number" id="lottery_rtp"> %
             </div>
-            <button type="submit">💾 Save config</button>
+
+            <div class="game-block">
+                <h3>Mines</h3>
+                RTP: <input type="number" id="mines_rtpPercent"> % | Current Bank Pool: <input type="number" id="mines_bank"> 🪙
+            </div>
+            <div class="game-block">
+                <h3>Crash</h3>
+                Bet Time: <input type="number" id="crash_betTime" style="width: 80px;"> ms | RTP: <input type="number" id="crash_baseRtp"> % | Bank Pool: <input type="number" id="crash_bank"> 🪙
+            </div>
+            <div class="game-block">
+                <h3>Dice</h3>
+                House Edge: <input type="number" id="dice_houseEdge" step="0.01" style="width: 70px;"> (ex: 0.04) | Bank Pool: <input type="number" id="dice_bank"> 🪙
+            </div>
+            <div class="game-block">
+                <h3>Hi-Lo</h3>
+                House Edge: <input type="number" id="hilo_houseEdge" step="0.01" style="width: 70px;"> (ex: 0.04) | Bank Pool: <input type="number" id="hilo_bank"> 🪙
+            </div>
+
+            <button type="submit" style="margin-top: 15px;">💾 Save config</button>
         </form>
     </div>
 
-    <!-- Управление джекпотом -->
     <div class="card" style="max-width: 400px;">
         <h2>💰 Global Jackpot</h2>
         <div class="jackpot-val" id="jackpotDisplay">0 🪙</div>
@@ -86,14 +103,13 @@
 
     const SERVER_URL = baseUrl;
 
-    // Функция загрузки всех актуальных данных с сервера
     async function loadData() {
         try {
             const res = await fetch(`${SERVER_URL}/api/admin/data`);
             if (res.status === 401) return alert('No access');
             const data = await res.json();
 
-            // Заполняем инпуты настроек
+            // Заполняем старые инпуты настроек
             document.getElementById('slots_cost').value = data.config.slots.cost;
             document.getElementById('slots_rtp').value = data.config.slots.rtp;
             document.getElementById('wheel_cost').value = data.config.wheel.cost;
@@ -103,13 +119,28 @@
             document.getElementById('lottery_ticketPrice').value = data.config.lottery.ticketPrice;
             document.getElementById('lottery_rtp').value = data.config.lottery.rtp;
 
+            // ЗАПОЛНЯЕМ НОВЫЕ ИНПУТЫ ИЗ КОНФИГА И БАНКОВ СЕРВЕРА
+            document.getElementById('mines_rtpPercent').value = data.config.mines.rtpPercent;
+//            document.getElementById('mines_bank').value = data.banks.mines;
+
+            document.getElementById('crash_betTime').value = data.config.crash.betTime;
+            document.getElementById('crash_baseRtp').value = data.config.crash.baseRtp;
+//            document.getElementById('crash_bank').value = data.banks.crash;
+
+            document.getElementById('dice_houseEdge').value = data.config.dice.houseEdge;
+//            document.getElementById('dice_bank').value = data.banks.dice;
+
+            document.getElementById('hilo_houseEdge').value = data.config.hilo.houseEdge;
+//            document.getElementById('hilo_bank').value = data.banks.hilo;
+
             // Отображаем джекпот
             document.getElementById('jackpotDisplay').innerText = data.jackpot + ' 🪙';
             document.getElementById('jackpotInput').value = data.jackpot;
 
             // Заполняем таблицу пользователей
             const tbody = document.getElementById('playersTableBody');
-            tbody.innerHTML = data.players.map(p => `
+            if (tbody) {
+                tbody.innerHTML = data.players.map(p => `
                 <tr>
                     <td><b>${p.username}</b></td>
                     <td>${p.balance} 🪙</td>
@@ -119,11 +150,13 @@
                     </td>
                 </tr>
             `).join('');
+            }
         } catch (err) {
             console.error(err);
             alert('Server connection error.');
         }
     }
+
 
     // Отправка новой конфигурации
     document.getElementById('configForm').addEventListener('submit', async (e) => {

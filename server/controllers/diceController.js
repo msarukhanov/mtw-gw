@@ -4,8 +4,6 @@ exports.roll = async (req, res) => {
     const { target, condition, bet } = req.body; // target (1-100), condition ("over" или "under"), bet (ставка)
     const config = state.getConfig().dice;
 
-    const houseEdge = config.baseRtp/100;
-
     // ВАЛИДАЦИЯ ВХОДЯЩИХ ДАННЫХ
     if (!Number.isInteger(bet) || bet <= 0) {
         return res.status(400).json({ error: "Invalid bet amount" });
@@ -25,7 +23,7 @@ exports.roll = async (req, res) => {
     let winChance = condition === "over" ? (100 - target) : (target - 1);
 
     // Формула чистого множителя: (100 / Шанс) * (1 - Комиссия)
-    const multiplier = parseFloat(((100 / winChance) * (1 - houseEdge)).toFixed(4));
+    const multiplier = parseFloat(((100 / winChance) * (1 - config.houseEdge)).toFixed(4));
     const potentialPrize = Math.floor(bet * multiplier);
 
     // Списываем баланс и закидываем в копилку

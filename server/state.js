@@ -14,58 +14,16 @@ const historyDb = Datastore.create({
     autoload: true
 });
 
+
+
 const activeTickets = {};
 let globalJackpot = 1000;
 
 // ЦЕНТРАЛЬНЫЕ НАСТРОЙКИ ИГР (Теперь они живут только на сервере!)
 
-const CONFIG = {
-    lottery: { ticketPrice: 1, totalNumbers: 49, neededChoices: 6, rtp: 75 }, // 75% лимит выплат
-    slots: { cost: 10, symbols: ['🦁', '🐯', '🐻', '💎', '🍒', '🍀'], rtp: 80 }, // 80% отдача
-    wheel: {
-        cost: 20,
-        rtp: 70, // 70% отдача
-        sectors: [
-            { label: '1', prize: 10 }, { label: '💎 JACKPOT', prize: 'JACKPOT' },
-            { label: '2', prize: 10 }, { label: 'Empty', prize: 0 },
-            { label: '3', prize: 10 }, { label: '4', prize: 10 },
-            { label: '5', prize: 10 }, { label: 'Double', prize: 40 },
-            { label: '6', prize: 10 }, { label: '7', prize: 10 }
-        ]
-    },
-    scratch: { cost: 15, symbols: ['🦁', '🐯', '🐻', '🍒', '🍀'], rtp: 75 }, // 75% отдача
-    mines: {
-        gridSize: 25,     // Сетка 5х5 (25 ячеек)
-        minMines: 1,      // Минимальное количество бомб
-        maxMines: 24,     // Максимальное количество бомб
-        rtpPercent: 80    // Целевой процент отдачи (например, 95%)
-    },
-    crash: {
-        betTime: 8000,     // Время на прием ставок (8 секунд)
-        maxMultiplier: 1000, // Максимально возможный икс
-        baseRtp: 80        // Базовый RTP игры в %
-    },
-    dice: {
-        minRoll: 1,
-        maxRoll: 100,
-        baseRtp: 96,
-        houseEdge: 0.04 // 4% комиссия дома (RTP игры = 96%)
-    },
-    hilo: {
-        baseRtp: 96,
-        houseEdge: 0.04, // 4% маржа дома (RTP = 96%)
-        // Массив карт от Двойки до Туза (номиналы от 2 до 14 для удобства математики)
-        cards: [
-            { suit: '♠', name: '2', value: 2 }, { suit: '♦', name: '3', value: 3 },
-            { suit: '♣', name: '4', value: 4 }, { suit: '♥', name: '5', value: 5 },
-            { suit: '♠', name: '6', value: 6 }, { suit: '♦', name: '7', value: 7 },
-            { suit: '♣', name: '8', value: 8 }, { suit: '♥', name: '9', value: 9 },
-            { suit: '♠', name: '10', value: 10 }, { suit: '♦', name: 'J', value: 11 },
-            { suit: '♣', name: 'Q', value: 12 }, { suit: '♥', name: 'K', value: 13 },
-            { suit: '♠', name: 'A', value: 14 }
-        ]
-    }
-};
+
+
+
 
 
 function getRandomInt(max) {
@@ -84,6 +42,14 @@ let diceBankPool = 3000;
 
 let hiloBankPool = 4000;
 const activeHiloCards = {}; // Хранит текущую карту игрока: { username: currentCardObject }
+
+let banks = {
+    globalJackpot: 1000,
+    mines: 5000,
+    crash: 5000,
+    dice: 3000,
+    hilo: 4000
+};
 
 // 4. Математическая формула расчета множителя на основе теории вероятностей
 function getMinesMultiplier(totalCells, totalMines, openedCells) {
@@ -245,16 +211,44 @@ module.exports = {
 
     getConfig: () => CONFIG, // Метод для отправки настроек клиенту
 // --- НОВЫЕ МЕТОДЫ ДЛЯ АДМИНКИ ---
-    updateConfigParam: (game, param, value) => {
-        if (CONFIG[game] && CONFIG[game][param] !== undefined) {
-            // Если параметр числовой, парсим его
+//     updateConfigParam: (game, param, value) => {
+//         if (CONFIG[game] && CONFIG[game][param] !== undefined) {
+//             // Если параметр числовой, парсим его
+//             CONFIG[game][param] = typeof CONFIG[game][param] === 'number' ? Number(value) : value;
+//
+//             return true;
+//         }
+//         return false;
+//
+//
+//     },
+
+    updateConfigParam: async (game, param, value) => {
+        let changed = false;
+
+        // Если админ меняет БАНК (копилку) игры
+        if (param === 'bank') {
+            const numericValue = Number(value);
+            if (!isNaN(numericValue)) {
+                if (game === 'mines' || game === 'crash' || game === 'dice' || game === 'hilo') {
+                    banks[game] = numericValue;
+                    changed = true;
+                }
+            }
+        }
+        // Если админ меняет параметры внутри CONFIG
+        else if (CONFIG[game] && CONFIG[game][param] !== undefined) {
             CONFIG[game][param] = typeof CONFIG[game][param] === 'number' ? Number(value) : value;
+            changed = true;
+        }
+
+        // КЛЮЧЕВОЙ ШАГ: Если что-то изменилось, принудительно пишем файл на диск!
+        if (changed) {
+            await db.update({ _id: 'global_config' }, { $set: { CONFIG, banks } });
             return true;
         }
         return false;
     },
-
-
 
 
     clearPlayerTickets: (username) => {
