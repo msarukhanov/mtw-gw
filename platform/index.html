@@ -459,7 +459,10 @@
             socket = io(CORE_SERVER);
 
             socket.on('connect', () => {
-                console.log('WS Connect');
+                console.log('WS Connect', {
+                    username: currentUsername,
+                    partnerId: 'demo_skin_default'
+                });
                 socket.emit('showcase_join', {
                     username: currentUsername,
                     partnerId: 'demo_skin_default'
