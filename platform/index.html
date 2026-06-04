@@ -469,6 +469,10 @@
                 });
             });
 
+            socket.on('connect_error', (err) => {
+                console.error('❌ Ошибка подключения сокета в лайве:', err.message);
+            });
+
             updateWallet();
 
             socket.on('wallet_update', (data) => {

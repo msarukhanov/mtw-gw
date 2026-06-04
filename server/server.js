@@ -22,7 +22,14 @@ app.use(express.urlencoded({ extended: true }));
 
 const server = http.createServer(app);
 
-io = new Server(server, { cors: { origin: "*" } });
+io = new Server(server, {
+    cors: {
+        origin: "*", // Позволяет фронтенду с любого домена слать события
+        methods: ["GET", "POST"],
+        credentials: true
+    },
+    transports: ['websocket', 'polling']
+});
 
 // Подключаем разделенные роуты
 app.use('/api', authRoutes);
