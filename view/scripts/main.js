@@ -218,7 +218,7 @@ function getUrlParams() {
     const urlParams = new URLSearchParams(queryString);
 
     if(urlParams.has('game')) params.game = urlParams.get('game');
-    if(urlParams.has('session_id')) params.sessionId = urlParams.get('session_id');
+    if(urlParams.has('sessionId')) params.sessionId = urlParams.get('sessionId');
     return params;
 }
 function handleUrlRoutingAndStart() {

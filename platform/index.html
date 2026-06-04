@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>iGaming Operator Platform Core — Showcase skin</title>
+    <title>MTWTech platform — Showcase skin</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         :root {
@@ -122,7 +122,205 @@
         .footer-links a { color: var(--text-muted); text-decoration: none; font-weight: 600; }
         .footer-links a:hover { color: #fff; }
         .footer-cert { display: flex; justify-content: center; gap: 15px; margin-top: 15px; font-size: 20px; opacity: 0.6; }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 900;
+            color: #4ecca3;
+            text-shadow: 0 0 10px rgba(78, 204, 163, 0.3);
+            letter-spacing: 1px;
+        }
+        .logo span { color: #e94560; }
+
+        /* 🛠 МИНИМАЛЬНАЯ МОБИЛЬНАЯ АДАПТАЦИЯ (БЕЗ ИЗМЕНЕНИЯ СТРУКТУРЫ) */
+        @media (max-width: 768px) {
+            body {
+                padding: 0;
+            }
+            .header {
+                padding: 0 15px;
+                height: 60px;
+                font-size: 14px;
+            }
+            .logo {
+                font-size: 16px;
+            }
+            .nav-links {
+                gap: 5px;
+            }
+            .nav-link-item {
+                font-size: 13px;
+                padding: 6px 10px;
+            }
+            .wallet-badge {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+            .avatar-menu-trigger {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+            .content-section {
+                padding: 20px 15px;
+            }
+            .section-title {
+                font-size: 18px;
+                margin-bottom: 15px;
+            }
+            /* Перестраиваем сетку игр в аккуратные 2 колонки */
+            .games-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+            .game-card {
+                padding: 15px 10px;
+                border-radius: 8px;
+            }
+            .game-icon {
+                font-size: 36px;
+                margin-bottom: 6px;
+            }
+            .game-card h3 {
+                font-size: 13px;
+            }
+            /* Адаптируем размер игрового окна под экраны телефонов */
+            .iframe-container {
+                height: 480px;
+                margin: 15px auto;
+                border-radius: 8px;
+            }
+            .footer {
+                padding: 20px 15px;
+                font-size: 11px;
+            }
+            .footer-links {
+                gap: 10px;
+            }
+        }
+
+        /* 🛠 ADVANCED B2B MOBILE-FIRST ADAPTATION CODES */
+        @media (max-width: 768px) {
+            body {
+                padding-bottom: 60px; /* Отступ под нативный нижний футер */
+            }
+            .header {
+                padding: 0 15px;
+                height: 60px;
+            }
+            .logo {
+                font-size: 16px;
+            }
+            /* Скрываем десктопные ссылки и аватарку, переносим их в мобильные бары */
+            .nav-links, .avatar-menu-trigger {
+                display: none !important;
+            }
+            .mobile-nav {
+                display: flex !important; /* Включаем нативный нижний футер */
+            }
+            .mobile-nav-item.active {
+                color: var(--accent-yellow) !important;
+            }
+            .content-section {
+                padding: 20px 15px;
+            }
+            .section-title {
+                font-size: 18px;
+                margin-bottom: 15px;
+            }
+            /* Идеальная 2-колоночная мобильная сетка */
+            .games-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+            .game-card {
+                padding: 15px 10px;
+                border-radius: 8px;
+            }
+            .game-icon {
+                font-size: 32px;
+                margin-bottom: 6px;
+            }
+            .game-card h3 {
+                font-size: 13px;
+            }
+
+            /* 🔥 РЕШЕНИЕ ПРОБЛЕМЫ С ВЫСОТОЙ АЙФРЕЙМА НА МОБИЛКЕ */
+            .iframe-container {
+                height: auto;
+                aspect-ratio: 16 / 10; /* Автоматически держит пропорции игры на любом экране */
+                margin: 15px auto;
+                border-radius: 8px;
+            }
+            .footer {
+                padding: 20px 15px 80px 15px; /* Дополнительный отступ снизу из-за таб-бара */
+                font-size: 11px;
+            }
+        }
+
+        /* 🛠 CORRECT MOBILE ADAPTATION (IFRAME & RIGHT SIDEBAR FIX) */
+        @media (max-width: 768px) {
+            body {
+                padding-bottom: 60px; /* Отступ под нативный нижний футер */
+            }
+            .header {
+                padding: 0 15px;
+                height: 60px;
+            }
+            .logo {
+                font-size: 16px;
+            }
+            /* Скрываем десктопные ссылки и выпадашку, переносим в мобильные бары */
+            .nav-links, .avatar-menu-trigger {
+                display: none !important;
+            }
+            .mobile-nav {
+                display: flex !important; /* Включаем нижний футер */
+            }
+            .mobile-nav-item.active {
+                color: var(--accent-yellow) !important;
+            }
+            .content-section {
+                padding: 20px 15px;
+            }
+            .section-title {
+                font-size: 18px;
+                margin-bottom: 15px;
+            }
+            /* Двухколоночная сетка игр на мобилке */
+            .games-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+            .game-card {
+                padding: 15px 10px;
+                border-radius: 8px;
+            }
+            .game-icon {
+                font-size: 32px;
+                margin-bottom: 6px;
+            }
+            .game-card h3 {
+                font-size: 13px;
+            }
+
+            /* 🔥 ИСПРАВЛЕНИЕ: Возвращаем видимость iFrame на мобилке */
+            .iframe-container {
+                display: none;
+                width: 100% !important;
+                height: calc(100vh - 122px) !important;
+                margin: 5px 0 15px !important;
+                border-radius: 8px;
+            }
+            .footer {
+                padding: 20px 15px 80px 15px; /* Прижимаем к низу и делаем отступ от таб-бара */
+                font-size: 11px;
+            }
+        }
+
     </style>
+
+    <script src="https://cdn.socket.io/4.8.3/socket.io.min.js" integrity="sha384-kzavj5fiMwLKzzD1f8S7TeoVIEi7uKHvbTA3ueZkrzYq75pNQUiUi6Dy98Q3fxb0" crossorigin="anonymous"></script>
+
 </head>
 <body>
 
@@ -136,10 +334,26 @@
 <!-- MAIN GAME SKIN APPLICATION Shell -->
 <div id="platform-screen" style="display: none;">
 
+    <!-- 📱 MOBILE SIDEBAR DROPDOWN MENU -->
+    <div id="mobileSidebar" style="display: none; position: fixed; top: 60px; left: 0; bottom: 0; width: 250px; background: var(--bg-navbar); border-right: 1px solid var(--border-color); z-index: 120; box-shadow: 5px 0 15px rgba(0,0,0,0.5); padding-top: 10px;">
+        <div class="dropdown-info" style="border-bottom: 1px solid var(--border-color); padding: 15px;">Authenticated: <b id="side-username" style="color:#fff;">Player</b></div>
+        <a href="#" class="dropdown-item" style="padding: 15px; font-weight: 600;" onclick="alert('Demo: Deposit gateway simulation hook.')">💵 Instant Deposit</a>
+        <a href="#" class="dropdown-item" style="padding: 15px; font-weight: 600;" onclick="alert('Demo: Withdraw cache verification hook.')">📤 Withdraw Funds</a>
+        <a href="#" class="dropdown-item" style="padding: 15px; font-weight: 600; color: var(--accent-red); border-top: 1px solid var(--border-color);" onclick="location.reload()">🛑 Close Session</a>
+    </div>
+
+    <div id="mobileRightMenu" style="display: none; position: fixed; top: 60px; right: 0; bottom: 0; width: 260px; background: var(--bg-navbar); border-left: 1px solid var(--border-color); z-index: 120; box-shadow: -5px 0 15px rgba(0,0,0,0.5); padding-top: 10px;">
+        <div class="dropdown-info" style="border-bottom: 1px solid var(--border-color); padding: 15px;">Authenticated: <b id="side-username" style="color:#fff;">Player</b></div>
+        <a href="#" class="dropdown-item" style="padding: 15px; font-weight: 600;" onclick="alert('Demo: Deposit gateway simulation hook.')">💵 Instant Deposit</a>
+        <a href="#" class="dropdown-item" style="padding: 15px; font-weight: 600;" onclick="alert('Demo: Withdraw cache verification hook.')">📤 Withdraw Funds</a>
+        <a href="#" class="dropdown-item" style="padding: 15px; font-weight: 600; color: var(--accent-red); border-top: 1px solid var(--border-color);" onclick="location.reload()">🛑 Close Session</a>
+    </div>
+
+
     <!-- HEADER / NAVIGATION MENU -->
     <header class="header">
         <div class="logo-area">
-            <a href="#" class="logo" onclick="toggleView('casino')">🌌 OPERATOR_X</a>
+            <a href="#" class="logo" onclick="toggleView('casino')">MTW<span>TECH</span></a>
             <nav class="nav-links">
                 <a href="#" id="link-casino" class="nav-link-item active" onclick="toggleView('casino')">Games</a>
                 <a href="#" id="link-sports" class="nav-link-item" onclick="toggleView('sports')">Sportsbook</a>
@@ -177,9 +391,29 @@
             <a href="#" onclick="alert('Seamless Wallet Protocol v2.4 initialized securely.')">Seamless Protocol</a>
             <a href="#" onclick="alert('Operator Core ID: demo_skin_default')">Licensing Rules</a>
         </div>
-        <div>Powered by iGaming Aggregator Solutions Core Engine. All financial metrics safely stored in game.db.</div>
+        <div>Powered by MTWTech Studio.</div>
         <div class="footer-cert">🔞 🛡️ 🎰 🔒</div>
     </footer>
+
+    <!-- 📱 NATIVE-STYLE MOBILE BOTTOM FOOTER MENU -->
+    <nav class="mobile-nav" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: var(--bg-navbar); border-top: 1px solid var(--border-color); z-index: 100; justify-content: space-around; align-items: center; box-shadow: 0 -4px 10px rgba(0,0,0,0.3); -webkit-tap-highlight-color: transparent;">
+        <button id="m-btn-casino" class="mobile-nav-item active" style="background:transparent; border:0; color:var(--text-muted); display:flex; flex-direction:column; align-items:center; font-size:11px; font-weight:bold; cursor:pointer;" onclick="toggleView('casino')">
+            <span style="font-size:20px;">🎰</span><span>Casino</span>
+        </button>
+        <button id="m-btn-sports" class="mobile-nav-item" style="background:transparent; border:0; color:var(--text-muted); display:flex; flex-direction:column; align-items:center; font-size:11px; font-weight:bold; cursor:pointer;" onclick="toggleView('sports')">
+            <span style="font-size:20px;">⚽</span><span>Sports</span>
+        </button>
+        <!--<button class="mobile-nav-item" onclick="toggleMobileRightMenu(event)">-->
+            <!--<span style="font-size:20px;">👤</span><span>Profile</span>-->
+        <!--</button>-->
+        <button class="mobile-nav-item" style="background:transparent; border:0; color:var(--text-muted); display:flex; flex-direction:column; align-items:center; font-size:11px; font-weight:bold; cursor:pointer;" onclick="toggleMobileRightMenu(event)">
+        <span style="font-size:20px;">👤</span><span>Profile</span>
+        </button>
+        <!--<button class="mobile-nav-item" style="background:transparent; border:0; color:var(&#45;&#45;text-muted); display:flex; flex-direction:column; align-items:center; font-size:11px; font-weight:bold; cursor:pointer;" onclick="toggleMobileSidebar(event)">-->
+            <!--<span style="font-size:20px;">☰</span><span>Menu</span>-->
+        <!--</button>-->
+    </nav>
+
 
 </div> <!-- End of platform-screen -->
 
@@ -190,41 +424,91 @@
         : 'https://mtw-gw.onrender.com';
 
     let currentUsername = "";
+    let currentSessionId = ""; // Храним защищенный токен сессии
+    let socket = null;
 
     async function startShowcase() {
-        currentUsername = document.getElementById('playerInput').value.trim();
-        if (!currentUsername) return alert('Please enter a valid player username');
+        const usernameInput = document.getElementById('playerInput').value.trim();
+        if (!usernameInput) return alert('Please enter a valid player username');
 
-        document.getElementById('setup-screen').style.display = 'none';
-        document.getElementById('platform-screen').style.display = 'block';
-        document.getElementById('drop-username').innerText = currentUsername;
+        try {
+            // 1. ОТПРАВЛЯЕМ ЗАПРОС НА ЛОГИН ДЛЯ ГЕНЕРАЦИИ ТОКЕНА СЕССИИ
+            const response = await fetch(`${CORE_SERVER}/api/showcase/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: usernameInput })
+            });
+            const data = await response.json();
 
-        updateWalletLoop();
-        // Synchronize header wallet numbers with database every 2 seconds
-        setInterval(updateWalletLoop, 2000);
-    }
+            if (!response.ok || !data.success) {
+                return alert(data.error || 'Login session initialization failed');
+            }
 
-    // Toggle category tabs view smoothly (Casino slots / Sportsbook)
-    function toggleView(viewType) {
-        document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
-        document.querySelectorAll('.nav-link-item').forEach(link => link.classList.remove('active'));
+            // Сохраняем полученные данные
+            currentUsername = data.username;
+            currentSessionId = data.sessionId; // Наш сгенерированный безопасный токен!
 
-        // Close active iframe on category switch to maintain clean layout
-        document.getElementById('frameWrapper').style.display = 'none';
-        document.getElementById('gameIframe').src = "";
+            document.getElementById('setup-screen').style.display = 'none';
+            document.getElementById('platform-screen').style.display = 'block';
+            document.getElementById('drop-username').innerText = currentUsername;
+            document.getElementById('wallet-display').innerText = data.balance + ' 🪙';
+            document.getElementById('side-username').innerText = currentUsername;
 
-        if (viewType === 'casino') {
-//            document.getElementById('section-casino').classList.add('active');
-            document.getElementById('link-casino').classList.add('active');
-            launchGame('');
-        } else {
-//            document.getElementById('section-sports').classList.add('active');
-            document.getElementById('link-sports').classList.add('active');
-            launchSport('');
+            // 2. ИНИЦИАЛИЗАЦИЯ ВЕБ-СОКЕТА ДЛЯ ОБНОВЛЕНИЙ
+            socket = io(CORE_SERVER);
+
+            socket.on('connect', () => {
+                socket.emit('showcase_join', {
+                    username: currentUsername,
+                    partnerId: 'demo_skin_default'
+                });
+            });
+
+            updateWallet();
+
+            socket.on('wallet_update', (data) => {
+                console.log('⚡ Live WS Wallet Update:', data.balance);
+                document.getElementById('wallet-display').innerText = data.balance + ' 🪙';
+            });
+
+            toggleView('casino');
+
+        } catch (err) {
+            alert('Connection error during platform initialization');
         }
     }
 
-    toggleView('casino');
+    async function updateWallet() {
+        if (!currentSessionId) return;
+        try {
+            const res = await fetch(`${CORE_SERVER}/api/showcase/user-info?sessionId=${currentSessionId}`);
+            const data = await res.json();
+            document.getElementById('wallet-display').innerText = data.balance + ' 🪙';
+        } catch(e) { console.error('Wallet backup sync broken.'); }
+    }
+
+
+//    // Toggle category tabs view smoothly (Casino slots / Sportsbook)
+//    function toggleView(viewType) {
+//        document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
+//        document.querySelectorAll('.nav-link-item').forEach(link => link.classList.remove('active'));
+//
+//        // Close active iframe on category switch to maintain clean layout
+//        document.getElementById('frameWrapper').style.display = 'none';
+//        document.getElementById('gameIframe').src = "";
+//
+//        if (viewType === 'casino') {
+////            document.getElementById('section-casino').classList.add('active');
+//            document.getElementById('link-casino').classList.add('active');
+//            launchGame('');
+//        } else {
+////            document.getElementById('section-sports').classList.add('active');
+//            document.getElementById('link-sports').classList.add('active');
+//            launchSport('');
+//        }
+//    }
+
+
 
     // Dropdown profile overlay logic
     function toggleProfileDropdown(e) {
@@ -238,41 +522,85 @@
         document.getElementById('profileDropdown').style.display = 'none';
     });
 
-    // Live API Wallet Sync loop
-    async function updateWalletLoop() {
-        try {
-            const res = await fetch(`${CORE_SERVER}/api/showcase/user-info?username=${currentUsername}`);
-            const data = await res.json();
-            document.getElementById('user-display').innerText = data.username;
-            document.getElementById('wallet-display').innerText = data.balance + ' 🪙';
-        } catch(e) {
-            console.error('External wallet loop syncing broken.');
-        }
-    }
-
-    // Boot system game inside the core viewport iframe
     function launchGame(gameKey) {
         const wrapper = document.getElementById('frameWrapper');
         const iframe = document.getElementById('gameIframe');
 
         // Generate seamless iframe packet routing link with B2B session configurations
-        const iframeUrl = `https://mtw-gw-demo.onrender.com/?sessionId=${currentUsername}&partnerId=demo_skin_default`;
+        const iframeUrl = `https://mtw-gw-demo.onrender.com/?sessionId=${currentSessionId}&partnerId=demo_skin_default`;
 
         iframe.src = iframeUrl;
         wrapper.style.display = 'block';
-        wrapper.scrollIntoView({ behavior: 'smooth' });
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
     }
+
     function launchSport(gameKey) {
         const wrapper = document.getElementById('frameWrapper');
         const iframe = document.getElementById('gameIframe');
 
         // Generate seamless iframe packet routing link with B2B session configurations
-        const iframeUrl = `https://mtw-gw-sport.onrender.com/?sessionId=${currentUsername}&partnerId=demo_skin_default`;
+        const iframeUrl = `https://mtw-gw-sport.onrender.com/?sessionId=${currentSessionId}&partnerId=demo_skin_default`;
 
         iframe.src = iframeUrl;
         wrapper.style.display = 'block';
-        wrapper.scrollIntoView({ behavior: 'smooth' });
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
     }
+
+    function toggleView(viewType) {
+//        document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
+        document.querySelectorAll('.nav-link-item').forEach(link => link.classList.remove('active'));
+        document.querySelectorAll('.mobile-nav-item').forEach(btn => btn.classList.remove('active'));
+
+        // Скрываем iFrame и закрываем правое мобильное меню при переключении категорий
+//        document.getElementById('frameWrapper').style.display = 'none';
+        document.getElementById('gameIframe').src = "";
+        document.getElementById('mobileRightMenu').style.display = 'none';
+
+        if (viewType === 'casino') {
+//            document.getElementById('section-casino').classList.add('active');
+            document.getElementById('link-casino').classList.add('active');
+            document.getElementById('m-btn-casino').classList.add('active');
+            launchGame('');
+        } else {
+//            document.getElementById('section-sports').classList.add('active');
+            document.getElementById('link-sports').classList.add('active');
+            document.getElementById('m-btn-sports').classList.add('active');
+            launchSport('');
+        }
+    }
+
+    // Логика управления правым мобильным меню профиля
+    function toggleMobileRightMenu(e) {
+        e.stopPropagation();
+        const menu = document.getElementById('mobileRightMenu');
+        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    }
+
+    // Глобальный клик закрывает все активные оверлеи
+    window.addEventListener('click', () => {
+        document.getElementById('profileDropdown').style.display = 'none';
+        document.getElementById('mobileRightMenu').style.display = 'none';
+    });
+
+
+    function toggleMobileSidebar(e) {
+        e.stopPropagation();
+        const sidebar = document.getElementById('mobileSidebar');
+        sidebar.style.display = sidebar.style.display === 'block' ? 'none' : 'block';
+    }
+
+    // Модифицируем глобальный клик, чтобы он закрывал и выпадашку, и левое меню
+    window.addEventListener('click', () => {
+        document.getElementById('profileDropdown').style.display = 'none';
+        document.getElementById('mobileSidebar').style.display = 'none';
+    });
+
 </script>
 </body>
 </html>

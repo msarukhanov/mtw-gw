@@ -16,12 +16,18 @@ exports.validate = async (req, res) => {
 // 2. Имитация Debit: Списание баланса в game.db
 exports.debit = async (req, res) => {
     const { username, amount } = req.body;
+    const partnerId = "demo_skin_default";
     try {
         const player = await state.getOrCreatePlayer(username, "demo_skin_default");
         if (player.balance < amount) return res.status(400).json({ error: "Low platform balance" });
 
         const newBalance = player.balance - Number(amount);
         await state.updateBalance(username, "demo_skin_default", newBalance);
+
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`${partnerId}_${username}`).emit('wallet_update', { balance: newBalance });
+        }
 
         res.json({ balance: newBalance });
     } catch (err) {
@@ -32,10 +38,16 @@ exports.debit = async (req, res) => {
 // 3. Имитация Credit: Начисление баланса в game.db
 exports.credit = async (req, res) => {
     const { username, amount } = req.body;
+    const partnerId = "demo_skin_default";
     try {
         const player = await state.getOrCreatePlayer(username, "demo_skin_default");
         const newBalance = player.balance + Number(amount);
         await state.updateBalance(username, "demo_skin_default", newBalance);
+
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`${partnerId}_${username}`).emit('wallet_update', { balance: newBalance });
+        }
 
         res.json({ balance: newBalance });
     } catch (err) {
