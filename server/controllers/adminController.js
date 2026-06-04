@@ -1,180 +1,111 @@
-// const state = require('../state');
-//
-// // Отдача HTML-страницы админки
-// exports.renderPanel = async (req, res) => {
-//     const config = state.getConfig();
-//     const jackpot = state.getJackpot();
-//     const players = await state.getAllPlayers();
-//
-//     // Генерируем список игроков для HTML
-//     const playersRows = players.map(p => `
-//         <tr>
-//             <td style="padding:8px; border:1px solid #ddd;">${p.username}</td>
-//             <td style="padding:8px; border:1px solid #ddd;"><b>${p.balance} 🪙</b></td>
-//             <td style="padding:8px; border:1px solid #ddd;">
-//                 <form action="/admin/update-balance" method="POST" style="display:inline;">
-//                     <input type="hidden" name="username" value="${p.username}">
-//                     <input type="number" name="balance" value="${p.balance}" style="width:80px; padding:4px;">
-//                     <button type="submit" style="background:#28a745; color:white; border:0; padding:4px 8px; cursor:pointer;">Изм.</button>
-//                 </form>
-//             </td>
-//         </tr>
-//     `).join('');
-//
-//     const html = `
-//     <!DOCTYPE html>
-//     <html lang="ru">
-//     <head>
-//         <meta charset="UTF-8">
-//         <title>Управление Казино</title>
-//     </head>
-//     <body style="font-family:sans-serif; margin:30px; background:#f4f6f9; color:#333;">
-//         <h1>🎛 Панель администратора</h1>
-//         <hr style="margin-bottom:20px;">
-//
-//         <div style="display:flex; gap:20px;">
-//             <!-- Настройки игр -->
-//             <div style="flex:1; background:white; padding:20px; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
-//                 <h2>🎰 Настройки RTP и цен</h2>
-//                 <form action="/admin/update-config" method="POST">
-//                     <h3>Слоты (Slots)</h3>
-//                     Цена спина: <input type="number" name="slots_cost" value="${config.slots.cost}" style="width:60px; padding:4px;"> |
-//                     RTP %: <input type="number" name="slots_rtp" value="${config.slots.rtp}" style="width:60px; padding:4px;"><br><br>
-//
-//                     <h3>Колесо (Wheel)</h3>
-//                     Цена спина: <input type="number" name="wheel_cost" value="${config.wheel.cost}" style="width:60px; padding:4px;"> |
-//                     RTP %: <input type="number" name="wheel_rtp" value="${config.wheel.rtp}" style="width:60px; padding:4px;"><br><br>
-//
-//                     <h3>Скретч-карты (Scratch)</h3>
-//                     Цена билета: <input type="number" name="scratch_cost" value="${config.scratch.cost}" style="width:60px; padding:4px;"> |
-//                     RTP %: <input type="number" name="scratch_rtp" value="${config.scratch.rtp}" style="width:60px; padding:4px;"><br><br>
-//
-//                     <h3>Лотерея (Lottery)</h3>
-//                     Цена билета: <input type="number" name="lottery_ticketPrice" value="${config.lottery.ticketPrice}" style="width:60px; padding:4px;"> |
-//                     RTP %: <input type="number" name="lottery_rtp" value="${config.lottery.rtp}" style="width:60px; padding:4px;"><br><br>
-//
-//                     <button type="submit" style="background:#007bff; color:white; border:0; padding:10px 15px; border-radius:4px; cursor:pointer;">Сохранить конфиг</button>
-//                 </form>
-//             </div>
-//
-//             <!-- Джекпот -->
-//             <div style="flex:1; background:white; padding:20px; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
-//                 <h2>💰 Глобальный Джекпот</h2>
-//                 <p style="font-size:24px; color:#dc3545; margin:10px 0;">Текущий: <b>${jackpot} 🪙</b></p>
-//                 <form action="/admin/update-jackpot" method="POST">
-//                     Установить значение: <input type="number" name="jackpot" value="${jackpot}" style="width:100px; padding:4px;">
-//                     <button type="submit" style="background:#dc3545; color:white; border:0; padding:5px 10px; cursor:pointer;">Изменить</button>
-//                 </form>
-//             </div>
-//         </div>
-//
-//         <!-- Список игроков -->
-//         <div style="margin-top:20px; background:white; padding:20px; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
-//             <h2>👥 Управление пользователями</h2>
-//             <table style="width:100%; border-collapse:collapse; text-align:left;">
-//                 <thead>
-//                     <tr style="background:#eee;">
-//                         <th style="padding:8px; border:1px solid #ddd;">Логин</th>
-//                         <th style="padding:8px; border:1px solid #ddd;">Баланс</th>
-//                         <th style="padding:8px; border:1px solid #ddd;">Действие</th>
-//                     </tr>
-//                 </thead>
-//                 <tbody>
-//                     ${playersRows}
-//                 </tbody>
-//             </table>
-//         </div>
-//     </body>
-//     </html>
-//     `;
-//     res.send(html);
-// };
-
 const state = require('../state');
 const seamless = require('../services/seamlessService');
 
-// 1. Отдаем все данные одним пакетом для фронтенда админки
+// 1. Отдаем все данные одним пакетом для фронтенда админки (Строго для текущего partnerId)
 exports.getAdminData = async (req, res) => {
     try {
-        const config = state.getConfig();
-        const jackpot = state.getJackpot();
-        const players = await state.getAllPlayers();
+        // Забираем partnerId, который прописал твой мидлвар авторизации админа из его токена
+        const partnerId = req.partnerId;
+
+        const config = state.getConfig(partnerId);
+        const jackpot = state.getJackpot(partnerId);
+        const players = await state.getAllPlayers(partnerId);
+
         res.json({ config, jackpot, players });
     } catch (err) {
-        res.status(500).json({ error: "Ошибка сбора данных" });
+        console.error(err);
+        res.status(500).json({ error: "Core data aggregation failure" });
     }
 };
 
-// 2. Обработчик изменения конфига (RTP и Стоимость)
-exports.updateConfig = (req, res) => {
-    for (const key in req.body) {
-        const [game, param] = key.split('_');
-        if (game && param) {
-            state.updateConfigParam(game, param, req.body[key]);
+// 2. Обработчик изменения конфига (RTP и Стоимость) с привязкой к партнеру
+// ИСПРАВЛЕНО: Добавлен async и цикл for...of для поддержки работы с диском
+exports.updateConfig = async (req, res) => {
+    try {
+        const partnerId = req.partnerId;
+
+        for (const key of Object.keys(req.body)) {
+            const [game, param] = key.split('_');
+            if (game && param) {
+                // Вызываем асинхронный метод обновления конфига конкретного партнера
+                await state.updateConfigParam(partnerId, game, param, req.body[key]);
+            }
         }
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Configuration save failure" });
     }
-    res.json({ success: true });
 };
 
-// 3. Обработчик изменения джекпота
+// 3. Обработчик изменения джекпота конкретного партнера
 exports.updateJackpot = (req, res) => {
+    const partnerId = req.partnerId;
+
     if (req.body.jackpot !== undefined) {
-        state.setJackpot(req.body.jackpot);
+        state.setJackpot(partnerId, req.body.jackpot);
         res.json({ success: true });
     } else {
-        res.status(400).json({ error: "Неверные данные" });
+        res.status(400).json({ error: "Invalid pool parameters" });
     }
 };
 
-// 4. Обработчик изменения баланса игрока
+// 4. Обработчик изменения локального баланса игрока
 exports.updateBalance = async (req, res) => {
+    const partnerId = req.partnerId;
     const { username, balance } = req.body;
+
     if (username && balance !== undefined) {
-        await state.updateBalance(username, Number(balance));
+        // Обновляем баланс конкретного игрока конкретного партнера
+        await state.updateBalance(username, partnerId, Number(balance));
         res.json({ success: true });
     } else {
-        res.status(400).json({ error: "Не указан пользователь или баланс" });
+        res.status(400).json({ error: "Missing player credentials or balance value" });
     }
 };
 
-// Обработчик завершения турнира и распределения призов
+// 5. Обработчик завершения турнира и распределения призов внутри бренда
 exports.endTournament = async (req, res) => {
     try {
-        const winners = await state.endCurrentTournament();
+        const partnerId = req.partnerId;
+
+        // Завершаем турнир изолированно для этого оператора
+        const winners = await state.endCurrentTournament(partnerId);
         res.json({ success: true, winners });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ error: "Не удалось завершить турнир" });
+        res.status(500).json({ error: "Tournament finalization loop crash" });
     }
 };
 
+// 6. Создание промокода в реестре конкретного партнера
 exports.addPromoCode = async (req, res) => {
     try {
+        const partnerId = req.partnerId;
         const { code, reward, maxUses } = req.body;
+
         if (!code || !reward) {
-            return res.status(400).json({ error: "Укажите код и сумму награды" });
+            return res.status(400).json({ error: "Voucher code and reward sum are required" });
         }
-        await state.addPromoCode({ code, reward, maxUses });
+
+        // Сохраняем промокод в ветку настроек этого партнера
+        await state.addPromoCode(partnerId, { code, reward, maxUses });
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
-// 2. Расчет и выплата еженедельного кэшбэка
+// 7. Расчет и выплата еженедельного кэшбэка для игроков текущего партнера
 exports.runCashback = async (req, res) => {
     try {
-        // Передаем метод кредита из бесшовного кошелька для совершения выплат
-        const report = await state.calculateAndPayCashback(seamless.credit);
+        const partnerId = req.partnerId;
+
+        // Передаем partnerId и метод кредита для отправки транзакций на правильный шлюз
+        const report = await state.calculateAndPayCashback(partnerId, seamless.credit);
         res.json({ success: true, report });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ error: "Ошибка при начислении кэшбэка" });
+        res.status(500).json({ error: "Cashback distribution process failed" });
     }
 };
-
-
-
-
-
-

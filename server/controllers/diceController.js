@@ -1,8 +1,12 @@
 const state = require('../state');
 
 exports.roll = async (req, res) => {
-    const { target, condition, bet } = req.body; // target (1-100), condition ("over" или "under"), bet (ставка)
-    const config = state.getConfig().dice;
+    const { target, condition, bet } = req.body;
+    const partnerId = req.partnerId; // Извлекаем partnerId, добавленный мидлваром checkPlayer
+    const username = req.username;
+
+    // ИСПРАВЛЕНО: Достаем конфигурацию и комиссию (houseEdge) конкретного партнера
+    const config = state.getConfig(partnerId).dice;
 
     // ВАЛИДАЦИЯ ВХОДЯЩИХ ДАННЫХ
     if (!Number.isInteger(bet) || bet <= 0) {
@@ -19,36 +23,36 @@ exports.roll = async (req, res) => {
     }
 
     // РАСЧЕТ ШАНСА И КОЭФФИЦИЕНТА
-    // Сколько выигрышных исходов возможно из 100
     let winChance = condition === "over" ? (100 - target) : (target - 1);
 
-    // Формула чистого множителя: (100 / Шанс) * (1 - Комиссия)
+    // Расчет множителя на основе houseEdge текущего партнера
     const multiplier = parseFloat(((100 / winChance) * (1 - config.houseEdge)).toFixed(4));
     const potentialPrize = Math.floor(bet * multiplier);
 
-    // Списываем баланс и закидываем в копилку
+    // Списываем баланс в рамках B2B-сессии запроса
     req.player.balance -= bet;
-    state.addDiceBank(bet);
 
-    // КРИПТО-РАНДОМ (Генерируем число от 1 до 100)
+    // ИСПРАВЛЕНО: Закидываем ставку в изолированную копилку конкретного партнера
+    state.addDiceBank(partnerId, bet);
+
+    // КРИПТО-РАНДОМ (Число от 1 до 100)
     let rollResult = state.getRandomInt(100) + 1;
 
-    // --- ПРОВЕРКА RTP (КОНТРОЛЬ БАНКА) ---
-    const currentBank = state.getDiceBank();
+    // --- ПРОВЕРКА RTP (КОНТРОЛЬ БАНКА ТЕНАНТА) ---
+    // ИСПРАВЛЕНО: Проверяем банк строго текущего партнера
+    const currentBank = state.getDiceBank(partnerId);
     let forceLose = false;
 
-    // Если в банке игры нет денег на выплату приза, включаем подкрутку
+    // Если у конкретного партнера в банке нет денег — включаем защиту от ухода в минус
     if (potentialPrize > currentBank) {
         forceLose = true;
     }
 
-    // Если сработал слив по RTP, подменяем число на заведомо проигрышное
+    // Если сработал слив, подменяем результат
     if (forceLose) {
         if (condition === "over") {
-            // Игроку нужно БОЛЬШЕ target, значит даем ему МЕНЬШЕ target
             rollResult = state.getRandomInt(target - 1) + 1;
         } else {
-            // Игроку нужно МЕНЬШЕ target, значит даем ему БОЛЬШЕ target
             rollResult = state.getRandomInt(100 - target) + target;
         }
     }
@@ -62,21 +66,22 @@ exports.roll = async (req, res) => {
     if (isWin) {
         prize = potentialPrize;
         req.player.balance += prize;
-        state.reduceDiceBank(prize); // выплачиваем из копилки
+        // ИСПРАВЛЕНО: Выплачиваем строго из банка этого партнера
+        state.reduceDiceBank(partnerId, prize);
     }
 
-    // Сохраняем измененный баланс в базу данных NeDB
-    await state.updateBalance(req.username, req.player.balance);
+    // ИСПРАВЛЕНО: Сохраняем измененный баланс в NeDB с привязкой к паре Игрок + Партнер
+    await state.updateBalance(username, partnerId, req.player.balance);
 
-    // Пишем в единую историю активности
-    await state.savePlayerActionHistory(req.username, {
+    // ИСПРАВЛЕНО: Запись в единую историю активности с передачей partnerId
+    await state.savePlayerActionHistory(username, partnerId, {
         game: "Dice",
         details: `Rolled ${rollResult} (${condition === "over" ? ">" : "<"} ${target}). Chance: ${winChance}%`,
         change: isWin ? `+${prize} 🪙` : `-${bet} 🪙`,
         win: isWin
     });
 
-    // Возвращаем результат клиенту
+    // Возвращаем изолированный результат клиенту
     res.json({
         rollResult,
         isWin,

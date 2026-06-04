@@ -3,7 +3,11 @@ const state = require('../state');
 // 1. СТАРТ ИГРЫ (Игрок делает ставку и выбирает количество мин)
 module.exports.start = async (req, res) => {
     const { minesCount, bet } = req.body;
-    const config = state.getConfig().mines;
+    const partnerId = req.partnerId; // Извлекаем partnerId, добавленный мидлваром checkPlayer
+    const username = req.username;
+
+    // ИСПРАВЛЕНО: Достаем настройки игры конкретного партнера
+    const config = state.getConfig(partnerId).mines;
 
     // ВАЛИДАЦИЯ ВХОДЯЩИХ ДАННЫХ
     if (!Number.isInteger(minesCount) || minesCount < config.minMines || minesCount > config.maxMines) {
@@ -15,16 +19,18 @@ module.exports.start = async (req, res) => {
     if (req.player.balance < bet) {
         return res.status(400).json({ error: "Insufficient funds" });
     }
-    if (state.getMinesGame(req.username)) {
+
+    // ИСПРАВЛЕНО: Проверяем наличие активной игры с учетом партнера
+    if (state.getMinesGame(username, partnerId)) {
         return res.status(400).json({ error: "You already have an active game. Cashout or explode first!" });
     }
 
-    // Списываем баланс у игрока в SQLite/NeDB
+    // Списываем баланс у игрока в SQLite/NeDB с привязкой к паре Игрок + Партнер
     req.player.balance -= bet;
-    await state.updateBalance(req.username, req.player.balance);
+    await state.updateBalance(username, partnerId, req.player.balance);
 
-    // Добавляем чистую ставку игрока в банк (копилку) этой игры
-    state.addMinesBank(bet);
+    // ИСПРАВЛЕНО: Добавляем чистую ставку игрока в изолированный банк (копилку) этого партнера
+    state.addMinesBank(partnerId, bet);
 
     // Генерация первоначального скрытого поля (0 - пусто, 1 - мина)
     const board = Array(config.gridSize).fill(0);
@@ -45,11 +51,14 @@ module.exports.start = async (req, res) => {
         openedCells: [],
         status: "playing"
     };
-    state.setMinesGame(req.username, gameSession);
+
+    // ИСПРАВЛЕНО: Записываем сессию в память в рамках текущего бренда
+    state.setMinesGame(username, partnerId, gameSession);
 
     res.json({
         message: "Game started",
         balance: req.player.balance,
+        // Множитель рассчитывается на основе формулы, завязанной на глобальный CONFIG
         nextMultiplier: state.getMinesMultiplier(config.gridSize, minesCount, 1)
     });
 };
@@ -57,8 +66,12 @@ module.exports.start = async (req, res) => {
 // 2. ОТКРЫТИЕ ЯЧЕЙКИ (С жестким контролем RTP в реальном времени)
 module.exports.openCell = async (req, res) => {
     const { cellIndex } = req.body;
-    const game = state.getMinesGame(req.username);
-    const config = state.getConfig().mines;
+    const partnerId = req.partnerId; // Извлекаем partnerId, добавленный мидлваром checkPlayer
+    const username = req.username;
+
+    // ИСПРАВЛЕНО: Достаем сессию игры и конфигурацию строго для текущего партнера
+    const game = state.getMinesGame(username, partnerId);
+    const config = state.getConfig(partnerId).mines;
 
     if (!game || game.status !== "playing") {
         return res.status(400).json({ error: "No active game found" });
@@ -74,17 +87,15 @@ module.exports.openCell = async (req, res) => {
     const currentMultiplier = state.getMinesMultiplier(config.gridSize, game.minesCount, game.openedCells.length + 1);
     const potentialWin = Math.floor(game.bet * currentMultiplier);
 
-    // --- КЛЮЧЕВАЯ ЛОГИКА RTP СЕРВЕРА ---
-    // Проверяем текущее состояние копилки игры.
-    // Если потенциальный выигрыш игрока превышает доступный лимит банка — включаем принудительный взрыв
-    const currentBank = state.getMinesBank();
+    // --- КЛЮЧЕВАЯ ЛОГИКА RTP СЕРВЕРА (ИЗОЛИРОВАННАЯ) ---
+    // ИСПРАВЛЕНО: Проверяем копилку игры строго текущего партнера
+    const currentBank = state.getMinesBank(partnerId);
     let forceExplode = false;
 
     if (potentialWin > currentBank) {
         forceExplode = true;
     }
 
-    // Если система RTP требует слить игрока, мы тайно подсовываем мину прямо под текущий клик
     if (forceExplode) {
         game.board[cellIndex] = 1;
     }
@@ -92,19 +103,19 @@ module.exports.openCell = async (req, res) => {
 
     game.openedCells.push(cellIndex);
 
-    // ПРОВЕРКА НА ВЗРЫВ (Сработал естественный рандом или защита RTP)
+    // ПРОВЕРКА НА ВЗРЫВ
     if (game.board[cellIndex] === 1) {
-        state.deleteMinesGame(req.username);
+        // ИСПРАВЛЕНО: Удаляем сессию этого игрока в рамках текущего бренда
+        state.deleteMinesGame(username, partnerId);
 
-        // Фиксируем проигрыш ставки в единой истории транзакций
-        await state.savePlayerActionHistory(req.username, {
+        // ИСПРАВЛЕНО: Логируем историю с привязкой к partnerId
+        await state.savePlayerActionHistory(username, partnerId, {
             game: "Mines",
             details: `Exploded on cell ${cellIndex}. Total opened: ${game.openedCells.length - 1}`,
             change: `-${game.bet} 🪙`,
             win: false
         });
 
-        // Возвращаем игроку всё поле, чтобы он видел расположение остальных мин
         return res.json({
             outcome: "explode",
             fullBoard: game.board,
@@ -112,22 +123,20 @@ module.exports.openCell = async (req, res) => {
         });
     }
 
-    // Если ячейка оказалась чистой и система лимитов пропустила ход
     const nextMultiplier = state.getMinesMultiplier(config.gridSize, game.minesCount, game.openedCells.length + 1);
 
-    // Проверка на автоматическую победу (если открыты вообще все чистые ячейки на поле)
+    // Проверка на автоматическую победу (очищено все поле)
     const maxCleanCells = config.gridSize - game.minesCount;
     if (game.openedCells.length === maxCleanCells) {
 
-        // Начисляем деньги на баланс
         req.player.balance += potentialWin;
-        await state.updateBalance(req.username, req.player.balance);
+        // ИСПРАВЛЕНО: Апдейтим баланс и банк с учетом partnerId
+        await state.updateBalance(username, partnerId, req.player.balance);
+        state.reduceMinesBank(partnerId, potentialWin);
 
-        // Вычитаем чистую прибыль игрока из банка (копилки) игры
-        state.reduceMinesBank(potentialWin);
-        state.deleteMinesGame(req.username);
+        state.deleteMinesGame(username, partnerId);
 
-        await state.savePlayerActionHistory(req.username, {
+        await state.savePlayerActionHistory(username, partnerId, {
             game: "Mines",
             details: `Cleared the whole board! Multiplier: ${currentMultiplier}x`,
             change: `+${potentialWin} 🪙`,
@@ -142,7 +151,6 @@ module.exports.openCell = async (req, res) => {
         });
     }
 
-    // Обычный успешный шаг — продолжаем игру
     res.json({
         outcome: "success",
         openedCells: game.openedCells,
@@ -154,8 +162,12 @@ module.exports.openCell = async (req, res) => {
 
 // 3. КНОПКА «ЗАБРАТЬ ВЫИГРЫШ» (CASHOUT)
 module.exports.cashout = async (req, res) => {
-    const game = state.getMinesGame(req.username);
-    const config = state.getConfig().mines;
+    const partnerId = req.partnerId;
+    const username = req.username;
+
+    // ИСПРАВЛЕНО: Получаем сессию и конфиг конкретного партнера
+    const game = state.getMinesGame(username, partnerId);
+    const config = state.getConfig(partnerId).mines;
 
     if (!game || game.status !== "playing") {
         return res.status(400).json({ error: "No active game to cashout" });
@@ -164,22 +176,19 @@ module.exports.cashout = async (req, res) => {
         return res.status(400).json({ error: "You must open at least one cell before cashout" });
     }
 
-    // Рассчитываем финальную сумму выплаты
     const finalMultiplier = state.getMinesMultiplier(config.gridSize, game.minesCount, game.openedCells.length);
     const totalWin = Math.floor(game.bet * finalMultiplier);
 
-    // Начисляем баланс игроку
     req.player.balance += totalWin;
-    await state.updateBalance(req.username, req.player.balance);
+    // ИСПРАВЛЕНО: Зачисляем выигрыш и вычитаем его из изолированной копилки бренда
+    await state.updateBalance(username, partnerId, req.player.balance);
+    state.reduceMinesBank(partnerId, totalWin);
 
-    // Выплачиваем деньги из банка (копилки) игры
-    state.reduceMinesBank(totalWin);
+    // ИСПРАВЛЕНО: Стираем сессию в рамках текущего бренда
+    state.deleteMinesGame(username, partnerId);
 
-    // Закрываем игровую сессию
-    state.deleteMinesGame(req.username);
-
-    // Добавляем запись в единую ленту транзакций
-    await state.savePlayerActionHistory(req.username, {
+    // ИСПРАВЛЕНО: Пишем лог с передачей partnerId
+    await state.savePlayerActionHistory(username, partnerId, {
         game: "Mines",
         details: `Cashout after ${game.openedCells.length} cells. Multiplier: ${finalMultiplier}x`,
         change: `+${totalWin} 🪙`,
@@ -192,3 +201,4 @@ module.exports.cashout = async (req, res) => {
         fullBoard: game.board
     });
 };
+

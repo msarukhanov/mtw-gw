@@ -1,5 +1,5 @@
 const state = require('../state');
-const seamless = require('../services/seamlessService'); // твой сервис дебита/кредита
+const seamless = require('../services/seamlessService');
 
 // 1. Отдать линию матчей на фронтенд
 exports.getLine = (req, res) => {
@@ -8,7 +8,9 @@ exports.getLine = (req, res) => {
 };
 
 exports.placeBet = async (req, res) => {
-    const { items, stake, sessionId } = req.body; // items: [{matchId, market, outcome}, ...]
+    // items: [{matchId, market, outcome}, ...]
+    const { items, stake, sessionId } = req.body;
+    const partnerId = req.partnerId; // Извлекаем partnerId, добавленный мидлваром checkPlayer
     const username = req.username;
 
     if (!items || !Array.isArray(items) || items.length === 0 || !stake || stake <= 0) {
@@ -42,21 +44,21 @@ exports.placeBet = async (req, res) => {
 
         // Ограничим максимальный кэф для демо, например, 1000, чтобы не сломать экономику
         calculatedTotalOdds = Math.min(1000, parseFloat(calculatedTotalOdds.toFixed(2)));
-        const roundId = `sports_${items.length > 1 ? 'multi' : 'single'}_${Date.now()}_${username}`;
+        const roundId = `sports_${items.length > 1 ? 'multi' : 'single'}_${Date.now()}_${partnerId}_${username}`;
 
-        // 1. Списание одной общей транзакции через Seamless Wallet
-        await seamless.debit(username, sessionId, Number(stake), "Sportsbook Bet", roundId);
+        // 1. ИСПРАВЛЕНО: Списание одной общей транзакции через Seamless Wallet с передачей partnerId
+        await seamless.debit(username, partnerId, sessionId, Number(stake), "Sportsbook Bet", roundId);
 
-        // 2. Сохраняем купон в базу
-        const savedBet = await state.createSportsBet(username, {
+        // 2. ИСПРАВЛЕНО: Сохраняем купон в базу bets.db с привязкой к partnerId
+        const savedBet = await state.createSportsBet(username, partnerId, {
             items: verifiedItems,
             totalOdds: calculatedTotalOdds,
             stake
         });
 
-        // 3. Отправляем в общую историю и лояльность
+        // 3. ИСПРАВЛЕНО: Отправляем в общую историю и лояльность с передачей partnerId
         const typeText = items.length > 1 ? "Multi Bet" : "Single Bet";
-        await state.savePlayerActionHistory(username, {
+        await state.savePlayerActionHistory(username, partnerId, {
             game: "Sportsbook",
             details: `${typeText} placed. Total Odds: ${calculatedTotalOdds}. Matches: ${items.length}`,
             change: `-${stake} 🪙`,
@@ -67,8 +69,10 @@ exports.placeBet = async (req, res) => {
 
         res.json({ success: true, balance: req.player.balance, betId: savedBet._id });
     } catch (err) {
+        console.error(`[Partner: ${partnerId}] Sportsbook bet placement failed:`, err.message);
         res.status(500).json({ error: err.message || "Betting system error" });
     }
 };
+
 
 

@@ -16,17 +16,8 @@ const historyDb = Datastore.create({
     autoload: true
 });
 
-
-
 const activeTickets = {};
 let globalJackpot = 1000;
-
-// ЦЕНТРАЛЬНЫЕ НАСТРОЙКИ ИГР (Теперь они живут только на сервере!)
-
-
-
-
-
 
 function getRandomInt(max) {
     return crypto.randomBytes(4).readUInt32BE(0) % max;
@@ -44,14 +35,6 @@ let diceBankPool = 3000;
 
 let hiloBankPool = 4000;
 const activeHiloCards = {}; // Хранит текущую карту игрока: { username: currentCardObject }
-
-let banks = {
-    globalJackpot: 1000,
-    mines: 5000,
-    crash: 5000,
-    dice: 3000,
-    hilo: 4000
-};
 
 
 
@@ -89,57 +72,51 @@ function getHiloMultipliers(currentValue) {
 }
 
 const playerMethods = {
-    getOrCreatePlayer: async (username) => {
-        let player = await db.findOne({ username: username });
+    getOrCreatePlayer: async (username, partnerId) => {
+        let player = await db.findOne({ username: username, partnerId: partnerId  });
         if (!player) {
-            player = { username: username, balance: 200 };
+            player = {
+                username: username,
+                partnerId: partnerId, // ВАЖНО: сохраняем partnerId в документ игрока
+                balance: 200
+            };
             await db.insert(player);
         }
-        if (!activeTickets[username]) activeTickets[username] = [];
-        player.tickets = activeTickets[username];
+
+        // Создаем составной ключ для оперативной памяти, чтобы избежать коллизий имен
+        const memKey = `${partnerId}_${username}`;
+        if (!activeTickets[memKey]) activeTickets[memKey] = [];
+        player.tickets = activeTickets[memKey];
+
         return player;
     },
-    updateBalance: async (username, newBalance) => {
-        await db.update({ username: username }, { $set: { balance: newBalance } });
+    updateBalance: async (username, partnerId, newBalance) => {
+        await db.update({ username: username, partnerId: partnerId }, { $set: { balance: newBalance } });
     },
+
+    // ИСПРАВЛЕНО: Метод собирает билеты игроков, разделяя их по тенантам (партнерам)
     getGamersWithTickets: async () => {
         const gamers = [];
-        const usernames = Object.keys(activeTickets);
-        for (const username of usernames) {
-            if (activeTickets[username].length > 0) {
-                let player = await db.findOne({ username: username });
+        const memKeys = Object.keys(activeTickets); // Ключи вида "siteA_john"
+
+        for (const memKey of memKeys) {
+            if (activeTickets[memKey].length > 0) {
+                // Разделяем составной ключ обратно на partnerId и username
+                const [partnerId, username] = memKey.split('_');
+
+                let player = await db.findOne({ username: username, partnerId: partnerId });
                 if (player) {
-                    player.tickets = activeTickets[username];
+                    player.tickets = activeTickets[memKey];
                     gamers.push(player);
                 }
             }
         }
         return gamers;
     },
-    // --- Единый метод для записи любого действия в историю игрока ---
-    // savePlayerActionHistory: async (username, actionData) => {
-    //     const player = await db.findOne({ username: username });
-    //     if (player) {
-    //         if (!player.history) player.history = [];
-    //
-    //         // Добавляем время к записи
-    //         const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    //
-    //         // Вставляем новое действие в самый верх списка
-    //         player.history.unshift({
-    //             time: timeString,
-    //             ...actionData
-    //         });
-    //
-    //         // Храним только последние 30 любых действий игрока
-    //         if (player.history.length > 30) player.history.pop();
-    //
-    //         await db.update({ username: username }, { $set: { history: player.history } });
-    //     }
-    // },
 
-    savePlayerActionHistory: async (username, actionData) => {
-        const player = await db.findOne({ username: username });
+    // ИСПРАВЛЕНО: Добавлен partnerId в аргументы для изоляции правок
+    savePlayerActionHistory: async (username, partnerId, actionData) => {
+        const player = await db.findOne({ username: username, partnerId: partnerId });
         if (player) {
             // 1. Запись истории действий (твоя стандартная логика)
             if (!player.history) player.history = [];
@@ -147,8 +124,10 @@ const playerMethods = {
             player.history.unshift({ time: timeString, ...actionData });
             if (player.history.length > 30) player.history.pop();
 
-            // 2. Геймификация (берем настройки из админки)
-            const gConfig = CURRENT_CONFIG.gamification;
+            // 2. БЕЗОПАСНАЯ B2B ГЕЙМИФИКАЦИЯ: Достаем конфиг конкретного партнера
+            // Если у партнера нет своего конфига, берем дефолтный из CONFIG
+            const partnerConfig = CONFIG[partnerId] || CONFIG;
+            const gConfig = partnerConfig.gamification || { xpPerGame: 10, xpMultiplier: 1000, levelUpBonus: 100, questTargetGames: 30, questReward: 50, tournamentActive: 0 };
 
             // --- Начисляем XP и Уровни ---
             if (!player.xp) player.xp = 0;
@@ -158,8 +137,20 @@ const playerMethods = {
             const nextLevelXp = player.level * Number(gConfig.xpMultiplier);
             if (player.xp >= nextLevelXp) {
                 player.level += 1;
-                // ПРИМЕЧАНИЕ: Если за уровень положен бонус в монетах,
-                // здесь вместо "player.balance += ..." нужно будет просто вызвать твой метод CREDIT на платформу
+                // Начисление бонуса за уровень через Seamless Credit (по аналогии с квестом):
+                try {
+                    const lvlRoundId = `lvlup_${player.level}_${Date.now()}_${username}`;
+                    await seamless.credit(
+                        username,
+                        partnerId, // Передаем partnerId, чтобы роут кошелька знал, куда слать запрос
+                        actionData.sessionId || null,
+                        Number(gConfig.levelUpBonus),
+                        "🎁 VIP Level Up Reward",
+                        lvlRoundId
+                    );
+                } catch (err) {
+                    console.error(`❌ Ошибка выплаты за уровень игроку ${username}:`, err.message);
+                }
             }
 
             // --- Считаем прогресс Ежедневного Квеста ---
@@ -169,27 +160,20 @@ const playerMethods = {
 
                 if (player.dailyQuests.gamesPlayed === Number(gConfig.questTargetGames) && !player.dailyQuests.claimed) {
                     player.dailyQuests.claimed = true;
-                    // Здесь при выполнении квеста тоже шлем CREDIT на платформу для выплаты бонуса
-                }
-
-                // Внутри savePlayerActionHistory, в блоке квестов:
-                if (player.dailyQuests.gamesPlayed === Number(gConfig.questTargetGames) && !player.dailyQuests.claimed) {
-                    player.dailyQuests.claimed = true;
                     try {
                         const questRoundId = `quest_daily_${Date.now()}_${username}`;
 
-                        player.balance += Number(gConfig.questReward);
-                        // Мы используем тот же метод credit
+                        // ИСПРАВЛЕНО: Добавлен partnerId в вызов credit, чтобы деньги улетали на правильный сайт
                         await seamless.credit(
                             username,
-                            actionData.sessionId || null, // Если игра передала сессию в actionData
+                            partnerId,
+                            actionData.sessionId || null,
                             Number(gConfig.questReward),
-                            "🎁 Daily Quest Reward", // Название операции для платформы
+                            "🎁 Daily Quest Reward",
                             questRoundId
                         );
                     } catch (err) {
                         console.error(`❌ Ошибка выплаты за квест игроку ${username}:`, err.message);
-                        // Если выплата не прошла, можно откатить статус claimed = false, чтобы попробовать позже
                         player.dailyQuests.claimed = false;
                     }
                 }
@@ -198,13 +182,11 @@ const playerMethods = {
             // --- Начисляем Очки Турнира (Лидерборд) ---
             if (Number(gConfig.tournamentActive) === 1) {
                 if (!player.tournamentPoints) player.tournamentPoints = 0;
-                // Начисляем очки за сам факт игры, либо больше очков за выигрыш
                 player.tournamentPoints += actionData.win ? 5 : 1;
             }
 
-            // 3. ИСПРАВЛЕНИЕ: Сохраняем ТОЛЬКО геймификацию и историю.
-            // Поле balance здесь НЕ трогаем и НЕ сохраняем, так как баланс живет на внешней платформе!
-            await db.update({ username: username }, {
+            // 3. Сохраняем обновленные данные в локальную NeDB
+            await db.update({ username: username, partnerId: partnerId }, {
                 $set: {
                     history: player.history,
                     xp: player.xp,
@@ -216,11 +198,15 @@ const playerMethods = {
         }
     },
 
-    calculateAndPayCashback: async (seamlessCredit) => {
-        const gConfig = CONFIG.gamification || { cashbackPercent: 10 };
+    // ИСПРАВЛЕНО: Теперь кэшбэк считается изолированно для конкретного партнера
+    calculateAndPayCashback: async (partnerId, seamlessCredit) => {
+        // Достаем настройки кэшбэка именно этого партнера
+        const partnerConfig = CONFIG[partnerId] || CONFIG;
+        const gConfig = partnerConfig.gamification || { cashbackPercent: 10 };
         const pct = Number(gConfig.cashbackPercent) / 100;
 
-        const allPlayers = await db.find({});
+        // ИСПРАВЛЕНО: Находим игроков только этого конкретного партнера
+        const allPlayers = await db.find({ partnerId: partnerId });
         const cashbackReport = [];
 
         for (const player of allPlayers) {
@@ -251,27 +237,30 @@ const playerMethods = {
                     try {
                         const cashbackRoundId = `cashback_${Date.now()}_${player.username}`;
 
-                        // Выплачиваем кэшбэк на внешнюю платформу
+                        // ИСПРАВЛЕНО: Передаем partnerId в метод кредита, чтобы транзакция ушла на нужный сайт
                         await seamlessCredit(
                             player.username,
+                            partnerId,
                             null,
                             cashbackAmount,
                             "💰 Weekly Cashback",
                             cashbackRoundId
                         );
 
-                        player.balance += (cashbackAmount||0);
-
                         // Очищаем историю игрока или делаем отметку, чтобы не выдать кэшбэк повторно
                         player.history.unshift({
                             time: new Date().toLocaleTimeString(),
                             game: "💰 Cashback System",
-                            details: `Получен еженедельный кэшбэк ${gConfig.cashbackPercent}%`,
+                            details: `Received weekly cashback ${gConfig.cashbackPercent}%`,
                             change: `+${cashbackAmount} 🪙`,
                             win: true
                         });
 
-                        await db.update({ username: player.username }, { $set: { history: player.history } });
+                        // ИСПРАВЛЕНО: Апдейтим игрока с учетом составного ключа
+                        await db.update(
+                            { username: player.username, partnerId: partnerId },
+                            { $set: { history: player.history } }
+                        );
 
                         cashbackReport.push({ username: player.username, loss: netLoss, paid: cashbackAmount });
                     } catch (e) {
@@ -283,99 +272,181 @@ const playerMethods = {
         return cashbackReport;
     },
 
-    // Получить общую историю игрока
-    getPlayerHistory: async (username) => {
-        const player = await db.findOne({ username: username });
+    // ИСПРАВЛЕНО: Аргумент partnerId передан в функцию для поиска нужной истории
+    getPlayerHistory: async (username, partnerId) => {
+        const player = await db.findOne({ username: username, partnerId: partnerId });
         return player && player.history ? player.history : [];
     },
 
-    getAllPlayers: async () => {
-        return await db.find({});
+    // ИСПРАВЛЕНО: Метод теперь принимает аргумент и отдает игроков только конкретного партнера
+    getAllPlayers: async (partnerId) => {
+        return await db.find({ partnerId: partnerId });
     },
+
 };
 
 const jackpotMethods = {
-    getJackpot: () => globalJackpot,
-    addJackpot: (amount) => { globalJackpot += amount; },
-    resetJackpot: () => { globalJackpot = 1000; },
-    setJackpot: (amount) => {
-        globalJackpot = Number(amount);
+    // ИСПРАВЛЕНО: Теперь джекпот изолирован для каждого партнера
+    getJackpot: (partnerId) => {
+        if (!banks[partnerId]) banks[partnerId] = { globalJackpot: 1000, mines: 5000, crash: 5000, dice: 3000, hilo: 4000, slots5x3: 10000 };
+        return banks[partnerId].globalJackpot;
+    },
+    addJackpot: (partnerId, amount) => {
+        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
+        banks[partnerId].globalJackpot += amount;
+    },
+    resetJackpot: (partnerId) => {
+        if (banks[partnerId]) banks[partnerId].globalJackpot = 1000;
+    },
+    setJackpot: (partnerId, amount) => {
+        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
+        banks[partnerId].globalJackpot = Number(amount);
     },
 };
 
 const minesMethods = {
-    getMinesGame: (username) => activeMinesGames[username],
-    setMinesGame: (username, gameData) => { activeMinesGames[username] = gameData; },
-    deleteMinesGame: (username) => { delete activeMinesGames[username]; },
+    // ИСПРАВЛЕНО: Сессии Mines теперь разделены по составному ключу "partnerId_username"
+    getMinesGame: (username, partnerId) => activeMinesGames[`${partnerId}_${username}`],
+    setMinesGame: (username, partnerId, gameData) => { activeMinesGames[`${partnerId}_${username}`] = gameData; },
+    deleteMinesGame: (username, partnerId) => { delete activeMinesGames[`${partnerId}_${username}`]; },
     getMinesMultiplier,
 
-    // Методы управления банком игры для контроля RTP
-    getMinesBank: () => minesBankPool,
-    addMinesBank: (amount) => { minesBankPool += amount; },
-    reduceMinesBank: (amount) => { minesBankPool -= amount; },
+    // ИСПРАВЛЕНО: Банк Mines теперь изолирован под каждого партнера отдельно
+    getMinesBank: (partnerId) => {
+        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
+        return banks[partnerId].mines;
+    },
+    addMinesBank: (partnerId, amount) => {
+        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
+        banks[partnerId].mines += amount;
+    },
+    reduceMinesBank: (partnerId, amount) => {
+        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
+        banks[partnerId].mines -= amount;
+    },
 
-    // Позволяет админке динамически менять процент RTP
-    setMinesRtp: (newRtp) => { CONFIG.mines.rtpPercent = newRtp; },
-
+    // Позволяет админке конкретного партнера менять свой RTP
+    setMinesRtp: (partnerId, newRtp) => {
+        const pConfig = CONFIG[partnerId] || CONFIG;
+        if (pConfig.mines) pConfig.mines.rtpPercent = newRtp;
+    },
 };
 
 const crashMethods = {
-    // Управление банком Авиатора
-    getCrashBank: () => crashBankPool,
-    addCrashBank: (amount) => { crashBankPool += amount; },
-    reduceCrashBank: (amount) => { crashBankPool -= amount; },
+    // ИСПРАВЛЕНО: Банк Crash изолирован по партнерам
+    getCrashBank: (partnerId) => {
+        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
+        return banks[partnerId].crash;
+    },
+    addCrashBank: (partnerId, amount) => {
+        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
+        banks[partnerId].crash += amount;
+    },
+    reduceCrashBank: (partnerId, amount) => {
+        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
+        banks[partnerId].crash -= amount;
+    },
 
-    // Управление ставками раунда
-    getCrashBets: () => currentCrashBets,
-    addCrashBet: (username, amount) => { currentCrashBets[username] = amount; },
-    clearCrashBets: () => { currentCrashBets = {}; },
+    // ИСПРАВЛЕНО: Ставки текущего раунда Crash теперь разделены по партнерам
+    getCrashBets: (partnerId) => {
+        if (!currentCrashBets[partnerId]) currentCrashBets[partnerId] = {};
+        return currentCrashBets[partnerId];
+    },
+    addCrashBet: (username, partnerId, amount) => {
+        if (!currentCrashBets[partnerId]) currentCrashBets[partnerId] = {};
+        currentCrashBets[partnerId][username] = amount;
+    },
+    clearCrashBets: (partnerId) => { currentCrashBets[partnerId] = {}; },
 
-    getActiveInFlight: () => currentActivePlayers,
-    addPlayerToFlight: (username) => { currentActivePlayers[username] = true; },
-    removePlayerFromFlight: (username) => { delete currentActivePlayers[username]; },
-    clearFlightPlayers: () => { currentActivePlayers = {}; }
+    // ИСПРАВЛЕНО: Активные игроки «в полете» разделены по партнерам
+    getActiveInFlight: (partnerId) => {
+        if (!currentActivePlayers[partnerId]) currentActivePlayers[partnerId] = {};
+        return currentActivePlayers[partnerId];
+    },
+    addPlayerToFlight: (username, partnerId) => {
+        if (!currentActivePlayers[partnerId]) currentActivePlayers[partnerId] = {};
+        currentActivePlayers[partnerId][username] = true;
+    },
+    removePlayerFromFlight: (username, partnerId) => {
+        if (currentActivePlayers[partnerId]) delete currentActivePlayers[partnerId][username];
+    },
+    clearFlightPlayers: (partnerId) => { currentActivePlayers[partnerId] = {}; }
 };
 
 const diceMethods = {
-    getDiceBank: () => diceBankPool,
-    addDiceBank: (amount) => { diceBankPool += amount; },
-    reduceDiceBank: (amount) => { diceBankPool -= amount; }
+    // ИСПРАВЛЕНО: Банк Dice изолирован
+    getDiceBank: (partnerId) => {
+        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
+        return banks[partnerId].dice;
+    },
+    addDiceBank: (partnerId, amount) => {
+        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
+        banks[partnerId].dice += amount;
+    },
+    reduceDiceBank: (partnerId, amount) => {
+        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
+        banks[partnerId].dice -= amount;
+    }
 };
 
 const hiloMethods = {
-    getHiloBank: () => hiloBankPool,
-    addHiloBank: (amount) => { hiloBankPool += amount; },
-    reduceHiloBank: (amount) => { hiloBankPool -= amount; },
+    // ИСПРАВЛЕНО: Банк Hi-Lo изолирован
+    getHiloBank: (partnerId) => {
+        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
+        return banks[partnerId].hilo;
+    },
+    addHiloBank: (partnerId, amount) => {
+        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
+        banks[partnerId].hilo += amount;
+    },
+    reduceHiloBank: (partnerId, amount) => {
+        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
+        banks[partnerId].hilo -= amount;
+    },
 
-    getHiloCard: (username) => activeHiloCards[username],
-    setHiloCard: (username, card) => { activeHiloCards[username] = card; },
+    // ИСПРАВЛЕНО: Карты в Hi-Lo разделены по составному ключу "partnerId_username"
+    getHiloCard: (username, partnerId) => activeHiloCards[`${partnerId}_${username}`],
+    setHiloCard: (username, partnerId, card) => { activeHiloCards[`${partnerId}_${username}`] = card; },
     getHiloMultipliers
 };
 
 const slots5x3Methods = {
-    // ... ваши существующие методы
-    getSlots5x3Bank: () => slots5x3BankPool,
-    addSlots5x3Bank: (amount) => { slots5x3BankPool += amount; },
-    reduceSlots5x3Bank: (amount) => { slots5x3BankPool -= amount; },
+    // ИСПРАВЛЕНО: Банк Слотов 5х3 изолирован
+    getSlots5x3Bank: (partnerId) => {
+        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
+        // Безопасный фолбэк, если поле slots5x3 еще не создано у этого партнера
+        if (!banks[partnerId].slots5x3) banks[partnerId].slots5x3 = 10000;
+        return banks[partnerId].slots5x3;
+    },
+    addSlots5x3Bank: (partnerId, amount) => {
+        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
+        if (!banks[partnerId].slots5x3) banks[partnerId].slots5x3 = 10000;
+        banks[partnerId].slots5x3 += amount;
+    },
+    reduceSlots5x3Bank: (partnerId, amount) => {
+        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
+        if (!banks[partnerId].slots5x3) banks[partnerId].slots5x3 = 10000;
+        banks[partnerId].slots5x3 -= amount;
+    },
 };
 
 const freeSpinMethods = {
-    // ... ваши существующие методы
-    getFreeSpins: (username) => activeFreeSpins[username],
-    setFreeSpins: (username, fsData) => { activeFreeSpins[username] = fsData; },
-    deleteFreeSpins: (username) => { delete activeFreeSpins[username]; }
+    // ИСПРАВЛЕНО: Фриспины разделены по составному ключу "partnerId_username"
+    getFreeSpins: (username, partnerId) => activeFreeSpins[`${partnerId}_${username}`],
+    setFreeSpins: (username, partnerId, fsData) => { activeFreeSpins[`${partnerId}_${username}`] = fsData; },
+    deleteFreeSpins: (username, partnerId) => { delete activeFreeSpins[`${partnerId}_${username}`]; }
 };
 
+
 const gamificationMethods = {
-    getLeaderboard: async (criterion = 'balance', limit = 10) => {
-        // Поддерживаемые критерии: 'balance', 'xp', 'tournamentPoints'
+    // ИСПРАВЛЕНО: Теперь лидерборд строится строго внутри игроков конкретного партнера
+    getLeaderboard: async (partnerId, criterion = 'balance', limit = 10) => {
         const validCriteria = ['balance', 'xp', 'tournamentPoints'];
         const sortField = validCriteria.includes(criterion) ? criterion : 'balance';
 
-        // Находим всех игроков
-        const allPlayers = await db.find({});
+        // Находим игроков только текущего партнера
+        const allPlayers = await db.find({ partnerId: partnerId });
 
-        // Сортируем по выбранному полю в порядке убывания и берем ТОП-10
         return allPlayers
             .sort((a, b) => {
                 const valA = a[sortField] || 0;
@@ -392,29 +463,28 @@ const gamificationMethods = {
             }));
     },
 
-    endCurrentTournament: async () => {
-        // 1. Получаем настройки призового фонда из конфига
-        const gConfig = CONFIG.gamification || {tournamentPrize: 5000};
+    // ИСПРАВЛЕНО: Метод теперь принимает partnerId и завершает турнир изолированно
+    endCurrentTournament: async (partnerId) => {
+        // Достаем настройки турнира именно этого партнера
+        const partnerConfig = CONFIG[partnerId] || CONFIG;
+        const gConfig = partnerConfig.gamification || { tournamentPrize: 5000 };
         const totalPrize = Number(gConfig.tournamentPrize);
 
-        // Распределяем фонд: 1 место — 50%, 2 место — 30%, 3 место — 20%
         const prizes = [
             Math.floor(totalPrize * 0.50), // 1 место
             Math.floor(totalPrize * 0.30), // 2 место
             Math.floor(totalPrize * 0.20)  // 3 место
         ];
 
-        // 2. Достаем всех игроков из базы
-        const allPlayers = await db.find({});
+        // Находим игроков только этого партнера
+        const allPlayers = await db.find({ partnerId: partnerId });
 
-        // Фильтруем тех, у кого есть очки, и сортируем по убыванию
         const participants = allPlayers
             .filter(p => p.tournamentPoints && p.tournamentPoints > 0)
             .sort((a, b) => b.tournamentPoints - a.tournamentPoints);
 
         const winnersInfo = [];
 
-        // 3. Награждаем ТОП-3 победителей
         for (let i = 0; i < participants.length; i++) {
             const player = participants[i];
             let prizeWon = 0;
@@ -422,33 +492,31 @@ const gamificationMethods = {
             if (i < 3) {
                 prizeWon = prizes[i];
                 player.balance += prizeWon;
-                winnersInfo.push({
-                    username: player.username,
-                    place: i + 1,
-                    points: player.tournamentPoints,
-                    prize: prizeWon
-                });
 
                 try {
-                    // Вызываем внешнюю операцию CREDIT для отправки денег на платформу
-                    // Вместо roundId передаем уникальный ID турнира, чтобы транзакции не дублировались
                     const tournamentRoundId = `tournament_win_${Date.now()}_${player.username}`;
 
+                    // ИСПРАВЛЕНО: Добавлен partnerId в вызов для точной маршрутизации выплаты
                     await seamless.credit(
                         player.username,
+                        partnerId,
                         null,
                         prizeWon,
-                        `🏆 Tournament Place ${i + 1}`, // Передаем понятное название "игры"
+                        `🏆 Tournament Place ${i + 1}`,
                         tournamentRoundId
                     );
 
-                    winnersInfo.push({ username: player.username, place: i + 1, points: player.tournamentPoints, prize: prizeWon });
+                    winnersInfo.push({
+                        username: player.username,
+                        place: i + 1,
+                        points: player.tournamentPoints,
+                        prize: prizeWon
+                    });
                 } catch (err) {
                     console.error(`❌ Не удалось выплатить приз турнира для ${player.username}:`, err.message);
                 }
             }
 
-            // Добавляем запись в историю игрока о завершении турнира
             if (!player.history) player.history = [];
             const timeString = new Date().toLocaleTimeString([], {
                 hour: '2-digit',
@@ -459,105 +527,170 @@ const gamificationMethods = {
             player.history.unshift({
                 time: timeString,
                 game: "🏆 Tournament End",
-                details: `Турнир окончен. Очки: ${player.tournamentPoints}. Место: ${i + 1}`,
+                details: `Tournament finished. Points: ${player.tournamentPoints}. Place: ${i + 1}`,
                 change: prizeWon > 0 ? `+${prizeWon} 🪙` : `0 🪙`,
                 win: prizeWon > 0
             });
             if (player.history.length > 30) player.history.pop();
 
-            // Сбрасываем очки турнира для нового сезона
             player.tournamentPoints = 0;
 
-            // Обновляем игрока в базе данных
-            await db.update({username: player.username}, {
-                $set: {
-                    balance: player.balance,
-                    tournamentPoints: player.tournamentPoints,
-                    history: player.history
+            // ИСПРАВЛЕНО: Сохраняем игрока с использованием составного B2B-ключа
+            await db.update(
+                { username: player.username, partnerId: partnerId },
+                {
+                    $set: {
+                        balance: player.balance,
+                        tournamentPoints: player.tournamentPoints,
+                        history: player.history
+                    }
                 }
-            });
+            );
         }
 
-        return winnersInfo; // Возвращаем отчет, чтобы админ видел, кто победил
+        return winnersInfo;
     },
 
-    resetDailyQuestsForAll: async () => {
+    // ИСПРАВЛЕНО: Метод теперь принимает аргумент, сбрасывая квесты только внутри конкретного бренда
+    resetDailyQuestsForAll: async (partnerId) => {
         try {
-            // Находим всех игроков, у которых уже есть объект квестов
-            const players = await db.find({});
+            // Находим игроков только нужного партнера
+            const players = await db.find({ partnerId: partnerId });
 
             for (const player of players) {
                 if (player.dailyQuests) {
-                    // Сбрасываем прогресс до начального состояния
                     player.dailyQuests = { gamesPlayed: 0, claimed: false };
 
-                    // Обновляем запись в NeDB
-                    await db.update({ username: player.username }, {
-                        $set: { dailyQuests: player.dailyQuests }
-                    });
+                    await db.update(
+                        { username: player.username, partnerId: partnerId },
+                        { $set: { dailyQuests: player.dailyQuests } }
+                    );
                 }
             }
-            console.log("📅 [Cron] Ежедневные квесты успешно обнулены для всех игроков!");
+            console.log(`📅 [Cron] Daily quests successfully reset for partner: ${partnerId}`);
             return true;
         } catch (err) {
-            console.error("❌ Ошибка при автоматическом сбросе квестов:", err);
+            console.error(`❌ Error auto-resetting quests for partner ${partnerId}:`, err);
             return false;
         }
     }
 };
 
+
 const promoMethods = {
-    // Создать новый промокод из админки
-    addPromoCode: async (codeData) => {
-        if (!CONFIG.promoCodes) CONFIG.promoCodes = [];
-        CONFIG.promoCodes.push({
+    // ИСПРАВЛЕНО: Создание промокода теперь намертво привязано к конкретному partnerId
+    addPromoCode: async (partnerId, codeData) => {
+        // Подгружаем или создаем узел партнера в CONFIG
+        if (!CONFIG[partnerId]) CONFIG[partnerId] = {};
+        if (!CONFIG[partnerId].promoCodes) CONFIG[partnerId].promoCodes = [];
+
+        CONFIG[partnerId].promoCodes.push({
             code: codeData.code.toUpperCase().trim(),
             reward: Number(codeData.reward),
             maxUses: Number(codeData.maxUses || 1),
             active: 1
         });
-        await configDb.update({ _id: "global_config" }, { $set: { promoCodes: CONFIG.promoCodes } });
+
+        // Перезаписываем в config.db только ветку текущего партнера
+        await configDb.update({ _id: "global_config" }, { $set: { [partnerId]: CONFIG[partnerId] } });
     },
 
-    // Логика активации кода игроком
-    usePromoCode: async (username, code, seamlessCredit) => {
+    // ИСПРАВЛЕНО: Активация кода игроком теперь проверяет partnerId
+    usePromoCode: async (username, partnerId, code, seamlessCredit) => {
         const cleanCode = code.toUpperCase().trim();
-        const promo = (CONFIG.promoCodes || []).find(p => p.code === cleanCode && p.active === 1);
+
+        // Ищем промокод внутри реестра конкретного партнера
+        const partnerConfig = CONFIG[partnerId] || {};
+        const promo = (partnerConfig.promoCodes || []).find(p => p.code === cleanCode && p.active === 1);
 
         if (!promo) throw new Error("Invalid code");
 
-        const player = await db.findOne({ username });
+        // Поиск игрока по составному ключу B2B
+        const player = await db.findOne({ username: username, partnerId: partnerId });
         if (!player) throw new Error("Player not found");
 
         if (!player.usedPromos) player.usedPromos = {};
         const timesUsed = player.usedPromos[cleanCode] || 0;
 
-        if (timesUsed >= promo.maxUses) throw new Error("Вы уже активировали этот промокод max количество раз");
+        if (timesUsed >= promo.maxUses) throw new Error("You have already used this promo code maximum times");
 
-        // Если проверки прошли — начисляем бонус на платформу через Seamless Credit
+        // ИСПРАВЛЕНО: Пробрасываем partnerId в метод кредита для точной транзакции
         const promoRoundId = `promo_${cleanCode}_${Date.now()}_${username}`;
         await seamlessCredit(
             username,
+            partnerId,
             null,
-            promo.reward,
             `🎁 Promo: ${cleanCode}`,
             promoRoundId
         );
 
-        // Фиксируем использование кода локально
+        // Фиксируем использование кода локально в рамках этого бренда
         player.usedPromos[cleanCode] = timesUsed + 1;
-        await db.update({ username }, { $set: { usedPromos: player.usedPromos } });
+        await db.update({ username: username, partnerId: partnerId }, { $set: { usedPromos: player.usedPromos } });
 
         return promo.reward;
     }
-
 };
 
-// В самый верх state.js добавляем базу ставок
 const betsDb = Datastore.create({ filename: path.join(__dirname, 'bets.db'), autoload: true });
 
-// Фейковая Live-линия, которая будет жестко зашита на сервере для демонстрации
-// Внутри state.js
+const sportsMethods = {
+    getSportsLine: () => DEMO_MATCHES,
+
+    // ИСПРАВЛЕНО: Добавлено поле partnerId в документ спортивного купона ставки
+    createSportsBet: async (username, partnerId, betData) => {
+        const bet = {
+            username,
+            partnerId, // ВАЖНО: Маркируем купон, какому бренду он принадлежит
+            type: betData.items.length > 1 ? "MULTI" : "SINGLE",
+            items: betData.items.map(item => ({
+                matchId: item.matchId,
+                teams: item.teams,
+                market: item.market,
+                selectedOutcome: item.outcome,
+                odds: Number(item.odds),
+                status: "PENDING"
+            })),
+            totalOdds: Number(betData.totalOdds),
+            stake: Number(betData.stake),
+            status: "PENDING",
+            timestamp: Date.now()
+        };
+        return await betsDb.insert(bet);
+    },
+
+    // ИСПРАВЛЕНО: Админка теперь запрашивает нерассчитанные ставки только своего проекта
+    getPendingBets: async (partnerId) => {
+        return await betsDb.find({ status: "PENDING", partnerId: partnerId });
+    },
+
+    // ИСПРАВЛЕНО: Код расчета купона отправляет выплату на API правильного партнера
+    settleBet: async (betId, finalStatus, seamlessCredit) => {
+        const bet = await betsDb.findOne({ _id: betId });
+        if (!bet || bet.status !== "PENDING") return null;
+
+        let prize = 0;
+        if (finalStatus === "WON") {
+            prize = Math.floor(bet.stake * bet.totalOdds);
+
+            const sportsRoundId = `sports_win_${bet._id}_${Date.now()}`;
+
+            // ИСПРАВЛЕНО: Передаем bet.partnerId вторым аргументом в кошелек
+            await seamlessCredit(
+                bet.username,
+                bet.partnerId,
+                null,
+                prize,
+                `⚽ Sportsbook Win (${bet.type})`,
+                sportsRoundId
+            );
+        }
+
+        // Обновляем статус купона
+        await betsDb.update({ _id: betId }, { $set: { status: finalStatus, prize: prize } });
+        return { ...bet, status: finalStatus, prize };
+    }
+};
 
 const DEMO_MATCHES = [
     // === ⚽ FOOTBALL / SOCCER ===
@@ -688,57 +821,6 @@ const DEMO_MATCHES = [
 ];
 
 
-const sportsMethods = {
-    // ... твои прошлые методы ...
-    getSportsLine: () => DEMO_MATCHES,
-
-    // ИСПРАВЛЕНО: Новый метод создания купона с учетом маркета
-    // Создание купона (поддерживает Single и Multi)
-    createSportsBet: async (username, betData) => {
-        // betData.items — это массив исходов, выбранных игроком
-        const bet = {
-            username,
-            type: betData.items.length > 1 ? "MULTI" : "SINGLE",
-            items: betData.items.map(item => ({
-                matchId: item.matchId,
-                teams: item.teams,
-                market: item.market,
-                selectedOutcome: item.outcome,
-                odds: Number(item.odds),
-                status: "PENDING" // Статус конкретного матча внутри купона
-            })),
-            totalOdds: Number(betData.totalOdds),
-            stake: Number(betData.stake),
-            status: "PENDING", // Статус всего купона целиком
-            timestamp: Date.now()
-        };
-        return await betsDb.insert(bet);
-    },
-
-    getPendingBets: async () => await betsDb.find({ status: "PENDING" }),
-
-    // Расчет купона из админки
-    settleBet: async (betId, finalStatus, seamlessCredit) => {
-        const bet = await betsDb.findOne({ _id: betId });
-        if (!bet || bet.status !== "PENDING") return null;
-
-        let prize = 0;
-        if (finalStatus === "WON") {
-            // Сумма ставки умножается на ОБЩИЙ перемноженный коэффициент купона
-            prize = Math.floor(bet.stake * bet.totalOdds);
-
-            const sportsRoundId = `sports_win_${bet._id}_${Date.now()}`;
-            await seamlessCredit(bet.username, null, prize, `⚽ Sportsbook Win (${bet.type})`, sportsRoundId);
-        }
-
-        // Обновляем статус купона
-        await betsDb.update({ _id: betId }, { $set: { status: finalStatus, prize: prize } });
-        return { ...bet, status: finalStatus, prize };
-    }
-};
-
-
-
 module.exports = {
     getRandomInt,
 
@@ -757,38 +839,63 @@ module.exports = {
 
     ...sportsMethods,
 
-    getConfig: () => CONFIG, // Метод для отправки настроек клиенту
+    // ИСПРАВЛЕНО: Теперь метод принимает partnerId и отдает индивидуальные настройки конкретного сайта
+    getConfig: (partnerId) => {
+        // Если у этого партнера еще нет настроек в памяти, инициализируем их дефолтными
+        if (!CONFIG[partnerId]) {
+            CONFIG[partnerId] = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+        }
+        return CONFIG[partnerId];
+    },
 
-    updateConfigParam: async (game, param, value) => {
+    getPartnerConfig: async (partnerId) => {
+        return await configDb.findOne({ _id: partnerId });
+    },
+
+    // ИСПРАВЛЕНО: Полная B2B-изоляция сохранения настроек и балансов банков
+    updateConfigParam: async (partnerId, game, param, value) => {
         let changed = false;
 
-        // Если админ меняет БАНК (копилку) игры
+        // Инициализируем банки и конфиг партнера, если их еще нет в памяти
+        if (!banks[partnerId]) {
+            banks[partnerId] = { globalJackpot: 1000, mines: 5000, crash: 5000, dice: 3000, hilo: 4000, slots5x3: 10000 };
+        }
+        if (!CONFIG[partnerId]) {
+            CONFIG[partnerId] = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+        }
+
+        // 1. Если админ партнера меняет свой локальный БАНК (копилку) игры
         if (param === 'bank') {
             const numericValue = Number(value);
             if (!isNaN(numericValue)) {
-                if (game === 'mines' || game === 'crash' || game === 'dice' || game === 'hilo') {
-                    banks[game] = numericValue;
+                if (game === 'mines' || game === 'crash' || game === 'dice' || game === 'hilo' || game === 'slots5x3') {
+                    banks[partnerId][game] = numericValue;
                     changed = true;
                 }
             }
         }
-        // Если админ меняет параметры внутри CONFIG
-        else if (CONFIG[game] && CONFIG[game][param] !== undefined) {
-            CONFIG[game][param] = typeof CONFIG[game][param] === 'number' ? Number(value) : value;
+        // 2. Если админ партнера меняет параметры внутри своего CONFIG (RTP, цены ставок)
+        else if (CONFIG[partnerId][game] && CONFIG[partnerId][game][param] !== undefined) {
+            CONFIG[partnerId][game][param] = typeof CONFIG[partnerId][game][param] === 'number' ? Number(value) : value;
             changed = true;
         }
 
-        // КЛЮЧЕВОЙ ШАГ: Если что-то изменилось, принудительно пишем файл на диск!
+        // КЛЮЧЕВОЙ ШАГ: Если что-то изменилось, пишем настройки ЭТОГО партнера в config.db
         if (changed) {
-            await db.update({ _id: 'global_config' }, { $set: { CONFIG, banks } });
+            // Обновляем ветку конкретного партнера, используя динамический ключ
+            await configDb.update(
+                { _id: 'global_config' },
+                { $set: { [partnerId]: CONFIG[partnerId], [`banks_${partnerId}`]: banks[partnerId] } }
+            );
             return true;
         }
         return false;
     },
 
-
-    clearPlayerTickets: (username) => {
-        activeTickets[username] = [];
+    // ИСПРАВЛЕНО: Очищаем билеты лотереи с использованием составного B2B-ключа в памяти
+    clearPlayerTickets: (username, partnerId) => {
+        const memKey = `${partnerId}_${username}`;
+        activeTickets[memKey] = [];
     },
 
     // --- Методы для работы с историей лотереи ---
@@ -797,12 +904,8 @@ module.exports = {
     },
 
     getLotteryHistory: async (limit = 20) => {
-        // Достаем последние 20 тиражей, сортируем по id или времени (в NeDB делаем через массив)
         const history = await historyDb.find({});
-        return history.slice(-limit); // Возвращаем последние N записей
-    },
-
-
-
-    // --- Методы для работы с личной историей игрока ---
+        return history.slice(-limit);
+    }
 };
+

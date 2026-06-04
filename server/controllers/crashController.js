@@ -1,9 +1,12 @@
 const state = require('../state');
 const crashService = require('../services/crashService');
+// Если используется шлюз интеграции, раскомментируй строку ниже:
+// const seamless = require('../services/seamlessService');
 
-// 1. СДЕЛАТЬ СТАВКУ
 exports.placeBet = async (req, res) => {
     const { bet } = req.body;
+    const partnerId = req.partnerId; // Извлекаем partnerId, добавленный мидлваром checkPlayer
+    const username = req.username;
 
     if (crashService.getStatus() !== "betting") {
         return res.status(400).json({ error: "Bets are closed for this round. Wait for next flight." });
@@ -14,88 +17,61 @@ exports.placeBet = async (req, res) => {
     if (req.player.balance < bet) {
         return res.status(400).json({ error: "Insufficient funds" });
     }
-    if (state.getCrashBets()[req.username]) {
+
+    // ИСПРАВЛЕНО: Проверяем ставки раунда конкретно для текущего партнера
+    if (state.getCrashBets(partnerId)[username]) {
         return res.status(400).json({ error: "You already placed a bet for this round" });
     }
 
-    // Списание баланса
+    // Списание баланса в локальном кэше B2B
     req.player.balance -= bet;
-    await state.updateBalance(req.username, req.player.balance);
+    await state.updateBalance(username, partnerId, req.player.balance);
 
-    // Заносим деньги в банк игры (RTP-копилка)
-    state.addCrashBank(bet);
-    state.addCrashBet(req.username, bet);
+    // ИСПРАВЛЕНО: Заносим деньги в изолированный банк игры текущего партнера
+    state.addCrashBank(partnerId, bet);
+    state.addCrashBet(username, partnerId, bet);
+
+    // Добавляем игрока в полет в рамках текущего бренда
+    state.addPlayerToFlight(username, partnerId);
 
     res.json({ message: "Bet accepted", balance: req.player.balance });
 };
 
-// 2. НАЖАТИЕ КНОПКИ КЭШАУТ (ЗАБРАТЬ В ПОЛЕТЕ)
-// exports.cashout = async (req, res) => {
-//     if (crashService.getStatus() !== "flying") {
-//         return res.status(400).json({ error: "Game is not in flight" });
-//     }
-//
-//     const activeInFlight = state.getActiveInFlight();
-//     if (!activeInFlight[req.username]) {
-//         return res.status(400).json({ error: "You are not in flight or already cashed out" });
-//     }
-//
-//     const currentBets = state.getCrashBets();
-//     const playerBet = currentBets[req.username];
-//     const winMultiplier = crashService.getMultiplier();
-//
-//     // Вычисляем сумму выигрыша
-//     const winAmount = Math.floor(playerBet * winMultiplier);
-//
-//     // Начисляем на баланс и забираем из банка RTP
-//     req.player.balance += winAmount;
-//     await state.updateBalance(req.username, req.player.balance);
-//     state.reduceCrashBank(winAmount);
-//
-//     // Удаляем игрока из списка летящих
-//     state.removePlayerFromFlight(req.username);
-//
-//     // Запись в единую ленту истории действий
-//     await state.savePlayerActionHistory(req.username, {
-//         game: "Crash",
-//         details: `Cashed out at ${winMultiplier}x`,
-//         change: `+${winAmount} 🪙`,
-//         win: true
-//     });
-//
-//     res.json({ message: "Cashed out successfully", prize: winAmount, balance: req.player.balance });
-// };
 exports.cashout = async (req, res) => {
+    const partnerId = req.partnerId;
+    const username = req.username;
+
     if (crashService.getStatus() !== "flying") {
         return res.status(400).json({ error: "Game is not in flight" });
     }
 
-    const activeInFlight = state.getActiveInFlight();
-    if (!activeInFlight[req.username]) {
+    // ИСПРАВЛЕНО: Проверяем игроков в полете конкретно для этого партнера
+    const activeInFlight = state.getActiveInFlight(partnerId);
+    if (!activeInFlight[username]) {
         return res.status(400).json({ error: "You are not in flight or already cashed out" });
     }
 
-    const currentBets = state.getCrashBets();
-    const playerBet = currentBets[req.username];
+    // ИСПРАВЛЕНО: Забираем ставку из пула текущего партнера
+    const currentBets = state.getCrashBets(partnerId);
+    const playerBet = currentBets[username];
     const winMultiplier = crashService.getMultiplier();
 
     // Вычисляем сумму выигрыша
     const winAmount = Math.floor(playerBet * winMultiplier);
 
-    // Начисляем на баланс и забираем из банка RTP
+    // Начисляем на баланс и забираем из изолированного банка партнера
     req.player.balance += winAmount;
-    await state.updateBalance(req.username, req.player.balance);
-    state.reduceCrashBank(winAmount);
+    await state.updateBalance(username, partnerId, req.player.balance);
+    state.reduceCrashBank(partnerId, winAmount);
 
-    // --- КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Мгновенно пушим кэшаут в сокетный сервис ---
-    crashService.forceRegisterCashout(req.username, winMultiplier);
-    // --------------------------------------------------------------------
+    // Фиксируем кэшаут в графическом сервисе
+    crashService.forceRegisterCashout(username, winMultiplier);
 
-    // Удаляем игрока из списка летящих
-    state.removePlayerFromFlight(req.username);
+    // ИСПРАВЛЕНО: Удаляем игрока из полета в рамках текущего бренда
+    state.removePlayerFromFlight(username, partnerId);
 
-    // Запись в единую ленту истории действий
-    await state.savePlayerActionHistory(req.username, {
+    // ИСПРАВЛЕНО: Запись в единую ленту истории действий с передачей partnerId
+    await state.savePlayerActionHistory(username, partnerId, {
         game: "Crash",
         details: `Cashed out at ${winMultiplier}x`,
         change: `+${winAmount} 🪙`,

@@ -139,6 +139,13 @@ const DEFAULT_CONFIG = {
         { code: "START2026", reward: 100, maxUses: 1, active: 1 } // Пример дефолтного кода
     ]
 };
+banks = {
+    globalJackpot: 1000,
+    mines: 5000,
+    crash: 5000,
+    dice: 3000,
+    hilo: 4000
+};
 CONFIG = {};
 
 // Асинхронная функция инициализации конфига
@@ -159,6 +166,48 @@ async function initConfig() {
     initLotteryService(io);
     initCrashService(io);
 }
+
+// ИСПРАВЛЕННАЯ ФУНКЦИЯ ИНИЦИАЛИЗАЦИИ В state.js
+async function initConfig() {
+    let cfg = await configDb.findOne({ _id: "global_config" });
+    if (!cfg) {
+        // Создаем стартовую структуру, где "demo_skin_default" — это наш первый B2B-партнер
+        const firstB2BConfig = {
+            _id: "global_config",
+            // Зашиваем дефолтного демо-партнера прямо в базу
+            "demo_skin_default": JSON.parse(JSON.stringify(DEFAULT_CONFIG)),
+            "banks_demo_skin_default": {
+                globalJackpot: 1000,
+                mines: 5000,
+                crash: 5000,
+                dice: 3000,
+                hilo: 4000,
+                slots5x3: 10000
+            }
+        };
+        await configDb.insert(firstB2BConfig);
+
+        // Загружаем в оперативную память
+        CONFIG["demo_skin_default"] = firstB2BConfig["demo_skin_default"];
+        banks["demo_skin_default"] = firstB2BConfig["banks_demo_skin_default"];
+
+        console.log("ℹ️ B2B Core initialized with default partner: demo_skin_default");
+    } else {
+        // Если база уже существует, просто переносим данные из файла в оперативку
+        CONFIG = {...DEFAULT_CONFIG,...cfg};
+        // Восстанавливаем банки для всех партнеров из сохраненного файла
+        Object.keys(cfg).forEach(key => {
+            if (key.startsWith('banks_')) {
+                const pId = key.replace('banks_', '');
+                banks[pId] = cfg[key];
+            }
+        });
+        console.log("✅ B2B Multi-tenant config successfully loaded from config.db");
+    }
+}
+initConfig(); // Запуск при старте ноды
+
+
 initConfig(); // Запускаем при старте сервера
 
 // Подключение сокетов игроков к их комнатам

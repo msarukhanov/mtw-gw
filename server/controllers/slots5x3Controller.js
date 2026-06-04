@@ -1,53 +1,69 @@
 const state = require('../state');
-const seamless = require('../services/seamlessService'); // твой модуль с дебитом/кредитом
+const seamless = require('../services/seamlessService');
 
 exports.buyBonus = async (req, res) => {
-    const config = state.getConfig().slots;
+    const partnerId = req.partnerId; // Извлекаем partnerId, добавленный мидлваром checkPlayer
     const username = req.username;
-    const sessionId = req.body.sessionId;
+    const sessionId = req.body.sessionId || req.player.sessionId;
+
+    // ИСПРАВЛЕНО: Берем конфигурацию слотов 5х3 конкретного партнера
+    const config = state.getConfig(partnerId).slots5x3;
 
     // Стоимость бонуса в 10 раз выше обычной ставки
     const bonusCost = config.cost * 10;
-    const roundId = `slots_bonus_${Date.now()}_${username}`;
+    const roundId = `slots5x3_bonus_${Date.now()}_${username}`;
 
     try {
-        // 1. Списываем повышенную ставку через Seamless
-        await seamless.debit(username, sessionId, bonusCost, "Slots Bonus Buy", roundId);
-        state.addJackpot(Math.floor(bonusCost * 0.05)); // 5% от покупки идет в глобальный джекпот
+        // 1. ИСПРАВЛЕНО: Списываем повышенную ставку через Seamless с маршрутизацией по partnerId
+        await seamless.debit(username, partnerId, sessionId, bonusCost, "Slots 5x3 Bonus Buy", roundId);
 
-        // 2. ГАРАНТИРОВАННЫЙ ВЫИГРЫШ: Игнорируем обычный ролл RTP
-        // Генерируем 3 одинаковых символа
+        // 2. ИСПРАВЛЕНО: 5% от покупки идет в изолированный джекпот конкретного партнера
+        state.addJackpot(partnerId, Math.floor(bonusCost * 0.05));
+
+        // 3. ГАРАНТИРОВАННЫЙ ВЫИГРЫШ: Генерируем победный символ из пула партнера
         const s = config.symbols;
         const winSymbol = s[state.getRandomInt(s.length)];
-        const results = [winSymbol, winSymbol, winSymbol];
 
-        // Точный расчет супер-приза
-        const prize = winSymbol === '💎' ? 500 : 150;
+        // Для слотов 5х3 генерируем выигрышную линию (например, 5 одинаковых символов в ряд)
+        const results = [winSymbol, winSymbol, winSymbol, winSymbol, winSymbol];
 
-        // 3. Начисляем супер-выигрыш через Seamless Credit
-        await seamless.credit(username, sessionId, prize, "Slots Bonus Buy", roundId);
+        // Расчет супер-приза
+        const prize = winSymbol === '💎' ? 1000 : 300; // Для 5х3 призы могут быть выше обычных 3х3
 
-        // Записываем в историю действий
-        await state.savePlayerActionHistory(username, {
-            game: "Slots Bonus Buy",
-            details: `Super Spin: [ ${results.join(' | ')} ]`,
+        // 4. ИСПРАВЛЕНО: Начисляем супер-выигрыш через Seamless Credit с привязкой к бренду
+        await seamless.credit(username, partnerId, sessionId, prize, "Slots 5x3 Bonus Buy", roundId);
+
+        // Обновляем локальный баланс игрока в Express, если он закэширован
+        if (req.player) req.player.balance = req.player.balance - bonusCost + prize;
+
+        // Обновляем баланс в NeDB базы данных
+        await state.updateBalance(username, partnerId, req.player.balance);
+
+        // 5. ИСПРАВЛЕНО: Записываем в историю действий с передачей partnerId
+        await state.savePlayerActionHistory(username, partnerId, {
+            game: "Slots5x3",
+            details: `Bonus Buy Super Spin: [ ${results.join(' | ')} ]`,
             change: `+${prize} 🪙 (Cost: -${bonusCost})`,
             win: true
         });
 
-        res.json({ success: true, results, prize });
+        res.json({ success: true, results, prize, balance: req.player.balance });
     } catch (err) {
-        console.error(err);
+        console.error(`[Partner: ${partnerId}] Bonus Buy error:`, err.message);
         res.status(500).json({ error: err.message || "Ошибка покупки бонусного раунда" });
     }
 };
 
+
 exports.spin = async (req, res) => {
-    const config = state.getConfig().slots5x3;
+    const partnerId = req.partnerId; // Извлекаем partnerId, добавленный мидлваром checkPlayer
     const username = req.username;
 
-    // Проверяем, есть ли у игрока активные бесплатные вращения (Free Spins)
-    let fsSession = state.getFreeSpins(username);
+    // ИСПРАВЛЕНО: Подгружаем конфигурацию слотов конкретного партнера
+    const config = state.getConfig(partnerId).slots5x3;
+
+    // ИСПРАВЛЕНО: Проверяем фриспины с разделением по конкретному бренду
+    let fsSession = state.getFreeSpins(username, partnerId);
     let isFreeSpin = fsSession && fsSession.remaining > 0;
     let currentBet = isFreeSpin ? fsSession.betUsed : config.cost;
 
@@ -58,7 +74,9 @@ exports.spin = async (req, res) => {
         }
         // Списываем ставку и пополняем RTP банк слотов
         req.player.balance -= currentBet;
-        state.addSlots5x3Bank(currentBet);
+
+        // ИСПРАВЛЕНО: Пополняем изолированный RTP-банк слотов этого партнера
+        state.addSlots5x3Bank(partnerId, currentBet);
     } else {
         // Уменьшаем счетчик фриспинов
         fsSession.remaining--;
@@ -72,10 +90,9 @@ exports.spin = async (req, res) => {
     let forceLose = false;
 
     // --- ПЕТЛЯ ГЕНЕРАЦИИ МАТРИЦЫ И ПРОВЕРКИ RTP ---
-    // --- ПЕТЛЯ ГЕНЕРАЦИИ МАТРИЦЫ И ПРОВЕРКИ RTP ---
     let attempts = 0;
     while (attempts < 20) {
-        // ИСПРАВЛЕНИЕ: Создаем массив строго из 5 пустых колонок
+        // Создаем массив строго из 5 пустых колонок
         matrix = [[], [], [], [], []];
         stopIndexes = [];
         totalWin = 0;
@@ -88,8 +105,6 @@ exports.spin = async (req, res) => {
             const stopIdx = state.getRandomInt(strip.length);
             stopIndexes.push(stopIdx);
 
-            // КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Пушим 3 символа внутрь текущей колонки [col]
-            // Раньше код писал matrix[0], matrix[1], matrix[2] — из-за чего создавалось 3 строки вместо 5 колонок
             matrix[col].push(strip[stopIdx]);
             matrix[col].push(strip[(stopIdx + 1) % strip.length]);
             matrix[col].push(strip[(stopIdx + 2) % strip.length]);
@@ -104,7 +119,6 @@ exports.spin = async (req, res) => {
 
         // 2. Проверяем 20 выигрышных линий
         config.paylines.forEach((line, lineIdx) => {
-            // Теперь извлечение matrix[номер_колонки][индекс_строки_из_шаблона] отработает идеально!
             let lineSymbols = [
                 matrix[0][line[0]], // Барабан 1
                 matrix[1][line[1]], // Барабан 2
@@ -144,7 +158,8 @@ exports.spin = async (req, res) => {
         });
 
         // Проверка ограничений RTP банка
-        const currentBank = state.getSlots5x3Bank();
+        // ИСПРАВЛЕНО: Проверяем ограничения банка строго для текущего партнера
+        const currentBank = state.getSlots5x3Bank(partnerId);
         if (totalWin > currentBank) {
             attempts++;
             forceLose = true;
@@ -153,7 +168,6 @@ exports.spin = async (req, res) => {
             break;
         }
     }
-
 
     // Если после 20 попыток сервер так и не смог найти проигрышную комбинацию на лентах (редко, но возможно),
     // принудительно очищаем выигрыш, чтобы защитить кассу
@@ -173,7 +187,8 @@ exports.spin = async (req, res) => {
 
         if (!fsSession) {
             fsSession = { remaining: 10, totalWon: 0, betUsed: currentBet };
-            state.setFreeSpins(username, fsSession);
+            // ИСПРАВЛЕНО: Сохраняем фриспины с привязкой к partnerId
+            state.setFreeSpins(username, partnerId, fsSession);
         } else {
             fsSession.remaining += 10; // Докручиваем +10 респинов, если поймали внутри бонуски
         }
@@ -182,7 +197,8 @@ exports.spin = async (req, res) => {
     // Фиксируем финансовые итоги раунда
     if (totalWin > 0) {
         req.player.balance += totalWin;
-        state.reduceSlots5x3Bank(totalWin); // Выплачиваем из RTP-копилки
+        // ИСПРАВЛЕНО: Выплачиваем из изолированной RTP-копилки текущего партнёра
+        state.reduceSlots5x3Bank(partnerId, totalWin);
         if (isFreeSpin) fsSession.totalWon += totalWin;
     }
 
@@ -192,14 +208,15 @@ exports.spin = async (req, res) => {
     if (isFreeSpin && fsSession.remaining === 0) {
         freeSpinsFinished = true;
         freeSpinsTotalPrize = fsSession.totalWon;
-        state.deleteFreeSpins(username); // Закрываем сессию бонуски
+        // ИСПРАВЛЕНО: Закрываем сессию бонуски строго для этого партнёра
+        state.deleteFreeSpins(username, partnerId);
     }
 
-    // Сохраняем обновленный баланс игрока в NeDB/SQLite
-    await state.updateBalance(username, req.player.balance);
+    // ИСПРАВЛЕНО: Сохраняем обновленный баланс игрока с привязкой к partnerId
+    await state.updateBalance(username, partnerId, req.player.balance);
 
-    // Запись в единую ленту истории действий
-    await state.savePlayerActionHistory(username, {
+    // ИСПРАВЛЕНО: Запись в единую ленту истории действий с передачей partnerId
+    await state.savePlayerActionHistory(username, partnerId, {
         game: isFreeSpin ? "Free Spin" : "Slots 5x3",
         details: isFreeSpin
             ? `FS Mode (${fsSession.remaining} left). Total won: ${fsSession.totalWon} 🪙`
@@ -215,12 +232,13 @@ exports.spin = async (req, res) => {
         hitLines,        // Массив выигравших линий с номерами
         totalWin,        // Выигрыш за этот конкретный спин
         balance: req.player.balance,
-        jackpot: state.getJackpot(),
-        // Параметры фриспинов
+        // ИСПРАВЛЕНО: Возвращаем джекпот конкретного партнёра
+        jackpot: state.getJackpot(partnerId),
+        // Параметры фриспинов (ИСПРАВЛЕНО: все вызовы кэша фриспинов завязаны на partnerId)
         freeSpins: {
-            isFreeSpinMode: state.getFreeSpins(username) ? true : false,
-            remaining: state.getFreeSpins(username) ? state.getFreeSpins(username).remaining : 0,
-            totalWon: state.getFreeSpins(username) ? state.getFreeSpins(username).totalWon : 0,
+            isFreeSpinMode: state.getFreeSpins(username, partnerId) ? true : false,
+            remaining: state.getFreeSpins(username, partnerId) ? state.getFreeSpins(username, partnerId).remaining : 0,
+            totalWon: state.getFreeSpins(username, partnerId) ? state.getFreeSpins(username, partnerId).totalWon : 0,
             triggered: triggeredFreeSpins,
             finished: freeSpinsFinished,
             bonusTotalPrize: freeSpinsTotalPrize,
@@ -228,3 +246,8 @@ exports.spin = async (req, res) => {
         }
     });
 };
+
+
+
+
+

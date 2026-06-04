@@ -4,144 +4,204 @@ let gameStatus = "betting"; // "betting", "flying", "crashed"
 let currentMultiplier = 1.00;
 let crashPoint = 1.00;
 
-let cashedOutHistory = {}; // { username: multiplier }
+// Массив фейковых имен для симуляции онлайна (ботов)
+const VIRTUAL_NAMES = ['CryptoWhale', 'LuckyBoy', 'SlotMaster', 'Zeus_777', 'AlphaGambler', 'Phoenix', 'MobilePlayer', 'CasinoKing'];
+
+// Храним историю кэшаутов с разделением по партнерам: { site_A: { username: mult }, site_B: {...} }
+let cashedOutHistory = {};
 
 function initCrashService(io) {
     runNextRoundLoop(io);
 }
 
-function forceRegisterCashout(username, multiplier) {
-    cashedOutHistory[username] = multiplier;
+// ИСПРАВЛЕНО: Метод теперь принимает partnerId, чтобы записать кэшаут в правильную комнату
+function forceRegisterCashout(username, partnerId, multiplier) {
+    if (!cashedOutHistory[partnerId]) cashedOutHistory[partnerId] = {};
+    cashedOutHistory[partnerId][username] = multiplier;
 }
-
-// Массив фейковых имен для симуляции онлайна (ботов)
-const VIRTUAL_NAMES = ['CryptoWhale', 'LuckyBoy', 'SlotMaster', 'Zeus_777', 'AlphaGambler', 'Phoenix', 'MobilePlayer', 'CasinoKing'];
 
 async function runNextRoundLoop(io) {
     gameStatus = "betting";
     currentMultiplier = 1.00;
-    state.clearCrashBets();
-    state.clearFlightPlayers();
-
     cashedOutHistory = {};
 
-    const config = state.getConfig().crash;
-    let timer = config.betTime;
+    // ИСПРАВЛЕНО: Сбрасываем ставки и полеты для ВСЕХ партнеров
+    // Для этого берем список всех активных партнеров из памяти CURRENT_CONFIG в state
+    const partnerIds = Object.keys(state.getConfig() || {});
+    // Если список пуст (первый запуск), добавим хотя бы дефолтный скин для демо
+    if (partnerIds.length === 0 || partnerIds.includes('lottery')) partnerIds.push('demo_skin_default');
 
-    // --- СИМУЛЯЦИЯ ОНЛАЙНА (Генерируем 3-5 случайных ставок ботов) ---
-    const botCount = 3 + Math.floor(Math.random() * 3);
-    const shuffledNames = [...VIRTUAL_NAMES].sort(() => Math.random() - 0.5);
+    for (const partnerId of partnerIds) {
+        if (partnerId === 'lottery' || partnerId === 'slots' || partnerId === 'wheel' || partnerId === 'scratch' || partnerId === 'gamification') continue;
 
-    for (let i = 0; i < botCount; i++) {
-        const botName = shuffledNames[i];
-        const botBet = (1 + Math.floor(Math.random() * 5)) * 10; // Ставки 10, 20, 30... 50 🪙
-        state.addCrashBet(botName, botBet);
-        state.addPlayerToFlight(botName); // Боты летят вместе со всеми
+        state.clearCrashBets(partnerId);
+        state.clearFlightPlayers(partnerId);
+        cashedOutHistory[partnerId] = {};
+
+        // --- БАС СИМУЛЯЦИЯ ОНЛАЙНА ВНУТРИ КАЖДОГО БРЕНДА ---
+        const botCount = 2 + Math.floor(Math.random() * 3);
+        const shuffledNames = [...VIRTUAL_NAMES].sort(() => Math.random() - 0.5);
+
+        for (let i = 0; i < botCount; i++) {
+            const botName = shuffledNames[i];
+            const botBet = (1 + Math.floor(Math.random() * 5)) * 10;
+            state.addCrashBet(botName, partnerId, botBet);
+            state.addPlayerToFlight(botName, partnerId); // Боты летят внутри своего бренда
+        }
     }
+
+    // Берем базовый конфиг (время ожидания у всех одинаковое, например 5000мс)
+    const baseConfig = state.getConfig('demo_skin_default').crash || { betTime: 5000 };
+    let timer = baseConfig.betTime;
 
     const bettingInterval = setInterval(() => {
         timer -= 1000;
 
-        // Отправляем текущее состояние и ВСЕ активные ставки раунда (включая ботов и реальных игроков)
-        io.emit('crash_state', {
-            status: "betting",
-            timeLeft: timer,
-            bets: state.getCrashBets() // Передаем объект ставок { username: bet }
-        });
+        // ИСПРАВЛЕНО: Рассылаем состояние персонально в комнату каждого партнера
+        for (const partnerId of partnerIds) {
+            if (partnerId === 'lottery' || partnerId === 'slots' || partnerId === 'wheel' || partnerId === 'scratch' || partnerId === 'gamification') continue;
+
+            io.to(partnerId).emit('crash_state', {
+                status: "betting",
+                timeLeft: timer,
+                bets: state.getCrashBets(partnerId) // Отдаем ставки только ЭТОГО партнера
+            });
+        }
 
         if (timer <= 0) {
             clearInterval(bettingInterval);
-            startFlight(io);
+            startFlight(io, partnerIds);
         }
     }, 1000);
 }
 
-async function startFlight(io) {
+async function startFlight(io, partnerIds) {
     gameStatus = "flying";
-
-    const config = state.getConfig().crash;
-    const currentBets = state.getCrashBets();
-    let totalRoundStakes = 0;
-    Object.values(currentBets).forEach(amount => totalRoundStakes += amount);
-
-    const rand = Math.random();
-    let generatedPoint = parseFloat((0.95 / (1 - rand)).toFixed(2));
-    if (generatedPoint < 1.00) generatedPoint = 1.00;
-    if (generatedPoint > config.maxMultiplier) generatedPoint = config.maxMultiplier;
-
-    const currentBank = state.getCrashBank();
-    const maxPossiblePayout = totalRoundStakes * generatedPoint;
-    if (maxPossiblePayout > currentBank && totalRoundStakes > 0) {
-        generatedPoint = parseFloat((1.01 + Math.random() * 0.34).toFixed(2));
-    }
-
-    crashPoint = generatedPoint;
-
-    // Переводим реальных игроков в статус полета (боты уже там)
-    Object.keys(currentBets).forEach(username => {
-        state.addPlayerToFlight(username);
-    });
-
-    // Объект для отслеживания результатов раунда (кто на каком иксе вышел)
-    cashedOutHistory = {};
-
     let startTime = Date.now();
+
+    // ИСПРАВЛЕНО: Генерируем ИНДИВИДУАЛЬНУЮ точку краша для каждого партнера на основе его RTP-банка!
+    const crashPoints = {};
+
+    for (const partnerId of partnerIds) {
+        if (partnerId === 'lottery' || partnerId === 'slots' || partnerId === 'wheel' || partnerId === 'scratch' || partnerId === 'gamification') continue;
+
+        const config = state.getConfig(partnerId).crash || { maxMultiplier: 100, baseRtp: 96 };
+        const currentBets = state.getCrashBets(partnerId);
+
+        let totalRoundStakes = 0;
+        Object.values(currentBets).forEach(amount => totalRoundStakes += amount);
+
+        const rand = Math.random();
+        let generatedPoint = parseFloat((0.95 / (1 - rand)).toFixed(2));
+        if (generatedPoint < 1.00) generatedPoint = 1.00;
+        if (generatedPoint > config.maxMultiplier) generatedPoint = config.maxMultiplier;
+
+        // Защита кассы конкретного оператора
+        const currentBank = state.getCrashBank(partnerId);
+        const maxPossiblePayout = totalRoundStakes * generatedPoint;
+        if (maxPossiblePayout > currentBank && totalRoundStakes > 0) {
+            generatedPoint = parseFloat((1.01 + Math.random() * 0.34).toFixed(2));
+        }
+
+        crashPoints[partnerId] = generatedPoint;
+
+        // Переводим реальных игроков этого бренда в статус полета
+        Object.keys(currentBets).forEach(username => {
+            state.addPlayerToFlight(username, partnerId);
+        });
+    }
 
     const flightInterval = setInterval(async () => {
         let elapsed = (Date.now() - startTime) / 1000;
         currentMultiplier = parseFloat(Math.pow(Math.E, 0.06 * elapsed).toFixed(2));
 
-        // --- ДИНАМИКА БОТОВ: Заставляем виртуальных игроков случайно выходить во время полета ---
-        Object.keys(currentBets).forEach(username => {
-            // Если игрок еще летит, и это бот (его нет в сессии реальных юзеров)
-            const activeInFlight = state.getActiveInFlight();
-            if (activeInFlight[username] && VIRTUAL_NAMES.includes(username)) {
-                // Маленький шанс выйти на каждом тике сокета, если текущий икс меньше точки краша
-                if (Math.random() < 0.05 && currentMultiplier < crashPoint) {
-                    state.removePlayerFromFlight(username);
-                    cashedOutHistory[username] = currentMultiplier; // Записываем, что бот забрал деньги
-                }
-            }
-        });
+        let activePartnersFlying = 0;
 
-        // ПРОВЕРКА НА КРАШ
-        if (currentMultiplier >= crashPoint) {
-            currentMultiplier = crashPoint;
+        for (const partnerId of partnerIds) {
+            if (partnerId === 'lottery' || partnerId === 'slots' || partnerId === 'wheel' || partnerId === 'scratch' || partnerId === 'gamification') continue;
+
+            const targetCrashPoint = crashPoints[partnerId];
+            const currentBets = state.getCrashBets(partnerId);
+
+            // Если у этого конкретного партнера самолет ЕЩЕ НЕ КРАШНУЛСЯ
+            if (currentMultiplier < targetCrashPoint) {
+                activePartnersFlying++;
+
+                // --- ДИНАМИКА БОТОВ ВНУТРИ БРЕНДА ---
+                Object.keys(currentBets).forEach(username => {
+                    const activeInFlight = state.getActiveInFlight(partnerId);
+                    if (activeInFlight[username] && VIRTUAL_NAMES.includes(username)) {
+                        if (Math.random() < 0.05) {
+                            state.removePlayerFromFlight(username, partnerId);
+                            if (!cashedOutHistory[partnerId]) cashedOutHistory[partnerId] = {};
+                            cashedOutHistory[partnerId][username] = currentMultiplier;
+                        }
+                    }
+                });
+
+                // Отправляем тик полета в комнату этого партнера
+                io.to(partnerId).emit('crash_state', {
+                    status: "flying",
+                    multiplier: currentMultiplier,
+                    cashedOut: cashedOutHistory[partnerId] || {}
+                });
+            }
+            // Если у этого партнера настал КРАШ, а событие краша еще не отправлено
+            else if (state.getCrashBets(partnerId) && Object.keys(state.getCrashBets(partnerId)).length > 0) {
+
+                // Фиксируем краш для этой комнаты
+                io.to(partnerId).emit('crash_state', {
+                    status: "crashed",
+                    multiplier: targetCrashPoint,
+                    cashedOut: cashedOutHistory[partnerId] || {}
+                });
+
+                // Списываем проигрыши реальных игроков в историю конкретного бренда
+                const inFlightPlayers = Object.keys(state.getActiveInFlight(partnerId));
+                for (let username of inFlightPlayers) {
+                    if (!VIRTUAL_NAMES.includes(username)) {
+                        const lostBet = currentBets[username];
+                        // ИСПРАВЛЕНО: Передаем partnerId в метод сохранения истории
+                        await state.savePlayerActionHistory(username, partnerId, {
+                            game: "Crash",
+                            details: `Flew away at ${targetCrashPoint}x. Lost bet.`,
+                            change: `-${lostBet} 🪙`,
+                            win: false
+                        });
+                    }
+                }
+
+                // Очищаем ставки этого партнера, чтобы код не заходил сюда на следующем тике
+                state.clearCrashBets(partnerId);
+            }
+        }
+
+        // Если у ВСЕХ партнеров самолеты взорвались — останавливаем интервал и запускаем таймер нового раунда
+        if (activePartnersFlying === 0) {
             clearInterval(flightInterval);
-
             gameStatus = "crashed";
-            // Отправляем финальный пакет краша
-            io.emit('crash_state', {status: "crashed", multiplier: currentMultiplier, cashedOut: cashedOutHistory});
-
-            const inFlightPlayers = Object.keys(state.getActiveInFlight());
-            for (let username of inFlightPlayers) {
-                // Реальные игроки пишутся в историю, ботов просто игнорируем
-                if (!VIRTUAL_NAMES.includes(username)) {
-                    const lostBet = currentBets[username];
-                    await state.savePlayerActionHistory(username, {
-                        game: "Crash",
-                        details: `Flew away at ${crashPoint}x. Lost bet.`,
-                        change: `-${lostBet} 🪙`,
-                        win: false
-                    });
-                }
-            }
 
             setTimeout(() => {
                 runNextRoundLoop(io);
             }, 4000);
-            return;
         }
-
-        // Каждые 80мс отправляем текущий икс и список тех, кто уже успел нажать кэшаут
-        io.emit('crash_state', {
-            status: "flying",
-            multiplier: currentMultiplier,
-            cashedOut: cashedOutHistory
-        });
 
     }, 80);
 }
+
+
+
+
+
+module.exports = {
+    initCrashService,
+    getStatus: () => gameStatus,
+    getMultiplier: () => currentMultiplier,
+    forceRegisterCashout,
+    getCashedOutList: () => cashedOutHistory
+};
+
+
 
 
 // async function runNextRoundLoop(io) {
@@ -244,11 +304,3 @@ async function startFlight(io) {
 //
 //     }, 80); // Шаг обновления — 80 миллисекунд для идеальной плавности
 // }
-
-module.exports = {
-    initCrashService,
-    getStatus: () => gameStatus,
-    getMultiplier: () => currentMultiplier,
-    forceRegisterCashout,
-    getCashedOutList: () => cashedOutHistory
-};

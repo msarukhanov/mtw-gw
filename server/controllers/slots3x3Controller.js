@@ -1,78 +1,40 @@
-// const state = require('../state');
-//
-// exports.spin = async (req, res) => {
-//     // Берем настройки напрямую из центрального конфига
-//     const config = state.getConfig().slots;
-//
-//     if (req.player.balance < config.cost) {
-//         return res.status(400).json({ error: "Insufficient funds" });
-//     }
-//
-//     req.player.balance -= config.cost;
-//     state.addJackpot(1);
-//
-//     const results = [
-//         config.symbols[state.getRandomInt(config.symbols.length)],
-//         config.symbols[state.getRandomInt(config.symbols.length)],
-//         config.symbols[state.getRandomInt(config.symbols.length)]
-//     ];
-//
-//     let prize = 0;
-//     if (results[0] === results[1] && results[1] === results[2]) {
-//         prize = results[0] === '💎' ? 500 : 150;
-//     } else if (results[0] === results[1] || results[1] === results[2] || results[0] === results[2]) {
-//         prize = 25;
-//     }
-//
-//     req.player.balance += prize;
-//
-//     await state.updateBalance(req.username, req.player.balance);
-//     await state.savePlayerActionHistory(req.username, {
-//         game: "Slots",
-//         details: `Spin: [ ${results.join(' | ')} ]`,
-//         change: prize > 0 ? `+${prize} 🪙` : `-${config.cost} 🪙`,
-//         win: prize > 0
-//     });
-//
-//     res.json({ results, prize, balance: req.player.balance, jackpot: state.getJackpot() });
-// };
-
-
 const state = require('../state');
 const seamless = require('../services/seamlessService');
 
 exports.spin = async (req, res) => {
-    const config = state.getConfig().slots3x3;
+    const partnerId = req.partnerId; // Извлекаем partnerId, добавленный мидлваром checkPlayer
     const username = req.username;
+
+    // ИСПРАВЛЕНО: Берем конфигурацию слотов конкретного партнера
+    const config = state.getConfig(partnerId).slots3x3;
 
     if (req.player.balance < config.cost) {
         return res.status(400).json({ error: "Insufficient funds" });
     }
 
-    if(req.player.sessionId) {
-        await seamless.debit(username, req.player.sessionId, config.cost, 'Slots3x3', state.getRandomInt(10000000) + 1)
+    const roundId = `slots3x3_round_${Date.now()}_${state.getRandomInt(100000) + 1}`;
+
+    // ИСПРАВЛЕНО: Пробрасываем partnerId вторым аргументом в бесшовное списание
+    if (req.player.sessionId) {
+        await seamless.debit(username, partnerId, req.player.sessionId, config.cost, 'Slots3x3', roundId);
     }
 
-    // Списываем ставку сразу
+    // Списываем ставку в локальном кэше B2B
     req.player.balance -= config.cost;
 
-
-
-
-    state.addJackpot(1);
+    // ИСПРАВЛЕНО: Начисляем отчисления в джекпот конкретного партнера
+    state.addJackpot(partnerId, 1);
 
     // Генерируем случайное число от 0 до 99 для определения категории исхода
     const roll = state.getRandomInt(100);
     let results = [];
 
-    // ФОРМУЛА: рассчитываем границу проигрыша на основе RTP
-    // При RTP = 80: граница = 100 - (80 * 0.45) = 64 (64% проигрышей)
-    // При RTP = 50: граница = 100 - (50 * 0.45) = 77.5 (77.5% проигрышей)
+    // ФОРМУЛА: рассчитываем границу выигрыша на основе RTP конкретного бренда
     const loseBoundary = Math.max(40, Math.min(95, 100 - (config.rtp * 0.45)));
 
     // МАТЕМАТИЧЕСКАЯ НАСТРОЙКА RTP (Всего 100%)
     if (roll < loseBoundary) {
-        // 65% шанс: Абсолютный ПРОИГРЫШ (все 3 символа гарантированно разные)
+        // Абсолютный ПРОИГРЫШ (все 3 символа гарантированно разные)
         const s = config.symbols;
         const first = s[state.getRandomInt(s.length)];
 
@@ -85,24 +47,23 @@ exports.spin = async (req, res) => {
         results = [first, second, third];
     }
     else if (roll < 96) {
-        // 31% шанс: Совпадение ДВУХ символов (Выигрыш 25)
+        // Совпадение ДВУХ символов (Выигрыш 25)
         const s = config.symbols;
         const pairSymbol = s[state.getRandomInt(s.length)];
 
         const s2 = s.filter(x => x !== pairSymbol);
         const thirdSymbol = s2[state.getRandomInt(s2.length)];
 
-        // Перемешиваем массив, чтобы дубликаты не всегда шли первыми двумя элементами
         results = [pairSymbol, pairSymbol, thirdSymbol].sort(() => Math.random() - 0.5);
     }
     else {
-        // 4% шанс: Совпадение ТРЕХ символов (Выигрыш 150 или 500 за алмазы)
+        // Совпадение ТРЕХ символов (Выигрыш 150 или 500 за алмазы)
         const s = config.symbols;
         const winSymbol = s[state.getRandomInt(s.length)];
         results = [winSymbol, winSymbol, winSymbol];
     }
 
-    // Точный расчет приза (исправлены ошибки сравнения индексов)
+    // Точный расчет приза
     let prize = 0;
     if (results[0] === results[1] && results[1] === results[2]) {
         prize = results[0] === '💎' ? 500 : 150;
@@ -110,12 +71,21 @@ exports.spin = async (req, res) => {
         prize = 25;
     }
 
-    // Начисляем выигрыш
+    // Начисляем выигрыш в локальном кэше B2B
     req.player.balance += prize;
 
-    // Сохраняем состояние в базу данных SQLite
-    await state.updateBalance(username, req.player.balance);
-    await state.savePlayerActionHistory(username, {
+    // ИСПРАВЛЕНО: Если есть выигрыш, отправляем бесшовное начисление на шлюз этого оператора
+    if (prize > 0 && req.player.sessionId) {
+        try {
+            await seamless.credit(username, partnerId, req.player.sessionId, prize, 'Slots3x3', roundId);
+        } catch (err) {
+            console.error(`[Partner: ${partnerId}] Failed to credit slot win for ${username}:`, err.message);
+        }
+    }
+
+    // ИСПРАВЛЕНО: Сохраняем баланс и пишем историю с привязкой к partnerId
+    await state.updateBalance(username, partnerId, req.player.balance);
+    await state.savePlayerActionHistory(username, partnerId, {
         game: "Slots3x3",
         details: `Spin: [ ${results.join(' | ')} ]`,
         change: prize > 0 ? `+${prize} 🪙` : `-${config.cost} 🪙`,
@@ -126,8 +96,8 @@ exports.spin = async (req, res) => {
         results,
         prize,
         balance: req.player.balance,
-        jackpot: state.getJackpot()
-        // Не забывай отправлять username на фронт, если это необходимо
+        // ИСПРАВЛЕНО: Возвращаем джекпот конкретного партнера
+        jackpot: state.getJackpot(partnerId)
     });
 };
 
