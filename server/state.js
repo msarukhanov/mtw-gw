@@ -2,6 +2,8 @@ const Datastore = require('nedb-promises');
 const crypto = require('crypto');
 const path = require('path');
 
+const seamless = require('./services/seamlessService');
+
 // База данных игроков
 const db = Datastore.create({
     filename: path.join(__dirname, 'game.db'),
@@ -50,6 +52,8 @@ let banks = {
     dice: 3000,
     hilo: 4000
 };
+
+
 
 let slots5x3BankPool = 10000;
 
@@ -113,26 +117,105 @@ const playerMethods = {
         return gamers;
     },
     // --- Единый метод для записи любого действия в историю игрока ---
+    // savePlayerActionHistory: async (username, actionData) => {
+    //     const player = await db.findOne({ username: username });
+    //     if (player) {
+    //         if (!player.history) player.history = [];
+    //
+    //         // Добавляем время к записи
+    //         const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    //
+    //         // Вставляем новое действие в самый верх списка
+    //         player.history.unshift({
+    //             time: timeString,
+    //             ...actionData
+    //         });
+    //
+    //         // Храним только последние 30 любых действий игрока
+    //         if (player.history.length > 30) player.history.pop();
+    //
+    //         await db.update({ username: username }, { $set: { history: player.history } });
+    //     }
+    // },
+
     savePlayerActionHistory: async (username, actionData) => {
         const player = await db.findOne({ username: username });
         if (player) {
+            // 1. Запись истории действий (твоя стандартная логика)
             if (!player.history) player.history = [];
-
-            // Добавляем время к записи
             const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
-            // Вставляем новое действие в самый верх списка
-            player.history.unshift({
-                time: timeString,
-                ...actionData
-            });
-
-            // Храним только последние 30 любых действий игрока
+            player.history.unshift({ time: timeString, ...actionData });
             if (player.history.length > 30) player.history.pop();
 
-            await db.update({ username: username }, { $set: { history: player.history } });
+            // 2. Геймификация (берем настройки из админки)
+            const gConfig = CURRENT_CONFIG.gamification;
+
+            // --- Начисляем XP и Уровни ---
+            if (!player.xp) player.xp = 0;
+            if (!player.level) player.level = 1;
+            player.xp += Number(gConfig.xpPerGame);
+
+            const nextLevelXp = player.level * Number(gConfig.xpMultiplier);
+            if (player.xp >= nextLevelXp) {
+                player.level += 1;
+                // ПРИМЕЧАНИЕ: Если за уровень положен бонус в монетах,
+                // здесь вместо "player.balance += ..." нужно будет просто вызвать твой метод CREDIT на платформу
+            }
+
+            // --- Считаем прогресс Ежедневного Квеста ---
+            if (!player.dailyQuests) player.dailyQuests = { gamesPlayed: 0, claimed: false };
+            if (player.dailyQuests.gamesPlayed < Number(gConfig.questTargetGames)) {
+                player.dailyQuests.gamesPlayed += 1;
+
+                if (player.dailyQuests.gamesPlayed === Number(gConfig.questTargetGames) && !player.dailyQuests.claimed) {
+                    player.dailyQuests.claimed = true;
+                    // Здесь при выполнении квеста тоже шлем CREDIT на платформу для выплаты бонуса
+                }
+
+                // Внутри savePlayerActionHistory, в блоке квестов:
+                if (player.dailyQuests.gamesPlayed === Number(gConfig.questTargetGames) && !player.dailyQuests.claimed) {
+                    player.dailyQuests.claimed = true;
+                    try {
+                        const questRoundId = `quest_daily_${Date.now()}_${username}`;
+
+                        player.balance += Number(gConfig.questReward);
+                        // Мы используем тот же метод credit
+                        await seamless.credit(
+                            username,
+                            actionData.sessionId || null, // Если игра передала сессию в actionData
+                            Number(gConfig.questReward),
+                            "🎁 Daily Quest Reward", // Название операции для платформы
+                            questRoundId
+                        );
+                    } catch (err) {
+                        console.error(`❌ Ошибка выплаты за квест игроку ${username}:`, err.message);
+                        // Если выплата не прошла, можно откатить статус claimed = false, чтобы попробовать позже
+                        player.dailyQuests.claimed = false;
+                    }
+                }
+            }
+
+            // --- Начисляем Очки Турнира (Лидерборд) ---
+            if (Number(gConfig.tournamentActive) === 1) {
+                if (!player.tournamentPoints) player.tournamentPoints = 0;
+                // Начисляем очки за сам факт игры, либо больше очков за выигрыш
+                player.tournamentPoints += actionData.win ? 5 : 1;
+            }
+
+            // 3. ИСПРАВЛЕНИЕ: Сохраняем ТОЛЬКО геймификацию и историю.
+            // Поле balance здесь НЕ трогаем и НЕ сохраняем, так как баланс живет на внешней платформе!
+            await db.update({ username: username }, {
+                $set: {
+                    history: player.history,
+                    xp: player.xp,
+                    level: player.level,
+                    dailyQuests: player.dailyQuests,
+                    tournamentPoints: player.tournamentPoints
+                }
+            });
         }
     },
+
 
     // Получить общую историю игрока
     getPlayerHistory: async (username) => {
@@ -217,11 +300,153 @@ const freeSpinMethods = {
     deleteFreeSpins: (username) => { delete activeFreeSpins[username]; }
 };
 
+const gamificationMethods = {
+    getLeaderboard: async (criterion = 'balance', limit = 10) => {
+        // Поддерживаемые критерии: 'balance', 'xp', 'tournamentPoints'
+        const validCriteria = ['balance', 'xp', 'tournamentPoints'];
+        const sortField = validCriteria.includes(criterion) ? criterion : 'balance';
+
+        // Находим всех игроков
+        const allPlayers = await db.find({});
+
+        // Сортируем по выбранному полю в порядке убывания и берем ТОП-10
+        return allPlayers
+            .sort((a, b) => {
+                const valA = a[sortField] || 0;
+                const valB = b[sortField] || 0;
+                return valB - valA;
+            })
+            .slice(0, limit)
+            .map((p, index) => ({
+                rank: index + 1,
+                username: p.username,
+                level: p.level || 1,
+                balance: p.balance,
+                tournamentPoints: p.tournamentPoints || 0
+            }));
+    },
+
+    endCurrentTournament: async () => {
+        // 1. Получаем настройки призового фонда из конфига
+        const gConfig = CONFIG.gamification || {tournamentPrize: 5000};
+        const totalPrize = Number(gConfig.tournamentPrize);
+
+        // Распределяем фонд: 1 место — 50%, 2 место — 30%, 3 место — 20%
+        const prizes = [
+            Math.floor(totalPrize * 0.50), // 1 место
+            Math.floor(totalPrize * 0.30), // 2 место
+            Math.floor(totalPrize * 0.20)  // 3 место
+        ];
+
+        // 2. Достаем всех игроков из базы
+        const allPlayers = await db.find({});
+
+        // Фильтруем тех, у кого есть очки, и сортируем по убыванию
+        const participants = allPlayers
+            .filter(p => p.tournamentPoints && p.tournamentPoints > 0)
+            .sort((a, b) => b.tournamentPoints - a.tournamentPoints);
+
+        const winnersInfo = [];
+
+        // 3. Награждаем ТОП-3 победителей
+        for (let i = 0; i < participants.length; i++) {
+            const player = participants[i];
+            let prizeWon = 0;
+
+            if (i < 3) {
+                prizeWon = prizes[i];
+                player.balance += prizeWon;
+                winnersInfo.push({
+                    username: player.username,
+                    place: i + 1,
+                    points: player.tournamentPoints,
+                    prize: prizeWon
+                });
+
+                try {
+                    // Вызываем внешнюю операцию CREDIT для отправки денег на платформу
+                    // Вместо roundId передаем уникальный ID турнира, чтобы транзакции не дублировались
+                    const tournamentRoundId = `tournament_win_${Date.now()}_${player.username}`;
+
+                    await seamless.credit(
+                        player.username,
+                        null,
+                        prizeWon,
+                        `🏆 Tournament Place ${i + 1}`, // Передаем понятное название "игры"
+                        tournamentRoundId
+                    );
+
+                    winnersInfo.push({ username: player.username, place: i + 1, points: player.tournamentPoints, prize: prizeWon });
+                } catch (err) {
+                    console.error(`❌ Не удалось выплатить приз турнира для ${player.username}:`, err.message);
+                }
+            }
+
+            // Добавляем запись в историю игрока о завершении турнира
+            if (!player.history) player.history = [];
+            const timeString = new Date().toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+
+            player.history.unshift({
+                time: timeString,
+                game: "🏆 Tournament End",
+                details: `Турнир окончен. Очки: ${player.tournamentPoints}. Место: ${i + 1}`,
+                change: prizeWon > 0 ? `+${prizeWon} 🪙` : `0 🪙`,
+                win: prizeWon > 0
+            });
+            if (player.history.length > 30) player.history.pop();
+
+            // Сбрасываем очки турнира для нового сезона
+            player.tournamentPoints = 0;
+
+            // Обновляем игрока в базе данных
+            await db.update({username: player.username}, {
+                $set: {
+                    balance: player.balance,
+                    tournamentPoints: player.tournamentPoints,
+                    history: player.history
+                }
+            });
+        }
+
+        return winnersInfo; // Возвращаем отчет, чтобы админ видел, кто победил
+    },
+
+    resetDailyQuestsForAll: async () => {
+        try {
+            // Находим всех игроков, у которых уже есть объект квестов
+            const players = await db.find({});
+
+            for (const player of players) {
+                if (player.dailyQuests) {
+                    // Сбрасываем прогресс до начального состояния
+                    player.dailyQuests = { gamesPlayed: 0, claimed: false };
+
+                    // Обновляем запись в NeDB
+                    await db.update({ username: player.username }, {
+                        $set: { dailyQuests: player.dailyQuests }
+                    });
+                }
+            }
+            console.log("📅 [Cron] Ежедневные квесты успешно обнулены для всех игроков!");
+            return true;
+        } catch (err) {
+            console.error("❌ Ошибка при автоматическом сбросе квестов:", err);
+            return false;
+        }
+    }
+};
+
 module.exports = {
     getRandomInt,
 
     ...playerMethods,
     ...jackpotMethods,
+    ...gamificationMethods,
+
     ...minesMethods,
     ...crashMethods,
     ...diceMethods,
@@ -231,18 +456,6 @@ module.exports = {
     ...freeSpinMethods,
 
     getConfig: () => CONFIG, // Метод для отправки настроек клиенту
-// --- НОВЫЕ МЕТОДЫ ДЛЯ АДМИНКИ ---
-//     updateConfigParam: (game, param, value) => {
-//         if (CONFIG[game] && CONFIG[game][param] !== undefined) {
-//             // Если параметр числовой, парсим его
-//             CONFIG[game][param] = typeof CONFIG[game][param] === 'number' ? Number(value) : value;
-//
-//             return true;
-//         }
-//         return false;
-//
-//
-//     },
 
     updateConfigParam: async (game, param, value) => {
         let changed = false;
@@ -286,6 +499,8 @@ module.exports = {
         const history = await historyDb.find({});
         return history.slice(-limit); // Возвращаем последние N записей
     },
+
+
 
     // --- Методы для работы с личной историей игрока ---
 };

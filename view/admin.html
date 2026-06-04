@@ -72,6 +72,28 @@
         </form>
     </div>
 
+    <!-- Управление пользователями -->
+    <div class="card">
+        <h2>👥 Player management</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>Username</th>
+                <th>Balance</th>
+                <th>Action (Change balance)</th>
+            </tr>
+            </thead>
+            <tbody id="playersTableBody">
+            <!-- Сюда данные вставит JavaScript -->
+            </tbody>
+        </table>
+    </div>
+
+
+
+</div>
+
+<div class="container">
     <div class="card" style="max-width: 400px;">
         <h2>💰 Global Jackpot</h2>
         <div class="jackpot-val" id="jackpotDisplay">0 🪙</div>
@@ -80,24 +102,39 @@
             <button type="submit" class="danger">Change bank</button>
         </form>
     </div>
+
+    <!-- Новый блок в admin.html для управления геймификацией -->
+    <div class="card">
+        <h2>🎮 Gamification</h2>
+        <form id="gamificationForm">
+            <div class="game-block">
+                <h3>Xp and levels</h3>
+                XP per game: <input type="number" id="g_xpPerGame"> |
+                XP multiplier: <input type="number" id="g_xpMultiplier"><br>
+                Lvlup bonus: <input type="number" id="g_levelUpBonus"> 🪙
+            </div>
+            <div class="game-block">
+                <h3>Daily quest</h3>
+                Goal (game num): <input type="number" id="g_questTargetGames"><br>
+                Quest reward: <input type="number" id="g_questReward"> 🪙
+            </div>
+            <div class="game-block">
+                <h3>Tournament</h3>
+                Tournament state:
+                <select id="g_tournamentActive" style="padding:6px; border-radius:4px;">
+                    <option value="1">On</option>
+                    <option value="0">Off</option>
+                </select><br>
+                Prize pool: <input type="number" id="g_tournamentPrize"> 🪙
+                <br><br>
+                <button type="button" class="danger" id="endTournamentBtn" style="width: 100%;">🏁 End tournament</button>
+            </div>
+            <button type="submit">💾 Save</button>
+        </form>
+    </div>
 </div>
 
-<!-- Управление пользователями -->
-<div class="card">
-    <h2>👥 Player management</h2>
-    <table>
-        <thead>
-        <tr>
-            <th>Username</th>
-            <th>Balance</th>
-            <th>Action (Change balance)</th>
-        </tr>
-        </thead>
-        <tbody id="playersTableBody">
-        <!-- Сюда данные вставит JavaScript -->
-        </tbody>
-    </table>
-</div>
+
 
 <script>
     // ТВОЙ АДРЕС СЕРВЕРА (измени порт 3000, если у тебя другой)
@@ -149,15 +186,37 @@
             if (tbody) {
                 tbody.innerHTML = data.players.map(p => `
                 <tr>
-                    <td><b>${p.username}</b></td>
-                    <td>${p.balance} 🪙</td>
+                    <td><b>${p.username}</b><br><small>Level: ${p.level || 1} (${p.xp || 0} XP)</small></td>
+                    <td>
+                        💵 Balance: ${p.balance} 🪙<br>
+                        🏆 Tournament points: ${p.tournamentPoints || 0}
+                    </td>
                     <td>
                         <input type="number" id="bal_${p.username}" value="${p.balance}" style="width:100px;">
-                        <button onclick="updateBalance('${p.username}')">Change balance</button>
+                        <button onclick="updateBalance('${p.username}')">Обновить</button>
                     </td>
                 </tr>
             `).join('');
             }
+//
+//        <tr>
+//            <td><b>${p.username}</b></td>
+//            <td>${p.balance} 🪙</td>
+//            <td>
+//            <input type="number" id="bal_${p.username}" value="${p.balance}" style="width:100px;">
+//                <button onclick="updateBalance('${p.username}')">Change balance</button>
+//            </td>
+//            </tr>
+
+            // Внутри функции loadData() добавь:
+            document.getElementById('g_xpPerGame').value = data.config.gamification.xpPerGame;
+            document.getElementById('g_xpMultiplier').value = data.config.gamification.xpMultiplier;
+            document.getElementById('g_levelUpBonus').value = data.config.gamification.levelUpBonus;
+            document.getElementById('g_questTargetGames').value = data.config.gamification.questTargetGames;
+            document.getElementById('g_questReward').value = data.config.gamification.questReward;
+            document.getElementById('g_tournamentActive').value = data.config.gamification.tournamentActive;
+            document.getElementById('g_tournamentPrize').value = data.config.gamification.tournamentPrize;
+
         } catch (err) {
             console.error(err);
             alert('Server connection error.');
@@ -209,6 +268,60 @@
         });
         if (res.ok) { alert(`Player ${username} balance changed!`); loadData(); }
     }
+
+    // Добавь новый обработчик отправки формы в конец скрипта:
+    document.getElementById('gamificationForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const gData = {
+            gamification_xpPerGame: document.getElementById('g_xpPerGame').value,
+            gamification_xpMultiplier: document.getElementById('g_xpMultiplier').value,
+            gamification_levelUpBonus: document.getElementById('g_levelUpBonus').value,
+            gamification_questTargetGames: document.getElementById('g_questTargetGames').value,
+            gamification_questReward: document.getElementById('g_questReward').value,
+            gamification_tournamentActive: document.getElementById('g_tournamentActive').value,
+            gamification_tournamentPrize: document.getElementById('g_tournamentPrize').value,
+        };
+
+        const res = await fetch(`${SERVER_URL}/api/admin/update-config`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(gData)
+        });
+        if (res.ok) { alert('Gamification params updated!'); loadData(); }
+    });
+
+    document.getElementById('endTournamentBtn').addEventListener('click', async () => {
+        if (!confirm('Are you sure you want too end current tournament?')) {
+            return;
+        }
+
+        try {
+            const res = await fetch(`${SERVER_URL}/api/admin/end-tournament`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                if (data.winners.length === 0) {
+                    alert('Tournament is over! No active players.');
+                } else {
+                    let report = '🏆 Tournament is over! Winnner:\n\n';
+                    data.winners.forEach(w => {
+                        report += `${w.place} place: ${w.username} (${w.points} очков) — Winning: +${w.prize} 🪙\n`;
+                    });
+                    alert(report);
+                }
+                loadData(); // Обновляем таблицу игроков на странице
+            } else {
+                alert('Tournament end error.');
+            }
+        } catch (err) {
+            alert('Ошибка соединения с сервером.');
+        }
+    });
+
 
     // Первичный запуск при открытии страницы
     loadData();

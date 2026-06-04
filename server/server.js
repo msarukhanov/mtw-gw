@@ -118,6 +118,18 @@ const DEFAULT_CONFIG = {
             ['🍇','🍊','🍋','🍒','🍋','🍇','🍊','W','🦁','🍇','🍋','🍒','S','🍇','🍊','💎','🍇','🍋','🍒','🍊'],
             ['🦁','💎','🍒','🍋','🍊','🍇','🍒','W','S','🦁','💎','🍒','🍋','🍊','🍇','🍒','🍋','🍊','🍇','🍒']
         ]
+    },
+
+    gamification: {
+        xpPerGame: 10,          // Сколько XP давать за одну игру
+        xpMultiplier: 1000,     // Множитель опыта для нового уровня (level * multiplier)
+        levelUpBonus: 100,      // Награда в коинах за поднятие уровня
+
+        questTargetGames: 30,   // Сколько игр нужно сделать для дневного квеста
+        questReward: 50,        // Награда за выполнение квеста
+
+        tournamentActive: 1,    // 1 - идет турнир, 0 - выключен
+        tournamentPrize: 5000   // Призовой фонд турнира
     }
 };
 CONFIG = {};
@@ -153,3 +165,23 @@ const PORT = 3000;
 server.listen(PORT, () => {
     console.log(`Modular Server running on port ${PORT}`);
 });
+
+const state = require('./state'); // Укажи правильный путь к модулю state.js
+
+// Переменная, чтобы код сброса не выполнился несколько раз в течение одной минуты 00:00
+let lastResetDay = new Date().getDate();
+
+setInterval(async () => {
+    const now = new Date();
+    const currentDay = now.getDate();
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+
+    // Проверяем: наступила ли полночь (00:00) и наступил ли новый день
+    if (hours === 0 && minutes === 0 && currentDay !== lastResetDay) {
+        lastResetDay = currentDay; // Фиксируем новый день
+
+        console.log("⏰ Наступила полночь. Запуск обнуления квестов...");
+        await state.resetDailyQuestsForAll();
+    }
+}, 60000);

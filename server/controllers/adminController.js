@@ -136,6 +136,18 @@ exports.updateBalance = async (req, res) => {
     }
 };
 
+// Обработчик завершения турнира и распределения призов
+exports.endTournament = async (req, res) => {
+    try {
+        const winners = await state.endCurrentTournament();
+        res.json({ success: true, winners });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Не удалось завершить турнир" });
+    }
+};
+
+
 
 
 

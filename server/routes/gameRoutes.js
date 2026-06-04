@@ -12,7 +12,10 @@ const mines = require('../controllers/minesController');
 const crash = require('../controllers/crashController');
 const dice = require('../controllers/diceController');
 const hilo = require('../controllers/hiloController');
+const leaderboard = require('../controllers/leaderboardController');
 
+// Публичный эндпоинт таблицы лидеров
+router.get('/leaderboard', leaderboard.getTop);
 
 // Добавьте к остальным роутам ваших игр
 router.post('/slots5x3/spin', auth.checkPlayer, slots5x3.spin);

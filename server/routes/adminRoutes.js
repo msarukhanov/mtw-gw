@@ -15,6 +15,7 @@ router.get('/admin/data', adminController.getAdminData);
 router.post('/admin/update-config', adminController.updateConfig);
 router.post('/admin/update-jackpot', adminController.updateJackpot);
 router.post('/admin/update-balance', adminController.updateBalance);
+router.post('/admin/end-tournament', adminController.endTournament);
 
 // // Пример для роутов вашей админ-панели:
 // router.get('/admin/mines/stats', (req, res) => {
