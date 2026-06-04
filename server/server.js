@@ -9,6 +9,7 @@ const authRoutes = require('./routes/authRoutes');
 const gameRoutes = require('./routes/gameRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const sportRoutes = require('./routes/sportRoutes');
+const websiteRoutes = require('./routes/websiteRoutes');
 
 
 const app = express();
@@ -27,6 +28,7 @@ app.use('/api', authRoutes);
 app.use('/api', adminRoutes);
 app.use('/api', gameRoutes);
 app.use('/api', sportRoutes);
+app.use('/api', websiteRoutes);
 
 
 // Запуск фоновой службы лотереи по сокетам
@@ -175,7 +177,17 @@ async function initConfig() {
         const firstB2BConfig = {
             _id: "global_config",
             // Зашиваем дефолтного демо-партнера прямо в базу
-            "demo_skin_default": JSON.parse(JSON.stringify(DEFAULT_CONFIG)),
+            "demo_skin_default": JSON.parse(JSON.stringify(
+                {
+                    ...DEFAULT_CONFIG,
+                    integration: {
+                        url: (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+                            ? 'http://localhost:3000/api/seamless'
+                            : 'https://onrender.com',
+                        secret: 'demo_showcase_secure_token'
+                    }
+                }
+            )),
             "banks_demo_skin_default": {
                 globalJackpot: 1000,
                 mines: 5000,
