@@ -103,7 +103,12 @@
 
         /* 🎰 MAIN GRID SECTIONS */
         .content-section { display: none; padding: 35px 50px; flex: 1; }
-        .content-section.active { display: block; }
+        .content-section.active {
+            display: block;
+
+            height: calc(100vh - 122px) !important;
+            box-sizing: border-box;
+        }
         .section-title { font-size: 24px; color: #fff; margin-top: 0; margin-bottom: 25px; border-left: 4px solid var(--accent-yellow); padding-left: 12px; }
 
         .games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
@@ -317,6 +322,204 @@
             }
         }
 
+        /* 🏙️ BANNER SLIDER & HOMEPAGE UI */
+        .promo-slider {
+            width: 100%;
+            max-width: 1000px;
+            height: 300px;
+            margin: 0 auto 30px auto;
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        }
+        .slide-container {
+            display: flex;
+            width: 300%; /* 3 слайда = 300% */
+            height: 100%;
+            transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        .slide-item {
+            width: 33.333%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 40px 60px;
+            box-sizing: border-box;
+            position: relative;
+        }
+        /* Затемнение для читаемости текста */
+        .slide-item::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(90deg, rgba(13,17,23,0.85) 30%, rgba(13,17,23,0.2) 100%);
+            z-index: 1;
+        }
+        .slide-content {
+            position: relative;
+            z-index: 2;
+            max-width: 450px;
+        }
+        .slide-content h2 { font-size: 28px; color: #fff; margin: 0 0 10px 0; font-weight: 800; }
+        .slide-content p { font-size: 14px; color: var(--text-muted); margin: 0 0 20px 0; line-height: 1.4; }
+
+        /* Кнопки навигации слайдера */
+        .slider-dots {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            z-index: 5;
+        }
+        .slider-dot {
+            width: 10px;
+            height: 10px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .slider-dot.active {
+            background: var(--accent-yellow);
+            width: 24px;
+            border-radius: 10px;
+        }
+
+        /* Кнопки быстрой навигации под слайдером */
+        .lobby-categories {
+            display: flex;
+            gap: 12px;
+            max-width: 1000px;
+            margin: 0 auto 30px auto;
+            overflow-x: auto;
+        }
+        .lobby-cat-btn {
+            background: var(--bg-navbar);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+        .lobby-cat-btn:hover { border-color: var(--accent-yellow); color: #fff; }
+
+        /* Адаптация слайдера под мобильные экраны */
+        @media (max-width: 768px) {
+            .promo-slider { height: 180px; margin-bottom: 20px; }
+            .slide-item { padding: 20px; }
+            .slide-content h2 { font-size: 18px; margin-bottom: 6px; }
+            .slide-content p { font-size: 11px; margin-bottom: 12px; }
+            .slide-content button { padding: 6px 12px !important; font-size: 11px !important; }
+        }
+
+        /* 🔥 NEW PREMIUM SLIDER CTA BUTTON STYLE */
+        .slide-content button, .slide-content .btn-primary {
+            background: linear-gradient(135deg, #ffb703, #ff8503) !important;
+            border: 2px solid #ffb703 !important;
+            color: #0d1117 !important;
+            padding: 12px 28px !important;
+            border-radius: 8px !important;
+            font-size: 14px !important;
+            font-weight: 800 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 1px !important;
+            cursor: pointer !important;
+            box-shadow: 0 0 15px rgba(255, 183, 3, 0.3) !important;
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1) !important;
+            outline: none !important;
+            display: inline-block !important;
+        }
+
+        /* Эффект при наведении на десктопе */
+        .slide-content button:hover, .slide-content .btn-primary:hover {
+            transform: translateY(-3px) scale(1.02) !important;
+            box-shadow: 0 0 25px rgba(255, 183, 3, 0.6) !important;
+            background: linear-gradient(135deg, #ffc83b, #ff9100) !important;
+            border-color: #ffc83b !important;
+        }
+
+        /* Эффект нажатия (клик/тач) */
+        .slide-content button:active, .slide-content .btn-primary:active {
+            transform: translateY(1px) scale(0.98) !important;
+            box-shadow: 0 0 10px rgba(255, 183, 3, 0.4) !important;
+        }
+
+        /* Для второго и третьего баннера сделаем альтернативный неоновый синий стиль, чтобы они отличались */
+        .slide-item:nth-child(2) .slide-content button,
+        .slide-item:nth-child(3) .slide-content button {
+            background: linear-gradient(135deg, #58a6ff, #0056b3) !important;
+            border-color: #58a6ff !important;
+            color: #fff !important;
+            box-shadow: 0 0 15px rgba(88, 166, 255, 0.3) !important;
+        }
+
+        .slide-item:nth-child(2) .slide-content button:hover,
+        .slide-item:nth-child(3) .slide-content button:hover {
+            background: linear-gradient(135deg, #79b8ff, #0066d6) !important;
+            border-color: #79b8ff !important;
+            box-shadow: 0 0 25px rgba(88, 166, 255, 0.6) !important;
+        }
+        /* 🔥 NEW PREMIUM SLIDER CTA BUTTON STYLE */
+        .slide-content button, .slide-content .btn-primary {
+            background: linear-gradient(135deg, #ffb703, #ff8503) !important;
+            border: 2px solid #ffb703 !important;
+            color: #0d1117 !important;
+            padding: 12px 28px !important;
+            border-radius: 8px !important;
+            font-size: 14px !important;
+            font-weight: 800 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 1px !important;
+            cursor: pointer !important;
+            box-shadow: 0 0 15px rgba(255, 183, 3, 0.3) !important;
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1) !important;
+            outline: none !important;
+            display: inline-block !important;
+        }
+
+        /* Эффект при наведении на десктопе */
+        .slide-content button:hover, .slide-content .btn-primary:hover {
+            transform: translateY(-3px) scale(1.02) !important;
+            box-shadow: 0 0 25px rgba(255, 183, 3, 0.6) !important;
+            background: linear-gradient(135deg, #ffc83b, #ff9100) !important;
+            border-color: #ffc83b !important;
+        }
+
+        /* Эффект нажатия (клик/тач) */
+        .slide-content button:active, .slide-content .btn-primary:active {
+            transform: translateY(1px) scale(0.98) !important;
+            box-shadow: 0 0 10px rgba(255, 183, 3, 0.4) !important;
+        }
+
+        /* Для второго и третьего баннера сделаем альтернативный неоновый синий стиль, чтобы они отличались */
+        .slide-item:nth-child(2) .slide-content button,
+        .slide-item:nth-child(3) .slide-content button {
+            background: linear-gradient(135deg, #58a6ff, #0056b3) !important;
+            border-color: #58a6ff !important;
+            color: #fff !important;
+            box-shadow: 0 0 15px rgba(88, 166, 255, 0.3) !important;
+        }
+
+        .slide-item:nth-child(2) .slide-content button:hover,
+        .slide-item:nth-child(3) .slide-content button:hover {
+            background: linear-gradient(135deg, #79b8ff, #0066d6) !important;
+            border-color: #79b8ff !important;
+            box-shadow: 0 0 25px rgba(88, 166, 255, 0.6) !important;
+        }
+
+
     </style>
 
     <script src="https://cdn.socket.io/4.8.3/socket.io.min.js" integrity="sha384-kzavj5fiMwLKzzD1f8S7TeoVIEi7uKHvbTA3ueZkrzYq75pNQUiUi6Dy98Q3fxb0" crossorigin="anonymous"></script>
@@ -353,7 +556,8 @@
     <!-- HEADER / NAVIGATION MENU -->
     <header class="header">
         <div class="logo-area">
-            <a href="#" class="logo" onclick="toggleView('casino')">MTW<span>TECH</span></a>
+            <!--<a href="#" id="link-home" class="nav-link-item active" onclick="toggleView('home')">MTW<span>TECH</a>-->
+            <a href="#" class="logo" onclick="toggleView('home')">MTW<span>TECH</span></a>
             <nav class="nav-links">
                 <a href="#" id="link-casino" class="nav-link-item active" onclick="toggleView('casino')">Games</a>
                 <a href="#" id="link-sports" class="nav-link-item" onclick="toggleView('sports')">Sportsbook</a>
@@ -379,6 +583,67 @@
         </div>
     </header>
 
+    <!-- 🏠 SECTION: HOMEPAGE LOBBY -->
+    <main id="section-home" class="content-section active">
+
+        <!-- 🏞️ PREMIUM PROMO SLIDER -->
+        <div class="promo-slider">
+            <div class="slide-container" id="sliderContainer">
+
+                <!-- Slide 1: Welcome Bonus -->
+                <div class="slide-item" style="background-image: linear-gradient(135deg, rgba(26,11,46,0.95) 0%, rgba(13,17,23,0.8) 100%), linear-gradient(45deg, #ff007f 0%, #7928ca 100%); border-left: 5px solid #ff007f;">
+                    <div class="slide-content">
+                        <h2>Welcome Package +200%</h2>
+                        <p>Activate your secret promo voucher in your personal profile dashboard and multiply your coins instantly!</p>
+                        <button class="btn-primary" style="background:var(--accent-yellow); color:#1a1d24;" onclick="alert('Open your profile menu and enter code!')">Claim Now</button>
+                    </div>
+                </div>
+
+                <!-- Slide 2: Crash Tournament -->
+                <div class="slide-item" style="background-image: linear-gradient(135deg, rgba(11,36,46,0.95) 0%, rgba(13,17,23,0.8) 100%), linear-gradient(45deg, #00f5d4 0%, #0056b3 100%); border-left: 5px solid #00f5d4;">
+                    <div class="slide-content">
+                        <h2>Live Aviator Tournament</h2>
+                        <p>Fly high, match maximum win multiplier coordinates, secure top place points and win your fraction of the 5,000 🪙 prize pool!</p>
+                        <button class="btn-primary" onclick="toggleView('casino');">Launch Crash</button>
+                    </div>
+                </div>
+
+                <!-- Slide 3: Live Sports bets -->
+                <div class="slide-item" style="background-image: linear-gradient(135deg, rgba(36,28,11,0.95) 0%, rgba(13,17,23,0.8) 100%), linear-gradient(45deg, #ffb703 0%, #161b22 100%); border-left: 5px solid #ffb703;">
+                    <div class="slide-content">
+                        <h2>In-Play Sportsbook Engine</h2>
+                        <p>Combine your favorite outcomes from soccer, basketball, and tennis into elite combo slips with boosted total odds multipliers.</p>
+                        <button class="btn-primary" onclick="toggleView('sports');">Open Arena</button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Точки навигации -->
+            <div class="slider-dots">
+                <div class="slider-dot active" onclick="moveSlide(0)"></div>
+                <div class="slider-dot" onclick="moveSlide(1)"></div>
+                <div class="slider-dot" onclick="moveSlide(2)"></div>
+            </div>
+        </div>
+
+        <!-- Быстрые категории лобби -->
+        <div class="lobby-categories">
+            <button class="lobby-cat-btn" onclick="toggleView('casino')">🎰 Video Slots</button>
+            <button class="lobby-cat-btn" onclick="toggleView('casino'); launchGame('crash');">🚀 Crash Flight</button>
+            <button class="lobby-cat-btn" onclick="toggleView('sports')">⚽ Live Sports</button>
+        </div>
+
+        <!-- Сетка рекомендуемых топ-игр -->
+        <h2 class="section-title" style="margin-top: 20px;">Featured Lobby Hits</h2>
+        <div class="games-grid">
+            <div class="game-card" onclick="toggleView('casino'); launchGame('crash');"><div class="game-icon">🚀</div><h3>Crash Aviator</h3></div>
+            <div class="game-card" onclick="toggleView('casino'); launchGame('slots5x3');"><div class="game-icon">🍒</div><h3>Slots Video 5x3</h3></div>
+            <div class="game-card" onclick="toggleView('sports'); launchGame('sportsbook');"><div class="game-icon">⚽</div><h3>Sports Betting Arena</h3></div>
+        </div>
+    </main>
+
+
     <!-- UNIVERSAL GAME IFRAME SHELL -->
     <div class="iframe-container" id="frameWrapper">
         <iframe id="gameIframe" src=""></iframe>
@@ -397,7 +662,11 @@
 
     <!-- 📱 NATIVE-STYLE MOBILE BOTTOM FOOTER MENU -->
     <nav class="mobile-nav" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: var(--bg-navbar); border-top: 1px solid var(--border-color); z-index: 100; justify-content: space-around; align-items: center; box-shadow: 0 -4px 10px rgba(0,0,0,0.3); -webkit-tap-highlight-color: transparent;">
-        <button id="m-btn-casino" class="mobile-nav-item active" style="background:transparent; border:0; color:var(--text-muted); display:flex; flex-direction:column; align-items:center; font-size:11px; font-weight:bold; cursor:pointer;" onclick="toggleView('casino')">
+        <button id="m-btn-home" class="mobile-nav-item active" style="background:transparent; border:0; color:var(--text-muted); display:flex; flex-direction:column; align-items:center; font-size:11px; font-weight:bold; cursor:pointer;" onclick="toggleView('home')">
+            <span style="font-size:20px;">🏠</span><span>Home</span>
+        </button>
+
+        <button id="m-btn-casino" class="mobile-nav-item" style="background:transparent; border:0; color:var(--text-muted); display:flex; flex-direction:column; align-items:center; font-size:11px; font-weight:bold; cursor:pointer;" onclick="toggleView('casino')">
             <span style="font-size:20px;">🎰</span><span>Casino</span>
         </button>
         <button id="m-btn-sports" class="mobile-nav-item" style="background:transparent; border:0; color:var(--text-muted); display:flex; flex-direction:column; align-items:center; font-size:11px; font-weight:bold; cursor:pointer;" onclick="toggleView('sports')">
@@ -484,7 +753,7 @@
                 document.getElementById('wallet-display').innerText = data.balance + ' 🪙';
             });
 
-            toggleView('casino');
+            toggleView('home');
 
         } catch (err) {
             alert('Connection error during platform initialization');
@@ -565,28 +834,59 @@
         });
     }
 
+//    function toggleView(viewType) {
+////        document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
+//        document.querySelectorAll('.nav-link-item').forEach(link => link.classList.remove('active'));
+//        document.querySelectorAll('.mobile-nav-item').forEach(btn => btn.classList.remove('active'));
+//
+//        // Скрываем iFrame и закрываем правое мобильное меню при переключении категорий
+////        document.getElementById('frameWrapper').style.display = 'none';
+//        document.getElementById('gameIframe').src = "";
+//        document.getElementById('mobileRightMenu').style.display = 'none';
+//
+//        if (viewType === 'casino') {
+////            document.getElementById('section-casino').classList.add('active');
+//            document.getElementById('link-casino').classList.add('active');
+//            document.getElementById('m-btn-casino').classList.add('active');
+//            launchGame('');
+//        } else {
+////            document.getElementById('section-sports').classList.add('active');
+//            document.getElementById('link-sports').classList.add('active');
+//            document.getElementById('m-btn-sports').classList.add('active');
+//            launchSport('');
+//        }
+//    }
+
     function toggleView(viewType) {
 //        document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
         document.querySelectorAll('.nav-link-item').forEach(link => link.classList.remove('active'));
         document.querySelectorAll('.mobile-nav-item').forEach(btn => btn.classList.remove('active'));
 
-        // Скрываем iFrame и закрываем правое мобильное меню при переключении категорий
-//        document.getElementById('frameWrapper').style.display = 'none';
+        // Скрываем iFrame и закрываем меню
         document.getElementById('gameIframe').src = "";
         document.getElementById('mobileRightMenu').style.display = 'none';
 
-        if (viewType === 'casino') {
+        if (viewType === 'home') {
+            document.getElementById('frameWrapper').style.display = 'none';
+            document.getElementById('section-home').classList.add('active');
+//            document.getElementById('link-home').classList.add('active');
+            if(document.getElementById('m-btn-home')) document.getElementById('m-btn-home').classList.add('active');
+        } else if (viewType === 'casino') {
+            document.getElementById('section-home').classList.remove('active');
 //            document.getElementById('section-casino').classList.add('active');
             document.getElementById('link-casino').classList.add('active');
-            document.getElementById('m-btn-casino').classList.add('active');
+            if(document.getElementById('m-btn-casino')) document.getElementById('m-btn-casino').classList.add('active');
             launchGame('');
         } else {
+
+            document.getElementById('section-home').classList.remove('active');
 //            document.getElementById('section-sports').classList.add('active');
             document.getElementById('link-sports').classList.add('active');
-            document.getElementById('m-btn-sports').classList.add('active');
+            if(document.getElementById('m-btn-sports')) document.getElementById('m-btn-sports').classList.add('active');
             launchSport('');
         }
     }
+
 
     // Логика управления правым мобильным меню профиля
     function toggleMobileRightMenu(e) {
@@ -613,6 +913,30 @@
         document.getElementById('profileDropdown').style.display = 'none';
         document.getElementById('mobileSidebar').style.display = 'none';
     });
+
+    // Логика управления баннерным слайдером
+    let currentSlideIdx = 0;
+
+    function moveSlide(idx) {
+        currentSlideIdx = idx;
+        const container = document.getElementById('sliderContainer');
+        // Смещаем контейнер на нужный процент влево
+        container.style.transform = `translateX(-${idx * 33.333}%)`;
+
+        // Переключаем активную точку навигации
+        const dots = document.querySelectorAll('.slider-dot');
+        dots.forEach(dot => dot.classList.remove('active'));
+        if(dots[idx]) dots[idx].classList.add('active');
+    }
+
+    // Автоматическая прокрутка баннеров каждые 5 секунд для живой презентации
+    setInterval(() => {
+        if(document.getElementById('section-home').classList.contains('active')) {
+            let nextIdx = (currentSlideIdx + 1) % 3;
+            moveSlide(nextIdx);
+        }
+    }, 5000);
+
 
 </script>
 </body>
