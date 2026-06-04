@@ -463,10 +463,14 @@
                     username: currentUsername,
                     partnerId: 'demo_skin_default'
                 });
-                socket.emit('showcase_join', {
-                    username: currentUsername,
-                    partnerId: 'demo_skin_default'
-                });
+
+                setTimeout(() => {
+                    console.log('🚀 Sending handshake now...');
+                    socket.emit('platform_join', {
+                        username: currentUsername,
+                        partnerId: 'demo_skin_default'
+                    });
+                }, 100);
             });
 
             socket.on('connect_error', (err) => {
