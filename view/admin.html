@@ -1,217 +1,488 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Панель администратора</title>
+    <title>MTWTech BackOffice</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: sans-serif; margin: 30px; background: #f4f6f9; color: #333; }
-        h1 { margin-bottom: 20px; }
-        .container { display: flex; gap: 20px; margin-bottom: 20px; }
-        .card { flex: 1; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .card h2 { margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        input[type="number"] { width: 70px; padding: 6px; margin: 5px 0; border: 1px solid #ccc; border-radius: 4px; }
-        button { background: #007bff; color: white; border: 0; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        button:hover { background: #0056b3; }
-        button.danger { background: #dc3545; }
-        button.danger:hover { background: #bd2130; }
-        table { width: 100%; border-collapse: collapse; text-align: left; margin-top: 10px; }
-        th, td { padding: 10px; border: 1px solid #ddd; }
-        th { background: #eee; }
-        .jackpot-val { font-size: 28px; color: #dc3545; font-weight: bold; margin: 15px 0; }
-        .game-block { background: #fdfdfd; border: 1px solid #eaeaea; padding: 10px; border-radius: 6px; margin-bottom: 10px; }
-        .game-block h3 { margin: 0 0 8px 0; font-size: 16px; color: #555; }
+        :root {
+            --bg-main: #0d1117;
+            --bg-sidebar: #161b22;
+            --bg-card: #21262d;
+            --border-color: #30363d;
+            --text-main: #c9d1d9;
+            --text-muted: #8b949e;
+            --accent-blue: #58a6ff;
+            --accent-green: #238636;
+            --accent-red: #da3633;
+            --accent-pink: #ff007f;
+            --neon-green: #00f5d4;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: var(--bg-main);
+            color: var(--text-main);
+        }
+
+        /* 🔐 STYLE: DEMO LOGIN SCREEN */
+        .login-screen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: var(--bg-main);
+        }
+        .login-box {
+            background: var(--bg-sidebar);
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            width: 100%;
+            max-width: 360px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        .login-box h2 { color: #fff; margin-bottom: 20px; }
+        .login-box input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            background: var(--bg-main);
+            border: 1px solid var(--border-color);
+            color: #fff;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        /* 🎛 STYLE: MAIN LAYOUT & SIDEBAR */
+        .admin-layout {
+            display: none; /* Hidden by default until login */
+            height: 100vh;
+        }
+        .sidebar {
+            width: 260px;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 20px 0;
+            box-sizing: border-box;
+        }
+        .sidebar-header {
+            padding: 0 20px 20px 20px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 15px;
+        }
+        .sidebar-header h1 { font-size: 18px; color: #fff; margin: 0; }
+        .sidebar-header span { font-size: 11px; color: var(--text-muted); }
+
+        /* TAB BUTTONS */
+        .nav-btn {
+            background: transparent;
+            border: 0;
+            color: var(--text-main);
+            padding: 12px 20px;
+            text-align: left;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.2s;
+        }
+        .nav-btn:hover { background: rgba(255,255,255,0.05); }
+        .nav-btn.active {
+            background: rgba(88, 166, 255, 0.1);
+            color: var(--accent-blue);
+            border-left: 4px solid var(--accent-blue);
+        }
+
+        /* MAIN CONTENT AREA */
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            background: var(--bg-main);
+        }
+        .tab-content {
+            display: none; /* Hidden until activated */
+        }
+        .tab-content.active {
+            display: block;
+        }
+
+        /* CARDS & ENGINE TABLES */
+        .card {
+            background: var(--bg-sidebar);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .card h2 { margin-top: 0; font-size: 18px; color: #fff; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
+
+        .game-block {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+        .game-block h3 { margin: 0 0 8px 0; font-size: 14px; color: var(--accent-blue); text-transform: uppercase; }
+
+        .flex-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+        input[type="number"], input[type="text"], select {
+            background: var(--bg-main);
+            color: #fff;
+            border: 1px solid var(--border-color);
+            padding: 6px 10px;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        button {
+            padding: 8px 14px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            border: 0;
+            transition: opacity 0.2s;
+        }
+        button:hover { opacity: 0.9; }
+        .btn-primary { background: var(--accent-blue); color: #fff; }
+        .btn-danger { background: var(--accent-red); color: #fff; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+        th, td { padding: 12px; border-bottom: 1px solid var(--border-color); text-align: left; }
+        th { background: var(--bg-card); color: #fff; }
+
+        .jackpot-val { font-size: 32px; color: var(--accent-pink); font-weight: bold; margin: 15px 0; text-shadow: 0 0 10px rgba(255,0,127,0.2); }
+        .badge { background: var(--accent-blue); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+        .bet-item-row { border-bottom: 1px solid rgba(255,255,255,0.05); padding: 4px 0; }
+        .bet-item-row:last-child { border-bottom: none; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="card">
-        <h2>🎰 RTP, Prices and Pools config</h2>
-        <form id="configForm">
-            <!-- Существующие игры -->
-            <div class="game-block">
-                <h3>Slots 3x3</h3>
-                Price: <input type="number" id="slots3x3_cost"> 🪙 | RTP: <input type="number" id="slots3x3_rtp"> %
-            </div>
-            <div class="game-block">
-                <h3>Slots 5x3</h3>
-                Price: <input type="number" id="slots5x3_cost"> 🪙 | RTP: <input type="number" id="slots5x3_rtp"> %
-            </div>
-            <div class="game-block">
-                <h3>Wheel of Fortune</h3>
-                Price: <input type="number" id="wheel_cost"> 🪙 | RTP: <input type="number" id="wheel_rtp"> %
-            </div>
-            <div class="game-block">
-                <h3>Scratch cards</h3>
-                Price: <input type="number" id="scratch_cost"> 🪙 | RTP: <input type="number" id="scratch_rtp"> %
-            </div>
-            <div class="game-block">
-                <h3>Lottery</h3>
-                Price: <input type="number" id="lottery_ticketPrice"> 🪙 | RTP: <input type="number" id="lottery_rtp"> %
-            </div>
-
-            <div class="game-block">
-                <h3>Mines</h3>
-                RTP: <input type="number" id="mines_rtpPercent"> % | Current Bank Pool: <input type="number" id="mines_bank"> 🪙
-            </div>
-            <div class="game-block">
-                <h3>Crash</h3>
-                Bet Time: <input type="number" id="crash_betTime" style="width: 80px;"> ms | RTP: <input type="number" id="crash_baseRtp"> % | Bank Pool: <input type="number" id="crash_bank"> 🪙
-            </div>
-            <div class="game-block">
-                <h3>Dice</h3>
-                House Edge: <input type="number" id="dice_houseEdge" step="0.01" style="width: 70px;"> (ex: 0.04) | Bank Pool: <input type="number" id="dice_bank"> 🪙
-            </div>
-            <div class="game-block">
-                <h3>Hi-Lo</h3>
-                House Edge: <input type="number" id="hilo_houseEdge" step="0.01" style="width: 70px;"> (ex: 0.04) | Bank Pool: <input type="number" id="hilo_bank"> 🪙
-            </div>
-
-            <button type="submit" style="margin-top: 15px;">💾 Save config</button>
-        </form>
-    </div>
-
-    <!-- Управление пользователями -->
-    <div class="card">
-        <h2>👥 Player management</h2>
-        <table>
-            <thead>
-            <tr>
-                <th>Username</th>
-                <th>Balance</th>
-                <th>Action (Change balance)</th>
-            </tr>
-            </thead>
-            <tbody id="playersTableBody">
-            <!-- Сюда данные вставит JavaScript -->
-            </tbody>
-        </table>
-    </div>
-
-</div>
-
-<div class="container">
-    <div class="card" style="max-width: 400px;">
-        <h2>💰 Global Jackpot</h2>
-        <div class="jackpot-val" id="jackpotDisplay">0 🪙</div>
-        <form id="jackpotForm">
-            New value: <input type="number" id="jackpotInput" style="width: 120px;">
-            <button type="submit" class="danger">Change bank</button>
-        </form>
-    </div>
-
-    <!-- Новый блок в admin.html для управления геймификацией -->
-    <div class="card">
-        <h2>🎮 Gamification</h2>
-        <form id="gamificationForm">
-            <div class="game-block">
-                <h3>Xp and levels</h3>
-                XP per game: <input type="number" id="g_xpPerGame"> |
-                XP multiplier: <input type="number" id="g_xpMultiplier"><br>
-                Lvlup bonus: <input type="number" id="g_levelUpBonus"> 🪙
-            </div>
-            <div class="game-block">
-                <h3>Daily quest</h3>
-                Goal (game num): <input type="number" id="g_questTargetGames"><br>
-                Quest reward: <input type="number" id="g_questReward"> 🪙
-            </div>
-            <div class="game-block">
-                <h3>Tournament</h3>
-                Tournament state:
-                <select id="g_tournamentActive" style="padding:6px; border-radius:4px;">
-                    <option value="1">On</option>
-                    <option value="0">Off</option>
-                </select><br>
-                Prize pool: <input type="number" id="g_tournamentPrize"> 🪙
-                <br><br>
-                <button type="button" class="danger" id="endTournamentBtn" style="width: 100%;">🏁 End tournament</button>
-            </div>
-            <button type="submit">💾 Save</button>
+<!-- 🔐 SCREEN: DEMO LOGIN SCREEN -->
+<div id="login-screen" class="login-screen">
+    <div class="login-box">
+        <h2>Core Control Login</h2>
+        <div id="login-error" style="color: var(--accent-red); font-size: 13px; margin-bottom: 12px; display: none;"></div>
+        <form id="loginForm">
+            <input type="text" id="login_user" placeholder="Username (admin)" required>
+            <input type="password" id="login_pass" placeholder="Password (admin)" required>
+            <button type="submit" class="btn-primary" style="width: 100%; padding: 10px;">Sign In</button>
         </form>
     </div>
 </div>
 
-<div class="container">
-    <!-- Блок Промокодов и Кэшбэка в admin.html -->
-    <div class="card">
-        <h2>🎫 Cashback</h2>
+<!-- 🎛 SCREEN: MAIN CORE INTERFACE LAYOUT -->
+<div id="admin-layout" class="admin-layout">
 
-        <div class="game-block">
-            <form id="cashbackConfigForm" style="margin-bottom: 10px;">
-                Percent:
-                <input type="number" id="g_cashbackPercent" style="width: 60px;"> %
-                <button type="submit" style="padding: 4px 8px; font-size: 12px;">Change</button>
-            </form>
-            <button type="button" class="danger" id="runCashbackBtn" style="width: 100%;">💰 Calculate and pay</button>
+    <!-- SIDEBAR MENU LEFT -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h1>MTWTech BackOffice</h1>
+            <span>Demo Management System</span>
+        </div>
+        <button class="nav-btn active" onclick="switchTab('tab-config', this)">🎰 Game Engine</button>
+        <button class="nav-btn" onclick="switchTab('tab-players', this)">👥 Players</button>
+        <button class="nav-btn" onclick="switchTab('tab-jackpot', this)">💰 Jackpot</button>
+        <button class="nav-btn" onclick="switchTab('tab-gamification', this)">🎮 Gamification</button>
+        <button class="nav-btn" onclick="switchTab('tab-cashback', this)">🎫 Promos & Cashback</button>
+        <button class="nav-btn" onclick="switchTab('tab-sportsbook', this)">🏟️ Sportsbook</button>
+
+        <button class="nav-btn" onclick="logoutDemo()" style="margin-top: auto; color: var(--accent-red);">🛑 Log Out</button>
+    </aside>
+
+    <!-- CONTAINER CONTENT RIGHT -->
+    <main class="main-content">
+        <!-- TAB 1: GAME ENGINE CONFIGURATION -->
+        <div id="tab-config" class="tab-content active">
+            <div class="card">
+                <h2>🎰 RTP, Prices & Pools Configuration</h2>
+                <form id="configForm">
+                    <div class="game-block">
+                        <h3>Slots 3x3</h3>
+                        <div class="flex-row">
+                            Price: <input type="number" id="slots3x3_cost" style="width:70px;"> 🪙 |
+                            RTP: <input type="number" id="slots3x3_rtp" style="width:60px;"> %
+                        </div>
+                    </div>
+                    <div class="game-block">
+                        <h3>Slots 5x3</h3>
+                        <div class="flex-row">
+                            Price: <input type="number" id="slots5x3_cost" style="width:70px;"> 🪙 |
+                            RTP: <input type="number" id="slots5x3_rtp" style="width:60px;"> %
+                        </div>
+                    </div>
+                    <div class="game-block">
+                        <h3>Wheel of Fortune</h3>
+                        <div class="flex-row">
+                            Price: <input type="number" id="wheel_cost" style="width:70px;"> 🪙 |
+                            RTP: <input type="number" id="wheel_rtp" style="width:60px;"> %
+                        </div>
+                    </div>
+                    <div class="game-block">
+                        <h3>Scratch Cards</h3>
+                        <div class="flex-row">
+                            Price: <input type="number" id="scratch_cost" style="width:70px;"> 🪙 |
+                            RTP: <input type="number" id="scratch_rtp" style="width:60px;"> %
+                        </div>
+                    </div>
+                    <div class="game-block">
+                        <h3>Lottery</h3>
+                        <div class="flex-row">
+                            Price: <input type="number" id="lottery_ticketPrice" style="width:70px;"> 🪙 |
+                            RTP: <input type="number" id="lottery_rtp" style="width:60px;"> %
+                        </div>
+                    </div>
+
+                    <div class="game-block">
+                        <h3>Mines</h3>
+                        <div class="flex-row">
+                            RTP: <input type="number" id="mines_rtpPercent" style="width:60px;"> % |
+                            Bank Pool: <input type="number" id="mines_bank" style="width:80px;" disabled placeholder="Auto"> 🪙
+                        </div>
+                    </div>
+                    <div class="game-block">
+                        <h3>Crash</h3>
+                        <div class="flex-row">
+                            Bet Time: <input type="number" id="crash_betTime" style="width:80px;"> ms |
+                            RTP: <input type="number" id="crash_baseRtp" style="width:60px;"> % |
+                            Bank Pool: <input type="number" id="crash_bank" style="width:80px;" disabled placeholder="Auto"> 🪙
+                        </div>
+                    </div>
+                    <div class="game-block">
+                        <h3>Dice</h3>
+                        <div class="flex-row">
+                            House Edge: <input type="number" id="dice_houseEdge" step="0.01" style="width:70px;"> |
+                            Bank Pool: <input type="number" id="dice_bank" style="width:80px;" disabled placeholder="Auto"> 🪙
+                        </div>
+                    </div>
+                    <div class="game-block">
+                        <h3>Hi-Lo</h3>
+                        <div class="flex-row">
+                            House Edge: <input type="number" id="hilo_houseEdge" step="0.01" style="width:70px;"> |
+                            Bank Pool: <input type="number" id="hilo_bank" style="width:80px;" disabled placeholder="Auto"> 🪙
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-primary" style="margin-top: 15px; width: 100%;">💾 Save Engine Configuration</button>
+                </form>
+            </div>
         </div>
 
-    </div>
-
-    <div class="card">
-        <h2>🎫 Promocodes</h2>
-
-        <div class="game-block" style="margin-top: 15px;">
-            <h3>Make new promo</h3>
-            <form id="promoForm">
-                Code: <input type="text" id="p_code" placeholder="WELCOME" style="padding:5px; width:100px; text-transform:uppercase;"><br>
-                Sum: <input type="number" id="p_reward" style="width:70px;"> 🪙<br>
-                Limit per user: <input type="number" id="p_maxUses" value="1" style="width:50px;"><br><br>
-                <button type="submit" style="width: 100%;">➕ Create</button>
-            </form>
+        <!-- TAB 2: PLAYER MANAGEMENT -->
+        <div id="tab-players" class="tab-content">
+            <div class="card">
+                <h2>👥 Player Registry & Management</h2>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Username & Tier</th>
+                            <th>Current Balance & Stats</th>
+                            <th>Action (Change balance)</th>
+                        </tr>
+                        </thead>
+                        <tbody id="playersTableBody">
+                        <!-- Loaded dynamically via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <!-- TAB 3: GLOBAL JACKPOT Pool -->
+        <div id="tab-jackpot" class="tab-content">
+            <div class="card" style="max-width: 450px;">
+                <h2>💰 Global Jackpot Bank Pool</h2>
+                <div class="jackpot-val" id="jackpotDisplay">0 🪙</div>
+                <form id="jackpotForm">
+                    <div style="margin-bottom: 15px;">
+                        New value: <input type="number" id="jackpotInput" style="width: 100%; box-sizing: border-box; padding: 8px;">
+                    </div>
+                    <button type="submit" class="btn-danger" style="width: 100%;">Change bank</button>
+                </form>
+            </div>
         </div>
 
-        <div class="game-block" style="margin-top: 15px;">
-            <h3>Promo list</h3>
-            <table style="width:100%; border-collapse:collapse; font-size:12px;">
-                <thead>
-                <tr style="background:#eee;">
-                    <th>Code</th>
-                    <th>Reward</th>
-                    <th>Limit</th>
-                    <th>Status</th>
-                </tr>
-                </thead>
-                <tbody id="promoCodesTableBody">
-                <!-- Сюда список кодов вставит JS -->
-                </tbody>
-            </table>
+        <!-- TAB 4: GAMIFICATION ENGINE -->
+        <div id="tab-gamification" class="tab-content">
+            <div class="card">
+                <h2>🎮 Gamification & User Retention Settings</h2>
+                <form id="gamificationForm">
+                    <div class="game-block">
+                        <h3>XP and Levels Progression</h3>
+                        <div class="flex-row">
+                            XP per game: <input type="number" id="g_xpPerGame" style="width: 60px;"> |
+                            XP multiplier: <input type="number" id="g_xpMultiplier" style="width: 70px;"><br>
+                            Lvlup bonus: <input type="number" id="g_levelUpBonus" style="width: 70px;"> 🪙
+                        </div>
+                    </div>
+                    <div class="game-block">
+                        <h3>Daily Retention Quest</h3>
+                        <div class="flex-row">
+                            Goal (game num): <input type="number" id="g_questTargetGames" style="width: 60px;"><br>
+                            Quest reward: <input type="number" id="g_questReward" style="width: 70px;"> 🪙
+                        </div>
+                    </div>
+                    <div class="game-block">
+                        <h3>Network Tournament</h3>
+                        <div class="flex-row" style="margin-bottom: 12px;">
+                            Tournament state:
+                            <select id="g_tournamentActive" style="padding:6px; border-radius:4px;">
+                                <option value="1">On / Active</option>
+                                <option value="0">Off / Disabled</option>
+                            </select><br>
+                            Prize pool: <input type="number" id="g_tournamentPrize" style="width: 90px;"> 🪙
+                        </div>
+                        <button type="button" class="btn-danger" id="endTournamentBtn" style="width: 100%; padding: 12px; margin-bottom: 10px;">🏁 End tournament & Distribute Prizes</button>
+                    </div>
+                    <button type="submit" class="btn-primary" style="width: 100%;">💾 Save Gamification Parameters</button>
+                </form>
+            </div>
         </div>
-    </div>
 
-</div>
+        <!-- TAB 5: VOUCHERS AND DROPS -->
+        <div id="tab-cashback" class="tab-content">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
 
-<div class="container">
-    <!-- Новый блок в admin.html для управления ставками -->
-    <div class="card" style="margin-top: 20px;">
-        <h2>🏟️ Sportsbook Monitoring & Settlement</h2>
-        <table>
-            <thead>
-            <tr style="background:#eee;">
-                <th>Player</th>
-                <th>Event (Match)</th>
-                <th>Market / Selection</th>
-                <th>Stake / Odds</th>
-                <th>Action (Settle Bet)</th>
-            </tr>
-            </thead>
-            <tbody id="sportsBetsTableBody">
-            <!-- Data will be loaded via JS -->
-            </tbody>
-        </table>
-    </div>
+                <!-- Cashback Configuration -->
+                <div class="card">
+                    <h2>🎫 Cashback Drops</h2>
+                    <div class="game-block">
+                        <form id="cashbackConfigForm" style="margin-bottom: 15px;">
+                            Current Percent:
+                            <input type="number" id="g_cashbackPercent" style="width: 60px;"> %
+                            <button type="submit" class="btn-primary" style="padding: 4px 10px; font-size: 12px; margin-left: 5px;">Change</button>
+                        </form>
+                        <button type="button" class="btn-danger" id="runCashbackBtn" style="width: 100%; padding: 12px;">💰 Calculate and pay cashback everyone</button>
+                    </div>
+                </div>
 
+                <!-- Promocode Management -->
+                <div class="card">
+                    <h2>🎫 Promo Code Vouchers Engine</h2>
+                    <div class="game-block">
+                        <h3>Make new promo voucher</h3>
+                        <form id="promoForm">
+                            Code: <input type="text" id="p_code" placeholder="WELCOME" style="padding:5px; width:110px; text-transform:uppercase;"><br>
+                            Sum: <input type="number" id="p_reward" style="width:70px;"> 🪙<br>
+                            Limit per user: <input type="number" id="p_maxUses" value="1" style="width:50px;"><br><br>
+                            <button type="submit" class="btn-primary" style="width: 100%;">➕ Create Promo</button>
+                        </form>
+                    </div>
+
+                    <div class="game-block" style="margin-top: 15px;">
+                        <h3>Vouchers Registry List</h3>
+                        <div style="overflow-x: auto;">
+                            <table>
+                                <thead>
+                                <tr>
+                                    <th>Code</th>
+                                    <th>Reward</th>
+                                    <th>Limit</th>
+                                    <th>Status</th>
+                                </tr>
+                                </thead>
+                                <tbody id="promoCodesTableBody">
+                                <!-- Loaded dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- TAB 6: SPORTSBOOK MONITORING -->
+        <div id="tab-sportsbook" class="tab-content">
+            <div class="card">
+                <h2>🏟️ Sportsbook Monitoring & Settlement Core</h2>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Player Account</th>
+                            <th>Combined Slip Multi-Items</th>
+                            <th>Slip Type</th>
+                            <th>Total Odds & Stake</th>
+                            <th>Action (Settle Bet)</th>
+                        </tr>
+                        </thead>
+                        <tbody id="sportsBetsTableBody">
+                        <!-- Loaded dynamically via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
 </div>
 
 <script>
-    // ТВОЙ АДРЕС СЕРВЕРА (измени порт 3000, если у тебя другой)
-
-    const baseUrl = (location.hostname === 'localhost') ? 'http://localhost:3000' : 'https://mtw-gw.onrender.com';
+    // URL CONFIGURATION (Detects local machine or active Render proxy link)
+    const baseUrl = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+        ? 'http://localhost:3000'
+        : 'https://mtw-gw.onrender.com';
     const baseUrlApi = baseUrl + '/api';
-
     const SERVER_URL = baseUrl;
 
-    // Load all pending sports bets
+    // 🔐 LOGIC: DEMO LOGIN SYSTEM
+    function checkDemoAuth() {
+        if (sessionStorage.getItem('demoAdminAuthenticated') === 'true') {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('admin-layout').style.display = 'flex';
+            loadData();
+        }
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const user = document.getElementById('login_user').value;
+        const pass = document.getElementById('login_pass').value;
+
+        // Simplified authentication flow for investor presentation
+        if (user === 'admin' && pass === 'admin') {
+            sessionStorage.setItem('demoAdminAuthenticated', 'true');
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('admin-layout').style.display = 'flex';
+            loadData();
+        } else {
+            const errBox = document.getElementById('login-error');
+            errBox.innerText = 'Invalid credentials. Hint: admin / admin';
+            errBox.style.display = 'block';
+        }
+    });
+
+    function logoutDemo() {
+        sessionStorage.removeItem('demoAdminAuthenticated');
+        location.reload();
+    }
+
+    // 🗂 LOGIC: VERTICAL SIDEBAR TAB SYSTEM
+    function switchTab(tabId, element) {
+        // Hide all inactive segments
+        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+        // Clear buttons selection state
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+
+        // Expose target content block & button state
+        document.getElementById(tabId).classList.add('active');
+        element.classList.add('active');
+    }
+
+    // 🏟 LOGIC: SPORTSBOOK TICKETS MANAGEMENT
     async function loadPendingSportsBets() {
         try {
             const res = await fetch(`${baseUrlApi}/admin/sports/pending`);
@@ -220,11 +491,10 @@
             const tbody = document.getElementById('sportsBetsTableBody');
             if (data.bets && data.bets.length > 0) {
                 tbody.innerHTML = data.bets.map(b => {
-                    // Формируем красивый текстовый список матчей внутри купона
                     const matchesList = b.items.map(item => `
-                        <div style="border-bottom:1px solid #eee; padding:2px 0;">
+                        <div class="bet-item-row">
                             • <b>${item.teams}</b><br>
-                            <small style="color:#666;">${item.market.toUpperCase()} -> <b>${item.selectedOutcome.toUpperCase()}</b> (${item.odds})</small>
+                            <small style="color: var(--text-muted);">${item.market.toUpperCase()} ➔ <b style="color:#fff;">${item.selectedOutcome.toUpperCase()}</b> (${item.odds})</small>
                         </div>
                     `).join('');
 
@@ -232,23 +502,21 @@
                         <tr>
                             <td><b>${b.username}</b></td>
                             <td>${matchesList}</td>
-                            <td><span class="badge" style="background:#007bff; color:white; padding:2px 6px; border-radius:4px; font-size:11px;"><b>${b.type}</b></span></td>
-                            <td>${b.stake} 🪙 (Total Odds: <b>${b.totalOdds}</b>)</td>
+                            <td><span class="badge">${b.type}</span></td>
+                            <td><b style="color:var(--neon-green);">${b.stake} 🪙</b><br><small style="color:var(--text-muted);">Total Odds: ${b.totalOdds}</small></td>
                             <td>
-                                <button onclick="settleBet('${b._id}', 'WON')" style="background:#28a745; color:white; border:0; padding:6px 12px; cursor:pointer; font-weight:bold; border-radius:4px;">WIN</button>
-                                <button onclick="settleBet('${b._id}', 'LOST')" style="background:#dc3545; color:white; border:0; padding:6px 12px; cursor:pointer; font-weight:bold; border-radius:4px;" class="danger">LOSE</button>
+                                <button onclick="settleBet('${b._id}', 'WON')" style="background:var(--accent-green); margin-right:4px;">WIN</button>
+                                <button onclick="settleBet('${b._id}', 'LOST')" style="background:var(--accent-red);">LOSE</button>
                             </td>
                         </tr>
                     `;
                 }).join('');
             } else {
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#999; padding:20px;">No active pending bets found</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:25px;">No active pending slips in queue</td></tr>`;
             }
         } catch (err) { console.error('Error loading sports bets:', err); }
     }
 
-
-    // Send settlement command (WON / LOST)
     async function settleBet(betId, status) {
         if (!confirm(`Are you sure you want to settle this bet as a ${status === 'WON' ? 'WIN' : 'LOSS'}?`)) {
             return;
@@ -263,28 +531,29 @@
             const data = await res.json();
             if (data.success) {
                 alert('Bet settled successfully. Player balances synchronized!');
-                loadData(); // Reload all dashboard panels
+                loadData();
             } else {
                 alert('Settlement failed: ' + (data.error || 'Unknown error'));
             }
-        } catch (err) {
-            alert('Network error while sending settlement request');
-        }
+        } catch (err) { alert('Network error while sending settlement request'); }
     }
 
-
+    // 🔄 CORE RE-FETCH THREAD
     async function loadData() {
         try {
             const res = await fetch(`${SERVER_URL}/api/admin/data`);
             if (res.status === 401) return alert('No access');
             const data = await res.json();
 
-            // Заполняем старые инпуты настроек
-            document.getElementById('slots3x3_cost').value = data.config.slots3x3.cost;
-            document.getElementById('slots3x3_rtp').value = data.config.slots3x3.rtp;
-            document.getElementById('slots5x3_cost').value = data.config.slots5x3.cost;
-            document.getElementById('slots5x3_rtp').value = data.config.slots5x3.rtp;
-
+            // Mapped games inputs verification
+            if (data.config.slots3x3) {
+                document.getElementById('slots3x3_cost').value = data.config.slots3x3.cost;
+                document.getElementById('slots3x3_rtp').value = data.config.slots3x3.rtp;
+            }
+            if (data.config.slots5x3) {
+                document.getElementById('slots5x3_cost').value = data.config.slots5x3.cost;
+                document.getElementById('slots5x3_rtp').value = data.config.slots5x3.rtp;
+            }
             document.getElementById('wheel_cost').value = data.config.wheel.cost;
             document.getElementById('wheel_rtp').value = data.config.wheel.rtp;
             document.getElementById('scratch_cost').value = data.config.scratch.cost;
@@ -292,52 +561,45 @@
             document.getElementById('lottery_ticketPrice').value = data.config.lottery.ticketPrice;
             document.getElementById('lottery_rtp').value = data.config.lottery.rtp;
 
-            // ЗАПОЛНЯЕМ НОВЫЕ ИНПУТЫ ИЗ КОНФИГА И БАНКОВ СЕРВЕРА
             document.getElementById('mines_rtpPercent').value = data.config.mines.rtpPercent;
-//            document.getElementById('mines_bank').value = data.banks.mines;
-
             document.getElementById('crash_betTime').value = data.config.crash.betTime;
             document.getElementById('crash_baseRtp').value = data.config.crash.baseRtp;
-//            document.getElementById('crash_bank').value = data.banks.crash;
-
             document.getElementById('dice_houseEdge').value = data.config.dice.houseEdge;
-//            document.getElementById('dice_bank').value = data.banks.dice;
-
             document.getElementById('hilo_houseEdge').value = data.config.hilo.houseEdge;
-//            document.getElementById('hilo_bank').value = data.banks.hilo;
 
-            // Отображаем джекпот
+            // Optional structural mapping for operational banks
+            if (data.banks) {
+                if (data.banks.mines && document.getElementById('mines_bank')) document.getElementById('mines_bank').value = data.banks.mines;
+                if (data.banks.crash && document.getElementById('crash_bank')) document.getElementById('crash_bank').value = data.banks.crash;
+                if (data.banks.dice && document.getElementById('dice_bank')) document.getElementById('dice_bank').value = data.banks.dice;
+                if (data.banks.hilo && document.getElementById('hilo_bank')) document.getElementById('hilo_bank').value = data.banks.hilo;
+            }
+
+            // Jackpot Update
             document.getElementById('jackpotDisplay').innerText = data.jackpot + ' 🪙';
             document.getElementById('jackpotInput').value = data.jackpot;
 
-            // Заполняем таблицу пользователей
+            // Users Table Render Loop
             const tbody = document.getElementById('playersTableBody');
             if (tbody) {
                 tbody.innerHTML = data.players.map(p => `
-                <tr>
-                    <td><b>${p.username}</b><br><small>Level: ${p.level || 1} (${p.xp || 0} XP)</small></td>
-                    <td>
-                        💵 Balance: ${p.balance} 🪙<br>
-                        🏆 Tournament points: ${p.tournamentPoints || 0}
-                    </td>
-                    <td>
-                        <input type="number" id="bal_${p.username}" value="${p.balance}" style="width:100px;">
-                        <button onclick="updateBalance('${p.username}')">Обновить</button>
-                    </td>
-                </tr>
-            `).join('');
+                    <tr>
+                        <td><b>${p.username}</b><br><small style="color:var(--text-muted);">Level: ${p.level || 1} (${p.xp || 0} XP)</small></td>
+                        <td>
+                            <b style="color:var(--neon-green);">💵 Balance: ${p.balance} 🪙</b><br>
+                            <small style="color:var(--text-muted);">🏆 Tournament points: ${p.tournamentPoints || 0}</small>
+                        </td>
+                        <td>
+                            <div class="flex-row">
+                                <input type="number" id="bal_${p.username}" value="${p.balance}" style="width:90px; margin:0;">
+                                <button onclick="updateBalance('${p.username}')" style="background:var(--accent-green); padding:6px 12px;">Update</button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
             }
-//
-//        <tr>
-//            <td><b>${p.username}</b></td>
-//            <td>${p.balance} 🪙</td>
-//            <td>
-//            <input type="number" id="bal_${p.username}" value="${p.balance}" style="width:100px;">
-//                <button onclick="updateBalance('${p.username}')">Change balance</button>
-//            </td>
-//            </tr>
 
-            // Внутри функции loadData() добавь:
+            // Retention Modules Parameters Sync
             document.getElementById('g_xpPerGame').value = data.config.gamification.xpPerGame;
             document.getElementById('g_xpMultiplier').value = data.config.gamification.xpMultiplier;
             document.getElementById('g_levelUpBonus').value = data.config.gamification.levelUpBonus;
@@ -346,47 +608,51 @@
             document.getElementById('g_tournamentActive').value = data.config.gamification.tournamentActive;
             document.getElementById('g_tournamentPrize').value = data.config.gamification.tournamentPrize;
 
+            document.getElementById('g_cashbackPercent').value = data.config.gamification.cashbackPercent || 10;
 
-            document.getElementById('g_cashbackPercent').innerText = data.config.gamification.cashbackPercent || 10;
-
+            // Active Promocodes Render Loop
             const promoTbody = document.getElementById('promoCodesTableBody');
             if (data.config.promoCodes && data.config.promoCodes.length > 0) {
                 promoTbody.innerHTML = data.config.promoCodes.map(p => `
                     <tr>
                         <td><b>${p.code}</b></td>
-                        <td>${p.reward} 🪙</td>
-                        <td>${p.maxUses} раз</td>
-                        <td style="color: ${p.active === 1 ? '#28a745' : '#dc3545'}">
-                            <b>${p.active === 1 ? '🔥 Активен' : '🛑 Выключен'}</b>
-                        </td>
+                        <td><b style="color:var(--neon-green);">${p.reward} 🪙</b></td>
+                        <td>${p.maxUses} times</td>
+                        <td><span style="color: ${p.active === 1 ? 'var(--accent-green)' : 'var(--accent-red)'}"><b>${p.active === 1 ? 'ACTIVE' : 'DISABLED'}</b></span></td>
                     </tr>
                 `).join('');
             } else {
-                promoTbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#999;">Кодов пока нет</td></tr>`;
+                promoTbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:10px;">Registry empty</td></tr>`;
             }
 
-            loadPendingSportsBets(); // Допиши в самый конец функции loadData()
-
+            // Запуск рендеринга спортивных купонов
+            loadPendingSportsBets();
 
         } catch (err) {
             console.error(err);
-            alert('Server connection error.');
+            alert('Server core data synchronization error.');
         }
     }
 
-
-    // Отправка новой конфигурации
+    // 📬 AJAX FORMS INTERCEPTORS & API REQUESTS
     document.getElementById('configForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const configData = {
-            slots_cost: document.getElementById('slots_cost').value,
-            slots_rtp: document.getElementById('slots_rtp').value,
-            wheel_cost: document.getElementById('wheel_cost').value,
-            wheel_rtp: document.getElementById('wheel_rtp').value,
-            scratch_cost: document.getElementById('scratch_cost').value,
-            scratch_rtp: document.getElementById('scratch_rtp').value,
-            lottery_ticketPrice: document.getElementById('lottery_ticketPrice').value,
-            lottery_rtp: document.getElementById('lottery_rtp').value,
+            slots3x3_cost: Number(document.getElementById('slots3x3_cost').value),
+            slots3x3_rtp: Number(document.getElementById('slots3x3_rtp').value),
+            slots5x3_cost: Number(document.getElementById('slots5x3_cost').value),
+            slots5x3_rtp: Number(document.getElementById('slots5x3_rtp').value),
+            wheel_cost: Number(document.getElementById('wheel_cost').value),
+            wheel_rtp: Number(document.getElementById('wheel_rtp').value),
+            scratch_cost: Number(document.getElementById('scratch_cost').value),
+            scratch_rtp: Number(document.getElementById('scratch_rtp').value),
+            lottery_ticketPrice: Number(document.getElementById('lottery_ticketPrice').value),
+            lottery_rtp: Number(document.getElementById('lottery_rtp').value),
+            mines_rtpPercent: Number(document.getElementById('mines_rtpPercent').value),
+            crash_betTime: Number(document.getElementById('crash_betTime').value),
+            crash_baseRtp: Number(document.getElementById('crash_baseRtp').value),
+            dice_houseEdge: Number(document.getElementById('dice_houseEdge').value),
+            hilo_houseEdge: Number(document.getElementById('hilo_houseEdge').value)
         };
 
         const res = await fetch(`${SERVER_URL}/api/admin/update-config`, {
@@ -394,10 +660,9 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(configData)
         });
-        if (res.ok) { alert('Config changed!'); loadData(); }
+        if (res.ok) { alert('Config changed successfully!'); loadData(); }
     });
 
-    // Отправка нового джекпота
     document.getElementById('jackpotForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const val = document.getElementById('jackpotInput').value;
@@ -409,7 +674,6 @@
         if (res.ok) { alert('Jackpot changed!'); loadData(); }
     });
 
-    // Отправка нового баланса пользователя
     async function updateBalance(username) {
         const bal = document.getElementById('bal_' + username).value;
         const res = await fetch(`${SERVER_URL}/api/admin/update-balance`, {
@@ -420,7 +684,6 @@
         if (res.ok) { alert(`Player ${username} balance changed!`); loadData(); }
     }
 
-    // Добавь новый обработчик отправки формы в конец скрипта:
     document.getElementById('gamificationForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const gData = {
@@ -442,38 +705,30 @@
     });
 
     document.getElementById('endTournamentBtn').addEventListener('click', async () => {
-        if (!confirm('Are you sure you want too end current tournament?')) {
-            return;
-        }
+        if (!confirm('Are you sure you want to end the current tournament?')) return;
 
         try {
             const res = await fetch(`${SERVER_URL}/api/admin/end-tournament`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' }
             });
-
             const data = await res.json();
 
             if (data.success) {
                 if (data.winners.length === 0) {
                     alert('Tournament is over! No active players.');
                 } else {
-                    let report = '🏆 Tournament is over! Winnner:\n\n';
+                    let report = '🏆 Tournament is over! Winners:\n\n';
                     data.winners.forEach(w => {
-                        report += `${w.place} place: ${w.username} (${w.points} очков) — Winning: +${w.prize} 🪙\n`;
+                        report += `${w.place} place: ${w.username} (${w.points} points) — Winning: +${w.prize} 🪙\n`;
                     });
                     alert(report);
                 }
-                loadData(); // Обновляем таблицу игроков на странице
-            } else {
-                alert('Tournament end error.');
-            }
-        } catch (err) {
-            alert('Ошибка соединения с сервером.');
-        }
+                loadData();
+            } else { alert('Tournament end error.'); }
+        } catch (err) { alert('Server communication error.'); }
     });
 
-    // Отправка формы создания промокода
     document.getElementById('promoForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const promoData = {
@@ -489,20 +744,18 @@
         });
 
         if (res.ok) {
-            alert('Промокод успешно создан и активен!');
+            alert('Promo voucher created and verified!');
             document.getElementById('p_code').value = '';
             document.getElementById('p_reward').value = '';
+            loadData();
         } else {
             const err = await res.json();
-            alert('Ошибка: ' + err.error);
+            alert('Error: ' + err.error);
         }
     });
 
-    // Нажатие на кнопку запуска кэшбэка
     document.getElementById('runCashbackBtn').addEventListener('click', async () => {
-        if (!confirm('Вы уверены, что хотите рассчитать и начислить кэшбэк всем игрокам? Система проверит баланс транзакций каждого пользователя.')) {
-            return;
-        }
+        if (!confirm('Are you sure you want to calculate and drop cashback balances for everyone?')) return;
 
         try {
             const res = await fetch(`${SERVER_URL}/api/admin/run-cashback`, {
@@ -513,22 +766,19 @@
 
             if (data.success) {
                 if (data.report.length === 0) {
-                    alert('Расчет окончен. Игроков с чистым проигрышем за период не найдено. Выплат нет.');
+                    alert('Calculation completed. No players with net loss discovered.');
                 } else {
-                    let report = '💰 КЭШБЭК УСПЕШНО НАЧИСЛЕН:\n\n';
+                    let report = '💰 CASHBACK DISTRIBUTED SUCCESSFULLY:\n\n';
                     data.report.forEach(r => {
-                        report += `Игрок: ${r.username} | Чистый минус: ${r.loss} 🪙 | Выплачено: +${r.paid} 🪙\n`;
+                        report += `Player: ${r.username} | Net Loss: ${r.loss} 🪙 | Paid: +${r.paid} 🪙\n`;
                     });
                     alert(report);
                 }
                 loadData();
             }
-        } catch (err) {
-            alert('Ошибка при выполнении операции на сервере.');
-        }
+        } catch (err) { alert('Operation execution failure on server.'); }
     });
 
-    // Сохранение процента кэшбэка через стандартный апдейт конфига
     document.getElementById('cashbackConfigForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const cashbackData = {
@@ -541,16 +791,14 @@
             body: JSON.stringify(cashbackData)
         });
 
-        if (res.ok) {
-            alert('Процент кэшбэка успешно обновлен!');
-            loadData();
-        }
+        if (res.ok) { alert('Cashback percentage successfully updated!'); loadData(); }
     });
 
-
-    // Первичный запуск при открытии страницы
-    loadData();
+    // Run auth validation sequence on page boot
+    checkDemoAuth();
 </script>
 
 </body>
 </html>
+
+
