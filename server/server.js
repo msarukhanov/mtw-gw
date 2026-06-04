@@ -129,8 +129,13 @@ const DEFAULT_CONFIG = {
         questReward: 50,        // Награда за выполнение квеста
 
         tournamentActive: 1,    // 1 - идет турнир, 0 - выключен
-        tournamentPrize: 5000   // Призовой фонд турнира
-    }
+        tournamentPrize: 5000,   // Призовой фонд турнира
+        cashbackPercent: 10
+    },
+
+    promoCodes: [
+        { code: "START2026", reward: 100, maxUses: 1, active: 1 } // Пример дефолтного кода
+    ]
 };
 CONFIG = {};
 

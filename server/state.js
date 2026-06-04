@@ -216,6 +216,72 @@ const playerMethods = {
         }
     },
 
+    calculateAndPayCashback: async (seamlessCredit) => {
+        const gConfig = CONFIG.gamification || { cashbackPercent: 10 };
+        const pct = Number(gConfig.cashbackPercent) / 100;
+
+        const allPlayers = await db.find({});
+        const cashbackReport = [];
+
+        for (const player of allPlayers) {
+            if (!player.history || player.history.length === 0) continue;
+
+            let totalDebits = 0;
+            let totalCredits = 0;
+
+            // Парсим историю последних действий игрока
+            player.history.forEach(action => {
+                const changeStr = action.change || "";
+                const amount = parseInt(changeStr.replace(/[^0-9]/g, '')) || 0;
+
+                if (changeStr.includes('-')) {
+                    totalDebits += amount;
+                } else if (changeStr.includes('+')) {
+                    totalCredits += amount;
+                }
+            });
+
+            // Чистый проигрыш = сколько потратил минус сколько вернул
+            const netLoss = totalDebits - totalCredits;
+
+            if (netLoss > 0) {
+                const cashbackAmount = Math.floor(netLoss * pct);
+
+                if (cashbackAmount > 0) {
+                    try {
+                        const cashbackRoundId = `cashback_${Date.now()}_${player.username}`;
+
+                        // Выплачиваем кэшбэк на внешнюю платформу
+                        await seamlessCredit(
+                            player.username,
+                            null,
+                            cashbackAmount,
+                            "💰 Weekly Cashback",
+                            cashbackRoundId
+                        );
+
+                        player.balance += (cashbackAmount||0);
+
+                        // Очищаем историю игрока или делаем отметку, чтобы не выдать кэшбэк повторно
+                        player.history.unshift({
+                            time: new Date().toLocaleTimeString(),
+                            game: "💰 Cashback System",
+                            details: `Получен еженедельный кэшбэк ${gConfig.cashbackPercent}%`,
+                            change: `+${cashbackAmount} 🪙`,
+                            win: true
+                        });
+
+                        await db.update({ username: player.username }, { $set: { history: player.history } });
+
+                        cashbackReport.push({ username: player.username, loss: netLoss, paid: cashbackAmount });
+                    } catch (e) {
+                        console.error(`Ошибка выплаты кэшбэка для ${player.username}:`, e.message);
+                    }
+                }
+            }
+        }
+        return cashbackReport;
+    },
 
     // Получить общую историю игрока
     getPlayerHistory: async (username) => {
@@ -440,12 +506,60 @@ const gamificationMethods = {
     }
 };
 
+const promoMethods = {
+    // Создать новый промокод из админки
+    addPromoCode: async (codeData) => {
+        if (!CONFIG.promoCodes) CONFIG.promoCodes = [];
+        CONFIG.promoCodes.push({
+            code: codeData.code.toUpperCase().trim(),
+            reward: Number(codeData.reward),
+            maxUses: Number(codeData.maxUses || 1),
+            active: 1
+        });
+        await configDb.update({ _id: "global_config" }, { $set: { promoCodes: CONFIG.promoCodes } });
+    },
+
+    // Логика активации кода игроком
+    usePromoCode: async (username, code, seamlessCredit) => {
+        const cleanCode = code.toUpperCase().trim();
+        const promo = (CONFIG.promoCodes || []).find(p => p.code === cleanCode && p.active === 1);
+
+        if (!promo) throw new Error("Invalid code");
+
+        const player = await db.findOne({ username });
+        if (!player) throw new Error("Player not found");
+
+        if (!player.usedPromos) player.usedPromos = {};
+        const timesUsed = player.usedPromos[cleanCode] || 0;
+
+        if (timesUsed >= promo.maxUses) throw new Error("Вы уже активировали этот промокод max количество раз");
+
+        // Если проверки прошли — начисляем бонус на платформу через Seamless Credit
+        const promoRoundId = `promo_${cleanCode}_${Date.now()}_${username}`;
+        await seamlessCredit(
+            username,
+            null,
+            promo.reward,
+            `🎁 Promo: ${cleanCode}`,
+            promoRoundId
+        );
+
+        // Фиксируем использование кода локально
+        player.usedPromos[cleanCode] = timesUsed + 1;
+        await db.update({ username }, { $set: { usedPromos: player.usedPromos } });
+
+        return promo.reward;
+    }
+
+};
+
 module.exports = {
     getRandomInt,
 
     ...playerMethods,
     ...jackpotMethods,
     ...gamificationMethods,
+    ...promoMethods,
 
     ...minesMethods,
     ...crashMethods,

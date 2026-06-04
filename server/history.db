@@ -1,7 +1,9 @@
 {"time":"07:34:59 PM","winNums":[5,10,24,29,41,46],"timestamp":1780414499373,"_id":"05oEqQPkunWm6UQf"}
+{"time":"04:09:59 PM","winNums":[9,11,31,35,36,42],"timestamp":1780574999747,"_id":"079DOvGFcSgcPkxJ"}
 {"time":"01:24:59 PM","winNums":[5,7,18,19,26,36],"timestamp":1780478699069,"_id":"0UvE1Zs2GndXvkr2"}
 {"time":"09:14:59 PM","winNums":[27,28,33,34,36,49],"timestamp":1780506899342,"_id":"0Y1r1vS2EjjjOhGf"}
 {"time":"07:54:59 PM","winNums":[3,8,16,22,38,46],"timestamp":1780415699168,"_id":"0faoOaD4Z7l5ySyF"}
+{"time":"03:59:59 PM","winNums":[1,10,26,30,38,48],"timestamp":1780574399162,"_id":"0vLLw4ZJoOqdjdEC"}
 {"time":"03:39:59 AM","winNums":[1,4,19,31,36,48],"timestamp":1780529999957,"_id":"1Gu4bQA5m9ZnAvGI"}
 {"time":"12:09:59 PM","winNums":[15,17,18,28,29,46],"timestamp":1780474199557,"_id":"1OxeqysF0QKUSjhj"}
 {"time":"05:24:59 PM","winNums":[21,22,29,34,35,49],"timestamp":1780493099193,"_id":"1R6cSDXv8MQ80IuS"}
@@ -16,6 +18,7 @@
 {"time":"09:19:59 AM","winNums":[4,13,22,33,42,43],"timestamp":1780550399104,"_id":"5Aes2ThhYRCja3Xe"}
 {"time":"02:54:59 PM","winNums":[17,18,22,30,32,35],"timestamp":1780570499500,"_id":"5K36BBoZzBPcEEZ0"}
 {"time":"10:54:59 AM","winNums":[11,13,18,31,32,42],"timestamp":1780556099867,"_id":"5LrOsjypGWXqzgIW"}
+{"time":"03:54:59 PM","winNums":[1,12,14,17,29,41],"timestamp":1780574099925,"_id":"620bSzDUaq0hhRUS"}
 {"time":"07:19:59 PM","winNums":[10,11,17,19,25,40],"timestamp":1780413599034,"_id":"6JM8O98MsYGSXVxj"}
 {"time":"07:44:59 PM","winNums":[6,12,30,34,42,47],"timestamp":1780415099286,"_id":"7AIG4mv9skn5hY4S"}
 {"time":"11:49:59 PM","winNums":[3,6,9,19,33,48],"timestamp":1780429799449,"_id":"7ECAAAJ9sFYQHGmJ"}
@@ -44,6 +47,7 @@
 {"time":"11:29:59 AM","winNums":[16,27,32,36,37,39],"timestamp":1780558199710,"_id":"G9NcECCN5CCB6lhx"}
 {"time":"07:59:59 PM","winNums":[2,21,27,28,36,48],"timestamp":1780415999646,"_id":"GFAdcR5vaFwhww6D"}
 {"time":"02:09:59 PM","winNums":[11,14,21,22,35,38],"timestamp":1780481399841,"_id":"GdGnJtrOcws7hQLv"}
+{"time":"04:04:59 PM","winNums":[3,9,11,35,41,44],"timestamp":1780574699372,"_id":"H2zpjdTtW1K0s0HC"}
 {"time":"10:49:59 AM","winNums":[6,9,16,19,31,48],"timestamp":1780555799462,"_id":"H3X6389K6HNHVMZj"}
 {"time":"02:09:59 PM","winNums":[6,7,12,16,17,30],"timestamp":1780567799988,"_id":"HJYRFFp9Bjmw2iF2"}
 {"time":"11:34:59 PM","winNums":[10,11,16,22,30,45],"timestamp":1780428899707,"_id":"HRgGcA1Bk9DmWqM2"}
@@ -162,3 +166,4 @@
 {"time":"08:59:59 PM","winNums":[26,29,30,42,46,47],"timestamp":1780505999789,"_id":"yPkUZlSxyEbaXjzq"}
 {"time":"03:29:59 PM","winNums":[4,5,13,16,18,48],"timestamp":1780486199780,"_id":"yYMv7cKNunkXBHE0"}
 {"time":"11:29:59 PM","winNums":[3,16,37,38,43,46],"timestamp":1780428599502,"_id":"zsTz3MY9pKcjR5pg"}
+{"time":"04:14:59 PM","winNums":[16,23,24,34,40,42],"timestamp":1780575299529,"_id":"Mc2d3y8koJZAeyZF"}

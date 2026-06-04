@@ -89,8 +89,6 @@
         </table>
     </div>
 
-
-
 </div>
 
 <div class="container">
@@ -134,7 +132,54 @@
     </div>
 </div>
 
+<div class="container">
+    <!-- Блок Промокодов и Кэшбэка в admin.html -->
+    <div class="card">
+        <h2>🎫 Cashback</h2>
 
+        <div class="game-block">
+            <form id="cashbackConfigForm" style="margin-bottom: 10px;">
+                Percent:
+                <input type="number" id="g_cashbackPercent" style="width: 60px;"> %
+                <button type="submit" style="padding: 4px 8px; font-size: 12px;">Change</button>
+            </form>
+            <button type="button" class="danger" id="runCashbackBtn" style="width: 100%;">💰 Calculate and pay</button>
+        </div>
+
+    </div>
+
+    <div class="card">
+        <h2>🎫 Promocodes</h2>
+
+        <div class="game-block" style="margin-top: 15px;">
+            <h3>Make new promo</h3>
+            <form id="promoForm">
+                Code: <input type="text" id="p_code" placeholder="WELCOME" style="padding:5px; width:100px; text-transform:uppercase;"><br>
+                Sum: <input type="number" id="p_reward" style="width:70px;"> 🪙<br>
+                Limit per user: <input type="number" id="p_maxUses" value="1" style="width:50px;"><br><br>
+                <button type="submit" style="width: 100%;">➕ Create</button>
+            </form>
+        </div>
+
+        <div class="game-block" style="margin-top: 15px;">
+            <h3>Promo list</h3>
+            <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                <thead>
+                <tr style="background:#eee;">
+                    <th>Code</th>
+                    <th>Reward</th>
+                    <th>Limit</th>
+                    <th>Status</th>
+                </tr>
+                </thead>
+                <tbody id="promoCodesTableBody">
+                <!-- Сюда список кодов вставит JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
 
 <script>
     // ТВОЙ АДРЕС СЕРВЕРА (измени порт 3000, если у тебя другой)
@@ -216,6 +261,25 @@
             document.getElementById('g_questReward').value = data.config.gamification.questReward;
             document.getElementById('g_tournamentActive').value = data.config.gamification.tournamentActive;
             document.getElementById('g_tournamentPrize').value = data.config.gamification.tournamentPrize;
+
+
+            document.getElementById('g_cashbackPercent').innerText = data.config.gamification.cashbackPercent || 10;
+
+            const promoTbody = document.getElementById('promoCodesTableBody');
+            if (data.config.promoCodes && data.config.promoCodes.length > 0) {
+                promoTbody.innerHTML = data.config.promoCodes.map(p => `
+                    <tr>
+                        <td><b>${p.code}</b></td>
+                        <td>${p.reward} 🪙</td>
+                        <td>${p.maxUses} раз</td>
+                        <td style="color: ${p.active === 1 ? '#28a745' : '#dc3545'}">
+                            <b>${p.active === 1 ? '🔥 Активен' : '🛑 Выключен'}</b>
+                        </td>
+                    </tr>
+                `).join('');
+            } else {
+                promoTbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#999;">Кодов пока нет</td></tr>`;
+            }
 
         } catch (err) {
             console.error(err);
@@ -319,6 +383,80 @@
             }
         } catch (err) {
             alert('Ошибка соединения с сервером.');
+        }
+    });
+
+    // Отправка формы создания промокода
+    document.getElementById('promoForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const promoData = {
+            code: document.getElementById('p_code').value,
+            reward: document.getElementById('p_reward').value,
+            maxUses: document.getElementById('p_maxUses').value
+        };
+
+        const res = await fetch(`${SERVER_URL}/api/admin/add-promocode`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(promoData)
+        });
+
+        if (res.ok) {
+            alert('Промокод успешно создан и активен!');
+            document.getElementById('p_code').value = '';
+            document.getElementById('p_reward').value = '';
+        } else {
+            const err = await res.json();
+            alert('Ошибка: ' + err.error);
+        }
+    });
+
+    // Нажатие на кнопку запуска кэшбэка
+    document.getElementById('runCashbackBtn').addEventListener('click', async () => {
+        if (!confirm('Вы уверены, что хотите рассчитать и начислить кэшбэк всем игрокам? Система проверит баланс транзакций каждого пользователя.')) {
+            return;
+        }
+
+        try {
+            const res = await fetch(`${SERVER_URL}/api/admin/run-cashback`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                if (data.report.length === 0) {
+                    alert('Расчет окончен. Игроков с чистым проигрышем за период не найдено. Выплат нет.');
+                } else {
+                    let report = '💰 КЭШБЭК УСПЕШНО НАЧИСЛЕН:\n\n';
+                    data.report.forEach(r => {
+                        report += `Игрок: ${r.username} | Чистый минус: ${r.loss} 🪙 | Выплачено: +${r.paid} 🪙\n`;
+                    });
+                    alert(report);
+                }
+                loadData();
+            }
+        } catch (err) {
+            alert('Ошибка при выполнении операции на сервере.');
+        }
+    });
+
+    // Сохранение процента кэшбэка через стандартный апдейт конфига
+    document.getElementById('cashbackConfigForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const cashbackData = {
+            gamification_cashbackPercent: document.getElementById('g_cashbackPercent').value
+        };
+
+        const res = await fetch(`${SERVER_URL}/api/admin/update-config`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(cashbackData)
+        });
+
+        if (res.ok) {
+            alert('Процент кэшбэка успешно обновлен!');
+            loadData();
         }
     });
 

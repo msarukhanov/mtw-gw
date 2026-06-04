@@ -1,4 +1,46 @@
 const state = require('../state');
+const seamless = require('../services/seamlessService'); // твой модуль с дебитом/кредитом
+
+exports.buyBonus = async (req, res) => {
+    const config = state.getConfig().slots;
+    const username = req.username;
+    const sessionId = req.body.sessionId;
+
+    // Стоимость бонуса в 10 раз выше обычной ставки
+    const bonusCost = config.cost * 10;
+    const roundId = `slots_bonus_${Date.now()}_${username}`;
+
+    try {
+        // 1. Списываем повышенную ставку через Seamless
+        await seamless.debit(username, sessionId, bonusCost, "Slots Bonus Buy", roundId);
+        state.addJackpot(Math.floor(bonusCost * 0.05)); // 5% от покупки идет в глобальный джекпот
+
+        // 2. ГАРАНТИРОВАННЫЙ ВЫИГРЫШ: Игнорируем обычный ролл RTP
+        // Генерируем 3 одинаковых символа
+        const s = config.symbols;
+        const winSymbol = s[state.getRandomInt(s.length)];
+        const results = [winSymbol, winSymbol, winSymbol];
+
+        // Точный расчет супер-приза
+        const prize = winSymbol === '💎' ? 500 : 150;
+
+        // 3. Начисляем супер-выигрыш через Seamless Credit
+        await seamless.credit(username, sessionId, prize, "Slots Bonus Buy", roundId);
+
+        // Записываем в историю действий
+        await state.savePlayerActionHistory(username, {
+            game: "Slots Bonus Buy",
+            details: `Super Spin: [ ${results.join(' | ')} ]`,
+            change: `+${prize} 🪙 (Cost: -${bonusCost})`,
+            win: true
+        });
+
+        res.json({ success: true, results, prize });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message || "Ошибка покупки бонусного раунда" });
+    }
+};
 
 exports.spin = async (req, res) => {
     const config = state.getConfig().slots5x3;

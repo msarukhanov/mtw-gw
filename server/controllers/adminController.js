@@ -91,6 +91,7 @@
 // };
 
 const state = require('../state');
+const seamless = require('../services/seamlessService');
 
 // 1. Отдаем все данные одним пакетом для фронтенда админки
 exports.getAdminData = async (req, res) => {
@@ -144,6 +145,31 @@ exports.endTournament = async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Не удалось завершить турнир" });
+    }
+};
+
+exports.addPromoCode = async (req, res) => {
+    try {
+        const { code, reward, maxUses } = req.body;
+        if (!code || !reward) {
+            return res.status(400).json({ error: "Укажите код и сумму награды" });
+        }
+        await state.addPromoCode({ code, reward, maxUses });
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// 2. Расчет и выплата еженедельного кэшбэка
+exports.runCashback = async (req, res) => {
+    try {
+        // Передаем метод кредита из бесшовного кошелька для совершения выплат
+        const report = await state.calculateAndPayCashback(seamless.credit);
+        res.json({ success: true, report });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Ошибка при начислении кэшбэка" });
     }
 };
 

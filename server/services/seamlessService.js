@@ -6,6 +6,7 @@ const OPERATOR_SECRET = 'your_secret_key_here'; // Ключ для подпис�
 module.exports = {
     // 3.1 Проверка сессии и автологин
     validateSession: async (sessionId) => {
+        return true;
         try {
             const response = await axios.post(`${PLATFORM_API_URL}/validate`, {
                 token: sessionId,
@@ -21,6 +22,7 @@ module.exports = {
 
     // 3.2 Запрос при ставке (Debit)
     debit: async (username, sessionId, amount, gameName, roundId) => {
+        return true;
         try {
             const response = await axios.post(`${PLATFORM_API_URL}/debit`, {
                 username,
@@ -40,6 +42,7 @@ module.exports = {
 
     // 3.3 Запрос при результате (Credit)
     credit: async (username, sessionId, amount, gameName, roundId) => {
+        return true;
         try {
             const response = await axios.post(`${PLATFORM_API_URL}/credit`, {
                 username,

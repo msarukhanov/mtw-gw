@@ -13,12 +13,16 @@ const crash = require('../controllers/crashController');
 const dice = require('../controllers/diceController');
 const hilo = require('../controllers/hiloController');
 const leaderboard = require('../controllers/leaderboardController');
+const promo = require('../controllers/promoController');
 
 // Публичный эндпоинт таблицы лидеров
 router.get('/leaderboard', leaderboard.getTop);
+router.post('/promo/activate', auth.checkPlayer, promo.activate);
 
 // Добавьте к остальным роутам ваших игр
 router.post('/slots5x3/spin', auth.checkPlayer, slots5x3.spin);
+router.post('/slots5x3/buy-bonus', slots5x3.buyBonus);
+
 router.post('/slots3x3/spin', auth.checkPlayer, slots3x3.spin);
 
 // Добавьте к остальным роутам ваших игр
