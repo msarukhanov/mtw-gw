@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>iGaming Operator Platform Core — Showcase skin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {
+            --bg-main: #0d1117;
+            --bg-navbar: #161b22;
+            --bg-card: #21262d;
+            --border-color: #30363d;
+            --text-main: #c9d1d9;
+            --text-muted: #8b949e;
+            --accent-blue: #58a6ff;
+            --accent-yellow: #ffb703;
+            --neon-green: #00f5d4;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: var(--bg-main);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* 🔐 SCREEN: SETUP LAUNCHER */
+        .setup-box {
+            max-width: 400px;
+            margin: 100px auto;
+            background: var(--bg-navbar);
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+        }
+        .setup-box input {
+            background: var(--bg-main);
+            color: #fff;
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            border-radius: 6px;
+            width: 100%;
+            text-align: center;
+            box-sizing: border-box;
+            margin-bottom: 15px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .setup-box button {
+            background: var(--accent-yellow);
+            color: #1a1d24;
+            border: 0;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            width: 100%;
+        }
+
+        /*  NAVBAR INTERFACE */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-navbar);
+            padding: 0 30px;
+            height: 70px;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .logo-area { display: flex; align-items: center; gap: 25px; }
+        .logo { font-size: 22px; font-weight: 900; color: var(--accent-yellow); text-decoration: none; letter-spacing: 0.5px; }
+
+        /* Ссылки на категории */
+        .nav-links { display: flex; gap: 15px; }
+        .nav-link-item { color: var(--text-main); text-decoration: none; font-weight: 700; font-size: 15px; padding: 8px 14px; border-radius: 6px; transition: all 0.2s; }
+        .nav-link-item:hover, .nav-link-item.active { background: rgba(255,255,255,0.05); color: #fff; }
+        .nav-link-item.active { border-bottom: 2px solid var(--accent-yellow); border-radius: 6px 6px 0 0; }
+
+        /* Кошелек и Меню игрока */
+        .user-panel { display: flex; align-items: center; gap: 15px; position: relative; }
+        .wallet-badge { background: var(--bg-main); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: bold; display: flex; align-items: center; gap: 6px; }
+        .balance-val { color: var(--neon-green); }
+
+        .avatar-menu-trigger { background: var(--bg-card); border: 1px solid var(--border-color); color: #fff; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 8px; user-select: none; }
+        .avatar-menu-trigger:hover { background: var(--border-color); }
+
+        /* Выпадающее меню (Dropdown) */
+        .profile-dropdown { display: none; position: absolute; top: 45px; right: 0; background: var(--bg-navbar); border: 1px solid var(--border-color); border-radius: 8px; width: 200px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); overflow: hidden; z-index: 110; }
+        .dropdown-info { padding: 12px 16px; border-bottom: 1px solid var(--border-color); font-size: 13px; color: var(--text-muted); }
+        .dropdown-info b { color: #fff; display: block; font-size: 14px; margin-top: 2px; }
+        .dropdown-item { display: block; padding: 12px 16px; color: var(--text-main); text-decoration: none; font-size: 14px; font-weight: 600; transition: background 0.2s; }
+        .dropdown-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
+
+        /* 🎰 MAIN GRID SECTIONS */
+        .content-section { display: none; padding: 35px 50px; flex: 1; }
+        .content-section.active { display: block; }
+        .section-title { font-size: 24px; color: #fff; margin-top: 0; margin-bottom: 25px; border-left: 4px solid var(--accent-yellow); padding-left: 12px; }
+
+        .games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+        .game-card { background: var(--bg-navbar); border: 1px solid var(--border-color); border-radius: 12px; padding: 25px; text-align: center; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .game-card:hover { transform: translateY(-5px); border-color: var(--accent-yellow); box-shadow: 0 8px 20px rgba(255,183,3,0.15); }
+        .game-icon { font-size: 48px; margin-bottom: 12px; }
+        .game-card h3 { margin: 0; font-size: 16px; color: #fff; }
+
+        /* iFRAME CONTAINER */
+        .iframe-container { display: none; width: 100%; max-width: 1000px; height: 680px; margin: 30px auto; background: #000; border-radius: 12px; overflow: hidden; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        iframe { width: 100%; height: 100%; border: 0; }
+
+        /* 📋 FOOTER AREA */
+        .footer { background: var(--bg-navbar); border-top: 1px solid var(--border-color); padding: 30px; text-align: center; margin-top: auto; font-size: 13px; color: var(--text-muted); }
+        .footer-links { display: flex; justify-content: center; gap: 20px; margin-bottom: 15px; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; font-weight: 600; }
+        .footer-links a:hover { color: #fff; }
+        .footer-cert { display: flex; justify-content: center; gap: 15px; margin-top: 15px; font-size: 20px; opacity: 0.6; }
+    </style>
+</head>
+<body>
+
+<!-- 🔐 SETUP LAUNCHER SCREEN -->
+<div id="setup-screen" class="setup-box">
+    <h3 style="color:#fff; margin-bottom:20px;">iGaming Showcase Client</h3>
+    <input type="text" id="playerInput" value="Player1" placeholder="Enter Account Username">
+    <button onclick="startShowcase()">Login (demo)</button>
+</div>
+
+<!-- MAIN GAME SKIN APPLICATION Shell -->
+<div id="platform-screen" style="display: none;">
+
+    <!-- HEADER / NAVIGATION MENU -->
+    <header class="header">
+        <div class="logo-area">
+            <a href="#" class="logo" onclick="toggleView('casino')">🌌 OPERATOR_X</a>
+            <nav class="nav-links">
+                <a href="#" id="link-casino" class="nav-link-item active" onclick="toggleView('casino')">Games</a>
+                <a href="#" id="link-sports" class="nav-link-item" onclick="toggleView('sports')">Sportsbook</a>
+            </nav>
+        </div>
+
+        <!-- WALLET AND USER DROPDOWN PROFILE -->
+        <div class="user-panel">
+            <div class="wallet-badge">
+                Wallet: <span class="balance-val" id="wallet-display">0 🪙</span>
+            </div>
+            <div class="avatar-menu-trigger" onclick="toggleProfileDropdown(event)">
+                👤 <span id="user-display">Account</span> ▾
+            </div>
+
+            <!-- DROPDOWN CONTENT -->
+            <div class="profile-dropdown" id="profileDropdown">
+                <div class="dropdown-info">Authenticated Player: <b id="drop-username">Player</b></div>
+                <a href="#" class="dropdown-item" onclick="alert('Demo Feature: Deposit routing integrated via external gateway.')">💵 Instant Deposit</a>
+                <a href="#" class="dropdown-item" onclick="alert('Demo Feature: Withdraw validations linked with platform balance cache.')">📤 Withdraw Funds</a>
+                <a href="#" class="dropdown-item" onclick="location.reload()" style="color: var(--accent-red); border-top:1px solid var(--border-color);">🛑 Close Session</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- UNIVERSAL GAME IFRAME SHELL -->
+    <div class="iframe-container" id="frameWrapper">
+        <iframe id="gameIframe" src=""></iframe>
+    </div>
+
+    <!-- 📋 CORE PLATFORM FOOTER -->
+    <footer class="footer">
+        <div class="footer-links">
+            <a href="#" onclick="alert('B2B Tech Specifications: REST API / WebSocket integration layer.')">API Reference</a>
+            <a href="#" onclick="alert('Seamless Wallet Protocol v2.4 initialized securely.')">Seamless Protocol</a>
+            <a href="#" onclick="alert('Operator Core ID: demo_skin_default')">Licensing Rules</a>
+        </div>
+        <div>Powered by iGaming Aggregator Solutions Core Engine. All financial metrics safely stored in game.db.</div>
+        <div class="footer-cert">🔞 🛡️ 🎰 🔒</div>
+    </footer>
+
+</div> <!-- End of platform-screen -->
+
+<script>
+    // Mapped core URLs (Detects local development or cloud active Render deploy)
+    const CORE_SERVER = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+        ? 'http://localhost:3000'
+        : 'https://mtw-gw.onrender.com';
+
+    let currentUsername = "";
+
+    async function startShowcase() {
+        currentUsername = document.getElementById('playerInput').value.trim();
+        if (!currentUsername) return alert('Please enter a valid player username');
+
+        document.getElementById('setup-screen').style.display = 'none';
+        document.getElementById('platform-screen').style.display = 'block';
+        document.getElementById('drop-username').innerText = currentUsername;
+
+        updateWalletLoop();
+        // Synchronize header wallet numbers with database every 2 seconds
+        setInterval(updateWalletLoop, 2000);
+    }
+
+    // Toggle category tabs view smoothly (Casino slots / Sportsbook)
+    function toggleView(viewType) {
+        document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
+        document.querySelectorAll('.nav-link-item').forEach(link => link.classList.remove('active'));
+
+        // Close active iframe on category switch to maintain clean layout
+        document.getElementById('frameWrapper').style.display = 'none';
+        document.getElementById('gameIframe').src = "";
+
+        if (viewType === 'casino') {
+//            document.getElementById('section-casino').classList.add('active');
+            document.getElementById('link-casino').classList.add('active');
+            launchGame('');
+        } else {
+//            document.getElementById('section-sports').classList.add('active');
+            document.getElementById('link-sports').classList.add('active');
+            launchSport('');
+        }
+    }
+
+    toggleView('casino');
+
+    // Dropdown profile overlay logic
+    function toggleProfileDropdown(e) {
+        e.stopPropagation();
+        const dropdown = document.getElementById('profileDropdown');
+        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+    }
+
+    // Close user dropdown overlay when clicking outside
+    window.addEventListener('click', () => {
+        document.getElementById('profileDropdown').style.display = 'none';
+    });
+
+    // Live API Wallet Sync loop
+    async function updateWalletLoop() {
+        try {
+            const res = await fetch(`${CORE_SERVER}/api/showcase/user-info?username=${currentUsername}`);
+            const data = await res.json();
+            document.getElementById('user-display').innerText = data.username;
+            document.getElementById('wallet-display').innerText = data.balance + ' 🪙';
+        } catch(e) {
+            console.error('External wallet loop syncing broken.');
+        }
+    }
+
+    // Boot system game inside the core viewport iframe
+    function launchGame(gameKey) {
+        const wrapper = document.getElementById('frameWrapper');
+        const iframe = document.getElementById('gameIframe');
+
+        // Generate seamless iframe packet routing link with B2B session configurations
+        const iframeUrl = `https://mtw-gw-demo.onrender.com/?sessionId=${currentUsername}&partnerId=demo_skin_default`;
+
+        iframe.src = iframeUrl;
+        wrapper.style.display = 'block';
+        wrapper.scrollIntoView({ behavior: 'smooth' });
+    }
+    function launchSport(gameKey) {
+        const wrapper = document.getElementById('frameWrapper');
+        const iframe = document.getElementById('gameIframe');
+
+        // Generate seamless iframe packet routing link with B2B session configurations
+        const iframeUrl = `https://mtw-gw-sport.onrender.com/?sessionId=${currentUsername}&partnerId=demo_skin_default`;
+
+        iframe.src = iframeUrl;
+        wrapper.style.display = 'block';
+        wrapper.scrollIntoView({ behavior: 'smooth' });
+    }
+</script>
+</body>
+</html>
