@@ -72,7 +72,6 @@ router.post('/auth/seamless', async (req, res) => {
         player.balance = externalUser.balance; // Синхронизируем баланс с платформой
     }
 
-    console.log(player);
     // ИСПРАВЛЕНО: Обновляем баланс с привязкой к бренду
     try {
         await state.updateBalance(player.username, partnerId, player.balance);

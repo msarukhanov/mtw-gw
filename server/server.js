@@ -21,7 +21,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+
+io = new Server(server, { cors: { origin: "*" } });
 
 // Подключаем разделенные роуты
 app.use('/api', authRoutes);
