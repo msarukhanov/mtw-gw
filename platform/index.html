@@ -455,6 +455,7 @@
             document.getElementById('side-username').innerText = currentUsername;
 
             // 2. ИНИЦИАЛИЗАЦИЯ ВЕБ-СОКЕТА ДЛЯ ОБНОВЛЕНИЙ
+            console.log(CORE_SERVER);
             socket = io(CORE_SERVER);
 
             socket.on('connect', () => {
