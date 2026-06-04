@@ -107,7 +107,7 @@ async function handleAuth() {
             const response = await fetch(baseUrlApi + '/auth', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: name })
+                body: JSON.stringify({ username: name, partnerId: globalPartnerId })
             });
             const data = await response.json();
 
@@ -157,7 +157,7 @@ async function loadGeneralHistory() {
         const response = await fetch(baseUrlApi + '/player/history', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: currentUser })
+            body: JSON.stringify({ username: currentUser, partnerId: globalPartnerId })
         });
         const data = await response.json();
         if (data.history) {

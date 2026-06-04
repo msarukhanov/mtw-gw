@@ -21,7 +21,7 @@ document.getElementById('frontPromoForm').addEventListener('submit', async (e) =
                 // Если у тебя используется JWT или сессии, не забудь передать токен авторизации:
                 // 'Authorization': 'Bearer ' + localStorage.getItem('token')
             },
-            body: JSON.stringify({ username: currentUser, code: codeValue })
+            body: JSON.stringify({ username: currentUser, partnerId: globalPartnerId, code: codeValue })
         });
 
         const data = await response.json();

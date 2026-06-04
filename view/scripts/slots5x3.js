@@ -100,7 +100,7 @@ if (slots53SpinBtn) {
             const response = await fetch(`${baseUrlApi}/slots5x3/spin`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: currentUser })
+                body: JSON.stringify({ username: currentUser, partnerId: globalPartnerId })
             });
             const data = await response.json();
 

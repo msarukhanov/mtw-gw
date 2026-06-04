@@ -16,7 +16,8 @@ async function triggerBonusBuy() {
                 // 'Authorization': 'Bearer ' + localStorage.getItem('token') // если нужно
             },
             body: JSON.stringify({
-                sessionId: 'текущий_session_id_игрока' // Передаешь ID сессии для Seamless дебита
+                sessionId: globalSessionId, // Передаешь ID сессии для Seamless дебита
+                partnerId: globalPartnerId
             })
         });
 

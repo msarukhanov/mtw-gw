@@ -27,7 +27,7 @@ if (crashActionBtn) {
                 const response = await fetch(baseUrlApi + '/crash/bet', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: currentUser, bet })
+                    body: JSON.stringify({ username: currentUser, partnerId: globalPartnerId, bet })
                 });
                 const data = await response.json();
 
@@ -53,7 +53,7 @@ if (crashActionBtn) {
                 const response = await fetch(baseUrlApi + '/crash/cashout', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: currentUser })
+                    body: JSON.stringify({ username: currentUser, partnerId: globalPartnerId })
                 });
                 const data = await response.json();
 
