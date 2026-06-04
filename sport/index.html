@@ -1,6 +1,4 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
+<html lang="ru"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MTWTech Sports</title>
@@ -26,18 +24,38 @@
         .game-container {
             width: 100%;
             max-width: 400px;
-            background: #16213e;
+            background: #1a1d24;
             padding: 20px;
             border-radius: 20px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
             text-align: center;
         }
+
+        .auth-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #0f3460;
+            padding: 10px 15px;
+            border-radius: 12px;
+            font-size: 14px;
+        }
+
+        .login-btn {
+            background: #e94560;
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
     </style>
 
     <!-- Стили для Спортсбука -->
     <style>
-        .sb-wrapper { max-width: 900px; margin: 40px auto; font-family: sans-serif; background: #1a1d24; color: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-        .sb-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2a2f3a; padding-bottom: 15px; margin-bottom: 20px; }
+        .sb-wrapper { max-width: 900px; margin: 20px auto; font-family: sans-serif; background: #1a1d24; color: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .sb-header { display: flex; flex-direction: column; justify-content: space-between; align-items: center; border-bottom: 1px solid #2a2f3a; padding-bottom: 15px; margin-bottom: 20px; }
         .sb-title { margin: 0; font-size: 24px; color: #ffb703; }
         .sb-sports-tabs { display: flex; gap: 10px; }
         .sb-tab-btn { background: #2a2f3a; border: 0; color: #a0a5b5; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: all 0.2s; }
@@ -78,11 +96,19 @@
 </head>
 <body>
 
+<div class="game-container">
+    <!-- 1. Панель Логина и Баланса -->
+    <div class="auth-panel">
+        <div id="userInfo">Player: <span id="usernameLabel" style="color:#e94560">Guest</span></div>
+        <div>Balance: <span class="balance-value" id="balanceLabel">0</span> 🪙</div>
+        <button class="login-btn" id="authBtn" onclick="handleAuth()">Login</button>
+    </div>
+</div>
 
 <!-- Copy into your Frontend site file -->
 <div class="sb-wrapper">
     <div class="sb-header">
-        <h2 class="sb-title">🏆 Sportsbook (Demo Line)</h2>
+        <h2 class="sb-title">🏆 Sportsbook (Demo Line)</h2><br>
         <div class="sb-sports-tabs">
             <button class="sb-tab-btn active" onclick="switchSport('⚽ Football', this)">⚽ Football</button>
             <button class="sb-tab-btn" onclick="switchSport('🏀 Basketball', this)">🏀 Basketball</button>
@@ -92,7 +118,9 @@
 
     <div class="sb-main-layout">
         <!-- Events -->
-        <div class="sb-events-list" id="sportsEventsList"></div>
+        <div class="sb-events-list" id="sportsEventsList">
+
+        </div>
 
         <!-- Bet Slip -->
         <!-- Замени только блок купона и тег <script> на фронте лендинга -->
@@ -124,9 +152,156 @@
     const baseUrl = (location.hostname === 'localhost') ? 'http://localhost:3000' : 'https://mtw-gw.onrender.com';
     const baseUrlApi = baseUrl + '/api';
 
+    let currentUser = null;
+    let currentBalance = 0;
+    let serverConfig = null;
+    const socket = io(baseUrl);
+
+    let globalSessionId = null;
+
+    // Элементы интерфейса (общие для всех вкладок)
+    const usernameLabel = document.getElementById('usernameLabel');
+    const balanceLabel = document.getElementById('balanceLabel');
+    const authBtn = document.getElementById('authBtn');
+
     let fullLine = [];
     let selectedSport = '⚽ Football';
     let betSlipItems = []; // Массив для хранения нескольких выбранных исходов
+
+    function updateUIProfile() {
+        if (currentUser) {
+            if (usernameLabel) usernameLabel.innerText = currentUser;
+            if (balanceLabel) balanceLabel.innerText = currentBalance;
+            if (authBtn) authBtn.innerText = "Logout";
+        } else {
+            if (usernameLabel) usernameLabel.innerText = "Guest";
+            if (balanceLabel) balanceLabel.innerText = "0";
+            if (authBtn) authBtn.innerText = "Login";
+        }
+    }
+
+    async function handleAuth() {
+        if (currentUser) {
+            // Разлогин
+            currentUser = null;
+            currentBalance = 0;
+            serverConfig = null;
+            updateUIProfile();
+            clearAllGamesUI(); // функция сброса полей (очистка билетов, слотов и т.д.)
+            renderGeneralHistory([]); // очищаем историю на экране
+        } else {
+            // Логин
+            const name = prompt("Enter your login (letters, numbers, underscores only):", "Player_1");
+            if (!name) return;
+
+            try {
+                const response = await fetch(baseUrlApi + '/auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: name })
+                });
+                const data = await response.json();
+
+                if (data.error) return alert(data.error);
+
+                // Сохраняем данные, присланные сервером
+                currentUser = data.username;
+                currentBalance = data.balance;
+                jackpot = data.jackpot;
+                serverConfig = data.config; // сохраняем цены и пулы символов бэкенда
+
+                // Подключаем вебсокет к персональной комнате игрока на сервере для личных уведомлений
+                socket.emit('join_game', currentUser);
+
+                updateUIProfile();
+
+                if (typeof updateBetButtonState === 'function') updateBetButtonState();
+            } catch (err) {
+                console.error("Auth error:", err);
+                alert("Server connection failed. Is Node.js running?");
+            }
+        }
+    }
+
+
+    // Функция парсинга параметров из ссылки (?game=mines&session_id=123)
+    function getUrlParams() {
+        const params = {};
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+
+        if(urlParams.has('game')) params.game = urlParams.get('game');
+        if(urlParams.has('session_id')) params.sessionId = urlParams.get('session_id');
+        return params;
+    }
+    function handleUrlRoutingAndStart() {
+        const urlParams = getUrlParams();
+
+        // МГНОВЕННЫЙ РОУТИНГ: Если в ссылке указана игра, сразу изолируем её на экране
+//        if (urlParams.game && gameTabs.includes(urlParams.game)) {
+//            // Переключаем табы моментально до выполнения сетевых запросов
+//            changeTab(urlParams.game);
+//        }
+//        else {
+//            changeTab('');
+//        }
+
+        // Если передан токен сессии, запускаем асинхронный бесшовный логин
+        if (urlParams.sessionId) {
+            globalSessionId = urlParams.sessionId;
+            initSeamlessGame(globalSessionId);
+        } else {
+            // Если сессии нет — просто обновляем интерфейс для гостя
+            updateUIProfile();
+        }
+    }
+
+    // 4. АСИНХРОННЫЙ СИМЛЕСС ЛОГИН ПРИ ЗАГРУЗКЕ В IFRAME
+    async function initSeamlessGame(sessionId) {
+        try {
+            // Блокируем кнопки ставок во всех играх, пока идет проверка баланса на бэкенде
+            toggleAllGameButtons(true);
+
+            const response = await fetch('http://localhost:3000/api/auth/seamless', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId: sessionId })
+            });
+            const data = await response.json();
+
+            if (data.error) {
+                console.error("Seamless login failed:", data.error);
+                // Красиво выводим ошибку вместо лобби или поверх открытой игры
+                document.getElementById('lobby').innerHTML = `<h3 style="color:#e94560; text-align:center;">Session Expired: ${data.error}</h3>`;
+                return;
+            }
+
+            // Успешный бесшовный вход с платформы казино!
+            currentUser = data.username;
+            currentBalance = data.balance;
+            jackpot = data.jackpot;
+            serverConfig = data.config;
+
+            // Подключаем живые вебсокеты для таймеров
+            socket.emit('join_game', currentUser);
+
+            // Синхронизируем шапку WebApp
+            updateUIProfile();
+            updateJackpotUI();
+            if (typeof applyServerConfigToUI === 'function') applyServerConfigToUI();
+
+            // Разблокируем кнопки игр — баланс подгружен, игрок готов ставить монеты
+            toggleAllGameButtons(false);
+            if (typeof updateBetButtonState === 'function') updateBetButtonState();
+
+        } catch (err) {
+            console.error("Seamless connection error:", err);
+            toggleAllGameButtons(true);
+        }
+    }
+
+    // ЗАПУСК СИСТЕМЫ: Выполняется мгновенно при чтении скрипта
+    handleUrlRoutingAndStart();
 
     async function loadSportsLine() {
         try {
@@ -270,6 +445,7 @@
 
     document.addEventListener('DOMContentLoaded', loadSportsLine);
 </script>
+
 
 </body>
 </html>
