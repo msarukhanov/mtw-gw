@@ -92,6 +92,11 @@ const playerMethods = {
     },
     updateBalance: async (username, partnerId, newBalance) => {
         await db.update({ username, partnerId }, { $set: { balance: newBalance } });
+
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`${partnerId}_${username}`).emit('wallet_update', { balance: newBalance });
+        }
     },
 
     // ИСПРАВЛЕНО: Метод собирает билеты игроков, разделяя их по тенантам (партнерам)
