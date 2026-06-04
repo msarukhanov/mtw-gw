@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTWTech Sports</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a2e;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 400px;
+            background: #16213e;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+    </style>
+
+    <!-- Стили для Спортсбука -->
+    <style>
+        .sb-wrapper { max-width: 900px; margin: 40px auto; font-family: sans-serif; background: #1a1d24; color: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .sb-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2a2f3a; padding-bottom: 15px; margin-bottom: 20px; }
+        .sb-title { margin: 0; font-size: 24px; color: #ffb703; }
+        .sb-sports-tabs { display: flex; gap: 10px; }
+        .sb-tab-btn { background: #2a2f3a; border: 0; color: #a0a5b5; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: all 0.2s; }
+        .sb-tab-btn.active { background: #ffb703; color: #1a1d24; }
+
+        .sb-main-layout { display: flex; gap: 20px; align-items: flex-start; }
+        .sb-events-list { flex: 2; display: flex; flex-direction: column; gap: 15px; }
+
+        /* Карточка матча */
+        .sb-match-card { background: #232730; border-radius: 8px; padding: 15px; border: 1px solid #2a2f3a; }
+        .sb-match-info { display: flex; justify-content: space-between; font-size: 13px; color: #a0a5b5; margin-bottom: 8px; }
+        .sb-match-info .live-status { color: #00f5d4; font-weight: bold; }
+        .sb-match-teams { font-size: 16px; font-weight: bold; margin-bottom: 12px; color: #fff; }
+
+        /* Сетка маркетов */
+        .sb-markets-grid { display: flex; flex-direction: column; gap: 10px; }
+        .sb-market-row { background: #1c2027; padding: 8px; border-radius: 6px; }
+        .sb-market-label { font-size: 12px; color: #a0a5b5; margin-bottom: 6px; font-weight: bold; }
+        .sb-odds-buttons { display: flex; gap: 8px; }
+
+        .odd-btn { flex: 1; background: #2a2f3a; border: 1px solid #3a4150; color: #fff; padding: 8px; border-radius: 4px; cursor: pointer; display: flex; justify-content: space-between; font-size: 13px; transition: all 0.2s; }
+        .odd-btn:hover { border-color: #ffb703; background: #333946; }
+        .odd-btn span.coef { color: #ffb703; font-weight: bold; }
+        .odd-btn.selected { background: #ffb703; color: #1a1d24; border-color: #ffb703; }
+        .odd-btn.selected span.coef { color: #1a1d24; }
+
+        /* Купон ставки */
+        .sb-slip { flex: 1; background: #232730; border-radius: 8px; padding: 15px; border: 1px solid #2a2f3a; position: sticky; top: 20px; }
+        .sb-slip h3 { margin-top: 0; font-size: 16px; color: #ffb703; border-bottom: 1px solid #2a2f3a; padding-bottom: 8px; }
+        .slip-empty { color: #a0a5b5; font-size: 13px; text-align: center; padding: 20px 0; }
+        .slip-details { font-size: 13px; background: #1c2027; padding: 10px; border-radius: 6px; margin-bottom: 12px; }
+    </style>
+
+
+
+    <script src="https://cdn.socket.io/4.8.3/socket.io.min.js" integrity="sha384-kzavj5fiMwLKzzD1f8S7TeoVIEi7uKHvbTA3ueZkrzYq75pNQUiUi6Dy98Q3fxb0" crossorigin="anonymous"></script>
+
+</head>
+<body>
+
+
+<!-- Copy into your Frontend site file -->
+<div class="sb-wrapper">
+    <div class="sb-header">
+        <h2 class="sb-title">🏆 Sportsbook (Demo Line)</h2>
+        <div class="sb-sports-tabs">
+            <button class="sb-tab-btn active" onclick="switchSport('⚽ Football', this)">⚽ Football</button>
+            <button class="sb-tab-btn" onclick="switchSport('🏀 Basketball', this)">🏀 Basketball</button>
+            <button class="sb-tab-btn" onclick="switchSport('🎾 Tennis', this)">🎾 Tennis</button>
+        </div>
+    </div>
+
+    <div class="sb-main-layout">
+        <!-- Events -->
+        <div class="sb-events-list" id="sportsEventsList"></div>
+
+        <!-- Bet Slip -->
+        <!-- Замени только блок купона и тег <script> на фронте лендинга -->
+        <div class="sb-slip" id="bettingSlip">
+            <h3>🎫 Bet Slip</h3>
+            <div id="slipItemsContainer" style="max-height: 250px; overflow-y: auto; margin-bottom: 10px;">
+                <div class="slip-empty" id="slipEmptyLabel">Select any odds from the line to bet</div>
+            </div>
+            <div id="slipControls" style="display: none;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;">
+                    <span>Bet Type:</span><strong id="slipBetType" style="color: #ffb703;">SINGLE</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 16px;">
+                    <span>Total Odds:</span><strong id="slipTotalOdds" style="color: #ffb703;">1.00</strong>
+                </div>
+                Stake Amount:<br>
+                <input type="number" id="stakeAmount" value="100" style="width:100%; padding:8px; margin:8px 0; background:#2a2f3a; border:1px solid #3a4150; color:#fff; border-radius:4px; box-sizing: border-box;" oninput="calculateSlipWin()">
+                <div style="margin: 10px 0; font-size:14px;">Potential Win: <b id="potWin" style="color:#00f5d4;">0 🪙</b></div>
+                <button onclick="placeSportsBet()" style="width:100%; background:#ffb703; color:#1a1d24; padding:12px; border:0; font-weight:bold; border-radius:6px; cursor:pointer;">Place Bet</button>
+                <button onclick="clearSlip()" style="width:100%; background:transparent; color:#a0a5b5; padding:6px; border:0; font-size:12px; cursor:pointer; margin-top:5px;">Clear All</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<script>
+    const baseUrl = (location.hostname === 'localhost') ? 'http://localhost:3000' : 'https://mtw-gw.onrender.com';
+    const baseUrlApi = baseUrl + '/api';
+
+    let fullLine = [];
+    let selectedSport = '⚽ Football';
+    let betSlipItems = []; // Массив для хранения нескольких выбранных исходов
+
+    async function loadSportsLine() {
+        try {
+            const res = await fetch(`${baseUrlApi}/sports/line`);
+            const data = await res.json();
+            if (data.success) { fullLine = data.line; renderMatches(); }
+        } catch (err) { console.error('Error loading sports line:', err); }
+    }
+
+    function switchSport(sport, btn) {
+        selectedSport = sport;
+        document.querySelectorAll('.sb-tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderMatches();
+    }
+
+    function renderMatches() {
+        const list = document.getElementById('sportsEventsList');
+        const matches = fullLine.filter(m => m.sport === selectedSport);
+
+        list.innerHTML = matches.map(m => {
+            return `
+                <div class="sb-match-card">
+                    <div class="sb-match-info"><span>${m.league}</span><span class="live-status">${m.status}</span></div>
+                    <div class="sb-match-teams">${m.teams}</div>
+                    <div class="sb-markets-grid">
+                        ${Object.keys(m.markets).map(marketKey => {
+                const market = m.markets[marketKey];
+                return `
+                                <div class="sb-market-row">
+                                    <div class="sb-market-label">${market.label}</div>
+                                    <div class="sb-odds-buttons">
+                                        ${Object.keys(market.odds).map(outcomeKey => {
+                    const isSelected = betSlipItems.some(item => item.matchId === m.id && item.market === marketKey && item.outcome === outcomeKey);
+                    return `
+                                                <button class="odd-btn ${isSelected ? 'selected' : ''}" onclick="toggleOutcome('${m.id}', '${m.teams}', '${marketKey}', '${outcomeKey}', ${market.odds[outcomeKey]})">
+                                                    <span>${outcomeKey.toUpperCase()}</span>
+                                                    <span class="coef">${market.odds[outcomeKey]}</span>
+                                                </button>
+                                            `;
+                }).join('')}
+                                    </div>
+                                </div>
+                            `;
+            }).join('')}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function toggleOutcome(matchId, teams, market, outcome, odds) {
+        // Защита: нельзя добавить два исхода из одного и того же матча в один экспресс
+        const matchExists = betSlipItems.some(item => item.matchId === matchId);
+        const exactExists = betSlipItems.some(item => item.matchId === matchId && item.market === market && item.outcome === outcome);
+
+        if (exactExists) {
+            // Если кликнули на уже выбранный — удаляем его
+            betSlipItems = betSlipItems.filter(item => !(item.matchId === matchId && item.market === market && item.outcome === outcome));
+        } else {
+            if (matchExists) {
+                // Удаляем старый исход из этого же матча, заменяя новым
+                betSlipItems = betSlipItems.filter(item => item.matchId !== matchId);
+            }
+            betSlipItems.push({ matchId, teams, market, outcome, odds });
+        }
+
+        renderMatches(); // перерисовываем кнопки, чтобы подсветить выбранные
+        updateSlipUI();
+    }
+
+    function updateSlipUI() {
+        const container = document.getElementById('slipItemsContainer');
+        const controls = document.getElementById('slipControls');
+        const emptyLabel = document.getElementById('slipEmptyLabel');
+
+        if (betSlipItems.length === 0) {
+            container.innerHTML = '<div class="slip-empty" id="slipEmptyLabel">Select any odds from the line to bet</div>';
+            controls.style.display = 'none';
+            return;
+        }
+
+        emptyLabel ? emptyLabel.remove() : null;
+        controls.style.display = 'block';
+
+        // Рассчитываем общий кэфэкспресса
+        let totalOdds = 1;
+        container.innerHTML = betSlipItems.map(item => {
+            totalOdds *= item.odds;
+            return `
+                <div class="slip-details" style="position:relative; margin-bottom: 6px;">
+                    <b>${item.teams}</b><br>
+                    <small style="color:#a0a5b5;">${item.market.toUpperCase()} -> ${item.outcome.toUpperCase()}</small>
+                    <span style="position:absolute; right:10px; top:10px; color:#ffb703; font-weight:bold;">${item.odds}</span>
+                </div>
+            `;
+        }).join('');
+
+        totalOdds = parseFloat(totalOdds.toFixed(2));
+        document.getElementById('slipBetType').innerText = betSlipItems.length > 1 ? "COMBO (MULTI)" : "SINGLE";
+        document.getElementById('slipTotalOdds').innerText = totalOdds;
+
+        calculateSlipWin();
+    }
+
+    function calculateSlipWin() {
+        const odds = parseFloat(document.getElementById('slipTotalOdds').innerText) || 1;
+        const stake = document.getElementById('stakeAmount').value || 0;
+        document.getElementById('potWin').innerText = Math.floor(stake * odds) + ' 🪙';
+    }
+
+    function clearSlip() {
+        betSlipItems = [];
+        renderMatches();
+        updateSlipUI();
+    }
+
+    async function placeSportsBet() {
+        const stake = document.getElementById('stakeAmount').value;
+        if (!stake || stake <= 0) return alert('Please enter a valid stake amount');
+
+        const payload = {
+            items: betSlipItems.map(i => ({ matchId: i.matchId, market: i.market, outcome: i.outcome })),
+            stake: stake,
+            sessionId: "demo_session_id"
+        };
+
+        try {
+            const res = await fetch(`${baseUrlApi}/sports/bet`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                alert('Bet slip placed successfully!');
+                clearSlip();
+            } else { alert(data.error || 'Betting failed'); }
+        } catch (err) { alert('Network error'); }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadSportsLine);
+</script>
+
+</body>
+</html>

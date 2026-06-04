@@ -432,6 +432,13 @@
                 <!-- Сам iframe, который тянет вашу игру с сервера -->
                 <iframe id="demoIframe" src="" style="width: 100%; height: 100%; border: none; background: #0d0d1a;"></iframe>
             </div>
+
+            <div class="phone-mockup" style="position: relative; width: 360px; height: 760px; background: #000; margin: 0 auto; border-radius: 36px; border: 12px solid #161638; box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 30px rgba(78, 204, 163, 0.15); overflow: hidden;">
+                <div class="phone-notch" style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 140px; height: 20px; background: #161638; border-bottom-left-radius: 12px; z-index: 10;"></div>
+
+                <!-- Сам iframe, который тянет вашу игру с сервера -->
+                <iframe id="demoIframeSport" src="" style="width: 100%; height: 100%; border: none; background: #0d0d1a;"></iframe>
+            </div>
         </div>
     </section>
 
@@ -475,6 +482,7 @@
 <script>
 
     const GAME_SERVER_URL = 'https://mtw-gw-demo.onrender.com/'; //; baseUrl;
+    const SPORT_SERVER_URL = 'https://mtw-gw-sport.onrender.com/'; //; baseUrl;
 
     const TEST_SESSION_ID = "demo_b2b_test_token_123";
 
@@ -496,6 +504,8 @@
 
     switchDemoGame('mines');
 
+    const iframeSport = document.getElementById('demoIframeSport');
+    iframeSport.src = `${GAME_SERVER_URL}/?session_id=${TEST_SESSION_ID}`;
 
     // Обработка формы лидов
     const leadForm = document.getElementById('leadForm');

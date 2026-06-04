@@ -8,6 +8,7 @@ const { Server } = require('socket.io');
 const authRoutes = require('./routes/authRoutes');
 const gameRoutes = require('./routes/gameRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const sportRoutes = require('./routes/sportRoutes');
 
 
 const app = express();
@@ -25,6 +26,7 @@ const io = new Server(server, { cors: { origin: "*" } });
 app.use('/api', authRoutes);
 app.use('/api', adminRoutes);
 app.use('/api', gameRoutes);
+app.use('/api', sportRoutes);
 
 
 // Запуск фоновой службы лотереи по сокетам

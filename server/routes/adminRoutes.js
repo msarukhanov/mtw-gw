@@ -19,6 +19,20 @@ router.post('/admin/end-tournament', adminController.endTournament);
 router.post('/admin/add-promocode', adminController.addPromoCode);
 router.post('/admin/run-cashback', adminController.runCashback);
 
+// Эндпоинты для админки
+router.get('/admin/sports/pending', async (req, res) => {
+    const bets = await state.getPendingBets();
+    res.json({ bets });
+});
+
+router.post('/admin/sports/settle', async (req, res) => {
+    const { betId, status } = req.body; // status: "WON" или "LOST"
+    const seamless = require('../services/seamlessService');
+    const result = await state.settleBet(betId, status, seamless.credit);
+    res.json({ success: true, result });
+});
+
+
 // // Пример для роутов вашей админ-панели:
 // router.get('/admin/mines/stats', (req, res) => {
 //     res.json({

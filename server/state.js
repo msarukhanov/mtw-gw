@@ -553,6 +553,192 @@ const promoMethods = {
 
 };
 
+// В самый верх state.js добавляем базу ставок
+const betsDb = Datastore.create({ filename: path.join(__dirname, 'bets.db'), autoload: true });
+
+// Фейковая Live-линия, которая будет жестко зашита на сервере для демонстрации
+// Внутри state.js
+
+const DEMO_MATCHES = [
+    // === ⚽ FOOTBALL / SOCCER ===
+    {
+        id: "fb_1", sport: "⚽ Football", league: "Champions League", teams: "Real Madrid - Manchester City", status: "LIVE (72 min, 2:2)",
+        markets: {
+            winner: { label: "Match Result (1X2)", odds: { p1: 2.85, x: 3.40, p2: 2.45 } },
+            total: { label: "Total Goals (Over/Under 4.5)", odds: { over: 1.90, under: 1.80 } },
+            handicap: { label: "Match Handicap (0)", odds: { h1: 2.10, h2: 1.75 } }
+        }
+    },
+    {
+        id: "fb_2", sport: "⚽ Football", league: "English Premier League", teams: "Arsenal - Chelsea", status: "LIVE (34 min, 1:0)",
+        markets: {
+            winner: { label: "Match Result (1X2)", odds: { p1: 1.55, x: 4.20, p2: 6.00 } },
+            total: { label: "Total Goals (Over/Under 2.5)", odds: { over: 1.75, under: 2.05 } },
+            handicap: { label: "Match Handicap (-1 / +1)", odds: { h1: 1.95, h2: 1.85 } }
+        }
+    },
+    {
+        id: "fb_3", sport: "⚽ Football", league: "La Liga", teams: "Barcelona - Atletico Madrid", status: "LIVE (12 min, 0:0)",
+        markets: {
+            winner: { label: "Match Result (1X2)", odds: { p1: 2.10, x: 3.30, p2: 3.70 } },
+            total: { label: "Total Goals (Over/Under 2.5)", odds: { over: 1.95, under: 1.85 } },
+            handicap: { label: "Match Handicap (0)", odds: { h1: 1.53, h2: 2.50 } }
+        }
+    },
+    {
+        id: "fb_4", sport: "⚽ Football", league: "Serie A", teams: "Juventus - Inter Milan", status: "LIVE (51 min, 0:1)",
+        markets: {
+            winner: { label: "Match Result (1X2)", odds: { p1: 4.50, x: 3.10, p2: 1.95 } },
+            total: { label: "Total Goals (Over/Under 1.5)", odds: { over: 1.65, under: 2.20 } },
+            handicap: { label: "Match Handicap (+1 / -1)", odds: { h1: 1.80, h2: 2.00 } }
+        }
+    },
+    {
+        id: "fb_5", sport: "⚽ Football", league: "Bundesliga", teams: "Bayern Munich - Borussia Dortmund", status: "LIVE (88 min, 3:1)",
+        markets: {
+            winner: { label: "Match Result (1X2)", odds: { p1: 1.05, x: 11.0, p2: 26.0 } },
+            total: { label: "Total Goals (Over/Under 4.5)", odds: { over: 2.10, under: 1.65 } },
+            handicap: { label: "Match Handicap (-2 / +2)", odds: { h1: 1.85, h2: 1.95 } }
+        }
+    },
+
+    // === 🏀 BASKETBALL ===
+    {
+        id: "bk_1", sport: "🏀 Basketball", league: "NBA", teams: "LA Lakers - Boston Celtics", status: "LIVE (3rd Quarter, 78:82)",
+        markets: {
+            winner: { label: "Moneyline (Inc. OT)", odds: { p1: 2.20, p2: 1.67 } },
+            total: { label: "Total Points (Over/Under 215.5)", odds: { over: 1.92, under: 1.88 } },
+            handicap: { label: "Point Spread (+3.5 / -3.5)", odds: { h1: 1.85, h2: 1.95 } }
+        }
+    },
+    {
+        id: "bk_2", sport: "🏀 Basketball", league: "NBA", teams: "Golden State - Milwaukee Bucks", status: "LIVE (4th Quarter, 102:99)",
+        markets: {
+            winner: { label: "Moneyline (Inc. OT)", odds: { p1: 1.45, p2: 2.75 } },
+            total: { label: "Total Points (Over/Under 228.5)", odds: { over: 2.10, under: 1.72 } },
+            handicap: { label: "Point Spread (-5.5 / +5.5)", odds: { h1: 1.90, h2: 1.90 } }
+        }
+    },
+    {
+        id: "bk_3", sport: "🏀 Basketball", league: "EuroLeague", teams: "Real Madrid Basket - Monaco", status: "LIVE (2nd Quarter, 34:28)",
+        markets: {
+            winner: { label: "Moneyline (Inc. OT)", odds: { p1: 1.30, p2: 3.50 } },
+            total: { label: "Total Points (Over/Under 162.5)", odds: { over: 1.85, under: 1.95 } },
+            handicap: { label: "Point Spread (-7.5 / +7.5)", odds: { h1: 1.91, h2: 1.89 } }
+        }
+    },
+    {
+        id: "bk_4", sport: "🏀 Basketball", league: "EuroLeague", teams: "Olympiacos - Panathinaikos", status: "LIVE (1st Quarter, 12:15)",
+        markets: {
+            winner: { label: "Moneyline (Inc. OT)", odds: { p1: 1.80, p2: 2.00 } },
+            total: { label: "Total Points (Over/Under 155.5)", odds: { over: 1.90, under: 1.90 } },
+            handicap: { label: "Point Spread (-1.5 / +1.5)", odds: { h1: 1.95, h2: 1.85 } }
+        }
+    },
+    {
+        id: "bk_5", sport: "🏀 Basketball", league: "NBA", teams: "Miami Heat - New York Knicks", status: "LIVE (3rd Quarter, 60:65)",
+        markets: {
+            winner: { label: "Moneyline (Inc. OT)", odds: { p1: 2.40, p2: 1.57 } },
+            total: { label: "Total Points (Over/Under 208.5)", odds: { over: 1.80, under: 2.00 } },
+            handicap: { label: "Point Spread (+4.5 / -4.5)", odds: { h1: 1.87, h2: 1.93 } }
+        }
+    },
+
+    // === 🎾 TENNIS ===
+    {
+        id: "tn_1", sport: "🎾 Tennis", league: "Wimbledon", teams: "Jannik Sinner - Carlos Alcaraz", status: "LIVE (Set 2, 1:1, Games 4:3)",
+        markets: {
+            winner: { label: "Match Winner", odds: { p1: 1.90, p2: 1.90 } },
+            total: { label: "Total Games (Over/Under 38.5)", odds: { over: 1.85, under: 1.95 } },
+            handicap: { label: "Handicap Games (0)", odds: { h1: 1.90, h2: 1.90 } }
+        }
+    },
+    {
+        id: "tn_2", sport: "🎾 Tennis", league: "Roland Garros", teams: "Novak Djokovic - Daniil Medvedev", status: "LIVE (Set 1, Games 5:2)",
+        markets: {
+            winner: { label: "Match Winner", odds: { p1: 1.22, p2: 4.30 } },
+            total: { label: "Total Games (Over/Under 34.5)", odds: { over: 2.00, under: 1.72 } },
+            handicap: { label: "Handicap Games (-4.5 / +4.5)", odds: { h1: 1.85, h2: 1.95 } }
+        }
+    },
+    {
+        id: "tn_3", sport: "🎾 Tennis", league: "US Open", teams: "Alexander Zverev - Taylor Fritz", status: "LIVE (Set 3, 2:0, Games 1:2)",
+        markets: {
+            winner: { label: "Match Winner", odds: { p1: 1.35, p2: 3.20 } },
+            total: { label: "Total Games (Over/Under 36.5)", odds: { over: 1.90, under: 1.90 } },
+            handicap: { label: "Handicap Games (-3.5 / +3.5)", odds: { h1: 1.80, h2: 2.00 } }
+        }
+    },
+    {
+        id: "tn_4", sport: "🎾 Tennis", league: "Australian Open", teams: "Stefanos Tsitsipas - Holger Rune", status: "LIVE (Set 1, Games 0:3)",
+        markets: {
+            winner: { label: "Match Winner", odds: { p1: 3.10, p2: 1.38 } },
+            total: { label: "Total Games (Over/Under 39.5)", odds: { over: 1.75, under: 2.08 } },
+            handicap: { label: "Handicap Games (+3.5 / -3.5)", odds: { h1: 1.95, h2: 1.85 } }
+        }
+    },
+    {
+        id: "tn_5", sport: "🎾 Tennis", league: "ATP Masters", teams: "Andrey Rublev - Casper Ruud", status: "LIVE (Set 2, 0:1, Games 5:5)",
+        markets: {
+            winner: { label: "Match Winner", odds: { p1: 1.75, p2: 2.08 } },
+            total: { label: "Total Games (Over/Under 24.5)", odds: { over: 1.95, under: 1.85 } },
+            handicap: { label: "Handicap Games (-1.5 / +1.5)", odds: { h1: 1.90, h2: 1.90 } }
+        }
+    }
+];
+
+
+const sportsMethods = {
+    // ... твои прошлые методы ...
+    getSportsLine: () => DEMO_MATCHES,
+
+    // ИСПРАВЛЕНО: Новый метод создания купона с учетом маркета
+    // Создание купона (поддерживает Single и Multi)
+    createSportsBet: async (username, betData) => {
+        // betData.items — это массив исходов, выбранных игроком
+        const bet = {
+            username,
+            type: betData.items.length > 1 ? "MULTI" : "SINGLE",
+            items: betData.items.map(item => ({
+                matchId: item.matchId,
+                teams: item.teams,
+                market: item.market,
+                selectedOutcome: item.outcome,
+                odds: Number(item.odds),
+                status: "PENDING" // Статус конкретного матча внутри купона
+            })),
+            totalOdds: Number(betData.totalOdds),
+            stake: Number(betData.stake),
+            status: "PENDING", // Статус всего купона целиком
+            timestamp: Date.now()
+        };
+        return await betsDb.insert(bet);
+    },
+
+    getPendingBets: async () => await betsDb.find({ status: "PENDING" }),
+
+    // Расчет купона из админки
+    settleBet: async (betId, finalStatus, seamlessCredit) => {
+        const bet = await betsDb.findOne({ _id: betId });
+        if (!bet || bet.status !== "PENDING") return null;
+
+        let prize = 0;
+        if (finalStatus === "WON") {
+            // Сумма ставки умножается на ОБЩИЙ перемноженный коэффициент купона
+            prize = Math.floor(bet.stake * bet.totalOdds);
+
+            const sportsRoundId = `sports_win_${bet._id}_${Date.now()}`;
+            await seamlessCredit(bet.username, null, prize, `⚽ Sportsbook Win (${bet.type})`, sportsRoundId);
+        }
+
+        // Обновляем статус купона
+        await betsDb.update({ _id: betId }, { $set: { status: finalStatus, prize: prize } });
+        return { ...bet, status: finalStatus, prize };
+    }
+};
+
+
+
 module.exports = {
     getRandomInt,
 
@@ -568,6 +754,8 @@ module.exports = {
 
     ...slots5x3Methods,
     ...freeSpinMethods,
+
+    ...sportsMethods,
 
     getConfig: () => CONFIG, // Метод для отправки настроек клиенту
 
