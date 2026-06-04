@@ -13,7 +13,7 @@ router.post('/showcase/validate', showcaseController.validate);
 router.post('/showcase/debit', showcaseController.debit);
 router.post('/showcase/credit', showcaseController.credit);
 router.get('/showcase/user-info', showcaseController.getUserInfo);
-
+router.post('/showcase/login', showcaseController.login);
 
 // 1. Эндпоинт проверки сессии (Validate)
 router.post('/platform/validate', (req, res) => {

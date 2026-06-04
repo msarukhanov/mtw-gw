@@ -73,11 +73,11 @@ function getHiloMultipliers(currentValue) {
 
 const playerMethods = {
     getOrCreatePlayer: async (username, partnerId) => {
-        let player = await db.findOne({ username: username, partnerId: partnerId  });
+        let player = await db.findOne({ username, partnerId  });
         if (!player) {
             player = {
-                username: username,
-                partnerId: partnerId, // ВАЖНО: сохраняем partnerId в документ игрока
+                username,
+                partnerId, // ВАЖНО: сохраняем partnerId в документ игрока
                 balance: 200
             };
             await db.insert(player);
@@ -91,7 +91,7 @@ const playerMethods = {
         return player;
     },
     updateBalance: async (username, partnerId, newBalance) => {
-        await db.update({ username: username, partnerId: partnerId }, { $set: { balance: newBalance } });
+        await db.update({ username, partnerId }, { $set: { balance: newBalance } });
     },
 
     // ИСПРАВЛЕНО: Метод собирает билеты игроков, разделяя их по тенантам (партнерам)

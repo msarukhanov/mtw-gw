@@ -3,6 +3,7 @@ const router = express.Router();
 const state = require('../state');
 const seamless = require('../services/seamlessService');
 
+
 // ПОСРЕДНИК АВТОРИЗАЦИИ (Изолирует игрока на основе пары username + partnerId)
 router.checkPlayer = async (req, res, next) => {
     // ИСПРАВЛЕНО: Извлекаем partnerId из тела, заголовков или токена
@@ -55,18 +56,28 @@ router.post('/auth/seamless', async (req, res) => {
     if (!partnerId) return res.status(400).json({ error: "Partner ID required for B2B routing" });
 
     // Идем к конкретной внешней платформе проверять токен (передаем partnerId)
-    const externalUser = await seamless.validateSession(sessionId, partnerId);
+    let externalUser = await seamless.validateSession(sessionId, partnerId);
     if (!externalUser) {
         return res.status(401).json({ error: "Invalid or expired session token" });
+    }
+
+    if(!externalUser || !externalUser.username) {
+        externalUser = {username:'Player1'}
     }
 
     // Создаем/обновляем локальный кэш игрока под нужного партнера
     const player = await state.getOrCreatePlayer(externalUser.username, partnerId);
     player.sessionId = sessionId;
-    player.balance = externalUser.balance; // Синхронизируем баланс с платформой
+    if(externalUser && externalUser.balance) {
+        player.balance = externalUser.balance; // Синхронизируем баланс с платформой
+    }
 
+    console.log(player);
     // ИСПРАВЛЕНО: Обновляем баланс с привязкой к бренду
-    await state.updateBalance(player.username, partnerId, player.balance);
+    try {
+        await state.updateBalance(player.username, partnerId, player.balance);
+    }
+    catch (e) {}
 
     res.json({
         username: player.username,

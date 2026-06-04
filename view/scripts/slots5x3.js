@@ -97,7 +97,7 @@ if (slots53SpinBtn) {
 
         try {
             // Отправляем запрос на сервер Node.js
-            const response = await fetch('http://localhost:3000/api/slots5x3/spin', {
+            const response = await fetch(`${baseUrlApi}/slots5x3/spin`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: currentUser })

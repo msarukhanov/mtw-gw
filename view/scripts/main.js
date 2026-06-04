@@ -210,6 +210,7 @@ socket.on('timer_update', (data) => {
 
 
 let globalSessionId = null;
+let globalPartnerId = null;
 
 // Функция парсинга параметров из ссылки (?game=mines&session_id=123)
 function getUrlParams() {
@@ -219,8 +220,10 @@ function getUrlParams() {
 
     if(urlParams.has('game')) params.game = urlParams.get('game');
     if(urlParams.has('sessionId')) params.sessionId = urlParams.get('sessionId');
+    if(urlParams.has('partnerId')) params.partnerId = urlParams.get('partnerId');
     return params;
 }
+
 function handleUrlRoutingAndStart() {
     const urlParams = getUrlParams();
 
@@ -233,10 +236,12 @@ function handleUrlRoutingAndStart() {
         changeTab('');
     }
 
+    console.log(urlParams);
     // Если передан токен сессии, запускаем асинхронный бесшовный логин
-    if (urlParams.sessionId) {
+    if (urlParams.sessionId && urlParams.partnerId) {
         globalSessionId = urlParams.sessionId;
-        initSeamlessGame(globalSessionId);
+        globalPartnerId = urlParams.partnerId;
+        initSeamlessGame(globalSessionId, globalPartnerId);
     } else {
         // Если сессии нет — просто обновляем интерфейс для гостя
         updateUIProfile();
@@ -244,15 +249,16 @@ function handleUrlRoutingAndStart() {
 }
 
 // 4. АСИНХРОННЫЙ СИМЛЕСС ЛОГИН ПРИ ЗАГРУЗКЕ В IFRAME
-async function initSeamlessGame(sessionId) {
+async function initSeamlessGame(sessionId, partnerId) {
     try {
         // Блокируем кнопки ставок во всех играх, пока идет проверка баланса на бэкенде
         toggleAllGameButtons(true);
 
-        const response = await fetch('http://localhost:3000/api/auth/seamless', {
+        const response = await
+            fetch(`${baseUrlApi}/auth/seamless`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId: sessionId })
+            body: JSON.stringify({ sessionId, partnerId })
         });
         const data = await response.json();
 

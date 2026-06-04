@@ -217,15 +217,22 @@ async function initConfig() {
         console.log("✅ B2B Multi-tenant config successfully loaded from config.db");
     }
 }
-initConfig(); // Запуск при старте ноды
+initConfig();
 
-
-initConfig(); // Запускаем при старте сервера
 
 // Подключение сокетов игроков к их комнатам
 io.on('connection', (socket) => {
     socket.on('join_game', (username) => {
         socket.join(username);
+    });
+
+    socket.on('platform_join', (data) => {
+        const { username, partnerId } = data;
+        if (username && partnerId) {
+            // Создаем уникальную изолированную комнату для обновлений, например: siteA_john
+            const roomKey = `${partnerId}_${username}`;
+            socket.join(roomKey);
+        }
     });
 });
 

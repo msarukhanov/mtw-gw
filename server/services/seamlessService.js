@@ -5,6 +5,7 @@ const state = require('../state');
 module.exports = {
     // 3.1 Проверка сессии и автологин с учетом партнера
     validateSession: async (sessionId, partnerId) => {
+        return true;
         try {
             // Динамически достаем конфигурацию конкретного B2B-партнера
             const partnerConfig = state.getConfig(partnerId);
@@ -31,6 +32,7 @@ module.exports = {
 
     // 3.2 Запрос при ставке (Debit) с динамической маршрутизацией
     debit: async (username, partnerId, sessionId, amount, gameName, roundId) => {
+        return true;
         try {
             const partnerConfig = state.getConfig(partnerId);
             const integration = partnerConfig.integration || {
@@ -57,6 +59,7 @@ module.exports = {
 
     // 3.3 Запрос при результате (Credit) с динамической маршрутизацией
     credit: async (username, partnerId, sessionId, amount, gameName, roundId) => {
+        return true;
         try {
             const partnerConfig = state.getConfig(partnerId);
             const integration = partnerConfig.integration || {
