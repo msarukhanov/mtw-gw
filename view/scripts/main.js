@@ -248,6 +248,21 @@ function handleUrlRoutingAndStart() {
     }
 }
 
+// Вспомогательная функция, чтобы игрок не успел нажать кнопку «Ставка» до того, как бэкенд подгрузит его реальный баланс
+function toggleAllGameButtons(disabledStatus) {
+    const allActionButtons = [
+        document.getElementById('betBtn'),       // Лотерея
+        document.getElementById('spinBtn'),      // Слоты
+        document.getElementById('spinBtnWof'),   // Колесо
+        document.getElementById('buyBtn'),       // Скретч
+        document.getElementById('minesStartBtn'),// Минёр
+        document.getElementById('crashActionBtn')// Авиатор
+    ];
+    allActionButtons.forEach(btn => {
+        if (btn) btn.disabled = disabledStatus;
+    });
+}
+
 // 4. АСИНХРОННЫЙ СИМЛЕСС ЛОГИН ПРИ ЗАГРУЗКЕ В IFRAME
 async function initSeamlessGame(sessionId, partnerId) {
     try {
@@ -293,20 +308,7 @@ async function initSeamlessGame(sessionId, partnerId) {
     }
 }
 
-// Вспомогательная функция, чтобы игрок не успел нажать кнопку «Ставка» до того, как бэкенд подгрузит его реальный баланс
-function toggleAllGameButtons(disabledStatus) {
-    const allActionButtons = [
-        document.getElementById('betBtn'),       // Лотерея
-        document.getElementById('spinBtn'),      // Слоты
-        document.getElementById('spinBtnWof'),   // Колесо
-        document.getElementById('buyBtn'),       // Скретч
-        document.getElementById('minesStartBtn'),// Минёр
-        document.getElementById('crashActionBtn')// Авиатор
-    ];
-    allActionButtons.forEach(btn => {
-        if (btn) btn.disabled = disabledStatus;
-    });
-}
+
 
 // ЗАПУСК СИСТЕМЫ: Выполняется мгновенно при чтении скрипта
 handleUrlRoutingAndStart();

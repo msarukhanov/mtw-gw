@@ -2,6 +2,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MTWTech Sports</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDAgNTAwIj4KPHJlY3Qgd2lkdGg9IjUwMCIgaGVpZ2h0PSI1MDAiIGZpbGw9IiMxMjEyMTIiIHJ4PSI0MCIvPgo8dGV4dCB4PSI1MCUiIHk9IjQ1JSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IidKZXRCcmFpbnMgTW9ubycsICdGaXJhIENvZGUnLCAnTW9udHNlcnJhdCcsIHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSI5MDAiPgo8dHNwYW4geD0iNTAlIiBkeT0iMCIgZm9udC1zaXplPSIxMjUiIGZpbGw9IiNmZjVhNWYiIHRleHRMZW5ndGg9IjM2MCIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nQW5kR2x5cGhzIj5NVFc8L3RzcGFuPgo8dHNwYW4geD0iNTAlIiBkeT0iMTE1IiBmb250LXNpemU9IjExNSIgZmlsbD0iIzRlY2NhMyIgdGV4dExlbmd0aD0iMzYwIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiPlRFQ0g8L3RzcGFuPgo8L3RleHQ+Cjwvc3ZnPg==">
     <style>
         * {
             box-sizing: border-box;
@@ -260,7 +261,7 @@
     async function initSeamlessGame(sessionId) {
         try {
             // Блокируем кнопки ставок во всех играх, пока идет проверка баланса на бэкенде
-            toggleAllGameButtons(true);
+//            toggleAllGameButtons(true);
 
             const response = await fetch('http://localhost:3000/api/auth/seamless', {
                 method: 'POST',
@@ -291,12 +292,12 @@
             if (typeof applyServerConfigToUI === 'function') applyServerConfigToUI();
 
             // Разблокируем кнопки игр — баланс подгружен, игрок готов ставить монеты
-            toggleAllGameButtons(false);
+//            toggleAllGameButtons(false);
             if (typeof updateBetButtonState === 'function') updateBetButtonState();
 
         } catch (err) {
             console.error("Seamless connection error:", err);
-            toggleAllGameButtons(true);
+//            toggleAllGameButtons(true);
         }
     }
 
