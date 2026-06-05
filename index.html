@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>МТWTech Integration Suite — Next-Gen Web3 & Mobile iGaming Solution</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDAgNTAwIj4KPHJlY3Qgd2lkdGg9IjUwMCIgaGVpZ2h0PSI1MDAiIGZpbGw9IiMxMjEyMTIiIHJ4PSI0MCIvPgo8dGV4dCB4PSI1MCUiIHk9IjQ1JSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IidKZXRCcmFpbnMgTW9ubycsICdGaXJhIENvZGUnLCAnTW9udHNlcnJhdCcsIHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSI5MDAiPgo8dHNwYW4geD0iNTAlIiBkeT0iMCIgZm9udC1zaXplPSIxMjUiIGZpbGw9IiNmZjVhNWYiIHRleHRMZW5ndGg9IjM2MCIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nQW5kR2x5cGhzIj5NVFc8L3RzcGFuPgo8dHNwYW4geD0iNTAlIiBkeT0iMTE1IiBmb250LXNpemU9IjExNSIgZmlsbD0iIzRlY2NhMyIgdGV4dExlbmd0aD0iMzYwIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiPlRFQ0g8L3RzcGFuPgo8L3RleHQ+Cjwvc3ZnPg==">
+    <meta name="description" content="Plug-and-play iGaming catalog optimized for mobile. Integration via single seamless API, real-time math, server-side RTP controls, and multi-tenant B2B platform core. 9 Lightweight Games. One Seamless API. Expand your casino brand with real-time crypto-friendly games.">
+
+    <meta http-equiv="content-language" content="en-US">
+
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#121212">
+
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="MTWTech Suite — Next-Gen iGaming Aggregator & Game API">
+    <meta property="og:description" content="Plug-and-play iGaming catalog optimized for mobile. Integration via single seamless API, real-time math, server-side RTP controls, and multi-tenant B2B platform core. 9 Lightweight Games. One Seamless API. Expand your casino brand with real-time crypto-friendly games.">
+    <!--<meta property="og:image" content="https://mtwtech.studio">-->
+    <meta property="og:image" content="https://mtw-tech.onrender.com/ogpreview.png">
+    <meta property="og:url" content="https://mtw-tech.onrender.com/">
+
+    <style>
+        /* Базовые стили и сброс */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #070714;
+            color: #fff;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        a { color: inherit; text-decoration: none; }
+
+        /* Контейнер для центрирования */
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* HEADER */
+        header {
+            background: rgba(18, 18, 44, 0.85);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #25254d;
+            position: fixed;
+            top: 0; left: 0; width: 100%;
+            z-index: 100;
+        }
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 80px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: 900;
+            color: #4ecca3;
+            text-shadow: 0 0 10px rgba(78, 204, 163, 0.3);
+            letter-spacing: 1px;
+        }
+        .logo span { color: #e94560; }
+        nav { display: flex; gap: 30px; }
+        nav a {
+            font-size: 15px;
+            font-weight: 600;
+            color: #8a8ab0;
+            transition: color 0.3s;
+        }
+        nav a:hover { color: #4ecca3; }
+        .cta-header-btn {
+            background: linear-gradient(135deg, #e94560, #951c30);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            box-shadow: 0 4px 15px rgba(233, 69, 96, 0.3);
+            transition: transform 0.2s;
+        }
+        .cta-header-btn:hover { transform: scale(1.03); }
+
+        /* MAINCONTENT */
+        main { padding-top: 80px; }
+
+        /* HERO SECTION */
+        .hero {
+            padding: 100px 0 80px 0;
+            text-align: center;
+            background: radial-gradient(circle at 50% 30%, rgba(233, 69, 96, 0.1) 0%, transparent 60%);
+        }
+        .hero h1 {
+            font-size: 48px;
+            font-weight: 900;
+            margin-bottom: 20px;
+            letter-spacing: -1px;
+            line-height: 1.2;
+        }
+        .hero h1 span {
+            color: #4ecca3;
+            text-shadow: 0 0 15px rgba(78, 204, 163, 0.2);
+        }
+        .hero p {
+            font-size: 18px;
+            color: #8a8ab0;
+            max-width: 650px;
+            margin: 0 auto 35px auto;
+        }
+        .hero-btns { display: flex; justify-content: center; gap: 20px; }
+        .btn-primary {
+            background: linear-gradient(135deg, #4ecca3, #2b9371);
+            color: #12122c;
+            padding: 15px 35px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 6px 20px rgba(78, 204, 163, 0.3);
+            transition: transform 0.2s;
+        }
+        .btn-primary:hover { transform: scale(1.03); }
+        .btn-secondary {
+            border: 2px solid #25254d;
+            padding: 13px 33px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        .btn-secondary:hover { background: rgba(255,255,255,0.05); }
+
+        /* ADVANTAGES SECTION */
+        .features { padding: 60px 0; background: #101026; border-top: 1px solid #1f1f45; border-bottom: 1px solid #1f1f45;}
+        .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
+        .feature-card {
+            background: #161638;
+            padding: 25px;
+            border-radius: 16px;
+            border: 1px solid #25254d;
+        }
+        .feature-card h3 { color: #4ecca3; margin-bottom: 10px; font-size: 18px; }
+        .feature-card p { color: #8a8ab0; font-size: 14px; }
+
+        /* GAMES SECTION */
+        .games-section { padding: 80px 0; text-align: center; }
+        .games-section h2 { font-size: 32px; margin-bottom: 15px; font-weight: 800; }
+        .games-section h2 span { color: #e94560; }
+        .section-desc { color: #8a8ab0; margin-bottom: 50px; font-size: 16px; }
+
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+        .game-item {
+            background: linear-gradient(145deg, #12122c, #1a1a3a);
+            border: 1px solid #25254d;
+            border-radius: 20px;
+            padding: 30px 20px;
+            transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .game-item:hover {
+            transform: translateY(-8px);
+            border-color: #e94560;
+            box-shadow: 0 10px 25px rgba(233, 69, 96, 0.2);
+        }
+        .game-icon { font-size: 44px; margin-bottom: 15px; display: inline-block; }
+        .game-item h3 { font-size: 18px; margin-bottom: 8px; font-weight: 700; }
+        .game-item p { font-size: 13px; color: #8a8ab0; }
+        .game-badge {
+            position: absolute;
+            top: 12px; right: 12px;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 5px;
+            text-transform: uppercase;
+        }
+        .badge-instant { background: rgba(78, 204, 163, 0.15); color: #4ecca3; }
+        .badge-live { background: rgba(233, 69, 96, 0.15); color: #e94560; }
+
+        /* FOOTER */
+        footer {
+            background: #09091a;
+            border-top: 1px solid #1f1f45;
+            padding: 40px 0;
+            font-size: 14px;
+            color: #535375;
+        }
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .footer-links { display: flex; gap: 20px; }
+        .footer-links a:hover { color: #8a8ab0; }
+
+        .demo-tab-btn {
+            background: #161638;
+            border: 1px solid #25254d;
+            color: #8a8ab0;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .demo-tab-btn:hover {
+            border-color: #4ecca3;
+            color: #fff;
+        }
+        .demo-tab-btn.active {
+            background: linear-gradient(135deg, #4ecca3, #2b9371);
+            color: #12122c;
+            border-color: #4ecca3;
+            box-shadow: 0 0 15px rgba(78, 204, 163, 0.4);
+        }
+
+
+        /* Адаптивность для мобильных */
+        @media (max-width: 992px) {
+            .games-grid { grid-template-columns: repeat(2, 1fr); }
+            .features-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 600px) {
+            .games-grid { grid-template-columns: 1fr; }
+            .hero h1 { font-size: 32px; }
+            nav, .cta-header-btn { display: none; }
+            .hero-btns { flex-direction: column; gap: 10px; }
+        }
+
+        .contact-section { padding: 80px 0; background: #101026; border-top: 1px solid #1f1f45; text-align: center; }
+        .contact-card {
+            max-width: 500px;
+            margin: 0 auto;
+            background: linear-gradient(145deg, #12122c, #1a1a3a);
+            padding: 35px;
+            border-radius: 24px;
+            border: 2px solid #25254d;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+        }
+        .form-group { text-align: left; margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 13px; color: #8a8ab0; margin-bottom: 6px; font-weight: 600; }
+        .form-input {
+            width: 100%; padding: 14px; background: #070714; border: 1px solid #25254d;
+            border-radius: 10px; color: #fff; font-size: 15px; outline: none; transition: border-color 0.3s;
+        }
+        .form-input:focus { border-color: #4ecca3; }
+        .submit-btn {
+            width: 100%; padding: 16px; background: linear-gradient(135deg, #4ecca3, #2b9371);
+            border: none; color: #12122c; font-size: 16px; font-weight: bold; border-radius: 12px;
+            cursor: pointer; box-shadow: 0 5px 15px rgba(78, 204, 163, 0.3); transition: transform 0.2s;
+        }
+        .submit-btn:active { transform: scale(0.98); }
+
+        /* 🚀 PREMIUM ENTERPRISE DEMO BUTTON STYLE */
+        .b2b-demo-action {
+            text-align: center;
+            margin: 10px 0 40px 0;
+        }
+        .btn-launch-demo {
+            background: linear-gradient(135deg, #00f5d4 0%, #00bbf9 100%) !important;
+            border: 2px solid #00f5d4 !important;
+            color: #0d1117 !important;
+            padding: 16px 40px !important;
+            border-radius: 30px !important;
+            font-size: 16px !important;
+            font-weight: 900 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 1.5px !important;
+            cursor: pointer !important;
+            box-shadow: 0 0 20px rgba(0, 245, 212, 0.4) !important;
+            transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1) !important;
+            outline: none !important;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        /* Анимация пульсации и наведения на десктопе */
+        .btn-launch-demo:hover {
+            transform: translateY(-4px) scale(1.03) !important;
+            box-shadow: 0 0 35px rgba(0, 245, 212, 0.8) !important;
+            background: linear-gradient(135deg, #33f7dd 0%, #33ccff 100%) !important;
+            border-color: #33f7dd !important;
+        }
+
+        /* Эффект клика */
+        .btn-launch-demo:active {
+            transform: translateY(1px) scale(0.98) !important;
+            box-shadow: 0 0 15px rgba(0, 245, 212, 0.5) !important;
+        }
+
+        /* Пульсирующая неоновая точка рядом с текстом (эффект LIVE системы) */
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #0d1117;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse-dot 1.5s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            50% { transform: scale(1.3); opacity: 1; }
+            100% { transform: scale(0.8); opacity: 0.5; }
+        }
+
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+    <div class="container header-content">
+        <div class="logo">MTW<span>TECH</span></div>
+        <nav>
+            <a href="#platform">Platform</a>
+            <a href="#games">Our Games</a>
+            <a href="#features">Features</a>
+            <a href="#sportsbook">Sports</a>
+            <a href="#services">Services</a>
+            <a href="#demo-games">Games</a>
+            <a href="#contact">Contact us</a>
+        </nav>
+        <a href="#integration" class="cta-header-btn">Get API Access</a>
+    </div>
+</header>
+
+<!-- MAIN CONTENT -->
+<main>
+
+    <section class="hero" style="position: relative; overflow: hidden; background: #070714; padding: 120px 0 100px 0;">
+        <!-- Холст для фоновой графики баннера -->
+        <canvas id="heroBannerCanvas" style="position: absolute; top:0; left:0; width:100%; height:100%; z-index:1; pointer-events:none; opacity: 0.4;"></canvas>
+
+        <div class="container" style="position: relative; z-index: 5;">
+            <h1>9 Lightweight Games. <br><span style="color: #4ecca3; text-shadow: 0 0 15px rgba(78, 204, 163, 0.4);">One Seamless API.</span></h1>
+            <p>Plug-and-play iGaming catalog optimized for mobile and iframe delivery. Real-time math, robust server-side RTP controls, and instant WebSocket updates.</p>
+            <div class="hero-btns">
+                <a href="#games" class="btn-primary">Explore 9 Games</a>
+                <a href="#integration" class="btn-secondary">View API Docs</a>
+            </div>
+        </div>
+    </section>
+
+    <section id="platform" class="features" style="border-bottom: 1px solid var(--border-color); padding-bottom: 40px;">
+        <div class="container">
+            <h2 style="text-align: center; color: #ffb703; margin-bottom: 15px; font-size: 28px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px;">🌐 Enterprise B2B Platform Core</h2>
+            <p style="text-align: center; color: var(--text-muted); max-width: 600px; margin: 0 auto 35px auto; font-size: 15px; line-height: 1.5;">
+                Turn your single-site software into a powerful global iGaming Aggregator. Launch, manage, and scale multiple casino brands from a centralized control center.
+            </p>
+            <div class="b2b-demo-action">
+                <a href="https://mtw-gw-platform.onrender.com" target="_blank" class="btn-launch-demo">
+                    <span class="live-dot"></span> Launch Live B2B Demo
+                </a>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card" style="border: 1px solid rgba(88, 166, 255, 0.2); background: linear-gradient(135deg, rgba(22,27,34,0.5) 0%, rgba(13,17,23,0.8) 100%);">
+                    <h3 style="color: var(--accent-blue);">🏢 Multi-Tenant Brand Management</h3>
+                    <p>Deploy and run dozens of independent casino skins or operators on a single server core. Guarantees 100% database isolation, individual brand configurations, and custom sub-admin routing.</p>
+                </div>
+                <div class="feature-card" style="border: 1px solid rgba(255, 0, 127, 0.2); background: linear-gradient(135deg, rgba(22,27,34,0.5) 0%, rgba(13,17,23,0.8) 100%);">
+                    <h3 style="color: var(--accent-pink);">📢 Built-In Affiliate & RevShare System</h3>
+                    <p>Powerful turn-key referral marketing module. Connect streaming channels, bloggers, or traffic networks using unique tracking invite links with automated real-time Revenue Share credit payouts.</p>
+                </div>
+                <div class="feature-card" style="border: 1px solid rgba(0, 245, 212, 0.2); background: linear-gradient(135deg, rgba(22,27,34,0.5) 0%, rgba(13,17,23,0.8) 100%);">
+                    <h3 style="color: var(--neon-green);">📊 GGR & NGR Financial Accounting Ledger</h3>
+                    <p>Enterprise-grade internal reporting ledger. Instantly generates total platform turnover volume (Bets), wins paid, GGR margin analytics, cashflow deposits/withdrawals tracking, and absolute player audit logs.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="games" class="games-section">
+        <div class="container">
+            <h2>Our Premium <span>9 Game Suite</span></h2>
+            <p class="section-desc">Fully server-verified logic utilizing cryptographic random generators.</p>
+
+            <div class="games-grid">
+                <!-- 1 -->
+                <div class="game-item">
+                    <span class="game-badge badge-live">Live Sync</span>
+                    <span class="game-icon">🚀</span>
+                    <h3>Crash Aviator</h3>
+                    <p>High-speed multiplayer scale scaling. Cashout before the sudden crash occurs.</p>
+                </div>
+                <!-- 2 -->
+                <div class="game-item">
+                    <span class="game-badge badge-live">Live Sync</span>
+                    <span class="game-icon">🎰</span>
+                    <h3>5-Min Lottery</h3>
+                    <p>Synchronous global draw matrix room. Six unique numbers pooled from 49 variants.</p>
+                </div>
+                <!-- 3 -->
+                <div class="game-item">
+                    <span class="game-badge badge-instant">Instant</span>
+                    <span class="game-icon">💣</span>
+                    <h3>Mines Sweeper</h3>
+                    <p>Customizable bomb fields 5x5. Uncover multipliers or detonate hidden grid charges.</p>
+                </div>
+                <!-- 4 -->
+                <div class="game-item">
+                    <span class="game-badge badge-instant">Instant</span>
+                    <span class="game-icon">🎲</span>
+                    <h3>Dice Roll</h3>
+                    <p>Slider-based roll over/under predictor. Higher risks trigger larger wallet multipliers.</p>
+                </div>
+                <!-- 5 -->
+                <div class="game-item">
+                    <span class="game-badge badge-instant">Instant</span>
+                    <span class="game-icon">🃏</span>
+                    <h3>Hi-Lo Card</h3>
+                    <p>Dynamic ratio card value scanner. Guess the sequential suit patterns on the deck.</p>
+                </div>
+                <!-- 6 -->
+                <div class="game-item">
+                    <span class="game-badge badge-instant">Instant</span>
+                    <span class="game-icon">🎡</span>
+                    <h3>Wheel of Fortune</h3>
+                    <p>Smooth canvas rotating prize vector. Neon layout containing local jackpot segments.</p>
+                </div>
+                <!-- 7 -->
+                <div class="game-item">
+                    <span class="game-badge badge-instant">Instant</span>
+                    <span class="game-icon">🎰</span>
+                    <h3>Classic Slots</h3>
+                    <p>Cascade strip rotation matrix. Real-time matching reels and luxury reward drops.</p>
+                </div>
+
+                <div class="game-item">
+                    <span class="game-badge badge-instant">Instant</span>
+                    <span class="game-icon">🎰</span>
+                    <h3>5x3 Slots</h3>
+                    <p>5x3 strip rotation matrix, free spins, wild. Real-time matching reels and luxury reward drops.</p>
+                </div>
+                <!-- 9 -->
+                <div class="game-item">
+                    <span class="game-badge badge-instant">Instant</span>
+                    <span class="game-icon">🎫</span>
+                    <h3>Scratch Cards</h3>
+                    <p>Interactive canvas coating eraser. Touch-driven matrix reveals instant prize matches.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="features" class="features" style="padding-top: 40px;">
+        <div class="container">
+            <h2 style="text-align: center; color: #fff; margin-bottom: 30px; font-size: 24px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">⚙️ Technical Layer & Mathematics</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h3>⚡ Seamless Integration Protocol</h3>
+                    <p>Elite iframe architecture built on top of external wallet protocols. Seamlessly fires automated Validate, Debit, and Credit routing to the operator's side with zero latency.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>🎯 Adjustable RTP & Bank Control</h3>
+                    <p>Total real-time anti-drain pool protection via admin dashboard. Highly flexible mathematical formulas scale game outcomes instantly based on live server bank limits.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>📱 Mobile-First Native SPA Shell</h3>
+                    <p>Ultra-lightweight pure JavaScript frontends. Single Page Application design guarantees absolute zero loading lags and desktop app fluidness on mobile touch viewports.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="sportsbook" class="games-section">
+        <div class="container">
+            <h2>Our <span>Sportsbook</span></h2>
+
+            <div class="phone-mockup" style="position: relative; width: 100%; height: 760px; background: #000; margin: 0 auto; border-radius: 36px; border: 12px solid #161638; box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 30px rgba(78, 204, 163, 0.15); overflow: hidden; margin-top: 20px;">
+                <div class="phone-notch" style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 140px; height: 20px; background: #161638; border-bottom-left-radius: 12px; z-index: 10;"></div>
+
+                <!-- Сам iframe, который тянет вашу игру с сервера -->
+                <iframe id="demoIframeSport" src="" style="width: 100%; height: 100%; border: none; background: #0d0d1a;"></iframe>
+            </div>
+        </div>
+    </section>
+
+    <section id="services" class="features" style="background: rgba(255,255,255,0.01); border-top: 1px solid var(--border-color); padding-top: 40px;">
+        <div class="container">
+            <h2 style="text-align: center; color: #fff; margin-bottom: 30px; font-size: 24px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">🎯 Marketing & Gamification Toolkit</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h3>🏆 Live Network Tournaments</h3>
+                    <p>Real-time leaderboard system with automated prize pool distribution. Instantly rewards your top players with flexible administrative control.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>⭐ VIP Levels & XP Progression</h3>
+                    <p>Built-in player retention mechanics. Every bet generates experience points, pushing users to unlock customizable loyalty tiers and milestone bonuses.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>🗺️ Daily Retention Quests</h3>
+                    <p>Smart micro-objectives tailored to keep engagement high. Automatically tracks player actions and triggers coin rewards upon target completion.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>🎫 Promo Code Voucher Engine</h3>
+                    <p>Flexible bonus voucher generation controlled directly from the admin panel. Drives organic traffic acquisition with instant credit-to-wallet routing.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>💰 Automated Cashback Drops</h3>
+                    <p>Calculates and issues net-loss refunds with a single click. Boosts user retention by protecting players from long losing streaks.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>💎 High-Roller Bonus Buy</h3>
+                    <p>Allows players to skip the grind and purchase instant maximum-win rounds. Generates a major spike in your average bet value (GGR turnover).</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- LIVE DEMO SECTION -->
+    <section id="demo-games" class="demo-section" style="padding: 60px 0; background: #0b0b1d; border-bottom: 1px solid #1f1f45; text-align: center;">
+        <div class="container">
+            <h2 style="font-size: 32px; margin-bottom: 15px; font-weight: 800;">🎮 Try The <span>Live Demo</span></h2>
+            <p style="color: #8a8ab0; margin-bottom: 40px; font-size: 16px;">Experience the fast UI loading speed directly inside our simulated mobile iframe wrapper.</p>
+
+            <!-- Кнопки быстрого переключения игр в демо-зоне -->
+            <div class="demo-selector" style="display: flex; justify-content: center; gap: 10px; margin-bottom: 30px; flex-wrap: wrap;">
+                <button class="demo-tab-btn active" onclick="switchDemoGame('mines')">💣 Mines</button>
+                <button class="demo-tab-btn" onclick="switchDemoGame('crash')">🚀 Crash</button>
+                <button class="demo-tab-btn" onclick="switchDemoGame('slots3x3')">🎰 Slots 3x3</button>
+                <button class="demo-tab-btn" onclick="switchDemoGame('slots5x3')">🎰 Slots 5x3</button>
+                <button class="demo-tab-btn" onclick="switchDemoGame('hilo')">🃏 Hi-Lo</button>
+                <button class="demo-tab-btn" onclick="switchDemoGame('dice')">🪙 Dice</button>
+                <button class="demo-tab-btn" onclick="switchDemoGame('scratch')">🎫 Scratch</button>
+                <button class="demo-tab-btn" onclick="switchDemoGame('lottery')">🎟 Lottery</button>
+                <button class="demo-tab-btn" onclick="switchDemoGame('wof')">🎡 Wheel</button>
+            </div>
+
+
+            <!-- Симуляция корпуса смартфона для iframe -->
+            <div class="phone-mockup" style="position: relative; width: 360px; height: 760px; background: #000; margin: 0 auto; border-radius: 36px; border: 12px solid #161638; box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 30px rgba(78, 204, 163, 0.15); overflow: hidden;">
+                <div class="phone-notch" style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 140px; height: 20px; background: #161638; border-bottom-left-radius: 12px; z-index: 10;"></div>
+
+                <!-- Сам iframe, который тянет вашу игру с сервера -->
+                <iframe id="demoIframe" src="" style="width: 100%; height: 100%; border: none; background: #0d0d1a;"></iframe>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact" class="contact-section">
+        <div class="container">
+            <h2 style="font-size: 32px; margin-bottom: 15px; font-weight: 800;">🚀 Request <span>API Access</span></h2>
+            <p style="color: #8a8ab0; margin-bottom: 40px; font-size: 16px;">Leave your corporate contact info to request a custom integration token & staging environment.</p>
+
+            <div class="contact-card">
+                <form id="leadForm">
+                    <div class="form-group">
+                        <label>Company Name</label>
+                        <input type="text" id="leadCompany" class="form-input" placeholder="e.g. NeonCasino Group" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Contact Email</label>
+                        <input type="email" id="leadEmail" class="form-input" placeholder="partner@company.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Telegram / Skype (Optional)</label>
+                        <input type="text" id="leadTelegram" class="form-input" placeholder="@manager_username">
+                    </div>
+                    <button type="submit" class="submit-btn">GET COMMERCIAL PROPOSAL</button>
+                </form>
+            </div>
+        </div>
+    </section>
+</main>
+
+<!-- FOOTER -->
+<footer>
+    <div class="container footer-content">
+        <div>&copy; 2026 MTWTech Studio. All rights reserved. B2B Software Solution.</div>
+        <div class="footer-links">
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms of Service</a>
+        </div>
+    </div>
+</footer>
+
+<script>
+
+    const GAME_SERVER_URL = 'https://mtw-gw-demo.onrender.com/'; //; baseUrl;
+    const SPORT_SERVER_URL = 'https://mtw-gw-sport.onrender.com/'; //; baseUrl;
+
+    const TEST_SESSION_ID = "demo_b2b_test_token_123";
+
+    function switchDemoGame(gameName) {
+        const iframe = document.getElementById('demoIframe');
+        if (!iframe) return;
+
+        const buttons = document.querySelectorAll('.demo-tab-btn');
+        buttons.forEach(btn => {
+            if (btn.innerText.toLowerCase().includes(gameName)) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+        iframe.src = `${GAME_SERVER_URL}/?game=${gameName}&session_id=${TEST_SESSION_ID}`;
+    }
+
+    switchDemoGame('mines');
+
+    const iframeSport = document.getElementById('demoIframeSport');
+    iframeSport.src = `${SPORT_SERVER_URL}/?session_id=${TEST_SESSION_ID}`;
+
+    // Обработка формы лидов
+    const leadForm = document.getElementById('leadForm');
+    if (leadForm) {
+        leadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const leadData = {
+                company: document.getElementById('leadCompany').value,
+                email: document.getElementById('leadEmail').value,
+                contact: document.getElementById('leadTelegram').value
+            };
+
+            try {
+                // Шлем лид на ваш Node.js бэкенд
+                const response = await fetch('http://localhost:3000/api/admin/leads', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(leadData)
+                });
+
+                if (response.ok) {
+                    alert('Thank you! Our integration manager will contact you within 24 hours.');
+                    leadForm.reset();
+                } else {
+                    alert('Failed to send request. Please try again.');
+                }
+            } catch (err) {
+                console.error("Lead submission error:", err);
+                alert('Server connection error.');
+            }
+        });
+    }
+
+    // Анимация фонового B2B-баннера (Светящиеся частицы казино)
+    const bannerCanvas = document.getElementById('heroBannerCanvas');
+    if (bannerCanvas) {
+        const bCtx = bannerCanvas.getContext('2d');
+        let particles = [];
+
+        function resizeBanner() {
+            bannerCanvas.width = bannerCanvas.parentElement.clientWidth;
+            bannerCanvas.height = bannerCanvas.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resizeBanner);
+        resizeBanner();
+
+        // Создаем массив светящихся точек пула
+        for (let i = 0; i < 40; i++) {
+            particles.push({
+                x: Math.random() * bannerCanvas.width,
+                y: Math.random() * bannerCanvas.height,
+                radius: Math.random() * 2 + 1,
+                speedY: Math.random() * 0.4 + 0.1,
+                color: Math.random() > 0.5 ? '#4ecca3' : '#e94560'
+            });
+        }
+
+        function animateBanner() {
+            bCtx.clearRect(0, 0, bannerCanvas.width, bannerCanvas.height);
+
+            particles.forEach(p => {
+                p.y -= p.speedY;
+                if (p.y < 0) p.y = bannerCanvas.height;
+
+                bCtx.fillStyle = p.color;
+                bCtx.beginPath();
+                bCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                bCtx.fill();
+            });
+            requestAnimationFrame(animateBanner);
+        }
+        animateBanner();
+    }
+
+
+</script>
+
+
+</body>
+</html>
