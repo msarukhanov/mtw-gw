@@ -1550,7 +1550,7 @@
         if (!user) return alert('Please enter a valid username');
 
         try {
-            const response = await fetch(`${CORE_SERVER}/auth`, {
+            const response = await fetch(`${CORE_SERVER}/api/auth`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -1584,7 +1584,7 @@
 
         try {
             // Так как в демо-бэкенде нет отдельного /signup, мы создаем пользователя через /auth
-            const response = await fetch(`${CORE_SERVER}/auth`, {
+            const response = await fetch(`${CORE_SERVER}/api/auth`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -1601,7 +1601,7 @@
             // Если введен реферальный код — сразу связываем его через твой роут /auth/link-ref
             if (refCode) {
                 try {
-                    await fetch(`${CORE_SERVER}/auth/link-ref`, {
+                    await fetch(`${CORE_SERVER}/api/auth/link-ref`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
