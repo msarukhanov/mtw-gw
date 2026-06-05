@@ -578,6 +578,15 @@
                 <div class="dropdown-info">Authenticated Player: <b id="drop-username">Player</b></div>
                 <a href="#" class="dropdown-item" onclick="alert('Demo Feature: Deposit routing integrated via external gateway.')">💵 Instant Deposit</a>
                 <a href="#" class="dropdown-item" onclick="alert('Demo Feature: Withdraw validations linked with platform balance cache.')">📤 Withdraw Funds</a>
+
+                <!-- Вставь внутрь меню профиля (dropdown/sidebar) перед кнопкой Close Session -->
+                <div style="padding: 12px 16px; background: var(--bg-main); border-radius: 6px; margin: 10px; border: 1px dashed var(--border-color); font-size: 12px;">
+                    📢 <b>Affiliate Link:</b>
+                    <div id="refLinkDisplay" style="color: var(--accent-yellow); font-family: monospace; word-break: break-all; margin-top: 4px; padding: 4px; background: rgba(0,0,0,0.2); border-radius: 4px;">loading...</div>
+                    <small style="color: var(--text-muted); display:block; margin-top:4px;">Earn 10% RevShare from invited players!</small>
+                </div>
+
+
                 <a href="#" class="dropdown-item" onclick="location.reload()" style="color: var(--accent-red); border-top:1px solid var(--border-color);">🛑 Close Session</a>
             </div>
         </div>
@@ -752,6 +761,37 @@
                 console.log('⚡ Live WS Wallet Update:', data.balance);
                 document.getElementById('wallet-display').innerText = data.balance + ' 🪙';
             });
+
+
+            // Допиши в самый конец функции startShowcase()
+
+// 1. Генерируем и показываем личную реф-ссылку игрока (код равен его юзернейму)
+            const currentUrlWithoutParams = window.location.href.split('?')[0];
+            const personalRefLink = `${currentUrlWithoutParams}?ref=${currentUsername}`;
+            const refBox = document.getElementById('refLinkDisplay');
+            if(refBox) refBox.innerText = personalRefLink;
+
+// 2. АВТО-ПРИВЯЗКА: Проверяем, перешел ли этот игрок по чужой реф-ссылке
+            const urlParams = new URLSearchParams(window.location.search);
+            const incomingRefCode = urlParams.get('ref');
+
+            if (incomingRefCode && incomingRefCode !== currentUsername) {
+                console.log(`🔗 Found incoming referral code: ${incomingRefCode}. Registering...`);
+                fetch(`${CORE_SERVER}/api/auth/link-ref`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: currentUsername,
+                        partnerId: 'demo_skin_default',
+                        refCode: incomingRefCode
+                    })
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if(data.success) console.log(`✅ Successfully linked as a referral of ${incomingRefCode}`);
+                    });
+            }
+
 
             toggleView('home');
 

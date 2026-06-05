@@ -163,7 +163,12 @@
         th { background: var(--bg-card); color: #fff; }
 
         .jackpot-val { font-size: 32px; color: var(--accent-pink); font-weight: bold; margin: 15px 0; text-shadow: 0 0 10px rgba(255,0,127,0.2); }
-        .badge { background: var(--accent-blue); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+        .badge { background: var(--accent-blue); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold;
+            display: flex;
+            text-align: center;
+            justify-content: center;
+            align-items: center;
+        }
         .bet-item-row { border-bottom: 1px solid rgba(255,255,255,0.05); padding: 4px 0; }
         .bet-item-row:last-child { border-bottom: none; }
     </style>
@@ -192,7 +197,12 @@
             <h1>MTWTech BackOffice</h1>
             <span>Demo Management System</span>
         </div>
-        <button class="nav-btn active" onclick="switchTab('tab-config', this)">🎰 Game Engine</button>
+        <button class="nav-btn active" onclick="switchTab('tab-finance', this)">📊 Financial Reports</button>
+
+        <button class="nav-btn" onclick="switchTab('tab-bets-registry', this)">🎰 Bets Registry</button>
+        <button class="nav-btn" onclick="switchTab('tab-transactions-ledger', this)">💳 Transactions</button>
+
+        <button class="nav-btn" onclick="switchTab('tab-config', this)">🎰 Game Engine</button>
         <button class="nav-btn" onclick="switchTab('tab-players', this)">👥 Players</button>
         <button class="nav-btn" onclick="switchTab('tab-jackpot', this)">💰 Jackpot</button>
         <button class="nav-btn" onclick="switchTab('tab-gamification', this)">🎮 Gamification</button>
@@ -204,8 +214,101 @@
 
     <!-- CONTAINER CONTENT RIGHT -->
     <main class="main-content">
+
+        <!-- TAB 7: FINANCIAL REPORTS & ANALYTICS -->
+        <div id="tab-finance" class="tab-content active">
+            <div class="card">
+                <h2>📊 Platform Financial Analytics (Real-Time GGR)</h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px;">
+
+                    <div class="game-block" style="border-left: 4px solid var(--accent-blue);">
+                        <h3>Total Turnover (Bets)</h3>
+                        <div style="font-size: 24px; font-weight: bold; color: #fff; margin-top: 5px;" id="fin_bets">0 🪙</div>
+                    </div>
+
+                    <div class="game-block" style="border-left: 4px solid var(--accent-red);">
+                        <h3>Total Wins Paid</h3>
+                        <div style="font-size: 24px; font-weight: bold; color: #fff; margin-top: 5px;" id="fin_wins">0 🪙</div>
+                    </div>
+
+                    <div class="game-block" style="border-left: 4px solid var(--accent-pink);">
+                        <h3>Gross Gaming Revenue (GGR)</h3>
+                        <div style="font-size: 24px; font-weight: bold; color: var(--accent-pink); margin-top: 5px;" id="fin_ggr">0 🪙</div>
+                    </div>
+
+                    <div class="game-block" style="border-left: 4px solid var(--neon-green);">
+                        <h3>Net Profit (NGR)</h3>
+                        <div style="font-size: 24px; font-weight: bold; color: var(--neon-green); margin-top: 5px;" id="fin_net">0 🪙</div>
+                    </div>
+
+                </div>
+
+
+                <div class="game-block" style="margin-top: 20px; background: var(--bg-main);">
+                    <small style="color: var(--text-muted);">
+                        • <b>GGR Calculation Formula:</b> Total Bets Volume minus Total Wins Paid.<br>
+                        • <b>Net Profit Formula:</b> GGR minus Affiliate RevShare Commission Payouts.<br>
+                        • Total Accounting Logs Tracked: <span id="fin_logs" style="color: var(--accent-blue); font-weight: bold;">0</span> records.
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 8: DETAILED BETS REGISTRY -->
+        <div id="tab-bets-registry" class="tab-content">
+            <div class="card">
+                <h2>🎰 Player Bets History Log</h2>
+                <div style="margin-bottom: 15px; color: var(--text-muted); font-size: 13px;">
+                    This module tracks every spin, flip, and crash event. Real-time auditing for all connected B2B game servers.
+                </div>
+                <div style="max-height: 650px; overflow-y: auto;">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Player Account</th>
+                            <th>Game Module</th>
+                            <th>Transaction Mode</th>
+                            <th>Amount Status</th>
+                        </tr>
+                        </thead>
+                        <tbody id="bets_registry_tbody">
+                        <!-- Data will be loaded via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 9: DETAILED TRANSACTIONS LEDGER -->
+        <div id="tab-transactions-ledger" class="tab-content">
+            <div class="card">
+                <h2>💳 Financial Transactions Cashflow Ledger</h2>
+                <div style="margin-bottom: 15px; color: var(--text-muted); font-size: 13px;">
+                    Comprehensive ledger tracking platform turnover. Captures all system DEBIT, CREDIT, deposit and RevShare payouts.
+                </div>
+                <div style="max-height: 650px; overflow-y: auto;">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Account Holder</th>
+                            <th>Gateway Gateway / Promo Code</th>
+                            <th>Accounting Status</th>
+                            <th>Amount Added</th>
+                        </tr>
+                        </thead>
+                        <tbody id="tx_ledger_tbody">
+                        <!-- Loaded via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+
         <!-- TAB 1: GAME ENGINE CONFIGURATION -->
-        <div id="tab-config" class="tab-content active">
+        <div id="tab-config" class="tab-content">
             <div class="card">
                 <h2>🎰 RTP, Prices & Pools Configuration</h2>
                 <form id="configForm">
@@ -345,6 +448,13 @@
                             Prize pool: <input type="number" id="g_tournamentPrize" style="width: 90px;"> 🪙
                         </div>
                         <button type="button" class="btn-danger" id="endTournamentBtn" style="width: 100%; padding: 12px; margin-bottom: 10px;">🏁 End tournament & Distribute Prizes</button>
+                    </div>
+                    <div class="game-block">
+                        <h3>📢 Affiliate System (RevShare)</h3>
+                        <div class="flex-row">
+                            Affiliate Commission:
+                            <input type="number" id="g_affiliatePercent" style="width: 65px; text-align: center;"> % from net loss
+                        </div>
                     </div>
                     <button type="submit" class="btn-primary" style="width: 100%;">💾 Save Gamification Parameters</button>
                 </form>
@@ -608,6 +718,8 @@
             document.getElementById('g_tournamentActive').value = data.config.gamification.tournamentActive;
             document.getElementById('g_tournamentPrize').value = data.config.gamification.tournamentPrize;
 
+            document.getElementById('g_affiliatePercent').value = data.config.gamification.affiliatePercent || 10;
+
             document.getElementById('g_cashbackPercent').value = data.config.gamification.cashbackPercent || 10;
 
             // Active Promocodes Render Loop
@@ -623,6 +735,90 @@
                 `).join('');
             } else {
                 promoTbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:10px;">Registry empty</td></tr>`;
+            }
+
+            // Допиши в конец функции loadData() внутри admin.html
+            // Обновленный кусок подгрузки финансовой аналитики и таблиц в admin.html
+            try {
+                const finRes = await fetch(`${baseUrlApi}/admin/finance/report`);
+                const finData = await finRes.json();
+                if (finData.success) {
+                    // 1. Обновляем виджеты KPI
+                    document.getElementById('fin_bets').innerText = finData.report.totalBets + ' 🪙';
+                    document.getElementById('fin_wins').innerText = finData.report.totalWins + ' 🪙';
+                    document.getElementById('fin_ggr').innerText = finData.report.ggr + ' 🪙';
+                    document.getElementById('fin_net').innerText = finData.report.netProfit + ' 🪙';
+                    document.getElementById('fin_logs').innerText = finData.report.transactionsCount;
+                }
+            } catch (fErr) { console.error('Finance analytics pull crash:', fErr); }
+
+            // 🔄 ОБНОВЛЕННАЯ СИНХРОНИЗАЦИЯ ФИНАНСОВ И ДВУХ НОВЫХ ВКЛАДОК ЖУРНАЛОВ
+            try {
+                const finRes = await fetch(`${baseUrlApi}/admin/finance/report`);
+                const finData = await finRes.json();
+
+                if (finData.success) {
+                    // 1. Наполняем вкладку "Financial Reports" (KPI виджеты)
+                    document.getElementById('fin_bets').innerText = finData.report.totalBets + ' 🪙';
+                    document.getElementById('fin_wins').innerText = finData.report.totalWins + ' 🪙';
+                    document.getElementById('fin_ggr').innerText = finData.report.ggr + ' 🪙';
+                    document.getElementById('fin_net').innerText = finData.report.netProfit + ' 🪙';
+                    document.getElementById('fin_logs').innerText = finData.report.transactionsCount;
+
+                    // Helper для форматирования времени
+                    const formatTime = (ts) => {
+                        return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    };
+
+                    // 2. Наполняем СОВЕРШЕННО НОВУЮ ВКЛАДКУ "🎰 Bets Registry"
+                    const betsRegistryTbody = document.getElementById('bets_registry_tbody');
+                    if (finData.report.latestBets && finData.report.latestBets.length > 0) {
+                        betsRegistryTbody.innerHTML = finData.report.latestBets.map(b => `
+                        <tr>
+                            <td><small style="color: var(--text-muted);">${formatTime(b.timestamp)}</small></td>
+                            <td><b>${b.username}</b></td>
+                            <td><span class="badge" style="background: var(--bg-main); border: 1px solid var(--border-color); color: #fff; padding: 4px 8px;">${b.game}</span></td>
+                            <td><b style="color: ${b.type === 'DEBIT' ? 'var(--text-muted)' : 'var(--neon-green)'}">${b.type === 'DEBIT' ? '🔴 STAKE / OUT' : '🟢 WIN / IN'}</b></td>
+                            <td><span style="color: ${b.type === 'DEBIT' ? '#fff' : 'var(--neon-green)'}; font-size: 15px;"><b>${b.amount} 🪙</b></span></td>
+                        </tr>
+                    `).join('');
+                    } else {
+                        betsRegistryTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:30px;">No bets registered in engine</td></tr>`;
+                    }
+
+                    // 3. Наполняем СОВЕРШЕННО НОВУЮ ВКЛАДКУ "💳 Transactions"
+                    // 3. Наполняем СОВЕРШЕННО ЧИСТУЮ ВКЛАДКУ "💳 Transactions (Deposits/Promos)"
+                    const txLedgerTbody = document.getElementById('tx_ledger_tbody');
+                    if (finData.report.latestTransactions && finData.report.latestTransactions.length > 0) {
+                        txLedgerTbody.innerHTML = finData.report.latestTransactions.map(t => {
+                            let badgeStyle = 'background: var(--accent-blue);';
+                            let flowText = `<b style="color: var(--neon-green);">+${t.amount} 🪙</b>`;
+
+                            if (t.type === 'AFFILIATE') {
+                                badgeStyle = 'background: #381b2c; border: 1px solid var(--accent-pink);';
+                                flowText = `<b style="color: var(--accent-pink);">+${t.amount} 🪙</b>`;
+                            } else if (t.type === 'BONUS_CASH') {
+                                badgeStyle = 'background: #1b382c; border: 1px solid var(--neon-green);';
+                                flowText = `<b style="color: var(--neon-green);">+${t.amount} 🪙</b>`;
+                            }
+
+                            return `
+                            <tr>
+                                <td><small style="color: var(--text-muted);">${formatTime(t.timestamp)}</small></td>
+                                <td><b>${t.username}</b></td>
+                                <td><small style="color: #fff; font-weight: 600;">${t.game}</small></td>
+                                <td><span class="badge" style="${badgeStyle} color: #fff; padding: 4px 10px;">${t.type === 'AFFILIATE' ? 'AFFILIATE SHARE' : 'BALANCE INJECT'}</span></td>
+                                <td style="font-size: 15px;">${flowText}</td>
+                            </tr>
+                        `;
+                        }).join('');
+                    } else {
+                        txLedgerTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:30px;">No platform balance injections found</td></tr>`;
+                    }
+
+                }
+            } catch (fErr) {
+                console.error('Finance and logs reporting sync failure:', fErr);
             }
 
             // Запуск рендеринга спортивных купонов
@@ -694,6 +890,7 @@
             gamification_questReward: document.getElementById('g_questReward').value,
             gamification_tournamentActive: document.getElementById('g_tournamentActive').value,
             gamification_tournamentPrize: document.getElementById('g_tournamentPrize').value,
+            gamification_affiliatePercent: document.getElementById('g_affiliatePercent').value
         };
 
         const res = await fetch(`${SERVER_URL}/api/admin/update-config`, {

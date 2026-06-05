@@ -18,6 +18,8 @@ router.post('/admin/end-tournament', adminController.endTournament);
 router.post('/admin/add-promocode', adminController.addPromoCode);
 router.post('/admin/run-cashback', adminController.runCashback);
 
+router.get('/admin/finance/report', adminController.getFinanceReport)
+
 // Эндпоинты для админки Спортсбука
 router.get('/admin/sports/pending', async (req, res) => {
     try {
@@ -45,5 +47,6 @@ router.post('/admin/sports/settle', async (req, res) => {
         res.status(500).json({ error: err.message || "Failed to settle sports ticket" });
     }
 });
+
 
 module.exports = router;

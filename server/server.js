@@ -41,7 +41,7 @@ app.use('/api', websiteRoutes);
 
 // Запуск фоновой службы лотереи по сокетам
 const configDb = Datastore.create({ filename: path.join(__dirname, 'config.db'), autoload: true });
-const DEFAULT_CONFIG = {
+DEFAULT_CONFIG = {
     lottery: { ticketPrice: 1, totalNumbers: 49, neededChoices: 6, rtp: 75 }, // 75% лимит выплат
     slots3x3: { cost: 10, symbols: ['🦁', '🐯', '🐻', '💎', '🍒', '🍀'], rtp: 80 }, // 80% отдача
     wheel: {
@@ -142,7 +142,8 @@ const DEFAULT_CONFIG = {
 
         tournamentActive: 1,    // 1 - идет турнир, 0 - выключен
         tournamentPrize: 5000,   // Призовой фонд турнира
-        cashbackPercent: 10
+        cashbackPercent: 10,
+        affiliatePercent: 10
     },
 
     promoCodes: [

@@ -4,17 +4,346 @@ const path = require('path');
 
 const seamless = require('./services/seamlessService');
 
-// База данных игроков
-const db = Datastore.create({
-    filename: path.join(__dirname, 'game.db'),
-    autoload: true
-});
+const db = Datastore.create({filename: path.join(__dirname, 'game.db'), autoload: true});
+const historyDb = Datastore.create({filename: path.join(__dirname, 'history.db'), autoload: true});
+const betsDb = Datastore.create({filename: path.join(__dirname, 'bets.db'), autoload: true});
+const accountingDb = Datastore.create({filename: path.join(__dirname, 'accounting.db'), autoload: true});
 
-// Новая база данных для хранения истории лотерейных тиражей
-const historyDb = Datastore.create({
-    filename: path.join(__dirname, 'history.db'),
-    autoload: true
-});
+// НАДЕЖНЫЙ B2B СИДДЕР ДЛЯ FINANCE REPORTS
+async function seedFinancialData() {
+    try {
+        // Даем базе данных NeDB 1 секунду на полную загрузку файла accounting.db с диска
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        const check = await accountingDb.find({partnerId: "demo_skin_default"});
+        console.log(`📊 [Accounting Sync] Found ${check.length} existing financial logs in database.`);
+
+        // Если в отчётах пусто — закидываем надежные демо-данные поштучно
+        if (check.length === 0) {
+            // Вставь этот массив внутрь функции seedFinancialData() в state.js вместо старого demoTx
+            // Замени массив demoTx внутри функции seedFinancialData() в state.js
+            const demoTx = [
+                // 💵 1. Реальные депозиты на платформу (Внешний шлюз Visa/Crypto)
+                {
+                    partnerId: "demo_skin_default",
+                    username: "Player_VIP",
+                    type: "DEPOSIT",
+                    amount: 20000,
+                    game: "💳 Crypto Deposit Gate (USDT)",
+                    timestamp: Date.now() - 900000
+                },
+                {
+                    partnerId: "demo_skin_default",
+                    username: "CryptoWhale",
+                    type: "DEPOSIT",
+                    amount: 50000,
+                    game: "💳 Fiat Card Gateway (VISA)",
+                    timestamp: Date.now() - 850000
+                },
+
+                // Игровой оборот (Bets / Wins)
+                {
+                    partnerId: "demo_skin_default",
+                    username: "Player_VIP",
+                    type: "DEBIT",
+                    amount: 1500,
+                    game: "Slots5x3",
+                    timestamp: Date.now() - 500000
+                },
+                {
+                    partnerId: "demo_skin_default",
+                    username: "Player_VIP",
+                    type: "CREDIT",
+                    amount: 2400,
+                    game: "Slots5x3",
+                    timestamp: Date.now() - 480000
+                },
+
+                // Бонусное пополнение (Промокод)
+                {
+                    partnerId: "demo_skin_default",
+                    username: "Player_VIP",
+                    type: "BONUS_CASH",
+                    amount: 500,
+                    game: "🎁 Promo: WELCOME_BONUS",
+                    timestamp: Date.now() - 470000
+                },
+
+                {
+                    partnerId: "demo_skin_default",
+                    username: "CryptoWhale",
+                    type: "DEBIT",
+                    amount: 5000,
+                    game: "Crash",
+                    timestamp: Date.now() - 400000
+                },
+                {
+                    partnerId: "demo_skin_default",
+                    username: "CryptoWhale",
+                    type: "CREDIT",
+                    amount: 18500,
+                    game: "Crash",
+                    timestamp: Date.now() - 340000
+                },
+
+                // Начисление кэшбэка
+                {
+                    partnerId: "demo_skin_default",
+                    username: "CryptoWhale",
+                    type: "BONUS_CASH",
+                    amount: 1200,
+                    game: "💰 Weekly Cashback Drops",
+                    timestamp: Date.now() - 300000
+                },
+
+                {
+                    partnerId: "demo_skin_default",
+                    username: "Lucky_Striker",
+                    type: "DEBIT",
+                    amount: 4000,
+                    game: "Sportsbook",
+                    timestamp: Date.now() - 250000
+                },
+                {
+                    partnerId: "demo_skin_default",
+                    username: "Blogger_John",
+                    type: "AFFILIATE",
+                    amount: 400,
+                    game: "RevShare",
+                    timestamp: Date.now() - 240000
+                },
+
+                // 📤 2. Вывод средств игроком (Withdraw)
+                {
+                    partnerId: "demo_skin_default",
+                    username: "CryptoWhale",
+                    type: "WITHDRAW",
+                    amount: 15000,
+                    game: "📤 Crypto Payout (BTC)",
+                    timestamp: Date.now() - 200000
+                },
+
+                {
+                    partnerId: "demo_skin_default",
+                    username: "Alex_777",
+                    type: "DEBIT",
+                    amount: 500,
+                    game: "Mines",
+                    timestamp: Date.now() - 150000
+                },
+                {
+                    partnerId: "demo_skin_default",
+                    username: "Alex_777",
+                    type: "CREDIT",
+                    amount: 1250,
+                    game: "Mines",
+                    timestamp: Date.now() - 140000
+                },
+
+                {
+                    partnerId: "demo_skin_default",
+                    username: "Player_VIP",
+                    type: "DEBIT",
+                    amount: 1500,
+                    game: "Slots5x3",
+                    timestamp: Date.now() - 500000
+                },
+                {
+                    partnerId: "demo_skin_default",
+                    username: "Player_VIP",
+                    type: "CREDIT",
+                    amount: 2400,
+                    game: "Slots5x3",
+                    timestamp: Date.now() - 480000
+                },
+
+                {
+                    partnerId: "demo_skin_default",
+                    username: "CryptoWhale",
+                    type: "DEBIT",
+                    amount: 5000,
+                    game: "Crash",
+                    timestamp: Date.now() - 400000
+                },
+                {
+                    partnerId: "demo_skin_default",
+                    username: "CryptoWhale",
+                    type: "DEBIT",
+                    amount: 10000,
+                    game: "Crash",
+                    timestamp: Date.now() - 350000
+                },
+                {
+                    partnerId: "demo_skin_default",
+                    username: "CryptoWhale",
+                    type: "CREDIT",
+                    amount: 18500,
+                    game: "Crash",
+                    timestamp: Date.now() - 340000
+                },
+
+                {
+                    partnerId: "demo_skin_default",
+                    username: "Lucky_Striker",
+                    type: "DEBIT",
+                    amount: 4000,
+                    game: "Sportsbook",
+                    timestamp: Date.now() - 250000
+                },
+                {
+                    partnerId: "demo_skin_default",
+                    username: "Lucky_Striker",
+                    type: "CREDIT",
+                    amount: 0,
+                    game: "Sportsbook",
+                    timestamp: Date.now() - 240000
+                },
+                {
+                    partnerId: "demo_skin_default",
+                    username: "Blogger_John",
+                    type: "AFFILIATE",
+                    amount: 400,
+                    game: "RevShare",
+                    timestamp: Date.now() - 240000
+                },
+
+                {
+                    partnerId: "demo_skin_default",
+                    username: "Alex_777",
+                    type: "DEBIT",
+                    amount: 500,
+                    game: "Mines",
+                    timestamp: Date.now() - 150000
+                },
+                {
+                    partnerId: "demo_skin_default",
+                    username: "Alex_777",
+                    type: "CREDIT",
+                    amount: 1250,
+                    game: "Mines",
+                    timestamp: Date.now() - 140000
+                },
+
+                {
+                    partnerId: "demo_skin_default",
+                    username: "HighRoller",
+                    type: "DEBIT",
+                    amount: 20000,
+                    game: "Dice",
+                    timestamp: Date.now() - 80000
+                },
+                {
+                    partnerId: "demo_skin_default",
+                    username: "HighRoller",
+                    type: "DEBIT",
+                    amount: 7000,
+                    game: "Hi-Lo",
+                    timestamp: Date.now() - 50000
+                },
+
+                {
+                    partnerId: "demo_skin_default",
+                    username: "Player_VIP",
+                    type: "DEBIT",
+                    amount: 1500,
+                    game: "Slots5x3",
+                    timestamp: Date.now() - 500000
+                },
+                {
+                    partnerId: "demo_skin_default",
+                    username: "Player_VIP",
+                    type: "CREDIT",
+                    amount: 2400,
+                    game: "Slots5x3",
+                    timestamp: Date.now() - 480000
+                },
+
+                // Пополнение счета через промокод (Пойдет в кассовую вкладку Transactions)
+                {
+                    partnerId: "demo_skin_default",
+                    username: "Player_VIP",
+                    type: "BONUS_CASH",
+                    amount: 500,
+                    game: "🎁 Promo: WELCOME_BONUS",
+                    timestamp: Date.now() - 470000
+                },
+
+                {
+                    partnerId: "demo_skin_default",
+                    username: "CryptoWhale",
+                    type: "DEBIT",
+                    amount: 5000,
+                    game: "Crash",
+                    timestamp: Date.now() - 400000
+                },
+                {
+                    partnerId: "demo_skin_default",
+                    username: "CryptoWhale",
+                    type: "CREDIT",
+                    amount: 18500,
+                    game: "Crash",
+                    timestamp: Date.now() - 340000
+                },
+
+                // Начисление еженедельного кэшбэка (Пойдет в кассовую вкладку Transactions)
+                {
+                    partnerId: "demo_skin_default",
+                    username: "CryptoWhale",
+                    type: "BONUS_CASH",
+                    amount: 1200,
+                    game: "💰 Weekly Cashback Drops",
+                    timestamp: Date.now() - 300000
+                },
+
+                {
+                    partnerId: "demo_skin_default",
+                    username: "Lucky_Striker",
+                    type: "DEBIT",
+                    amount: 4000,
+                    game: "Sportsbook",
+                    timestamp: Date.now() - 250000
+                },
+                {
+                    partnerId: "demo_skin_default",
+                    username: "Blogger_John",
+                    type: "AFFILIATE",
+                    amount: 400,
+                    game: "RevShare",
+                    timestamp: Date.now() - 240000
+                },
+
+                {
+                    partnerId: "demo_skin_default",
+                    username: "Alex_777",
+                    type: "DEBIT",
+                    amount: 500,
+                    game: "Mines",
+                    timestamp: Date.now() - 150000
+                },
+                {
+                    partnerId: "demo_skin_default",
+                    username: "Alex_777",
+                    type: "CREDIT",
+                    amount: 1250,
+                    game: "Mines",
+                    timestamp: Date.now() - 140000
+                }
+            ];
+
+
+            // Записываем каждый документ по очереди через цикл, чтобы NeDB железно зафиксировала их
+            for (const tx of demoTx) {
+                await accountingDb.insert(tx);
+            }
+            console.log("🔥 [Accounting Seed] REAL TIME GGR DEMO VOLUME SEEDED SUCCESSFULLY!");
+        }
+    } catch (err) {
+        console.error("❌ [Accounting Seed Error]:", err.message);
+    }
+}
+
+seedFinancialData();
+
 
 const activeTickets = {};
 let globalJackpot = 1000;
@@ -35,7 +364,6 @@ let diceBankPool = 3000;
 
 let hiloBankPool = 4000;
 const activeHiloCards = {}; // Хранит текущую карту игрока: { username: currentCardObject }
-
 
 
 let slots5x3BankPool = 10000;
@@ -73,7 +401,7 @@ function getHiloMultipliers(currentValue) {
 
 const playerMethods = {
     getOrCreatePlayer: async (username, partnerId) => {
-        let player = await db.findOne({ username, partnerId  });
+        let player = await db.findOne({username, partnerId});
         if (!player) {
             player = {
                 username,
@@ -91,10 +419,10 @@ const playerMethods = {
         return player;
     },
     updateBalance: async (username, partnerId, newBalance) => {
-        await db.update({ username, partnerId }, { $set: { balance: newBalance } });
+        await db.update({username, partnerId}, {$set: {balance: newBalance}});
 
         if (io) {
-            io.to(`${partnerId}_${username}`).emit('wallet_update', { balance: newBalance });
+            io.to(`${partnerId}_${username}`).emit('wallet_update', {balance: newBalance});
         }
     },
 
@@ -108,7 +436,7 @@ const playerMethods = {
                 // Разделяем составной ключ обратно на partnerId и username
                 const [partnerId, username] = memKey.split('_');
 
-                let player = await db.findOne({ username: username, partnerId: partnerId });
+                let player = await db.findOne({username: username, partnerId: partnerId});
                 if (player) {
                     player.tickets = activeTickets[memKey];
                     gamers.push(player);
@@ -120,18 +448,29 @@ const playerMethods = {
 
     // ИСПРАВЛЕНО: Добавлен partnerId в аргументы для изоляции правок
     savePlayerActionHistory: async (username, partnerId, actionData) => {
-        const player = await db.findOne({ username: username, partnerId: partnerId });
+        const player = await db.findOne({username: username, partnerId: partnerId});
         if (player) {
             // 1. Запись истории действий (твоя стандартная логика)
             if (!player.history) player.history = [];
-            const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            player.history.unshift({ time: timeString, ...actionData });
+            const timeString = new Date().toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            player.history.unshift({time: timeString, ...actionData});
             if (player.history.length > 30) player.history.pop();
 
             // 2. БЕЗОПАСНАЯ B2B ГЕЙМИФИКАЦИЯ: Достаем конфиг конкретного партнера
             // Если у партнера нет своего конфига, берем дефолтный из CONFIG
             const partnerConfig = CONFIG[partnerId] || CONFIG;
-            const gConfig = partnerConfig.gamification || { xpPerGame: 10, xpMultiplier: 1000, levelUpBonus: 100, questTargetGames: 30, questReward: 50, tournamentActive: 0 };
+            const gConfig = partnerConfig.gamification || {
+                xpPerGame: 10,
+                xpMultiplier: 1000,
+                levelUpBonus: 100,
+                questTargetGames: 30,
+                questReward: 50,
+                tournamentActive: 0
+            };
 
             // --- Начисляем XP и Уровни ---
             if (!player.xp) player.xp = 0;
@@ -158,7 +497,7 @@ const playerMethods = {
             }
 
             // --- Считаем прогресс Ежедневного Квеста ---
-            if (!player.dailyQuests) player.dailyQuests = { gamesPlayed: 0, claimed: false };
+            if (!player.dailyQuests) player.dailyQuests = {gamesPlayed: 0, claimed: false};
             if (player.dailyQuests.gamesPlayed < Number(gConfig.questTargetGames)) {
                 player.dailyQuests.gamesPlayed += 1;
 
@@ -190,7 +529,7 @@ const playerMethods = {
             }
 
             // 3. Сохраняем обновленные данные в локальную NeDB
-            await db.update({ username: username, partnerId: partnerId }, {
+            await db.update({username: username, partnerId: partnerId}, {
                 $set: {
                     history: player.history,
                     xp: player.xp,
@@ -206,11 +545,11 @@ const playerMethods = {
     calculateAndPayCashback: async (partnerId, seamlessCredit) => {
         // Достаем настройки кэшбэка именно этого партнера
         const partnerConfig = CONFIG[partnerId] || CONFIG;
-        const gConfig = partnerConfig.gamification || { cashbackPercent: 10 };
+        const gConfig = partnerConfig.gamification || {cashbackPercent: 10};
         const pct = Number(gConfig.cashbackPercent) / 100;
 
         // ИСПРАВЛЕНО: Находим игроков только этого конкретного партнера
-        const allPlayers = await db.find({ partnerId: partnerId });
+        const allPlayers = await db.find({partnerId: partnerId});
         const cashbackReport = [];
 
         for (const player of allPlayers) {
@@ -262,11 +601,11 @@ const playerMethods = {
 
                         // ИСПРАВЛЕНО: Апдейтим игрока с учетом составного ключа
                         await db.update(
-                            { username: player.username, partnerId: partnerId },
-                            { $set: { history: player.history } }
+                            {username: player.username, partnerId: partnerId},
+                            {$set: {history: player.history}}
                         );
 
-                        cashbackReport.push({ username: player.username, loss: netLoss, paid: cashbackAmount });
+                        cashbackReport.push({username: player.username, loss: netLoss, paid: cashbackAmount});
                     } catch (e) {
                         console.error(`Ошибка выплаты кэшбэка для ${player.username}:`, e.message);
                     }
@@ -278,13 +617,13 @@ const playerMethods = {
 
     // ИСПРАВЛЕНО: Аргумент partnerId передан в функцию для поиска нужной истории
     getPlayerHistory: async (username, partnerId) => {
-        const player = await db.findOne({ username: username, partnerId: partnerId });
+        const player = await db.findOne({username: username, partnerId: partnerId});
         return player && player.history ? player.history : [];
     },
 
     // ИСПРАВЛЕНО: Метод теперь принимает аргумент и отдает игроков только конкретного партнера
     getAllPlayers: async (partnerId) => {
-        return await db.find({ partnerId: partnerId });
+        return await db.find({partnerId: partnerId});
     },
 
 };
@@ -292,7 +631,14 @@ const playerMethods = {
 const jackpotMethods = {
     // ИСПРАВЛЕНО: Теперь джекпот изолирован для каждого партнера
     getJackpot: (partnerId) => {
-        if (!banks[partnerId]) banks[partnerId] = { globalJackpot: 1000, mines: 5000, crash: 5000, dice: 3000, hilo: 4000, slots5x3: 10000 };
+        if (!banks[partnerId]) banks[partnerId] = {
+            globalJackpot: 1000,
+            mines: 5000,
+            crash: 5000,
+            dice: 3000,
+            hilo: 4000,
+            slots5x3: 10000
+        };
         return banks[partnerId].globalJackpot;
     },
     addJackpot: (partnerId, amount) => {
@@ -311,8 +657,12 @@ const jackpotMethods = {
 const minesMethods = {
     // ИСПРАВЛЕНО: Сессии Mines теперь разделены по составному ключу "partnerId_username"
     getMinesGame: (username, partnerId) => activeMinesGames[`${partnerId}_${username}`],
-    setMinesGame: (username, partnerId, gameData) => { activeMinesGames[`${partnerId}_${username}`] = gameData; },
-    deleteMinesGame: (username, partnerId) => { delete activeMinesGames[`${partnerId}_${username}`]; },
+    setMinesGame: (username, partnerId, gameData) => {
+        activeMinesGames[`${partnerId}_${username}`] = gameData;
+    },
+    deleteMinesGame: (username, partnerId) => {
+        delete activeMinesGames[`${partnerId}_${username}`];
+    },
     getMinesMultiplier,
 
     // ИСПРАВЛЕНО: Банк Mines теперь изолирован под каждого партнера отдельно
@@ -360,7 +710,9 @@ const crashMethods = {
         if (!currentCrashBets[partnerId]) currentCrashBets[partnerId] = {};
         currentCrashBets[partnerId][username] = amount;
     },
-    clearCrashBets: (partnerId) => { currentCrashBets[partnerId] = {}; },
+    clearCrashBets: (partnerId) => {
+        currentCrashBets[partnerId] = {};
+    },
 
     // ИСПРАВЛЕНО: Активные игроки «в полете» разделены по партнерам
     getActiveInFlight: (partnerId) => {
@@ -374,7 +726,9 @@ const crashMethods = {
     removePlayerFromFlight: (username, partnerId) => {
         if (currentActivePlayers[partnerId]) delete currentActivePlayers[partnerId][username];
     },
-    clearFlightPlayers: (partnerId) => { currentActivePlayers[partnerId] = {}; }
+    clearFlightPlayers: (partnerId) => {
+        currentActivePlayers[partnerId] = {};
+    }
 };
 
 const diceMethods = {
@@ -410,7 +764,9 @@ const hiloMethods = {
 
     // ИСПРАВЛЕНО: Карты в Hi-Lo разделены по составному ключу "partnerId_username"
     getHiloCard: (username, partnerId) => activeHiloCards[`${partnerId}_${username}`],
-    setHiloCard: (username, partnerId, card) => { activeHiloCards[`${partnerId}_${username}`] = card; },
+    setHiloCard: (username, partnerId, card) => {
+        activeHiloCards[`${partnerId}_${username}`] = card;
+    },
     getHiloMultipliers
 };
 
@@ -437,8 +793,12 @@ const slots5x3Methods = {
 const freeSpinMethods = {
     // ИСПРАВЛЕНО: Фриспины разделены по составному ключу "partnerId_username"
     getFreeSpins: (username, partnerId) => activeFreeSpins[`${partnerId}_${username}`],
-    setFreeSpins: (username, partnerId, fsData) => { activeFreeSpins[`${partnerId}_${username}`] = fsData; },
-    deleteFreeSpins: (username, partnerId) => { delete activeFreeSpins[`${partnerId}_${username}`]; }
+    setFreeSpins: (username, partnerId, fsData) => {
+        activeFreeSpins[`${partnerId}_${username}`] = fsData;
+    },
+    deleteFreeSpins: (username, partnerId) => {
+        delete activeFreeSpins[`${partnerId}_${username}`];
+    }
 };
 
 
@@ -449,7 +809,7 @@ const gamificationMethods = {
         const sortField = validCriteria.includes(criterion) ? criterion : 'balance';
 
         // Находим игроков только текущего партнера
-        const allPlayers = await db.find({ partnerId: partnerId });
+        const allPlayers = await db.find({partnerId: partnerId});
 
         return allPlayers
             .sort((a, b) => {
@@ -471,7 +831,7 @@ const gamificationMethods = {
     endCurrentTournament: async (partnerId) => {
         // Достаем настройки турнира именно этого партнера
         const partnerConfig = CONFIG[partnerId] || CONFIG;
-        const gConfig = partnerConfig.gamification || { tournamentPrize: 5000 };
+        const gConfig = partnerConfig.gamification || {tournamentPrize: 5000};
         const totalPrize = Number(gConfig.tournamentPrize);
 
         const prizes = [
@@ -481,7 +841,7 @@ const gamificationMethods = {
         ];
 
         // Находим игроков только этого партнера
-        const allPlayers = await db.find({ partnerId: partnerId });
+        const allPlayers = await db.find({partnerId: partnerId});
 
         const participants = allPlayers
             .filter(p => p.tournamentPoints && p.tournamentPoints > 0)
@@ -541,7 +901,7 @@ const gamificationMethods = {
 
             // ИСПРАВЛЕНО: Сохраняем игрока с использованием составного B2B-ключа
             await db.update(
-                { username: player.username, partnerId: partnerId },
+                {username: player.username, partnerId: partnerId},
                 {
                     $set: {
                         balance: player.balance,
@@ -559,15 +919,15 @@ const gamificationMethods = {
     resetDailyQuestsForAll: async (partnerId) => {
         try {
             // Находим игроков только нужного партнера
-            const players = await db.find({ partnerId: partnerId });
+            const players = await db.find({partnerId: partnerId});
 
             for (const player of players) {
                 if (player.dailyQuests) {
-                    player.dailyQuests = { gamesPlayed: 0, claimed: false };
+                    player.dailyQuests = {gamesPlayed: 0, claimed: false};
 
                     await db.update(
-                        { username: player.username, partnerId: partnerId },
-                        { $set: { dailyQuests: player.dailyQuests } }
+                        {username: player.username, partnerId: partnerId},
+                        {$set: {dailyQuests: player.dailyQuests}}
                     );
                 }
             }
@@ -596,7 +956,7 @@ const promoMethods = {
         });
 
         // Перезаписываем в config.db только ветку текущего партнера
-        await configDb.update({ _id: "global_config" }, { $set: { [partnerId]: CONFIG[partnerId] } });
+        await configDb.update({_id: "global_config"}, {$set: {[partnerId]: CONFIG[partnerId]}});
     },
 
     // ИСПРАВЛЕНО: Активация кода игроком теперь проверяет partnerId
@@ -610,7 +970,7 @@ const promoMethods = {
         if (!promo) throw new Error("Invalid code");
 
         // Поиск игрока по составному ключу B2B
-        const player = await db.findOne({ username: username, partnerId: partnerId });
+        const player = await db.findOne({username: username, partnerId: partnerId});
         if (!player) throw new Error("Player not found");
 
         if (!player.usedPromos) player.usedPromos = {};
@@ -630,13 +990,126 @@ const promoMethods = {
 
         // Фиксируем использование кода локально в рамках этого бренда
         player.usedPromos[cleanCode] = timesUsed + 1;
-        await db.update({ username: username, partnerId: partnerId }, { $set: { usedPromos: player.usedPromos } });
+        await db.update({username: username, partnerId: partnerId}, {$set: {usedPromos: player.usedPromos}});
 
         return promo.reward;
     }
 };
 
-const betsDb = Datastore.create({ filename: path.join(__dirname, 'bets.db'), autoload: true });
+const affiliateMethods = {
+
+    linkReferral: async (username, partnerId, refCode) => {
+        const cleanRef = refCode.trim();
+        // Ищем, кому принадлежит этот реф-код (код равен юзернейму пригласителя)
+        const inviter = await db.findOne({username: cleanRef, partnerId: partnerId});
+        if (!inviter) return false;
+
+        // Привязываем реферала
+        await db.update({username: username, partnerId: partnerId}, {$set: {invitedBy: inviter.username}});
+        return true;
+    },
+
+    trackAffiliatePayout: async (username, partnerId, lostAmount, sessionId) => {
+        const player = await db.findOne({username: username, partnerId: partnerId});
+        // Если игрока никто не приглашал — ничего не делаем
+        if (!player || !player.invitedBy) return;
+
+        // Берем процент RevShare из конфига партнера (например, 10%)
+        const partnerConfig = CURRENT_CONFIG[partnerId] || CURRENT_CONFIG;
+        const refPercent = partnerConfig.affiliatePercent || 10;
+
+        const commission = Math.floor(lostAmount * (refPercent / 100));
+
+        if (commission > 0) {
+            try {
+                const refRoundId = `aff_pay_${Date.now()}_${player.invitedBy}`;
+                // Начисляем комиссию пригласителю через твой Seamless Credit!
+                const seamless = require('./services/seamlessService');
+                await seamless.credit(
+                    player.invitedBy,
+                    partnerId,
+                    null, // или сессию пригласителя, если она активна
+                    commission,
+                    "💰 Affiliate RevShare Commission",
+                    refRoundId
+                );
+
+                console.log(`💸 Affiliate Revenue Share: ${player.invitedBy} earned +${commission} 🪙 from ${username}`);
+            } catch (err) {
+                console.error(`❌ Affiliate payout failed:`, err.message);
+            }
+        }
+    }
+};
+
+const financialMethods = {
+
+    logFinancialTransaction: async (partnerId, username, type, amount, game) => {
+        const record = {
+            partnerId,
+            username,
+            type, // "DEBIT", "CREDIT", "AFFILIATE"
+            amount: Number(amount),
+            game, // "Slots", "Crash", "Dice", "Sportsbook"
+            timestamp: Date.now()
+        };
+        await accountingDb.insert(record);
+    },
+
+    getFinancialReport: async (partnerId) => {
+        const txs = await accountingDb.find({partnerId: partnerId});
+
+        let totalBets = 0;
+        let totalWins = 0;
+        let totalAffiliate = 0;
+
+        txs.forEach(tx => {
+            if (tx.type === "DEBIT") totalBets += tx.amount;
+            if (tx.type === "CREDIT") totalWins += tx.amount;
+            if (tx.type === "AFFILIATE") totalAffiliate += tx.amount;
+        });
+
+        const ggr = totalBets - totalWins;
+        const netProfit = ggr - totalAffiliate;
+
+        // Сортируем от новых к старым
+        const sortedTxs = txs.sort((a, b) => b.timestamp - a.timestamp);
+
+        // 🎰 ЛОГ СТАВОК: Сюда идут ТОЛЬКО ставки и выигрыши в играх (исключаем промокоды, кэшбэки и бонусы)
+        const latestBets = sortedTxs.filter(tx =>
+            (tx.type === "DEBIT" || tx.type === "CREDIT") &&
+            !tx.game.includes("Promo") &&
+            !tx.game.includes("Cashback") &&
+            !tx.game.includes("Quest") &&
+            !tx.game.includes("VIP")
+        ).slice(0, 50);
+
+        // 💳 ЛОГ КАССЫ (ПОПОЛНЕНИЯ / ВЫВОДЫ / БОНУСЫ): Сюда идет чистый Cashflow
+        const latestTransactions = sortedTxs.filter(tx =>
+            tx.type === "AFFILIATE" ||
+            tx.game.includes("Promo") ||
+            tx.game.includes("Cashback") ||
+            tx.game.includes("Quest") ||
+            tx.game.includes("VIP") ||
+            tx.game.includes("Deposit") ||
+            tx.game.includes("Withdraw")
+        ).slice(0, 50);
+
+        return {
+            totalBets,
+            totalWins,
+            totalAffiliate,
+            ggr,
+            netProfit,
+            transactionsCount: txs.length,
+            latestTransactions,
+            latestBets
+        };
+    }
+
+
+};
+
 
 const sportsMethods = {
     getSportsLine: () => DEMO_MATCHES,
@@ -665,12 +1138,12 @@ const sportsMethods = {
 
     // ИСПРАВЛЕНО: Админка теперь запрашивает нерассчитанные ставки только своего проекта
     getPendingBets: async (partnerId) => {
-        return await betsDb.find({ status: "PENDING", partnerId: partnerId });
+        return await betsDb.find({status: "PENDING", partnerId: partnerId});
     },
 
     // ИСПРАВЛЕНО: Код расчета купона отправляет выплату на API правильного партнера
     settleBet: async (betId, finalStatus, seamlessCredit) => {
-        const bet = await betsDb.findOne({ _id: betId });
+        const bet = await betsDb.findOne({_id: betId});
         if (!bet || bet.status !== "PENDING") return null;
 
         let prize = 0;
@@ -691,135 +1164,195 @@ const sportsMethods = {
         }
 
         // Обновляем статус купона
-        await betsDb.update({ _id: betId }, { $set: { status: finalStatus, prize: prize } });
-        return { ...bet, status: finalStatus, prize };
+        await betsDb.update({_id: betId}, {$set: {status: finalStatus, prize: prize}});
+        return {...bet, status: finalStatus, prize};
     }
 };
 
 const DEMO_MATCHES = [
     // === ⚽ FOOTBALL / SOCCER ===
     {
-        id: "fb_1", sport: "⚽ Football", league: "Champions League", teams: "Real Madrid - Manchester City", status: "LIVE (72 min, 2:2)",
+        id: "fb_1",
+        sport: "⚽ Football",
+        league: "Champions League",
+        teams: "Real Madrid - Manchester City",
+        status: "LIVE (72 min, 2:2)",
         markets: {
-            winner: { label: "Match Result (1X2)", odds: { p1: 2.85, x: 3.40, p2: 2.45 } },
-            total: { label: "Total Goals (Over/Under 4.5)", odds: { over: 1.90, under: 1.80 } },
-            handicap: { label: "Match Handicap (0)", odds: { h1: 2.10, h2: 1.75 } }
+            winner: {label: "Match Result (1X2)", odds: {p1: 2.85, x: 3.40, p2: 2.45}},
+            total: {label: "Total Goals (Over/Under 4.5)", odds: {over: 1.90, under: 1.80}},
+            handicap: {label: "Match Handicap (0)", odds: {h1: 2.10, h2: 1.75}}
         }
     },
     {
-        id: "fb_2", sport: "⚽ Football", league: "English Premier League", teams: "Arsenal - Chelsea", status: "LIVE (34 min, 1:0)",
+        id: "fb_2",
+        sport: "⚽ Football",
+        league: "English Premier League",
+        teams: "Arsenal - Chelsea",
+        status: "LIVE (34 min, 1:0)",
         markets: {
-            winner: { label: "Match Result (1X2)", odds: { p1: 1.55, x: 4.20, p2: 6.00 } },
-            total: { label: "Total Goals (Over/Under 2.5)", odds: { over: 1.75, under: 2.05 } },
-            handicap: { label: "Match Handicap (-1 / +1)", odds: { h1: 1.95, h2: 1.85 } }
+            winner: {label: "Match Result (1X2)", odds: {p1: 1.55, x: 4.20, p2: 6.00}},
+            total: {label: "Total Goals (Over/Under 2.5)", odds: {over: 1.75, under: 2.05}},
+            handicap: {label: "Match Handicap (-1 / +1)", odds: {h1: 1.95, h2: 1.85}}
         }
     },
     {
-        id: "fb_3", sport: "⚽ Football", league: "La Liga", teams: "Barcelona - Atletico Madrid", status: "LIVE (12 min, 0:0)",
+        id: "fb_3",
+        sport: "⚽ Football",
+        league: "La Liga",
+        teams: "Barcelona - Atletico Madrid",
+        status: "LIVE (12 min, 0:0)",
         markets: {
-            winner: { label: "Match Result (1X2)", odds: { p1: 2.10, x: 3.30, p2: 3.70 } },
-            total: { label: "Total Goals (Over/Under 2.5)", odds: { over: 1.95, under: 1.85 } },
-            handicap: { label: "Match Handicap (0)", odds: { h1: 1.53, h2: 2.50 } }
+            winner: {label: "Match Result (1X2)", odds: {p1: 2.10, x: 3.30, p2: 3.70}},
+            total: {label: "Total Goals (Over/Under 2.5)", odds: {over: 1.95, under: 1.85}},
+            handicap: {label: "Match Handicap (0)", odds: {h1: 1.53, h2: 2.50}}
         }
     },
     {
-        id: "fb_4", sport: "⚽ Football", league: "Serie A", teams: "Juventus - Inter Milan", status: "LIVE (51 min, 0:1)",
+        id: "fb_4",
+        sport: "⚽ Football",
+        league: "Serie A",
+        teams: "Juventus - Inter Milan",
+        status: "LIVE (51 min, 0:1)",
         markets: {
-            winner: { label: "Match Result (1X2)", odds: { p1: 4.50, x: 3.10, p2: 1.95 } },
-            total: { label: "Total Goals (Over/Under 1.5)", odds: { over: 1.65, under: 2.20 } },
-            handicap: { label: "Match Handicap (+1 / -1)", odds: { h1: 1.80, h2: 2.00 } }
+            winner: {label: "Match Result (1X2)", odds: {p1: 4.50, x: 3.10, p2: 1.95}},
+            total: {label: "Total Goals (Over/Under 1.5)", odds: {over: 1.65, under: 2.20}},
+            handicap: {label: "Match Handicap (+1 / -1)", odds: {h1: 1.80, h2: 2.00}}
         }
     },
     {
-        id: "fb_5", sport: "⚽ Football", league: "Bundesliga", teams: "Bayern Munich - Borussia Dortmund", status: "LIVE (88 min, 3:1)",
+        id: "fb_5",
+        sport: "⚽ Football",
+        league: "Bundesliga",
+        teams: "Bayern Munich - Borussia Dortmund",
+        status: "LIVE (88 min, 3:1)",
         markets: {
-            winner: { label: "Match Result (1X2)", odds: { p1: 1.05, x: 11.0, p2: 26.0 } },
-            total: { label: "Total Goals (Over/Under 4.5)", odds: { over: 2.10, under: 1.65 } },
-            handicap: { label: "Match Handicap (-2 / +2)", odds: { h1: 1.85, h2: 1.95 } }
+            winner: {label: "Match Result (1X2)", odds: {p1: 1.05, x: 11.0, p2: 26.0}},
+            total: {label: "Total Goals (Over/Under 4.5)", odds: {over: 2.10, under: 1.65}},
+            handicap: {label: "Match Handicap (-2 / +2)", odds: {h1: 1.85, h2: 1.95}}
         }
     },
 
     // === 🏀 BASKETBALL ===
     {
-        id: "bk_1", sport: "🏀 Basketball", league: "NBA", teams: "LA Lakers - Boston Celtics", status: "LIVE (3rd Quarter, 78:82)",
+        id: "bk_1",
+        sport: "🏀 Basketball",
+        league: "NBA",
+        teams: "LA Lakers - Boston Celtics",
+        status: "LIVE (3rd Quarter, 78:82)",
         markets: {
-            winner: { label: "Moneyline (Inc. OT)", odds: { p1: 2.20, p2: 1.67 } },
-            total: { label: "Total Points (Over/Under 215.5)", odds: { over: 1.92, under: 1.88 } },
-            handicap: { label: "Point Spread (+3.5 / -3.5)", odds: { h1: 1.85, h2: 1.95 } }
+            winner: {label: "Moneyline (Inc. OT)", odds: {p1: 2.20, p2: 1.67}},
+            total: {label: "Total Points (Over/Under 215.5)", odds: {over: 1.92, under: 1.88}},
+            handicap: {label: "Point Spread (+3.5 / -3.5)", odds: {h1: 1.85, h2: 1.95}}
         }
     },
     {
-        id: "bk_2", sport: "🏀 Basketball", league: "NBA", teams: "Golden State - Milwaukee Bucks", status: "LIVE (4th Quarter, 102:99)",
+        id: "bk_2",
+        sport: "🏀 Basketball",
+        league: "NBA",
+        teams: "Golden State - Milwaukee Bucks",
+        status: "LIVE (4th Quarter, 102:99)",
         markets: {
-            winner: { label: "Moneyline (Inc. OT)", odds: { p1: 1.45, p2: 2.75 } },
-            total: { label: "Total Points (Over/Under 228.5)", odds: { over: 2.10, under: 1.72 } },
-            handicap: { label: "Point Spread (-5.5 / +5.5)", odds: { h1: 1.90, h2: 1.90 } }
+            winner: {label: "Moneyline (Inc. OT)", odds: {p1: 1.45, p2: 2.75}},
+            total: {label: "Total Points (Over/Under 228.5)", odds: {over: 2.10, under: 1.72}},
+            handicap: {label: "Point Spread (-5.5 / +5.5)", odds: {h1: 1.90, h2: 1.90}}
         }
     },
     {
-        id: "bk_3", sport: "🏀 Basketball", league: "EuroLeague", teams: "Real Madrid Basket - Monaco", status: "LIVE (2nd Quarter, 34:28)",
+        id: "bk_3",
+        sport: "🏀 Basketball",
+        league: "EuroLeague",
+        teams: "Real Madrid Basket - Monaco",
+        status: "LIVE (2nd Quarter, 34:28)",
         markets: {
-            winner: { label: "Moneyline (Inc. OT)", odds: { p1: 1.30, p2: 3.50 } },
-            total: { label: "Total Points (Over/Under 162.5)", odds: { over: 1.85, under: 1.95 } },
-            handicap: { label: "Point Spread (-7.5 / +7.5)", odds: { h1: 1.91, h2: 1.89 } }
+            winner: {label: "Moneyline (Inc. OT)", odds: {p1: 1.30, p2: 3.50}},
+            total: {label: "Total Points (Over/Under 162.5)", odds: {over: 1.85, under: 1.95}},
+            handicap: {label: "Point Spread (-7.5 / +7.5)", odds: {h1: 1.91, h2: 1.89}}
         }
     },
     {
-        id: "bk_4", sport: "🏀 Basketball", league: "EuroLeague", teams: "Olympiacos - Panathinaikos", status: "LIVE (1st Quarter, 12:15)",
+        id: "bk_4",
+        sport: "🏀 Basketball",
+        league: "EuroLeague",
+        teams: "Olympiacos - Panathinaikos",
+        status: "LIVE (1st Quarter, 12:15)",
         markets: {
-            winner: { label: "Moneyline (Inc. OT)", odds: { p1: 1.80, p2: 2.00 } },
-            total: { label: "Total Points (Over/Under 155.5)", odds: { over: 1.90, under: 1.90 } },
-            handicap: { label: "Point Spread (-1.5 / +1.5)", odds: { h1: 1.95, h2: 1.85 } }
+            winner: {label: "Moneyline (Inc. OT)", odds: {p1: 1.80, p2: 2.00}},
+            total: {label: "Total Points (Over/Under 155.5)", odds: {over: 1.90, under: 1.90}},
+            handicap: {label: "Point Spread (-1.5 / +1.5)", odds: {h1: 1.95, h2: 1.85}}
         }
     },
     {
-        id: "bk_5", sport: "🏀 Basketball", league: "NBA", teams: "Miami Heat - New York Knicks", status: "LIVE (3rd Quarter, 60:65)",
+        id: "bk_5",
+        sport: "🏀 Basketball",
+        league: "NBA",
+        teams: "Miami Heat - New York Knicks",
+        status: "LIVE (3rd Quarter, 60:65)",
         markets: {
-            winner: { label: "Moneyline (Inc. OT)", odds: { p1: 2.40, p2: 1.57 } },
-            total: { label: "Total Points (Over/Under 208.5)", odds: { over: 1.80, under: 2.00 } },
-            handicap: { label: "Point Spread (+4.5 / -4.5)", odds: { h1: 1.87, h2: 1.93 } }
+            winner: {label: "Moneyline (Inc. OT)", odds: {p1: 2.40, p2: 1.57}},
+            total: {label: "Total Points (Over/Under 208.5)", odds: {over: 1.80, under: 2.00}},
+            handicap: {label: "Point Spread (+4.5 / -4.5)", odds: {h1: 1.87, h2: 1.93}}
         }
     },
 
     // === 🎾 TENNIS ===
     {
-        id: "tn_1", sport: "🎾 Tennis", league: "Wimbledon", teams: "Jannik Sinner - Carlos Alcaraz", status: "LIVE (Set 2, 1:1, Games 4:3)",
+        id: "tn_1",
+        sport: "🎾 Tennis",
+        league: "Wimbledon",
+        teams: "Jannik Sinner - Carlos Alcaraz",
+        status: "LIVE (Set 2, 1:1, Games 4:3)",
         markets: {
-            winner: { label: "Match Winner", odds: { p1: 1.90, p2: 1.90 } },
-            total: { label: "Total Games (Over/Under 38.5)", odds: { over: 1.85, under: 1.95 } },
-            handicap: { label: "Handicap Games (0)", odds: { h1: 1.90, h2: 1.90 } }
+            winner: {label: "Match Winner", odds: {p1: 1.90, p2: 1.90}},
+            total: {label: "Total Games (Over/Under 38.5)", odds: {over: 1.85, under: 1.95}},
+            handicap: {label: "Handicap Games (0)", odds: {h1: 1.90, h2: 1.90}}
         }
     },
     {
-        id: "tn_2", sport: "🎾 Tennis", league: "Roland Garros", teams: "Novak Djokovic - Daniil Medvedev", status: "LIVE (Set 1, Games 5:2)",
+        id: "tn_2",
+        sport: "🎾 Tennis",
+        league: "Roland Garros",
+        teams: "Novak Djokovic - Daniil Medvedev",
+        status: "LIVE (Set 1, Games 5:2)",
         markets: {
-            winner: { label: "Match Winner", odds: { p1: 1.22, p2: 4.30 } },
-            total: { label: "Total Games (Over/Under 34.5)", odds: { over: 2.00, under: 1.72 } },
-            handicap: { label: "Handicap Games (-4.5 / +4.5)", odds: { h1: 1.85, h2: 1.95 } }
+            winner: {label: "Match Winner", odds: {p1: 1.22, p2: 4.30}},
+            total: {label: "Total Games (Over/Under 34.5)", odds: {over: 2.00, under: 1.72}},
+            handicap: {label: "Handicap Games (-4.5 / +4.5)", odds: {h1: 1.85, h2: 1.95}}
         }
     },
     {
-        id: "tn_3", sport: "🎾 Tennis", league: "US Open", teams: "Alexander Zverev - Taylor Fritz", status: "LIVE (Set 3, 2:0, Games 1:2)",
+        id: "tn_3",
+        sport: "🎾 Tennis",
+        league: "US Open",
+        teams: "Alexander Zverev - Taylor Fritz",
+        status: "LIVE (Set 3, 2:0, Games 1:2)",
         markets: {
-            winner: { label: "Match Winner", odds: { p1: 1.35, p2: 3.20 } },
-            total: { label: "Total Games (Over/Under 36.5)", odds: { over: 1.90, under: 1.90 } },
-            handicap: { label: "Handicap Games (-3.5 / +3.5)", odds: { h1: 1.80, h2: 2.00 } }
+            winner: {label: "Match Winner", odds: {p1: 1.35, p2: 3.20}},
+            total: {label: "Total Games (Over/Under 36.5)", odds: {over: 1.90, under: 1.90}},
+            handicap: {label: "Handicap Games (-3.5 / +3.5)", odds: {h1: 1.80, h2: 2.00}}
         }
     },
     {
-        id: "tn_4", sport: "🎾 Tennis", league: "Australian Open", teams: "Stefanos Tsitsipas - Holger Rune", status: "LIVE (Set 1, Games 0:3)",
+        id: "tn_4",
+        sport: "🎾 Tennis",
+        league: "Australian Open",
+        teams: "Stefanos Tsitsipas - Holger Rune",
+        status: "LIVE (Set 1, Games 0:3)",
         markets: {
-            winner: { label: "Match Winner", odds: { p1: 3.10, p2: 1.38 } },
-            total: { label: "Total Games (Over/Under 39.5)", odds: { over: 1.75, under: 2.08 } },
-            handicap: { label: "Handicap Games (+3.5 / -3.5)", odds: { h1: 1.95, h2: 1.85 } }
+            winner: {label: "Match Winner", odds: {p1: 3.10, p2: 1.38}},
+            total: {label: "Total Games (Over/Under 39.5)", odds: {over: 1.75, under: 2.08}},
+            handicap: {label: "Handicap Games (+3.5 / -3.5)", odds: {h1: 1.95, h2: 1.85}}
         }
     },
     {
-        id: "tn_5", sport: "🎾 Tennis", league: "ATP Masters", teams: "Andrey Rublev - Casper Ruud", status: "LIVE (Set 2, 0:1, Games 5:5)",
+        id: "tn_5",
+        sport: "🎾 Tennis",
+        league: "ATP Masters",
+        teams: "Andrey Rublev - Casper Ruud",
+        status: "LIVE (Set 2, 0:1, Games 5:5)",
         markets: {
-            winner: { label: "Match Winner", odds: { p1: 1.75, p2: 2.08 } },
-            total: { label: "Total Games (Over/Under 24.5)", odds: { over: 1.95, under: 1.85 } },
-            handicap: { label: "Handicap Games (-1.5 / +1.5)", odds: { h1: 1.90, h2: 1.90 } }
+            winner: {label: "Match Winner", odds: {p1: 1.75, p2: 2.08}},
+            total: {label: "Total Games (Over/Under 24.5)", odds: {over: 1.95, under: 1.85}},
+            handicap: {label: "Handicap Games (-1.5 / +1.5)", odds: {h1: 1.90, h2: 1.90}}
         }
     }
 ];
@@ -832,6 +1365,8 @@ module.exports = {
     ...jackpotMethods,
     ...gamificationMethods,
     ...promoMethods,
+    ...affiliateMethods,
+    ...financialMethods,
 
     ...minesMethods,
     ...crashMethods,
@@ -853,7 +1388,7 @@ module.exports = {
     },
 
     getPartnerConfig: async (partnerId) => {
-        return await configDb.findOne({ _id: partnerId });
+        return await configDb.findOne({_id: partnerId});
     },
 
     // ИСПРАВЛЕНО: Полная B2B-изоляция сохранения настроек и балансов банков
@@ -862,7 +1397,7 @@ module.exports = {
 
         // Инициализируем банки и конфиг партнера, если их еще нет в памяти
         if (!banks[partnerId]) {
-            banks[partnerId] = { globalJackpot: 1000, mines: 5000, crash: 5000, dice: 3000, hilo: 4000, slots5x3: 10000 };
+            banks[partnerId] = {globalJackpot: 1000, mines: 5000, crash: 5000, dice: 3000, hilo: 4000, slots5x3: 10000};
         }
         if (!CONFIG[partnerId]) {
             CONFIG[partnerId] = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
@@ -888,8 +1423,8 @@ module.exports = {
         if (changed) {
             // Обновляем ветку конкретного партнера, используя динамический ключ
             await configDb.update(
-                { _id: 'global_config' },
-                { $set: { [partnerId]: CONFIG[partnerId], [`banks_${partnerId}`]: banks[partnerId] } }
+                {_id: 'global_config'},
+                {$set: {[partnerId]: CONFIG[partnerId], [`banks_${partnerId}`]: banks[partnerId]}}
             );
             return true;
         }

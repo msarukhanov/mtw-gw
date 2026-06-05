@@ -116,4 +116,20 @@ router.post('/auth', async (req, res) => {
     }
 });
 
+// Добавь в файл роутера авторизации игроков (где лежит /auth/seamless)
+router.post('/auth/link-ref', async (req, res) => {
+    const { username, partnerId, refCode } = req.body;
+    if (!username || !partnerId || !refCode) {
+        return res.status(400).json({ error: "Missing referral data" });
+    }
+
+    try {
+        const linked = await state.linkReferral(username, partnerId, refCode);
+        res.json({ success: linked });
+    } catch (err) {
+        res.status(500).json({ success: false });
+    }
+});
+
+
 module.exports = router;

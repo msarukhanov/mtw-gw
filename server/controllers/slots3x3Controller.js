@@ -82,6 +82,9 @@ exports.spin = async (req, res) => {
             console.error(`[Partner: ${partnerId}] Failed to credit slot win for ${username}:`, err.message);
         }
     }
+    else if(prize === 0) {
+        await state.trackAffiliatePayout(username, partnerId, bet, req.player.sessionId);
+    }
 
     // ИСПРАВЛЕНО: Сохраняем баланс и пишем историю с привязкой к partnerId
     await state.updateBalance(username, partnerId, req.player.balance);

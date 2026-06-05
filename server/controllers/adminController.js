@@ -109,3 +109,13 @@ exports.runCashback = async (req, res) => {
         res.status(500).json({ error: "Cashback distribution process failed" });
     }
 };
+
+exports.getFinanceReport = async (req, res) => {
+    try {
+        const partnerId = req.partnerId || "demo_skin_default";
+        const report = await state.getFinancialReport(partnerId);
+        res.json({ success: true, report });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to compile financial metrics" });
+    }
+};

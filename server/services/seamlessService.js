@@ -32,6 +32,8 @@ module.exports = {
 
     // 3.2 Запрос при ставке (Debit) с динамической маршрутизацией
     debit: async (username, partnerId, sessionId, amount, gameName, roundId) => {
+        await state.logFinancialTransaction(partnerId, username, "DEBIT", amount, gameName);
+
         return true;
         try {
             const partnerConfig = state.getConfig(partnerId);
@@ -59,6 +61,13 @@ module.exports = {
 
     // 3.3 Запрос при результате (Credit) с динамической маршрутизацией
     credit: async (username, partnerId, sessionId, amount, gameName, roundId) => {
+
+        let txType = "CREDIT";
+        if (gameName && gameName.includes("Affiliate")) txType = "AFFILIATE";
+        else if (gameName && (gameName.includes("Promo") || gameName.includes("Cashback") || gameName.includes("Quest") || gameName.includes("VIP"))) {
+            txType = "BONUS_CASH"; // Маркируем как бонусное пополнение счета
+        }
+
         return true;
         try {
             const partnerConfig = state.getConfig(partnerId);

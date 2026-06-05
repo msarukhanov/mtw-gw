@@ -241,6 +241,62 @@
             cursor: pointer; box-shadow: 0 5px 15px rgba(78, 204, 163, 0.3); transition: transform 0.2s;
         }
         .submit-btn:active { transform: scale(0.98); }
+
+        /* 🚀 PREMIUM ENTERPRISE DEMO BUTTON STYLE */
+        .b2b-demo-action {
+            text-align: center;
+            margin: 10px 0 40px 0;
+        }
+        .btn-launch-demo {
+            background: linear-gradient(135deg, #00f5d4 0%, #00bbf9 100%) !important;
+            border: 2px solid #00f5d4 !important;
+            color: #0d1117 !important;
+            padding: 16px 40px !important;
+            border-radius: 30px !important;
+            font-size: 16px !important;
+            font-weight: 900 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 1.5px !important;
+            cursor: pointer !important;
+            box-shadow: 0 0 20px rgba(0, 245, 212, 0.4) !important;
+            transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1) !important;
+            outline: none !important;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        /* Анимация пульсации и наведения на десктопе */
+        .btn-launch-demo:hover {
+            transform: translateY(-4px) scale(1.03) !important;
+            box-shadow: 0 0 35px rgba(0, 245, 212, 0.8) !important;
+            background: linear-gradient(135deg, #33f7dd 0%, #33ccff 100%) !important;
+            border-color: #33f7dd !important;
+        }
+
+        /* Эффект клика */
+        .btn-launch-demo:active {
+            transform: translateY(1px) scale(0.98) !important;
+            box-shadow: 0 0 15px rgba(0, 245, 212, 0.5) !important;
+        }
+
+        /* Пульсирующая неоновая точка рядом с текстом (эффект LIVE системы) */
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #0d1117;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse-dot 1.5s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            50% { transform: scale(1.3); opacity: 1; }
+            100% { transform: scale(0.8); opacity: 0.5; }
+        }
+
     </style>
 </head>
 <body>
@@ -250,12 +306,12 @@
     <div class="container header-content">
         <div class="logo">MTW<span>TECH</span></div>
         <nav>
-            <a href="#features">Architecture</a>
+            <a href="#platform">Platform</a>
             <a href="#games">Our Games</a>
-            <a href="#integration">Seamless API</a>
-            <a href="#services">Services</a>
+            <a href="#features">Features</a>
             <a href="#sportsbook">Sports</a>
-            <a href="#demo">Games</a>
+            <a href="#services">Services</a>
+            <a href="#demo-games">Games</a>
             <a href="#contact">Contact us</a>
         </nav>
         <a href="#integration" class="cta-header-btn">Get API Access</a>
@@ -279,28 +335,34 @@
         </div>
     </section>
 
-
-    <!-- ADVANTAGES SECTION -->
-    <section id="features" class="features">
+    <section id="platform" class="features" style="border-bottom: 1px solid var(--border-color); padding-bottom: 40px;">
         <div class="container">
+            <h2 style="text-align: center; color: #ffb703; margin-bottom: 15px; font-size: 28px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px;">🌐 Enterprise B2B Platform Core</h2>
+            <p style="text-align: center; color: var(--text-muted); max-width: 600px; margin: 0 auto 35px auto; font-size: 15px; line-height: 1.5;">
+                Turn your single-site software into a powerful global iGaming Aggregator. Launch, manage, and scale multiple casino brands from a centralized control center.
+            </p>
+            <div class="b2b-demo-action">
+                <a href="https://mtw-gw-platform.onrender.com" target="_blank" class="btn-launch-demo">
+                    <span class="live-dot"></span> Launch Live B2B Demo
+                </a>
+            </div>
             <div class="features-grid">
-                <div class="feature-card">
-                    <h3>⚡ Seamless Integration</h3>
-                    <p>Iframe architecture built on top of external wallet protocols. Handles automated Validate, Debit, and Credit routing securely.</p>
+                <div class="feature-card" style="border: 1px solid rgba(88, 166, 255, 0.2); background: linear-gradient(135deg, rgba(22,27,34,0.5) 0%, rgba(13,17,23,0.8) 100%);">
+                    <h3 style="color: var(--accent-blue);">🏢 Multi-Tenant Brand Management</h3>
+                    <p>Deploy and run dozens of independent casino skins or operators on a single server core. Guarantees 100% database isolation, individual brand configurations, and custom sub-admin routing.</p>
                 </div>
-                <div class="feature-card">
-                    <h3>🎯 Adjustable RTP Engine</h3>
-                    <p>Total real-time bank control via admin panel. Safeguard your room pools with dynamic outcome adjustments.</p>
+                <div class="feature-card" style="border: 1px solid rgba(255, 0, 127, 0.2); background: linear-gradient(135deg, rgba(22,27,34,0.5) 0%, rgba(13,17,23,0.8) 100%);">
+                    <h3 style="color: var(--accent-pink);">📢 Built-In Affiliate & RevShare System</h3>
+                    <p>Powerful turn-key referral marketing module. Connect streaming channels, bloggers, or traffic networks using unique tracking invite links with automated real-time Revenue Share credit payouts.</p>
                 </div>
-                <div class="feature-card">
-                    <h3>📱 Mobile First (SPA)</h3>
-                    <p>Ultra-lightweight pure JavaScript frontends. Single Page Application shell guarantees zero loading lags for end users.</p>
+                <div class="feature-card" style="border: 1px solid rgba(0, 245, 212, 0.2); background: linear-gradient(135deg, rgba(22,27,34,0.5) 0%, rgba(13,17,23,0.8) 100%);">
+                    <h3 style="color: var(--neon-green);">📊 GGR & NGR Financial Accounting Ledger</h3>
+                    <p>Enterprise-grade internal reporting ledger. Instantly generates total platform turnover volume (Bets), wins paid, GGR margin analytics, cashflow deposits/withdrawals tracking, and absolute player audit logs.</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- GAMES PRESENTATION SECTION -->
     <section id="games" class="games-section">
         <div class="container">
             <h2>Our Premium <span>9 Game Suite</span></h2>
@@ -374,37 +436,24 @@
         </div>
     </section>
 
-    <section id="services" class="features">
+    <section id="features" class="features" style="padding-top: 40px;">
         <div class="container">
+            <h2 style="text-align: center; color: #fff; margin-bottom: 30px; font-size: 24px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">⚙️ Technical Layer & Mathematics</h2>
             <div class="features-grid">
                 <div class="feature-card">
-                    <h3>🏆 Live Tournaments</h3>
-                    <p>Real-time leaderboard system with automated prize pool distribution. Instantly rewards your top players with flexible administrative control.</p>
+                    <h3>⚡ Seamless Integration Protocol</h3>
+                    <p>Elite iframe architecture built on top of external wallet protocols. Seamlessly fires automated Validate, Debit, and Credit routing to the operator's side with zero latency.</p>
                 </div>
                 <div class="feature-card">
-                    <h3>⭐ VIP Levels & XP</h3>
-                    <p>Built-in player retention mechanics. Every bet generates experience points, pushing users to unlock customizable loyalty tiers and milestone bonuses.</p>
+                    <h3>🎯 Adjustable RTP & Bank Control</h3>
+                    <p>Total real-time anti-drain pool protection via admin dashboard. Highly flexible mathematical formulas scale game outcomes instantly based on live server bank limits.</p>
                 </div>
                 <div class="feature-card">
-                    <h3>🗺️ Daily Retention Quests</h3>
-                    <p>Smart micro-objectives tailored to keep engagement high. Automatically tracks player actions and triggers coin rewards upon target completion.</p>
-                </div>
-
-                <div class="feature-card">
-                    <h3>🎫 Promo Code Engine</h3>
-                    <p>Flexible bonus voucher generation controlled directly from the admin panel. Drives organic traffic acquisition with instant credit-to-wallet routing.</p>
-                </div>
-                <div class="feature-card">
-                    <h3>💰 Automated Cashback</h3>
-                    <p>Calculates and issues net-loss refunds with a single click. Boosts user retention by protecting players from long losing streaks.</p>
-                </div>
-                <div class="feature-card">
-                    <h3>💎 Bonus Buy Mechanics</h3>
-                    <p>Allows high-rollers to skip the grind and purchase instant maximum-win rounds. Generates a major spike in your average bet value (GGR).</p>
+                    <h3>📱 Mobile-First Native SPA Shell</h3>
+                    <p>Ultra-lightweight pure JavaScript frontends. Single Page Application design guarantees absolute zero loading lags and desktop app fluidness on mobile touch viewports.</p>
                 </div>
             </div>
         </div>
-
     </section>
 
     <section id="sportsbook" class="games-section">
@@ -420,8 +469,40 @@
         </div>
     </section>
 
+    <section id="services" class="features" style="background: rgba(255,255,255,0.01); border-top: 1px solid var(--border-color); padding-top: 40px;">
+        <div class="container">
+            <h2 style="text-align: center; color: #fff; margin-bottom: 30px; font-size: 24px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">🎯 Marketing & Gamification Toolkit</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h3>🏆 Live Network Tournaments</h3>
+                    <p>Real-time leaderboard system with automated prize pool distribution. Instantly rewards your top players with flexible administrative control.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>⭐ VIP Levels & XP Progression</h3>
+                    <p>Built-in player retention mechanics. Every bet generates experience points, pushing users to unlock customizable loyalty tiers and milestone bonuses.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>🗺️ Daily Retention Quests</h3>
+                    <p>Smart micro-objectives tailored to keep engagement high. Automatically tracks player actions and triggers coin rewards upon target completion.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>🎫 Promo Code Voucher Engine</h3>
+                    <p>Flexible bonus voucher generation controlled directly from the admin panel. Drives organic traffic acquisition with instant credit-to-wallet routing.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>💰 Automated Cashback Drops</h3>
+                    <p>Calculates and issues net-loss refunds with a single click. Boosts user retention by protecting players from long losing streaks.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>💎 High-Roller Bonus Buy</h3>
+                    <p>Allows players to skip the grind and purchase instant maximum-win rounds. Generates a major spike in your average bet value (GGR turnover).</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- LIVE DEMO SECTION -->
-    <section id="demo" class="demo-section" style="padding: 60px 0; background: #0b0b1d; border-bottom: 1px solid #1f1f45; text-align: center;">
+    <section id="demo-games" class="demo-section" style="padding: 60px 0; background: #0b0b1d; border-bottom: 1px solid #1f1f45; text-align: center;">
         <div class="container">
             <h2 style="font-size: 32px; margin-bottom: 15px; font-weight: 800;">🎮 Try The <span>Live Demo</span></h2>
             <p style="color: #8a8ab0; margin-bottom: 40px; font-size: 16px;">Experience the fast UI loading speed directly inside our simulated mobile iframe wrapper.</p>
