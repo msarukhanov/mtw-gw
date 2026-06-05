@@ -1,5 +1,4 @@
 const axios = require('axios');
-// Подключаем наш обновленный модуль state для динамического получения конфигов партнеров
 const state = require('../state');
 
 module.exports = {

@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTWTech B2B Integration API Documentation</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDAgNTAwIj4KPHJlY3Qgd2lkdGg9IjUwMCIgaGVpZ2h0PSI1MDAiIGZpbGw9IiMxMjEyMTIiIHJ4PSI0MCIvPgo8dGV4dCB4PSI1MCUiIHk9IjQ1JSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IidKZXRCcmFpbnMgTW9ubycsICdGaXJhIENvZGUnLCAnTW9udHNlcnJhdCcsIHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSI5MDAiPgo8dHNwYW4geD0iNTAlIiBkeT0iMCIgZm9udC1zaXplPSIxMjUiIGZpbGw9IiNmZjVhNWYiIHRleHRMZW5ndGg9IjM2MCIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nQW5kR2x5cGhzIj5NVFc8L3RzcGFuPgo8dHNwYW4geD0iNTAlIiBkeT0iMTE1IiBmb250LXNpemU9IjExNSIgZmlsbD0iIzRlY2NhMyIgdGV4dExlbmd0aD0iMzYwIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiPlRFQ0g8L3RzcGFuPgo8L3RleHQ+Cjwvc3ZnPg==">
+    <link rel="preconnect" href="https://googleapis.com">
+    <link rel="preconnect" href="https://gstatic.com" crossorigin>
+    <link href="https://googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #0f172a;
+            --bg-sidebar: #1e293b;
+            --bg-card: #1e293b;
+            --bg-code: #0b0f19;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #38bdf8;
+            --accent-green: #34d399;
+            --accent-orange: #fb923c;
+            --border: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            display: flex;
+            line-height: 1.6;
+        }
+
+        /* Sidebar Navigation */
+        nav {
+            width: 280px;
+            height: 100vh;
+            background-color: var(--bg-sidebar);
+            position: fixed;
+            top: 0;
+            left: 0;
+            padding: 2rem 1.5rem;
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+        }
+
+        nav h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-direction: column;
+        }
+
+        /*nav h1::before {*/
+            /*content: "⚡";*/
+        /*}*/
+
+        nav ul {
+            list-style: none;
+        }
+
+        nav .section-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin: 1.5rem 0 0.5rem 0;
+            font-weight: 700;
+        }
+
+        nav a {
+            display: block;
+            color: var(--text-muted);
+            text-decoration: none;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.9rem;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        nav a:hover {
+            background-color: rgba(56, 189, 248, 0.1);
+            color: var(--accent);
+        }
+
+        /* Main Content Container */
+        main {
+            margin-left: 280px;
+            padding: 3rem 4rem;
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        header {
+            margin-bottom: 3rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 2rem;
+        }
+
+        header h2 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        section {
+            margin-bottom: 4rem;
+            scroll-margin-top: 2rem;
+        }
+
+        section h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 700;
+            text-transform: uppercase;
+            background: var(--accent);
+            color: var(--bg-main);
+        }
+
+        .badge.post {
+            background-color: var(--accent-green);
+        }
+
+        .endpoint {
+            font-family: 'Fira Code', monospace;
+            background-color: var(--bg-code);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .endpoint-url {
+            color: var(--text-main);
+        }
+
+        p {
+            margin-bottom: 1rem;
+            color: #cbd5e1;
+        }
+
+        .info-note {
+            background-color: rgba(251, 146, 60, 0.1);
+            border-left: 4px solid var(--orange, var(--accent-orange));
+            padding: 1rem;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 1.5rem;
+            color: #fca5a5;
+        }
+
+        .info-note.blue {
+            background-color: rgba(56, 189, 248, 0.1);
+            border-left: 4px solid var(--accent);
+            color: #93c5fd;
+        }
+
+        h4 {
+            font-size: 1rem;
+            margin: 1.5rem 0 0.5rem 0;
+            color: var(--accent);
+        }
+
+        ul.params-list {
+            list-style: none;
+            margin-bottom: 1.5rem;
+        }
+
+        ul.params-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+            display: flex;
+            font-size: 0.95rem;
+        }
+
+        ul.params-list li strong {
+            font-family: 'Fira Code', monospace;
+            width: 150px;
+            color: var(--accent-orange);
+            flex-shrink: 0;
+        }
+
+        ul.params-list li span {
+            color: var(--text-muted);
+            margin-left: 1rem;
+        }
+
+        pre {
+            background-color: var(--bg-code);
+            padding: 1.25rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+
+        code {
+            color: #e2e8f0;
+        }
+
+        /* Responsive styling */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+            nav {
+                width: 100%;
+                height: auto;
+                position: relative;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+            }
+            main {
+                margin-left: 0;
+                padding: 2rem 1.5rem;
+            }
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 900;
+            color: #4ecca3;
+            text-shadow: 0 0 10px rgba(78, 204, 163, 0.3);
+            letter-spacing: 1px;
+        }
+        .logo span { color: #e94560; }
+    </style>
+</head>
+<body>
+
+<!-- Sidebar Navigation -->
+<nav>
+    <h1><div class="logo">MTW<span>TECH</span></div>Core API</h1>
+    <ul>
+        <li class="section-title">Overview</li>
+        <li><a href="#introduction">Introduction</a></li>
+        <li class="section-title">Link Generation</li>
+        <li><a href="#link-gen-platform">Platform</a></li>
+        <li><a href="#link-gen-casino">Casino</a></li>
+        <li><a href="#link-gen-sport">Sport</a></li>
+        <li class="section-title">Methods</li>
+        <li><a href="#validate">1. validateSession</a></li>
+        <li><a href="#debit">2. debit</a></li>
+        <li><a href="#credit">3. credit</a></li>
+    </ul>
+</nav>
+
+<!-- Main Content -->
+<main>
+    <header id="introduction">
+        <h2>Seamless API Specification</h2>
+        <p>Developer documentation for B2B gaming platform integration and dynamic partner routing.</p>
+    </header>
+
+    <div class="info-note">
+        <strong>Architecture Note:</strong> This module handles outbound HTTP client communication to external B2B partner endpoints. Routing destinations and secrets are resolved dynamically at runtime based on the <code>partnerId</code>.
+    </div>
+
+    <!-- Link Generation System -->
+    <section id="link-gen-platform">
+        <h3>🔗 Platform Link Generation Engine</h3>
+        <p>To safely pass the user context directly into target game frames, assemble standard launch URLs matching the architecture configuration below:</p>
+
+        <pre><code>https://mtwtech.onrender.com/platform?sessionId={sessionId}&partnerId={partnerId</code></pre>
+
+        <h4>Lifecycle Workflow:</h4>
+        <p>1. Your front-end or affiliate network maps the parameterized link pattern.</p>
+        <p>2. The incoming router intercepts <code>session</code> and <code>partner</code> properties.</p>
+        <p>3. Parameters feed straight into the <code>validateSession(sessionId, partnerId)</code> execution loop before full game rendering asset hooks are authorized.</p>
+    </section>
+
+    <section id="link-gen-casino">
+        <h3>🔗 Casino Link Generation Engine</h3>
+        <p>To safely pass the user context directly into target game frames, assemble standard launch URLs matching the architecture configuration below:</p>
+
+        <pre><code>https://mtwtech.onrender.com/platform?sessionId={sessionId}&partnerId={partnerId}</code></pre>
+
+        <h4>Lifecycle Workflow:</h4>
+        <p>1. Your front-end or affiliate network maps the parameterized link pattern.</p>
+        <p>2. The incoming router intercepts <code>session</code> and <code>partner</code> properties.</p>
+        <p>3. Parameters feed straight into the <code>validateSession(sessionId, partnerId)</code> execution loop before full game rendering asset hooks are authorized.</p>
+    </section>
+
+    <section id="link-gen-sport">
+        <h3>🔗 Link Generation Engine</h3>
+        <p>To safely pass the user context directly into target game frames, assemble standard launch URLs matching the architecture configuration below:</p>
+
+        <pre><code>https://mtwtech.onrender.com/platform?sessionId={sessionId}&partnerId={partnerId}</code></pre>
+
+        <h4>Lifecycle Workflow:</h4>
+        <p>1. Your front-end or affiliate network maps the parameterized link pattern.</p>
+        <p>2. The incoming router intercepts <code>session</code> and <code>partner</code> properties.</p>
+        <p>3. Parameters feed straight into the <code>validateSession(sessionId, partnerId)</code> execution loop before full game rendering asset hooks are authorized.</p>
+    </section>
+
+    <section id="link-gen">
+        <h4>Lifecycle Workflow:</h4>
+        <p>1. Your front-end or affiliate network maps the parameterized link pattern.</p>
+        <p>2. The incoming router intercepts <code>sessionId</code> and <code>partnerId</code> properties.</p>
+        <p>3. Parameters feed straight into the <code>validateSession(sessionId, partnerId)</code> execution loop before full game rendering asset hooks are authorized.</p>
+    </section>
+
+    <!-- Method 1 -->
+    <section id="validate">
+        <h3>validateSession <span class="badge">Internal Function</span></h3>
+        <p>Verifies the player's session token and performs auto-login routines when loading or initializing a game.</p>
+
+        <div class="endpoint">
+            <span class="badge post">POST</span>
+            <span class="endpoint-url">${integration.url}/validate</span>
+        </div>
+
+        <h4>Function Arguments</h4>
+        <ul class="params-list">
+            <li><strong>sessionId</strong> <span>string — The unique session token passed by the user client.</span></li>
+            <li><strong>partnerId</strong> <span>string — The identifier used to resolve specific B2B partner configuration.</span></li>
+        </ul>
+
+        <h4>Outgoing Payload to Partner</h4>
+        <pre><code>{
+  "token": "string (sessionId)",
+  "secret": "string (B2B partner secret key)"
+}</code></pre>
+
+        <h4>Expected Response</h4>
+        <pre><code>{
+  "username": "Player_1",
+  "balance": 5000
+}</code></pre>
+    </section>
+
+    <!-- Method 2 -->
+    <section id="debit">
+        <h3>debit <span class="badge">Internal Function</span></h3>
+        <p>Triggers a real-time balance debit query whenever a player places a wager inside an active game session.</p>
+
+        <div class="endpoint">
+            <span class="badge post">POST</span>
+            <span class="endpoint-url">${integration.url}/debit</span>
+        </div>
+
+        <h4>Function Arguments</h4>
+        <p style="font-family: 'Fira Code', monospace; font-size: 0.9rem; color: var(--accent);">
+            (username, partnerId, sessionId, amount, gameName, roundId)
+        </p>
+
+        <h4>Outgoing Payload to Partner</h4>
+        <pre><code>{
+  "username": "string",
+  "token": "string (sessionId)",
+  "amount": "number (explicitly cast)",
+  "game": "string (Game Title)",
+  "roundId": "string (Unique Game Round ID)",
+  "secret": "string (B2B partner secret key)"
+}</code></pre>
+
+        <h4>Expected Response</h4>
+        <pre><code>{
+  "balance": 4900
+}</code></pre>
+    </section>
+
+    <!-- Method 3 -->
+    <section id="credit">
+        <h3>credit <span class="badge">Internal Function</span></h3>
+        <p>Triggers a credit event to add payout balances, round winnings, or promotional funds back to the player account.</p>
+
+        <div class="endpoint">
+            <span class="badge post">POST</span>
+            <span class="endpoint-url">${integration.url}/credit</span>
+        </div>
+
+        <div class="info-note blue">
+            <strong>Internal Transaction Tagging:</strong> The system automatically logs metadata types based on the <code>gameName</code> string:
+            <br>• If it contains <code>"Affiliate"</code> ➜ Tagged as <strong>AFFILIATE</strong>
+            <br>• If it contains <code>"Promo", "Cashback", "Quest", "VIP"</code> ➜ Tagged as <strong>BONUS_CASH</strong>
+            <br>• Fallback default ➜ Tagged as <strong>CREDIT</strong>
+        </div>
+
+        <h4>Function Arguments</h4>
+        <p style="font-family: 'Fira Code', monospace; font-size: 0.9rem; color: var(--accent);">
+            (username, partnerId, sessionId, amount, gameName, roundId)
+        </p>
+
+        <h4>Outgoing Payload to Partner</h4>
+        <pre><code>{
+  "username": "string",
+  "token": "string (sessionId)",
+  "amount": "number (explicitly cast)",
+  "game": "string (Game Title)",
+  "roundId": "string (Unique Game Round ID)",
+  "secret": "string (B2B partner secret key)"
+}</code></pre>
+
+        <h4>Expected Response</h4>
+        <pre><code>{
+  "balance": 5200
+}</code></pre>
+    </section>
+
+
+</main>
+
+</body>
+</html>
+
