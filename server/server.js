@@ -282,5 +282,5 @@ setInterval(async () => {
 }, 60000);
 
 const vfootball = require('./vfootball');
-vfootball.generateDailySchedule();
-vfootball.startEngine(5000, io);
+// vfootball.generateDailySchedule();
+// vfootball.startEngine(5000, io);
