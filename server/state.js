@@ -4,345 +4,352 @@ const path = require('path');
 
 const seamless = require('./services/seamlessService');
 
-const db = Datastore.create({filename: path.join(__dirname, 'game.db'), autoload: true});
-const historyDb = Datastore.create({filename: path.join(__dirname, 'history.db'), autoload: true});
-const betsDb = Datastore.create({filename: path.join(__dirname, 'bets.db'), autoload: true});
-const accountingDb = Datastore.create({filename: path.join(__dirname, 'accounting.db'), autoload: true});
+db = Datastore.create({filename: path.join(__dirname, 'game.db'), autoload: true});
+historyDb = Datastore.create({filename: path.join(__dirname, 'history.db'), autoload: true});
+betsDb = Datastore.create({filename: path.join(__dirname, 'bets.db'), autoload: true});
+accountingDb = Datastore.create({filename: path.join(__dirname, 'accounting.db'), autoload: true});
+matchesDb = Datastore.create({ filename: path.join(__dirname, 'matches.db'), autoload: true });
+
+matchesDb.ensureIndex({ fieldName: 'status' });
+// Ускоряет поиск матча при проверке купонов
+matchesDb.ensureIndex({ fieldName: 'id', unique: true });
+// Ускоряет поиск нерассчитанных ставок по ID матча
+betsDb.ensureIndex({ fieldName: 'items.matchId' });
 
 // НАДЕЖНЫЙ B2B СИДДЕР ДЛЯ FINANCE REPORTS
-async function seedFinancialData() {
-    try {
-        // Даем базе данных NeDB 1 секунду на полную загрузку файла accounting.db с диска
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        const check = await accountingDb.find({partnerId: "demo_skin_default"});
-        console.log(`📊 [Accounting Sync] Found ${check.length} existing financial logs in database.`);
-
-        // Если в отчётах пусто — закидываем надежные демо-данные поштучно
-        if (check.length === 0) {
-            // Вставь этот массив внутрь функции seedFinancialData() в state.js вместо старого demoTx
-            // Замени массив demoTx внутри функции seedFinancialData() в state.js
-            const demoTx = [
-                // 💵 1. Реальные депозиты на платформу (Внешний шлюз Visa/Crypto)
-                {
-                    partnerId: "demo_skin_default",
-                    username: "Player_VIP",
-                    type: "DEPOSIT",
-                    amount: 20000,
-                    game: "💳 Crypto Deposit Gate (USDT)",
-                    timestamp: Date.now() - 900000
-                },
-                {
-                    partnerId: "demo_skin_default",
-                    username: "CryptoWhale",
-                    type: "DEPOSIT",
-                    amount: 50000,
-                    game: "💳 Fiat Card Gateway (VISA)",
-                    timestamp: Date.now() - 850000
-                },
-
-                // Игровой оборот (Bets / Wins)
-                {
-                    partnerId: "demo_skin_default",
-                    username: "Player_VIP",
-                    type: "DEBIT",
-                    amount: 1500,
-                    game: "Slots5x3",
-                    timestamp: Date.now() - 500000
-                },
-                {
-                    partnerId: "demo_skin_default",
-                    username: "Player_VIP",
-                    type: "CREDIT",
-                    amount: 2400,
-                    game: "Slots5x3",
-                    timestamp: Date.now() - 480000
-                },
-
-                // Бонусное пополнение (Промокод)
-                {
-                    partnerId: "demo_skin_default",
-                    username: "Player_VIP",
-                    type: "BONUS_CASH",
-                    amount: 500,
-                    game: "🎁 Promo: WELCOME_BONUS",
-                    timestamp: Date.now() - 470000
-                },
-
-                {
-                    partnerId: "demo_skin_default",
-                    username: "CryptoWhale",
-                    type: "DEBIT",
-                    amount: 5000,
-                    game: "Crash",
-                    timestamp: Date.now() - 400000
-                },
-                {
-                    partnerId: "demo_skin_default",
-                    username: "CryptoWhale",
-                    type: "CREDIT",
-                    amount: 18500,
-                    game: "Crash",
-                    timestamp: Date.now() - 340000
-                },
-
-                // Начисление кэшбэка
-                {
-                    partnerId: "demo_skin_default",
-                    username: "CryptoWhale",
-                    type: "BONUS_CASH",
-                    amount: 1200,
-                    game: "💰 Weekly Cashback Drops",
-                    timestamp: Date.now() - 300000
-                },
-
-                {
-                    partnerId: "demo_skin_default",
-                    username: "Lucky_Striker",
-                    type: "DEBIT",
-                    amount: 4000,
-                    game: "Sportsbook",
-                    timestamp: Date.now() - 250000
-                },
-                {
-                    partnerId: "demo_skin_default",
-                    username: "Blogger_John",
-                    type: "AFFILIATE",
-                    amount: 400,
-                    game: "RevShare",
-                    timestamp: Date.now() - 240000
-                },
-
-                // 📤 2. Вывод средств игроком (Withdraw)
-                {
-                    partnerId: "demo_skin_default",
-                    username: "CryptoWhale",
-                    type: "WITHDRAW",
-                    amount: 15000,
-                    game: "📤 Crypto Payout (BTC)",
-                    timestamp: Date.now() - 200000
-                },
-
-                {
-                    partnerId: "demo_skin_default",
-                    username: "Alex_777",
-                    type: "DEBIT",
-                    amount: 500,
-                    game: "Mines",
-                    timestamp: Date.now() - 150000
-                },
-                {
-                    partnerId: "demo_skin_default",
-                    username: "Alex_777",
-                    type: "CREDIT",
-                    amount: 1250,
-                    game: "Mines",
-                    timestamp: Date.now() - 140000
-                },
-
-                {
-                    partnerId: "demo_skin_default",
-                    username: "Player_VIP",
-                    type: "DEBIT",
-                    amount: 1500,
-                    game: "Slots5x3",
-                    timestamp: Date.now() - 500000
-                },
-                {
-                    partnerId: "demo_skin_default",
-                    username: "Player_VIP",
-                    type: "CREDIT",
-                    amount: 2400,
-                    game: "Slots5x3",
-                    timestamp: Date.now() - 480000
-                },
-
-                {
-                    partnerId: "demo_skin_default",
-                    username: "CryptoWhale",
-                    type: "DEBIT",
-                    amount: 5000,
-                    game: "Crash",
-                    timestamp: Date.now() - 400000
-                },
-                {
-                    partnerId: "demo_skin_default",
-                    username: "CryptoWhale",
-                    type: "DEBIT",
-                    amount: 10000,
-                    game: "Crash",
-                    timestamp: Date.now() - 350000
-                },
-                {
-                    partnerId: "demo_skin_default",
-                    username: "CryptoWhale",
-                    type: "CREDIT",
-                    amount: 18500,
-                    game: "Crash",
-                    timestamp: Date.now() - 340000
-                },
-
-                {
-                    partnerId: "demo_skin_default",
-                    username: "Lucky_Striker",
-                    type: "DEBIT",
-                    amount: 4000,
-                    game: "Sportsbook",
-                    timestamp: Date.now() - 250000
-                },
-                {
-                    partnerId: "demo_skin_default",
-                    username: "Lucky_Striker",
-                    type: "CREDIT",
-                    amount: 0,
-                    game: "Sportsbook",
-                    timestamp: Date.now() - 240000
-                },
-                {
-                    partnerId: "demo_skin_default",
-                    username: "Blogger_John",
-                    type: "AFFILIATE",
-                    amount: 400,
-                    game: "RevShare",
-                    timestamp: Date.now() - 240000
-                },
-
-                {
-                    partnerId: "demo_skin_default",
-                    username: "Alex_777",
-                    type: "DEBIT",
-                    amount: 500,
-                    game: "Mines",
-                    timestamp: Date.now() - 150000
-                },
-                {
-                    partnerId: "demo_skin_default",
-                    username: "Alex_777",
-                    type: "CREDIT",
-                    amount: 1250,
-                    game: "Mines",
-                    timestamp: Date.now() - 140000
-                },
-
-                {
-                    partnerId: "demo_skin_default",
-                    username: "HighRoller",
-                    type: "DEBIT",
-                    amount: 20000,
-                    game: "Dice",
-                    timestamp: Date.now() - 80000
-                },
-                {
-                    partnerId: "demo_skin_default",
-                    username: "HighRoller",
-                    type: "DEBIT",
-                    amount: 7000,
-                    game: "Hi-Lo",
-                    timestamp: Date.now() - 50000
-                },
-
-                {
-                    partnerId: "demo_skin_default",
-                    username: "Player_VIP",
-                    type: "DEBIT",
-                    amount: 1500,
-                    game: "Slots5x3",
-                    timestamp: Date.now() - 500000
-                },
-                {
-                    partnerId: "demo_skin_default",
-                    username: "Player_VIP",
-                    type: "CREDIT",
-                    amount: 2400,
-                    game: "Slots5x3",
-                    timestamp: Date.now() - 480000
-                },
-
-                // Пополнение счета через промокод (Пойдет в кассовую вкладку Transactions)
-                {
-                    partnerId: "demo_skin_default",
-                    username: "Player_VIP",
-                    type: "BONUS_CASH",
-                    amount: 500,
-                    game: "🎁 Promo: WELCOME_BONUS",
-                    timestamp: Date.now() - 470000
-                },
-
-                {
-                    partnerId: "demo_skin_default",
-                    username: "CryptoWhale",
-                    type: "DEBIT",
-                    amount: 5000,
-                    game: "Crash",
-                    timestamp: Date.now() - 400000
-                },
-                {
-                    partnerId: "demo_skin_default",
-                    username: "CryptoWhale",
-                    type: "CREDIT",
-                    amount: 18500,
-                    game: "Crash",
-                    timestamp: Date.now() - 340000
-                },
-
-                // Начисление еженедельного кэшбэка (Пойдет в кассовую вкладку Transactions)
-                {
-                    partnerId: "demo_skin_default",
-                    username: "CryptoWhale",
-                    type: "BONUS_CASH",
-                    amount: 1200,
-                    game: "💰 Weekly Cashback Drops",
-                    timestamp: Date.now() - 300000
-                },
-
-                {
-                    partnerId: "demo_skin_default",
-                    username: "Lucky_Striker",
-                    type: "DEBIT",
-                    amount: 4000,
-                    game: "Sportsbook",
-                    timestamp: Date.now() - 250000
-                },
-                {
-                    partnerId: "demo_skin_default",
-                    username: "Blogger_John",
-                    type: "AFFILIATE",
-                    amount: 400,
-                    game: "RevShare",
-                    timestamp: Date.now() - 240000
-                },
-
-                {
-                    partnerId: "demo_skin_default",
-                    username: "Alex_777",
-                    type: "DEBIT",
-                    amount: 500,
-                    game: "Mines",
-                    timestamp: Date.now() - 150000
-                },
-                {
-                    partnerId: "demo_skin_default",
-                    username: "Alex_777",
-                    type: "CREDIT",
-                    amount: 1250,
-                    game: "Mines",
-                    timestamp: Date.now() - 140000
-                }
-            ];
-
-
-            // Записываем каждый документ по очереди через цикл, чтобы NeDB железно зафиксировала их
-            for (const tx of demoTx) {
-                await accountingDb.insert(tx);
-            }
-            console.log("🔥 [Accounting Seed] REAL TIME GGR DEMO VOLUME SEEDED SUCCESSFULLY!");
-        }
-    } catch (err) {
-        console.error("❌ [Accounting Seed Error]:", err.message);
-    }
-}
-
-seedFinancialData();
+// async function seedFinancialData() {
+//     try {
+//         // Даем базе данных NeDB 1 секунду на полную загрузку файла accounting.db с диска
+//         await new Promise(resolve => setTimeout(resolve, 1000));
+//
+//         const check = await accountingDb.find({partnerId: "demo_skin_default"});
+//         console.log(`📊 [Accounting Sync] Found ${check.length} existing financial logs in database.`);
+//
+//         // Если в отчётах пусто — закидываем надежные демо-данные поштучно
+//         if (check.length === 0) {
+//             // Вставь этот массив внутрь функции seedFinancialData() в state.js вместо старого demoTx
+//             // Замени массив demoTx внутри функции seedFinancialData() в state.js
+//             const demoTx = [
+//                 // 💵 1. Реальные депозиты на платформу (Внешний шлюз Visa/Crypto)
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "Player_VIP",
+//                     type: "DEPOSIT",
+//                     amount: 20000,
+//                     game: "💳 Crypto Deposit Gate (USDT)",
+//                     timestamp: Date.now() - 900000
+//                 },
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "CryptoWhale",
+//                     type: "DEPOSIT",
+//                     amount: 50000,
+//                     game: "💳 Fiat Card Gateway (VISA)",
+//                     timestamp: Date.now() - 850000
+//                 },
+//
+//                 // Игровой оборот (Bets / Wins)
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "Player_VIP",
+//                     type: "DEBIT",
+//                     amount: 1500,
+//                     game: "Slots5x3",
+//                     timestamp: Date.now() - 500000
+//                 },
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "Player_VIP",
+//                     type: "CREDIT",
+//                     amount: 2400,
+//                     game: "Slots5x3",
+//                     timestamp: Date.now() - 480000
+//                 },
+//
+//                 // Бонусное пополнение (Промокод)
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "Player_VIP",
+//                     type: "BONUS_CASH",
+//                     amount: 500,
+//                     game: "🎁 Promo: WELCOME_BONUS",
+//                     timestamp: Date.now() - 470000
+//                 },
+//
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "CryptoWhale",
+//                     type: "DEBIT",
+//                     amount: 5000,
+//                     game: "Crash",
+//                     timestamp: Date.now() - 400000
+//                 },
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "CryptoWhale",
+//                     type: "CREDIT",
+//                     amount: 18500,
+//                     game: "Crash",
+//                     timestamp: Date.now() - 340000
+//                 },
+//
+//                 // Начисление кэшбэка
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "CryptoWhale",
+//                     type: "BONUS_CASH",
+//                     amount: 1200,
+//                     game: "💰 Weekly Cashback Drops",
+//                     timestamp: Date.now() - 300000
+//                 },
+//
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "Lucky_Striker",
+//                     type: "DEBIT",
+//                     amount: 4000,
+//                     game: "Sportsbook",
+//                     timestamp: Date.now() - 250000
+//                 },
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "Blogger_John",
+//                     type: "AFFILIATE",
+//                     amount: 400,
+//                     game: "RevShare",
+//                     timestamp: Date.now() - 240000
+//                 },
+//
+//                 // 📤 2. Вывод средств игроком (Withdraw)
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "CryptoWhale",
+//                     type: "WITHDRAW",
+//                     amount: 15000,
+//                     game: "📤 Crypto Payout (BTC)",
+//                     timestamp: Date.now() - 200000
+//                 },
+//
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "Alex_777",
+//                     type: "DEBIT",
+//                     amount: 500,
+//                     game: "Mines",
+//                     timestamp: Date.now() - 150000
+//                 },
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "Alex_777",
+//                     type: "CREDIT",
+//                     amount: 1250,
+//                     game: "Mines",
+//                     timestamp: Date.now() - 140000
+//                 },
+//
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "Player_VIP",
+//                     type: "DEBIT",
+//                     amount: 1500,
+//                     game: "Slots5x3",
+//                     timestamp: Date.now() - 500000
+//                 },
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "Player_VIP",
+//                     type: "CREDIT",
+//                     amount: 2400,
+//                     game: "Slots5x3",
+//                     timestamp: Date.now() - 480000
+//                 },
+//
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "CryptoWhale",
+//                     type: "DEBIT",
+//                     amount: 5000,
+//                     game: "Crash",
+//                     timestamp: Date.now() - 400000
+//                 },
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "CryptoWhale",
+//                     type: "DEBIT",
+//                     amount: 10000,
+//                     game: "Crash",
+//                     timestamp: Date.now() - 350000
+//                 },
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "CryptoWhale",
+//                     type: "CREDIT",
+//                     amount: 18500,
+//                     game: "Crash",
+//                     timestamp: Date.now() - 340000
+//                 },
+//
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "Lucky_Striker",
+//                     type: "DEBIT",
+//                     amount: 4000,
+//                     game: "Sportsbook",
+//                     timestamp: Date.now() - 250000
+//                 },
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "Lucky_Striker",
+//                     type: "CREDIT",
+//                     amount: 0,
+//                     game: "Sportsbook",
+//                     timestamp: Date.now() - 240000
+//                 },
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "Blogger_John",
+//                     type: "AFFILIATE",
+//                     amount: 400,
+//                     game: "RevShare",
+//                     timestamp: Date.now() - 240000
+//                 },
+//
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "Alex_777",
+//                     type: "DEBIT",
+//                     amount: 500,
+//                     game: "Mines",
+//                     timestamp: Date.now() - 150000
+//                 },
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "Alex_777",
+//                     type: "CREDIT",
+//                     amount: 1250,
+//                     game: "Mines",
+//                     timestamp: Date.now() - 140000
+//                 },
+//
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "HighRoller",
+//                     type: "DEBIT",
+//                     amount: 20000,
+//                     game: "Dice",
+//                     timestamp: Date.now() - 80000
+//                 },
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "HighRoller",
+//                     type: "DEBIT",
+//                     amount: 7000,
+//                     game: "Hi-Lo",
+//                     timestamp: Date.now() - 50000
+//                 },
+//
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "Player_VIP",
+//                     type: "DEBIT",
+//                     amount: 1500,
+//                     game: "Slots5x3",
+//                     timestamp: Date.now() - 500000
+//                 },
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "Player_VIP",
+//                     type: "CREDIT",
+//                     amount: 2400,
+//                     game: "Slots5x3",
+//                     timestamp: Date.now() - 480000
+//                 },
+//
+//                 // Пополнение счета через промокод (Пойдет в кассовую вкладку Transactions)
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "Player_VIP",
+//                     type: "BONUS_CASH",
+//                     amount: 500,
+//                     game: "🎁 Promo: WELCOME_BONUS",
+//                     timestamp: Date.now() - 470000
+//                 },
+//
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "CryptoWhale",
+//                     type: "DEBIT",
+//                     amount: 5000,
+//                     game: "Crash",
+//                     timestamp: Date.now() - 400000
+//                 },
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "CryptoWhale",
+//                     type: "CREDIT",
+//                     amount: 18500,
+//                     game: "Crash",
+//                     timestamp: Date.now() - 340000
+//                 },
+//
+//                 // Начисление еженедельного кэшбэка (Пойдет в кассовую вкладку Transactions)
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "CryptoWhale",
+//                     type: "BONUS_CASH",
+//                     amount: 1200,
+//                     game: "💰 Weekly Cashback Drops",
+//                     timestamp: Date.now() - 300000
+//                 },
+//
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "Lucky_Striker",
+//                     type: "DEBIT",
+//                     amount: 4000,
+//                     game: "Sportsbook",
+//                     timestamp: Date.now() - 250000
+//                 },
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "Blogger_John",
+//                     type: "AFFILIATE",
+//                     amount: 400,
+//                     game: "RevShare",
+//                     timestamp: Date.now() - 240000
+//                 },
+//
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "Alex_777",
+//                     type: "DEBIT",
+//                     amount: 500,
+//                     game: "Mines",
+//                     timestamp: Date.now() - 150000
+//                 },
+//                 {
+//                     partnerId: "demo_skin_default",
+//                     username: "Alex_777",
+//                     type: "CREDIT",
+//                     amount: 1250,
+//                     game: "Mines",
+//                     timestamp: Date.now() - 140000
+//                 }
+//             ];
+//
+//
+//             // Записываем каждый документ по очереди через цикл, чтобы NeDB железно зафиксировала их
+//             for (const tx of demoTx) {
+//                 await accountingDb.insert(tx);
+//             }
+//             console.log("🔥 [Accounting Seed] REAL TIME GGR DEMO VOLUME SEEDED SUCCESSFULLY!");
+//         }
+//     } catch (err) {
+//         console.error("❌ [Accounting Seed Error]:", err.message);
+//     }
+// }
+//
+// seedFinancialData();
 
 
 const activeTickets = {};
@@ -1110,49 +1117,89 @@ const financialMethods = {
 
 };
 
+const vfootball = require('./vfootball');
 
 const sportsMethods = {
-    getSportsLine: () => DEMO_MATCHES,
+    // 1. Отдаем линию матчей из файла matches.db на ваш контроллер и фронтенд
+    getSportsLine: async () => {
+        // Запрашиваем из файла все матчи, которые еще не завершились (лайв и прематч)
+        const activeMatches = await matchesDb.find({ status: { $ne: "FINISHED" } });
+        return activeMatches;
 
-    // ИСПРАВЛЕНО: Добавлено поле partnerId в документ спортивного купона ставки
+        // return activeMatches.map(m => {
+        //     const formattedStatus = m.minute === 90
+        //         ? `FINISHED`
+        //         : `LIVE (${m.minute} min, ${m.score.home}:${m.score.away})`;
+        //
+        //     return {
+        //         id: m.id, // строковый ID для поиска .find(m => m.id === item.matchId)
+        //         sport: m.sport,
+        //         league: m.league,
+        //         // Формируем строковое поле команд, как требует ваш контроллер
+        //         teams: `${m.teams.home} - ${m.teams.away}`,
+        //         status: m.minute === 0 && m.status === "PREMATCH" ? "PREMATCH" : formattedStatus,
+        //         markets: m.markets // Свежие кэфы из файла
+        //     };
+        // });
+    },
+
+    // 2. Сохраняем купон в файл bets.db, вытаскивая текущие условия тоталов/гандикапов из файла матчей
     createSportsBet: async (username, partnerId, betData) => {
-        const bet = {
-            username,
-            partnerId, // ВАЖНО: Маркируем купон, какому бренду он принадлежит
-            type: betData.items.length > 1 ? "MULTI" : "SINGLE",
-            items: betData.items.map(item => ({
+        const processedItems = [];
+
+        for (let item of betData.items) {
+            // Находим матч напрямую в файле matches.db, чтобы зафиксировать точный тотал или фору
+            const dbMatch = await matchesDb.findOne({ id: item.matchId });
+            let target = null;
+            let handicapValue = null;
+
+            if (dbMatch && dbMatch.markets[item.market]) {
+                target = dbMatch.markets[item.market].target || null;
+                handicapValue = dbMatch.markets[item.market].value || null;
+            }
+
+            processedItems.push({
                 matchId: item.matchId,
-                teams: item.teams,
+                teams: item.teams, // Строка "Team A - Team B" из вашего контроллера
                 market: item.market,
                 selectedOutcome: item.outcome,
                 odds: Number(item.odds),
-                status: "PENDING"
-            })),
+                status: "PENDING",
+                target: target,          // Замораживаем тотал в файле купона (например: 2.5)
+                handicapValue: handicapValue // Замораживаем фору в файле купона (например: -1)
+            });
+        }
+
+        const bet = {
+            username,
+            partnerId,
+            type: betData.items.length > 1 ? "MULTI" : "SINGLE",
+            items: processedItems,
             totalOdds: Number(betData.totalOdds),
             stake: Number(betData.stake),
             status: "PENDING",
             timestamp: Date.now()
         };
+
+        // Сохраняем готовую ставку в ваш файл bets.db
         return await betsDb.insert(bet);
     },
 
-    // ИСПРАВЛЕНО: Админка теперь запрашивает нерассчитанные ставки только своего проекта
+    // 3. Запрос нерассчитанных ставок для админки партнера из вашего кода
     getPendingBets: async (partnerId) => {
-        return await betsDb.find({status: "PENDING", partnerId: partnerId});
+        return await betsDb.find({ status: "PENDING", partnerId: partnerId });
     },
 
-    // ИСПРАВЛЕНО: Код расчета купона отправляет выплату на API правильного партнера
+    // 4. Расчет купона и отправка денег партнеру из вашего кода
     settleBet: async (betId, finalStatus, seamlessCredit) => {
-        const bet = await betsDb.findOne({_id: betId});
+        const bet = await betsDb.findOne({ _id: betId });
         if (!bet || bet.status !== "PENDING") return null;
 
         let prize = 0;
         if (finalStatus === "WON") {
             prize = Math.floor(bet.stake * bet.totalOdds);
-
             const sportsRoundId = `sports_win_${bet._id}_${Date.now()}`;
 
-            // ИСПРАВЛЕНО: Передаем bet.partnerId вторым аргументом в кошелек
             await seamlessCredit(
                 bet.username,
                 bet.partnerId,
@@ -1163,11 +1210,12 @@ const sportsMethods = {
             );
         }
 
-        // Обновляем статус купона
-        await betsDb.update({_id: betId}, {$set: {status: finalStatus, prize: prize}});
-        return {...bet, status: finalStatus, prize};
+        await betsDb.update({ _id: betId }, { $set: { status: finalStatus, prize: prize } });
+        return { ...bet, status: finalStatus, prize };
     }
 };
+
+
 
 const DEMO_MATCHES = [
     // === ⚽ FOOTBALL / SOCCER ===

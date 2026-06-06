@@ -1,9 +1,10 @@
 const state = require('../state');
 const seamless = require('../services/seamlessService');
-
+const vfootball = require('../vfootball');
 // 1. Отдать линию матчей на фронтенд
-exports.getLine = (req, res) => {
-    const line = state.getSportsLine();
+exports.getLine = async (req, res) => {
+    // const line = await state.getSportsLine();
+    const line = await vfootball.getSportsLine();
     res.json({ success: true, line });
 };
 
@@ -23,7 +24,7 @@ exports.placeBet = async (req, res) => {
 
         // Проверяем каждый исход в экспрессе/одинаре
         for (const item of items) {
-            const match = state.getSportsLine().find(m => m.id === item.matchId);
+            const match = (await state.getSportsLine()).find(m => m.id === item.matchId);
             if (!match) return res.status(404).json({ error: `Match ${item.matchId} not found` });
 
             if (!match.markets[item.market] || !match.markets[item.market].odds[item.outcome]) {
@@ -71,6 +72,68 @@ exports.placeBet = async (req, res) => {
     } catch (err) {
         console.error(`[Partner: ${partnerId}] Sportsbook bet placement failed:`, err.message);
         res.status(500).json({ error: err.message || "Betting system error" });
+    }
+};
+
+exports.userBets = async (req, res) => {
+    try {
+        const { username, status } = req.query;
+        if (!username) return res.status(400).json({ success: false, error: 'Username required' });
+
+        const bets = await vFootball.getUserBets(username, status);
+        res.json({ success: true, bets });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+};
+
+exports.cashout = async (req, res) => {
+    try {
+        const { betId, username } = req.body;
+        if (!betId || !username) {
+            return res.status(400).json({ success: false, error: 'Missing parameters' });
+        }
+
+        const result = await vFootball.executeCashout(betId, username);
+        if (!result.success) {
+            return res.status(400).json({ success: false, error: result.message });
+        }
+
+        // Получаем актуальный баланс пользователя после начисления кэшаута
+        const userBalance = await seamless.getBalance(username);
+
+        res.json({
+            success: true,
+            message: 'Cashout processed successfully',
+            newBalance: userBalance
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+};
+
+exports.cashoutValue = async (req, res) => {
+    try {
+        const { betId } = req.query;
+        if (!betId) return res.status(400).json({ success: false, error: 'Bet ID required' });
+
+        const result = await vFootball.calculateCashout(betId);
+        res.json(result);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+};
+
+exports.results = async (req, res) => {
+    try {
+        const results = await vfootball.getMatchResults();
+        res.json({ success: true, results });
+    } catch (err) {
+        console.error("Error fetching results:", err);
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 };
 

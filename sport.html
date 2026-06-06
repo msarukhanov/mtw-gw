@@ -91,6 +91,196 @@
     </style>
 
 
+    <style>
+        /* Основной контейнер для меню и контента */
+        .sb-main-layout {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            width: 100%;
+        }
+
+        /* Стили левого меню */
+        .sb-sidebar {
+            flex: 1;
+            min-width: 220px;
+            background: #232730;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #2a2f3a;
+        }
+
+        /* Переключатель Live/Prematch внутри меню */
+        .sidebar-toggle {
+            display: flex;
+            background: #1c2027;
+            border-radius: 6px;
+            padding: 3px;
+            margin-bottom: 15px;
+        }
+        .sidebar-toggle-btn {
+            flex: 1;
+            background: transparent;
+            border: 0;
+            color: #a0a5b5;
+            padding: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .sidebar-toggle-btn.active {
+            background: #ffb703;
+            color: #1a1d24;
+        }
+
+        /* Список лиг и видов спорта */
+        .sidebar-menu-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            text-align: left;
+        }
+        .sidebar-sport-item {
+            font-weight: bold;
+            color: #fff;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        .sidebar-league-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 10px;
+            background: #1c2027;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #a0a5b5;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .sidebar-league-item:hover, .sidebar-league-item.active {
+            background: #333946;
+            color: #ffb703;
+        }
+        .league-count-badge {
+            background: #2a2f3a;
+            color: #ffb703;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+        .sidebar-league-item.active .league-count-badge {
+            background: #ffb703;
+            color: #1a1d24;
+        }
+
+        /* Адаптивность под мобилки */
+        @media (max-width: 768px) {
+            .sb-main-layout {
+                flex-direction: column;
+            }
+            .sb-sidebar {
+                width: 100%;
+                min-width: 100%;
+            }
+            .sb-slip {
+                width: 100%;
+                position: relative;
+                top: 0;
+            }
+        }
+
+
+        /* Базовый класс для анимации кэфов */
+        .odd-btn {
+            position: relative;
+            transition: background-color 0.4s ease, border-color 0.4s ease, color 0.2s;
+        }
+
+        /* Коэффициент вырос — зеленая подсветка */
+        .odd-btn.odd-up {
+            background: #1b4d3e !important;
+            border-color: #00f5d4 !important;
+        }
+        .odd-btn.odd-up span.coef {
+            color: #00f5d4 !important;
+        }
+
+        /* Коэффициент упал — красная подсветка */
+        .odd-btn.odd-down {
+            background: #4a1c28 !important;
+            border-color: #e94560 !important;
+        }
+        .odd-btn.odd-down span.coef {
+            color: #e94560 !important;
+        }
+
+        /* Секция активных ставок под купоном */
+        .sb-my-bets {
+            margin-top: 20px;
+            background: #232730;
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid #2a2f3a;
+            text-align: left;
+        }
+        .sb-my-bets h3 {
+            margin-top: 0;
+            font-size: 16px;
+            color: #ffb703;
+            border-bottom: 1px solid #2a2f3a;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+        }
+        .active-bet-card {
+            background: #1c2027;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-size: 13px;
+            border-left: 3px solid #ffb703;
+        }
+        .cashout-btn {
+            width: 100%;
+            background: #e94560;
+            color: white;
+            border: 0;
+            padding: 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: background 0.2s;
+        }
+        .cashout-btn:hover {
+            background: #ff5a5f;
+        }
+
+        .sb-result-card {
+            background: #232730;
+            border-radius: 6px;
+            padding: 10px 15px;
+            margin-bottom: 8px;
+            border: 1px solid #2a2f3a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+        }
+        .sb-result-score {
+            background: #ffb703;
+            color: #1a1d24;
+            font-weight: bold;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 15px;
+        }
+
+
+    </style>
 
     <script src="https://cdn.socket.io/4.8.3/socket.io.min.js" integrity="sha384-kzavj5fiMwLKzzD1f8S7TeoVIEi7uKHvbTA3ueZkrzYq75pNQUiUi6Dy98Q3fxb0" crossorigin="anonymous"></script>
 
@@ -98,7 +288,6 @@
 <body>
 
 <div class="game-container">
-    <!-- 1. Панель Логина и Баланса -->
     <div class="auth-panel">
         <div id="userInfo">Player: <span id="usernameLabel" style="color:#e94560">Guest</span></div>
         <div>Balance: <span class="balance-value" id="balanceLabel">0</span> 🪙</div>
@@ -106,25 +295,32 @@
     </div>
 </div>
 
-<!-- Copy into your Frontend site file -->
 <div class="sb-wrapper">
     <div class="sb-header">
         <h2 class="sb-title">🏆 Sportsbook (Demo Line)</h2><br>
         <div class="sb-sports-tabs">
-            <button class="sb-tab-btn active" onclick="switchSport('⚽ Football', this)">⚽ Football</button>
-            <button class="sb-tab-btn" onclick="switchSport('🏀 Basketball', this)">🏀 Basketball</button>
-            <button class="sb-tab-btn" onclick="switchSport('🎾 Tennis', this)">🎾 Tennis</button>
+            <button class="sb-tab-btn active" data-sport="⚽ Football" onclick="switchSport('⚽ Football', this)">⚽ Football</button>
+            <button class="sb-tab-btn" style="border-left: 2px solid #ffb703; margin-left: 10px;" onclick="onResultsTabClick(this)">📊 Results</button>
+
+            <!--<button class="sb-tab-btn" onclick="switchSport('🏀 Basketball', this)">🏀 Basketball</button>-->
+            <!--<button class="sb-tab-btn" onclick="switchSport('🎾 Tennis', this)">🎾 Tennis</button>-->
         </div>
     </div>
 
     <div class="sb-main-layout">
-        <!-- Events -->
-        <div class="sb-events-list" id="sportsEventsList">
 
+        <div class="sb-sidebar">
+            <!-- Глобальный переключатель Live/Prematch -->
+            <div class="sidebar-toggle">
+                <button class="sidebar-toggle-btn active" id="toggleLiveBtn" onclick="setSidebarMode('LIVE')">🔴 LIVE</button>
+                <button class="sidebar-toggle-btn" id="togglePrematchBtn" onclick="setSidebarMode('PREMATCH')">📅 PREMATCH</button>
+            </div>
+            <!-- Сюда JS будет рендерить виды спорта и лиги -->
+            <div class="sidebar-menu-list" id="sidebarMenuList"></div>
         </div>
 
-        <!-- Bet Slip -->
-        <!-- Замени только блок купона и тег <script> на фронте лендинга -->
+        <div class="sb-events-list" id="sportsEventsList"></div>
+
         <div class="sb-slip" id="bettingSlip">
             <h3>🎫 Bet Slip</h3>
             <div id="slipItemsContainer" style="max-height: 250px; overflow-y: auto; margin-bottom: 10px;">
@@ -143,12 +339,16 @@
                 <button onclick="placeSportsBet()" style="width:100%; background:#ffb703; color:#1a1d24; padding:12px; border:0; font-weight:bold; border-radius:6px; cursor:pointer;">Place Bet</button>
                 <button onclick="clearSlip()" style="width:100%; background:transparent; color:#a0a5b5; padding:6px; border:0; font-size:12px; cursor:pointer; margin-top:5px;">Clear All</button>
             </div>
+
+            <div class="sb-my-bets" id="myActiveBetsContainer" style="display: none;">
+                <h3>📋 My Active Bets</h3>
+                <div id="activeBetsList"></div>
+            </div>
         </div>
     </div>
 </div>
 
-
-
+<!--BASE & ROUTING-->
 <script>
     const baseUrl = (location.hostname === 'localhost') ? 'http://localhost:3000' : 'https://mtw-gw.onrender.com';
     const baseUrlApi = baseUrl + '/api';
@@ -159,6 +359,7 @@
     const socket = io(baseUrl);
 
     let globalSessionId = null;
+    let sidebarMode = 'LIVE';
 
     // Элементы интерфейса (общие для всех вкладок)
     const usernameLabel = document.getElementById('usernameLabel');
@@ -166,8 +367,15 @@
     const authBtn = document.getElementById('authBtn');
 
     let fullLine = [];
+    let oddsCache = {};
     let selectedSport = '⚽ Football';
     let betSlipItems = []; // Массив для хранения нескольких выбранных исходов
+
+
+    let canvasAnimationId = null; // Для управления циклом requestAnimationFrame
+    let canvasCurrentBall = { x: 300, y: 175 }; // Текущие координаты мяча (плавные)
+    let canvasTargetBall = { x: 300, y: 175 };  // Точка, куда мяч летит
+
 
     function updateUIProfile() {
         if (currentUser) {
@@ -215,6 +423,7 @@
                 socket.emit('join_game', currentUser);
 
                 updateUIProfile();
+                loadMyActiveBets();
 
                 if (typeof updateBetButtonState === 'function') updateBetButtonState();
             } catch (err) {
@@ -224,46 +433,91 @@
         }
     }
 
-
-    // Функция парсинга параметров из ссылки (?game=mines&session_id=123)
-    function getUrlParams() {
-        const params = {};
-        const queryString = window.location.search;
-        const urlParams = new URLSearchParams(queryString);
-
-        if(urlParams.has('game')) params.game = urlParams.get('game');
-        if(urlParams.has('session_id')) params.sessionId = urlParams.get('session_id');
-        return params;
+    // Чтение всех параметров из URL
+    function getAppRoute() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return {
+            sessionId: urlParams.get('session_id') || globalSessionId,
+            sport: urlParams.get('sport') || '⚽ Football', // по умолчанию
+            league: urlParams.get('league') || null,
+            matchId: urlParams.get('match') || null
+        };
     }
-    function handleUrlRoutingAndStart() {
-        const urlParams = getUrlParams();
 
-        // МГНОВЕННЫЙ РОУТИНГ: Если в ссылке указана игра, сразу изолируем её на экране
-//        if (urlParams.game && gameTabs.includes(urlParams.game)) {
-//            // Переключаем табы моментально до выполнения сетевых запросов
-//            changeTab(urlParams.game);
-//        }
-//        else {
-//            changeTab('');
-//        }
+    // Изменение URL без перезагрузки страницы (History API)
+    function navigateTo(params = {}) {
+        const url = new URL(window.location.href);
 
-        // Если передан токен сессии, запускаем асинхронный бесшовный логин
-        if (urlParams.sessionId) {
-            globalSessionId = urlParams.sessionId;
-            initSeamlessGame(globalSessionId);
+        // Сохраняем сессию, если она есть
+        if (globalSessionId) url.searchParams.set('session_id', globalSessionId);
+
+        // Обновляем или удаляем параметры спорта, лиги и матча
+        if (params.sport) url.searchParams.set('sport', params.sport);
+
+        if (params.league) url.searchParams.set('league', params.league);
+        else if (params.league === null) url.searchParams.delete('league');
+
+        if (params.matchId) url.searchParams.set('match', params.matchId);
+        else if (params.matchId === null) url.searchParams.delete('match');
+
+        window.history.pushState({}, '', url);
+        applyRouteState(); // Перерисовываем интерфейс под новый URL
+    }
+
+    function applyRouteState() {
+        const route = getAppRoute();
+        selectedSport = route.sport;
+
+        // Подсвечиваем нужный таб сверху (включая Результаты)
+        document.querySelectorAll('.sb-tab-btn').forEach(btn => {
+            if (btn.innerText.includes(selectedSport) || btn.getAttribute('data-sport') === selectedSport) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+        // 🔥 ИСПРАВЛЕНО: Если в URL стоит экран результатов — просто рендерим их
+        if (selectedSport === '📊 Results') {
+            renderResultsList(); // вызываем только отрисовку, без navigateTo внутри!
         } else {
-            // Если сессии нет — просто обновляем интерфейс для гостя
+            // Иначе рендерим обычную линию матчей
+            renderSportsbook(route);
+        }
+
+        // Всегда обновляем левое меню лиг
+        renderSidebarMenu();
+    }
+
+
+    function switchSport(sport, btn) {
+        navigateTo({
+            sport: sport,
+            league: null,  // сбрасываем фильтр лиги
+            matchId: null  // сбрасываем открытый матч
+        });
+    }
+
+    // Слушаем кнопку "Назад" в браузере
+    window.addEventListener('popstate', applyRouteState);
+
+    // Точка входа при загрузке страницы
+    function handleUrlRoutingAndStart() {
+        const route = getAppRoute();
+        if (route.sessionId) {
+            globalSessionId = route.sessionId;
+            initSeamlessGame(globalSessionId); // Твой асинхронный логин
+        } else {
             updateUIProfile();
         }
+        applyRouteState();
     }
+
 
     // 4. АСИНХРОННЫЙ СИМЛЕСС ЛОГИН ПРИ ЗАГРУЗКЕ В IFRAME
     async function initSeamlessGame(sessionId) {
         try {
-            // Блокируем кнопки ставок во всех играх, пока идет проверка баланса на бэкенде
-//            toggleAllGameButtons(true);
-
-            const response = await fetch('http://localhost:3000/api/auth/seamless', {
+            const response = await fetch(`${baseUrlApi}/auth/seamless`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ sessionId: sessionId })
@@ -277,100 +531,482 @@
                 return;
             }
 
-            // Успешный бесшовный вход с платформы казино!
             currentUser = data.username;
             currentBalance = data.balance;
             jackpot = data.jackpot;
             serverConfig = data.config;
 
-            // Подключаем живые вебсокеты для таймеров
             socket.emit('join_game', currentUser);
 
-            // Синхронизируем шапку WebApp
             updateUIProfile();
             updateJackpotUI();
             if (typeof applyServerConfigToUI === 'function') applyServerConfigToUI();
-
-            // Разблокируем кнопки игр — баланс подгружен, игрок готов ставить монеты
-//            toggleAllGameButtons(false);
             if (typeof updateBetButtonState === 'function') updateBetButtonState();
 
         } catch (err) {
             console.error("Seamless connection error:", err);
-//            toggleAllGameButtons(true);
         }
     }
 
-    // ЗАПУСК СИСТЕМЫ: Выполняется мгновенно при чтении скрипта
     handleUrlRoutingAndStart();
 
+    // Переключение режима в меню (Live / Прематч)
+    function setSidebarMode(mode) {
+        sidebarMode = mode;
+
+        document.getElementById('toggleLiveBtn').classList.toggle('active', mode === 'LIVE');
+        document.getElementById('togglePrematchBtn').classList.toggle('active', mode === 'PREMATCH');
+
+        const route = getAppRoute();
+
+        // Если сидели в результатах и нажали LIVE/PREMATCH — принудительно переводим на Футбол
+        let targetSport = route.sport;
+        if (route.sport === '📊 Results') {
+            targetSport = '⚽ Football';
+        }
+
+        // Переходим. Метод navigateTo сам внутри себя вызовет applyRouteState() один раз!
+        navigateTo({
+            sport: targetSport,
+            league: null,
+            matchId: null
+        });
+    }
+
+
+    // Рендеринг дерева Вид Спорта -> Лига (Количество матчей)
+    function renderSidebarMenu() {
+        const container = document.getElementById('sidebarMenuList');
+        if (!container) return;
+
+        const route = getAppRoute();
+
+        // 1. Группируем матчи по видам спорта, а внутри них — по лигам
+        // При этом фильтруем матчи по выбранному режиму (LIVE или PREMATCH)
+        const tree = {};
+
+        fullLine.forEach(match => {
+            // Проверяем, подходит ли матч под выбранный фильтр меню
+            const isLiveMatch = match.status.includes('LIVE');
+            if (sidebarMode === 'LIVE' && !isLiveMatch) return;
+            if (sidebarMode === 'PREMATCH' && isLiveMatch) return;
+
+            if (!tree[match.sport]) tree[match.sport] = {};
+            if (!tree[match.sport][match.league]) tree[match.sport][match.league] = 0;
+
+            tree[match.sport][match.league]++; // увеличиваем счетчик матчей в лиге
+        });
+
+        // 2. Строим HTML разметку меню
+        let html = '';
+
+        // Если для выбранного режима вообще нет матчей
+        if (Object.keys(tree).length === 0) {
+            container.innerHTML = `<div style="font-size:12px; color:#a0a5b5; text-align:center; padding:10px;">No matches in ${sidebarMode}</div>`;
+            return;
+        }
+
+        for (const sportName in tree) {
+            // Название Спорта
+            html += `<div class="sidebar-sport-item">${sportName}</div>`;
+
+            // Список лиг внутри этого спорта
+            for (const leagueName in tree[sportName]) {
+                const count = tree[sportName][leagueName];
+                const isLeagueActive = (route.league === leagueName && route.sport === sportName);
+
+                html += `
+                <div class="sidebar-league-item ${isLeagueActive ? 'active' : ''}"
+                     onclick="navigateTo({ sport: '${sportName}', league: '${leagueName}', matchId: null })">
+                    <span>${leagueName}</span>
+                    <span class="league-count-badge">${count}</span>
+                </div>
+            `;
+            }
+        }
+
+        container.innerHTML = html;
+    }
+
+    // Когда WebSocket присылает обновление линии
+    socket.on('sports_line_update', (newLine) => {
+        fullLine = newLine;
+
+        // 1. Проверяем купон (сброс завершенных матчей)
+        checkFinishedMatchesInSlip();
+
+        // 2. Спокойно перерисовываем спортбук.
+        // Благодаря Шагу 1, если открыт матч, обновится только блок кэфов, а холст не пропадет!
+        const route = getAppRoute();
+
+        if (route.sport === '📊 Results') {
+            // Обновляем только кэшаут активных ставок внизу (им нужны свежие кэфы)
+            if (typeof loadMyActiveBets === 'function') loadMyActiveBets();
+            return; // Мгновенно выходим, блокируя перерисовку линии
+        }
+
+        renderSportsbook(route);
+
+        // 3. Обновляем левое меню лиг
+        renderSidebarMenu();
+        loadMyActiveBets();
+
+        // 4. Плавное затухание подсветки стрелочек (через 1.5 сек убираем зеленый/красный)
+        setTimeout(() => {
+            document.querySelectorAll('.odd-btn').forEach(btn => {
+                btn.classList.remove('odd-up', 'odd-down');
+            });
+        }, 1500);
+    });
+
+
+
+    // Обновление вызова загрузки при старте страницы
     async function loadSportsLine() {
         try {
             const res = await fetch(`${baseUrlApi}/sports/line`);
             const data = await res.json();
-            if (data.success) { fullLine = data.line; renderMatches(); }
+            if (data.success) {
+                fullLine = data.line;
+
+                checkFinishedMatchesInSlip();
+
+                applyRouteState();
+                renderSidebarMenu();
+            }
         } catch (err) { console.error('Error loading sports line:', err); }
     }
 
-    function switchSport(sport, btn) {
-        selectedSport = sport;
-        document.querySelectorAll('.sb-tab-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        renderMatches();
+    function renderSportsbook(route) {
+        const list = document.getElementById('sportsEventsList');
+
+        // 1. Фильтруем общую линию по выбранному спорту
+        let matches = fullLine.filter(m => m.sport === route.sport);
+
+        // 🔥 ИСПРАВЛЕНО: Фильтруем центральную ленту под режим меню (LIVE или PREMATCH)
+        matches = matches.filter(m => {
+            const isLiveMatch = m.status.includes('LIVE');
+            if (sidebarMode === 'LIVE') return isLiveMatch;      // Пропускаем только лайв
+            if (sidebarMode === 'PREMATCH') return !isLiveMatch; // Пропускаем только прематч
+            return true;
+        });
+
+        // Экран конкретного матча (?match=fb_123)
+        // Экран конкретного матча (?match=fb_123)
+        if (route.matchId) {
+            // 🔥 НАЧАЛО ИСПРАВЛЕНИЯ: Находим матч ДО того, как проверять Canvas
+            const match = matches.find(m => m.id === route.matchId);
+
+            if (!match) {
+                list.innerHTML = `<div class="slip-empty">Match not found or already finished. <a href="#" onclick="navigateTo({matchId: null}); return false;">Back to line</a></div>`;
+                return;
+            }
+
+            const currentCanvas = document.getElementById('matchCanvas');
+
+            // Если холста еще нет на экране (игрок только что перешел по ссылке в матч)
+            if (!currentCanvas) {
+                list.innerHTML = `
+                <div style="margin-bottom: 15px; text-align: left;">
+                    <button class="sb-tab-btn" onclick="navigateTo({matchId: null})">⬅ Back to line</button>
+                </div>
+
+                    <div style="width:100%; max-width:600px; margin: 0 auto 15px auto; background:#1c2027; border-radius:12px; overflow:hidden; border:2px solid #2a2f3a;">
+                    <canvas id="matchCanvas" width="600" height="350" style="display:block; width:100%; height:auto;"></canvas>
+                    </div>
+
+                    <div id="matchMarketsSubContainer"></div>
+                   `;
+
+            // Запускаем Canvas-анимацию один раз при входе
+            initMatchCanvas(match);
+        }
+
+        // Записываем кэфы, счет и маркеты (этот блок сокеты будут безопасно обновлять)
+        const marketsContainer = document.getElementById('matchMarketsSubContainer');
+        if (marketsContainer) {
+            marketsContainer.innerHTML = generateMatchHtml(match);
+        }
+        return;
     }
 
-    function renderMatches() {
-        const list = document.getElementById('sportsEventsList');
-        const matches = fullLine.filter(m => m.sport === selectedSport);
 
-        list.innerHTML = matches.map(m => {
-            return `
-                <div class="sb-match-card">
-                    <div class="sb-match-info"><span>${m.league}</span><span class="live-status">${m.status}</span></div>
-                    <div class="sb-match-teams">${m.teams}</div>
-                    <div class="sb-markets-grid">
-                        ${Object.keys(m.markets).map(marketKey => {
-                const market = m.markets[marketKey];
-                return `
-                                <div class="sb-market-row">
-                                    <div class="sb-market-label">${market.label}</div>
-                                    <div class="sb-odds-buttons">
-                                        ${Object.keys(market.odds).map(outcomeKey => {
-                    const isSelected = betSlipItems.some(item => item.matchId === m.id && item.market === marketKey && item.outcome === outcomeKey);
+        // Экран конкретной лиги (?league=Champions+League)
+        if (route.league) {
+            matches = matches.filter(m => m.league === route.league);
+            if (matches.length === 0) {
+                list.innerHTML = `<div class="slip-empty">No active ${sidebarMode} matches in this league. <a href="#" onclick="navigateTo({league: null}); return false;">Back</a></div>`;
+                return;
+            }
+            list.innerHTML = `
+            <div style="margin-bottom: 15px; text-align: left;">
+                <button class="sb-tab-btn" onclick="navigateTo({league: null})">⬅ All Leagues</button>
+                <h3 style="margin-top:10px; color:#ffb703;">${route.league} (${sidebarMode})</h3>
+            </div>
+            ${buildFilteredSection(matches)}
+        `;
+            return;
+        }
+
+        // Главный экран выбранного спорта
+        if (matches.length === 0) {
+            list.innerHTML = `<div class="slip-empty">No active ${sidebarMode} matches for this sport</div>`;
+            return;
+        }
+        list.innerHTML = buildFilteredSection(matches);
+    }
+
+    // Вспомогательная функция: строит чистый список без дублирования заголовков
+    function buildFilteredSection(matches) {
+        let html = '';
+
+        if (sidebarMode === 'LIVE') {
+            html += `<div style="text-align: left; margin: 10px 0; color: #00f5d4; font-weight: bold; font-size: 14px;">🔴 LIVE MATCHES</div>`;
+        } else {
+            html += `<div style="text-align: left; margin: 10px 0; color: #a0a5b5; font-weight: bold; font-size: 14px;">📅 PREMATCH LINE</div>`;
+        }
+
+        html += matches.map(m => generateMatchHtml(m)).join('');
+        return html;
+    }
+
+    // Генератор HTML кода для одной карточки матча (с кликабельными ссылками)
+    function generateMatchHtml(m) {
+        const teamsString = typeof m.teams === 'string' ? m.teams : `${m.teams.home} - ${m.teams.away}`;
+        const displayTeams = teamsString.replace(' - ', ' vs ');
+        const encodedTeams = encodeURIComponent(teamsString);
+
+        return `
+            <div class="sb-match-card" style="margin-bottom: 12px;">
+                <div class="sb-match-info">
+                    <span onclick="navigateTo({league: '${m.league}'})" style="color: #ffb703; font-weight: bold; cursor: pointer; text-decoration: underline;">
+                        ${m.league}
+                    </span>
+                    <span class="live-status">${m.status}</span>
+                </div>
+
+                <div class="sb-match-teams" onclick="navigateTo({matchId: '${m.id}'})" style="cursor: pointer; hover: text-decoration: underline;">
+                    ${displayTeams} 🔍
+                </div>
+                <div class="sb-markets-grid">
+                    ${Object.keys(m.markets).map(marketKey => {
+                    const market = m.markets[marketKey];
                     return `
-                                                <button class="odd-btn ${isSelected ? 'selected' : ''}" onclick="toggleOutcome('${m.id}', '${m.teams}', '${marketKey}', '${outcomeKey}', ${market.odds[outcomeKey]})">
-                                                    <span>${outcomeKey.toUpperCase()}</span>
-                                                    <span class="coef">${market.odds[outcomeKey]}</span>
-                                                </button>
-                                            `;
-                }).join('')}
-                                    </div>
+                            <div class="sb-market-row">
+                                <div class="sb-market-label">${market.label}</div>
+                                <div class="sb-odds-buttons">
+                                    ${Object.keys(market.odds).map(outcomeKey => {
+                        const currentOdd = market.odds[outcomeKey];
+                        const isSelected = betSlipItems.some(item => item.matchId === m.id && item.market === marketKey && item.outcome === outcomeKey);
+
+                        // 🔥 НАЧАЛО ИЗМЕНЕНИЙ: Получаем класс тренда кэфа (odd-up или odd-down)
+                        const trendClass = getOddDirectionClass(m.id, marketKey, outcomeKey, currentOdd);
+                        // 🔥 КОНЕЦ ИЗМЕНЕНИЙ
+
+                        return `
+                                            <button class="odd-btn ${isSelected ? 'selected' : ''} ${trendClass}"
+                                                    onclick="toggleOutcome('${m.id}', '${encodedTeams}', '${marketKey}', '${outcomeKey}', ${currentOdd})">
+                                                <span>${outcomeKey.toUpperCase()}</span>
+                                                <span class="coef">${currentOdd}</span>
+                                            </button>
+                                        `;
+                        }).join('')}
                                 </div>
-                            `;
-            }).join('')}
+                            </div>
+                        `;
+                    }).join('')}
                     </div>
                 </div>
-            `;
-        }).join('');
+        `;
     }
 
-    function toggleOutcome(matchId, teams, market, outcome, odds) {
-        // Защита: нельзя добавить два исхода из одного и того же матча в один экспресс
+    function initMatchCanvas(match) {
+        if (canvasAnimationId) cancelAnimationFrame(canvasAnimationId);
+
+        const canvas = document.getElementById('matchCanvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+
+        // 🔥 ИСПРАВЛЕНО: Запоминаем ID матча, который мы сейчас открыли
+        const activeMatchId = match.id;
+
+        const zones = [
+            { x: 300, y: 175 }, // 0: Центр
+            { x: 450, y: 175 }, // 1: Атака хозяев
+            { x: 150, y: 175 }, // 2: Атака гостей
+            { x: 580, y: 175 }, // 3: ГОЛ хозяев (справа)
+            { x: 20,  y: 175 }  // 4: ГОЛ гостей (слева)
+        ];
+
+        const initialZone = match.ballZone || 0;
+        canvasCurrentBall = { ...zones[initialZone] };
+        canvasTargetBall = { ...zones[initialZone] };
+
+        function drawFrame() {
+            // Защита от утечки памяти при переходе на другие страницы
+            if (!document.getElementById('matchCanvas')) {
+                if (canvasAnimationId) cancelAnimationFrame(canvasAnimationId);
+                return;
+            }
+
+            // 🔥 ИСПРАВЛЕНО: Каждые 16мс ищем свежие данные матча из обновляемого сокетами глобального массива fullLine
+            const liveMatch = fullLine.find(m => m.id === activeMatchId);
+
+            // 1. Отрисовка зеленого газона
+            ctx.fillStyle = '#2e7d32';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Полосы
+            ctx.fillStyle = '#388e3c';
+            for (let i = 0; i < canvas.width; i += 60) {
+                if ((i / 60) % 2 === 0) ctx.fillRect(i, 0, 30, canvas.height);
+            }
+
+            // 2. Разметка поля
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, 10);
+            ctx.lineTo(canvas.width / 2, canvas.height - 10);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(canvas.width / 2, canvas.height / 2, 50, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.strokeRect(10, 75, 90, 200);
+            ctx.strokeRect(canvas.width - 100, 75, 90, 200);
+
+            // Ворота
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(2, 140, 8, 70);
+            ctx.fillRect(canvas.width - 10, 140, 8, 70);
+
+            // 3. Расчет позиции мяча
+            if (liveMatch && liveMatch.ballZone !== undefined) {
+                // Мяч летит в зону, которую прислал бэкенд в сокетах
+                canvasTargetBall = zones[liveMatch.ballZone];
+            }
+
+            // Эффект дриблинга (легкое дрожание в центре поля и зонах атаки)
+            let jitterX = 0;
+            let jitterY = 0;
+            if (liveMatch && liveMatch.ballZone < 3) {
+                jitterX = (Math.random() - 0.5) * 12;
+                jitterY = (Math.random() - 0.5) * 25;
+            }
+
+            // Плавное движение мяча через линейную интерполяцию
+            canvasCurrentBall.x += (canvasTargetBall.x + jitterX - canvasCurrentBall.x) * 0.08;
+            canvasCurrentBall.y += (canvasTargetBall.y + jitterY - canvasCurrentBall.y) * 0.08;
+
+            // 4. Отрисовка игроков (смещаются по оси X вслед за мячом)
+            const homeShift = (canvasCurrentBall.x - 300) * 0.15;
+            ctx.fillStyle = '#0f3460'; // Хозяева — синие
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            drawPlayer(ctx, 40, 175);
+            drawPlayer(ctx, 140 + homeShift, 100);
+            drawPlayer(ctx, 140 + homeShift, 250);
+            drawPlayer(ctx, 260 + homeShift, 175);
+
+            const awayShift = (canvasCurrentBall.x - 300) * 0.15;
+            ctx.fillStyle = '#e94560'; // Гости — красные
+            drawPlayer(ctx, canvas.width - 40, 175);
+            drawPlayer(ctx, canvas.width - 140 + awayShift, 100);
+            drawPlayer(ctx, canvas.width - 140 + awayShift, 250);
+            drawPlayer(ctx, canvas.width - 260 + awayShift, 175);
+
+            // 5. Отрисовка мяча
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(canvasCurrentBall.x, canvasCurrentBall.y, 7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // 6. Табло ГОЛ
+            if (liveMatch && liveMatch.ballZone >= 3) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                ctx.fillRect(0, 120, canvas.width, 110);
+                ctx.fillStyle = '#ffb703';
+                ctx.font = 'bold 42px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('⚽ GOAL!!! ⚽', canvas.width / 2, 185);
+            }
+
+            canvasAnimationId = requestAnimationFrame(drawFrame);
+        }
+
+        function drawPlayer(ctx, x, y) {
+            ctx.beginPath();
+            ctx.arc(x, y, 12, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        drawFrame();
+    }
+
+
+
+    // Функция, которая срабатывает ТОЛЬКО при физическом клике на кнопку таба "Results"
+    function onResultsTabClick(btn) {
+        navigateTo({ sport: '📊 Results', league: null, matchId: null });
+    }
+
+    // 🔥 ИСПРАВЛЕНО: Чистая функция рендеринга. Она вызывается РОУТЕРОМ и не трогает URL
+    async function renderResultsList() {
+        const list = document.getElementById('sportsEventsList');
+        if (!list) return;
+
+        list.innerHTML = `<div class="slip-empty">Loading results...</div>`;
+
+        try {
+            const res = await fetch(`${baseUrlApi}/sports/results`);
+            const data = await res.json();
+
+            if (data.success && data.results.length > 0) {
+                list.innerHTML = `
+                <div style="text-align: left; margin: 10px 0; color: #ffb703; font-weight: bold; font-size: 14px;">📊 RECENT MATCH RESULTS</div>
+                ${data.results.map(r => `
+                    <div class="sb-result-card">
+                        <div style="text-align: left;">
+                            <small style="color: #a0a5b5; font-size: 11px;">${r.league}</small>
+                            <div style="font-weight: bold; margin-top: 2px;">${r.teams.replace(' - ', ' vs ')}</div>
+                        </div>
+                        <div class="sb-result-score">${r.score}</div>
+                    </div>
+                `).join('')}
+            `;
+            } else {
+                list.innerHTML = `<div class="slip-empty">No match results available yet.</div>`;
+            }
+        } catch (err) {
+            console.error('Error loading results:', err);
+            list.innerHTML = `<div class="slip-empty" style="color: #e94560;">Failed to load results.</div>`;
+        }
+    }
+
+
+
+    // 🔥 ИСПРАВЛЕНО: Принимаем закодированную строку команд
+    function toggleOutcome(matchId, encodedTeams, market, outcome, odds) {
+        const teams = decodeURIComponent(encodedTeams); // Раскодируем обратно в нормальный текст
+
         const matchExists = betSlipItems.some(item => item.matchId === matchId);
         const exactExists = betSlipItems.some(item => item.matchId === matchId && item.market === market && item.outcome === outcome);
 
         if (exactExists) {
-            // Если кликнули на уже выбранный — удаляем его
             betSlipItems = betSlipItems.filter(item => !(item.matchId === matchId && item.market === market && item.outcome === outcome));
         } else {
             if (matchExists) {
-                // Удаляем старый исход из этого же матча, заменяя новым
                 betSlipItems = betSlipItems.filter(item => item.matchId !== matchId);
             }
             betSlipItems.push({ matchId, teams, market, outcome, odds });
         }
 
-        renderMatches(); // перерисовываем кнопки, чтобы подсветить выбранные
+        renderMatches();
         updateSlipUI();
     }
 
@@ -408,6 +1044,20 @@
         calculateSlipWin();
     }
 
+    function getOddDirectionClass(matchId, marketKey, outcomeKey, newOdd) {
+        const cacheKey = `${matchId}_${marketKey}_${outcomeKey}`;
+        const oldOdd = oddsCache[cacheKey];
+
+        // Обновляем значение в кэше для следующего сравнения
+        oddsCache[cacheKey] = newOdd;
+
+        // Если это первая загрузка или коэффициент не изменился
+        if (oldOdd === undefined || oldOdd === newOdd) return '';
+
+        // Возвращаем класс в зависимости от направления движения коэффициента
+        return newOdd > oldOdd ? 'odd-up' : 'odd-down';
+    }
+
     function calculateSlipWin() {
         const odds = parseFloat(document.getElementById('slipTotalOdds').innerText) || 1;
         const stake = document.getElementById('stakeAmount').value || 0;
@@ -421,13 +1071,25 @@
     }
 
     async function placeSportsBet() {
-        const stake = document.getElementById('stakeAmount').value;
-        if (!stake || stake <= 0) return alert('Please enter a valid stake amount');
+        // 1. Проверяем, авторизован ли пользователь
+        if (!currentUser) return alert('Please login to place a bet!');
 
+        const stake = parseFloat(document.getElementById('stakeAmount').value);
+        // 2. Валидация суммы ставки
+        if (!stake || stake <= 0) return alert('Please enter a valid stake amount');
+        if (stake > currentBalance) return alert('Insufficient funds!');
+
+        // 3. Формируем payload, соответствующий ожиданиям бэкенда
         const payload = {
-            items: betSlipItems.map(i => ({ matchId: i.matchId, market: i.market, outcome: i.outcome })),
+            username: currentUser,
+            sessionId: globalSessionId || "manual_session", // Передаем реальную сессию
+            items: betSlipItems.map(i => ({
+                matchId: i.matchId,
+                market: i.market,
+                selectedOutcome: i.outcome // ИСПРАВЛЕНО: бэкенд ищет именно selectedOutcome
+            })),
             stake: stake,
-            sessionId: "demo_session_id"
+            totalOdds: parseFloat(document.getElementById('slipTotalOdds').innerText)
         };
 
         try {
@@ -437,11 +1099,149 @@
                 body: JSON.stringify(payload)
             });
             const data = await res.json();
+
             if (res.ok && data.success) {
-                alert('Bet slip placed successfully!');
+                alert('Bet placed successfully!');
+
+                // Если бэкенд сразу возвращает обновленный баланс — обновляем его на экране
+                if (data.newBalance !== undefined) {
+                    currentBalance = data.newBalance;
+                    updateUIProfile();
+                }
+
                 clearSlip();
-            } else { alert(data.error || 'Betting failed'); }
-        } catch (err) { alert('Network error'); }
+                loadMyActiveBets(); // Перезагрузить список, чтобы новая ставка сразу появилась внизу
+
+            } else {
+                alert(data.error || 'Betting failed');
+            }
+        } catch (err) {
+            console.error('Bet placement error:', err);
+            alert('Network error, please try again.');
+        }
+    }
+
+    function checkFinishedMatchesInSlip() {
+        if (betSlipItems.length === 0) return;
+
+        let wasSlipChanged = false;
+
+        // Фильтруем купон, оставляя только те матчи, которые всё еще есть в линии и не завершены
+        betSlipItems = betSlipItems.filter(item => {
+            const currentMatch = fullLine.find(m => m.id === item.matchId);
+
+            // Если матч пропал из линии или его статус стал FINISHED
+            if (!currentMatch || currentMatch.status.includes('FINISHED')) {
+                wasSlipChanged = true;
+                console.log(`[Sportsbook] Исход на матч ID ${item.matchId} удален из купона: матч завершен.`);
+                return false; // Удаляем из массива betSlipItems
+            }
+            return true; // Оставляем в купоне
+        });
+
+        betSlipItems.forEach(item => {
+            const match = fullLine.find(m => m.id === item.matchId);
+            if (match && match.markets[item.market] && match.markets[item.market].odds[item.outcome]) {
+                if(item.odds !== match.markets[item.market].odds[item.outcome]) {
+                    wasSlipChanged = true;
+                    item.odds = match.markets[item.market].odds[item.outcome];
+                }
+            }
+        });
+
+        // Если из купона что-то удалилось, обновляем интерфейс купона и перерисовываем кнопки
+        if (wasSlipChanged) {
+            alert('Some matches in your bet slip have finished and were removed.');
+
+            updateSlipUI();
+            // Перерисовываем текущий экран, чтобы убрать подсветку с кнопок удаленного матча
+            const route = getAppRoute();
+            renderSportsbook(route);
+        }
+    }
+
+    // Загрузка активных ставок авторизованного игрока
+    async function loadMyActiveBets() {
+        if (!currentUser) {
+            document.getElementById('myActiveBetsContainer').style.display = 'none';
+            return;
+        }
+
+        try {
+            // Запрашиваем только нерассчитанные купоны текущего юзера
+            const res = await fetch(`${baseUrlApi}/sports/my-bets?username=${currentUser}&status=PENDING`);
+            const data = await res.json();
+
+            const container = document.getElementById('myActiveBetsContainer');
+            const list = document.getElementById('activeBetsList');
+
+            if (data.success && data.bets.length > 0) {
+                container.style.display = 'block';
+
+                // Генерируем карточки для каждого купона
+                let html = '';
+                for (let bet of data.bets) {
+                    // Запрашиваем у бэкенда динамический расчет суммы кэшаута для этого купона
+                    const cashoutRes = await fetch(`${baseUrlApi}/sports/cashout-value?betId=${bet._id}`);
+                    const cashoutData = await cashoutRes.json();
+                    const currentCashout = cashoutData.success ? cashoutData.cashoutValue : 0;
+
+                    html += `
+                    <div class="active-bet-card">
+                        <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:5px;">
+                            <span>${bet.items.length > 1 ? '📜 Express' : '🎫 Single'}</span>
+                            <span style="color:#ffb703;">Odds: ${bet.totalOdds}</span>
+                        </div>
+                        <div style="color:#a0a5b5; font-size:11px; margin-bottom:6px;">
+                            ${bet.items.map(i => `• Match ID: ${i.matchId} (${i.selectedOutcome.toUpperCase()})`).join('<br>')}
+                        </div>
+                        <div>Stake: <b>${bet.stake} 🪙</b></div>
+
+                            ${currentCashout > 0 ? `
+                                <button class="cashout-btn" onclick="requestCashout('${bet._id}')">
+                            Cash Out: <span style="color:#00f5d4;">${currentCashout} 🪙</span>
+                            </button>
+                            ` : `<div style="color:#e94560; font-size:11px; margin-top:5px; text-align:center;">Cashout Unavailable</div>`}
+                            </div>
+                            `;
+                }
+                list.innerHTML = html;
+            } else {
+                container.style.display = 'none'; // Скрываем блок, если ставок нет
+            }
+        } catch (err) {
+            console.error('Error loading active bets:', err);
+        }
+    }
+
+    // Отправка запроса на выполнение выкупа ставки
+    async function requestCashout(betId) {
+        if (!confirm('Are you sure you want to cash out this bet?')) return;
+
+        try {
+            const res = await fetch(`${baseUrlApi}/sports/cashout`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ betId: betId, username: currentUser })
+            });
+            const data = await res.json();
+
+            if (res.ok && data.success) {
+                alert('Cash out successful!');
+
+                // Обновляем баланс игрока на экране, если бэкенд его вернул
+                if (data.newBalance !== undefined) {
+                    currentBalance = data.newBalance;
+                    updateUIProfile();
+                }
+
+                loadMyActiveBets(); // Перезагружаем список активных ставок
+            } else {
+                alert(data.error || 'Cash out failed');
+            }
+        } catch (err) {
+            alert('Network error during cash out');
+        }
     }
 
     document.addEventListener('DOMContentLoaded', loadSportsLine);

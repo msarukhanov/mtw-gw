@@ -42,6 +42,17 @@ app.use('/api', websiteRoutes);
 // Запуск фоновой службы лотереи по сокетам
 const configDb = Datastore.create({ filename: path.join(__dirname, 'config.db'), autoload: true });
 DEFAULT_CONFIG = {
+
+    sport: {
+        margin: 1.06,          // Дефолтная маржа 6%
+        uclMargin: 1.05,       // Маржа на Лигу Чемпионов 5% (кэфы выше)
+        maxStake: 5000,        // Максимальная ставка на один купон
+        minStake: 10,          // Минимальная ставка
+        maxOdds: 1000,         // Максимальный итоговый кэф в купоне
+        cashoutFactor: 0.90,    // Множитель кэшаута (90% от честной стоимости)
+        maxPayout: 50000
+    },
+
     lottery: { ticketPrice: 1, totalNumbers: 49, neededChoices: 6, rtp: 75 }, // 75% лимит выплат
     slots3x3: { cost: 10, symbols: ['🦁', '🐯', '🐻', '💎', '🍒', '🍀'], rtp: 80 }, // 80% отдача
     wheel: {
@@ -269,3 +280,7 @@ setInterval(async () => {
         await state.resetDailyQuestsForAll();
     }
 }, 60000);
+
+const vfootball = require('./vfootball');
+vfootball.generateDailySchedule();
+vfootball.startEngine(5000, io);
