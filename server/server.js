@@ -98,6 +98,10 @@ DEFAULT_CONFIG = {
             { suit: '♠', name: 'A', value: 14 }
         ]
     },
+    blackjack: { cost: 20, rtp: 95 },
+    holdem: { cost: 20, rtp: 95 },
+    roulette: { cost: 20, rtp: 95, betTime: 15000 },
+
     slots5x3: {
         cost: 20, // Стоимость одного обычного спина
         rtp: 95,
@@ -170,24 +174,21 @@ banks = {
 };
 CONFIG = {};
 
-// Асинхронная функция инициализации конфига
-async function initConfig() {
-    let cfg = await configDb.findOne({ _id: "global_config" });
-    if (!cfg) {
-        // Если файла config.db нет или он пустой — записываем дефолтный
-        await configDb.insert(DEFAULT_CONFIG);
-        CONFIG = DEFAULT_CONFIG;
-        console.log("ℹ️ Создан дефолтный конфиг в config.db");
-    } else {
-        CONFIG = cfg;
-        console.log("✅ Актуальный конфиг успешно загружен из config.db");
-    }
-
-    const { initLotteryService } = require('./services/lotteryService');
-    const { initCrashService } = require('./services/crashService');
-    initLotteryService(io);
-    initCrashService(io);
-}
+// // Асинхронная функция инициализации конфига
+// async function initConfig() {
+//     let cfg = await configDb.findOne({ _id: "global_config" });
+//     if (!cfg) {
+//         // Если файла config.db нет или он пустой — записываем дефолтный
+//         await configDb.insert(DEFAULT_CONFIG);
+//         CONFIG = DEFAULT_CONFIG;
+//         console.log("ℹ️ Создан дефолтный конфиг в config.db");
+//     } else {
+//         CONFIG = cfg;
+//         console.log("✅ Актуальный конфиг успешно загружен из config.db");
+//     }
+//
+//
+// }
 
 // ИСПРАВЛЕННАЯ ФУНКЦИЯ ИНИЦИАЛИЗАЦИИ В state.js
 async function initConfig() {
@@ -223,6 +224,8 @@ async function initConfig() {
         CONFIG["demo_skin_default"] = firstB2BConfig["demo_skin_default"];
         banks["demo_skin_default"] = firstB2BConfig["banks_demo_skin_default"];
 
+
+
         console.log("ℹ️ B2B Core initialized with default partner: demo_skin_default");
     } else {
         // Если база уже существует, просто переносим данные из файла в оперативку
@@ -236,6 +239,13 @@ async function initConfig() {
         });
         console.log("✅ B2B Multi-tenant config successfully loaded from config.db");
     }
+
+    const { initLotteryService } = require('./services/lotteryService');
+    const { initCrashService } = require('./services/crashService');
+    const { initRouletteService } = require('./services/rouletteService');
+    initLotteryService(io);
+    initCrashService(io);
+    initRouletteService(io);
 }
 initConfig();
 
@@ -244,6 +254,11 @@ initConfig();
 io.on('connection', (socket) => {
     socket.on('join_game', (username) => {
         socket.join(username);
+    });
+
+    socket.on('join_game_room', ({username,partnerId,game}) => {
+        console.log({username,partnerId,game});
+        socket.join(partnerId+'_'+game);
     });
 
     socket.on('platform_join', (data) => {

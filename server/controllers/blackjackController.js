@@ -44,8 +44,11 @@ function calculateScore(hand) {
 const activeGames = new Map();
 
 exports.deal = async (req, res) => {
-    const config = state.getConfig().blackjack || { cost: 20 };
+    const partnerId = req.partnerId;
     const username = req.username;
+
+    const partnerConfig = state.getConfig(partnerId) || {};
+    const config = partnerConfig.blackjack || { cost: 20, rtp: 95 }; // Читаем ваш RTP из конфига
 
     if (activeGames.has(username)) {
         return res.status(400).json({ error: "You already have an active game!" });
@@ -55,52 +58,62 @@ exports.deal = async (req, res) => {
         return res.status(400).json({ error: "Insufficient funds" });
     }
 
-    // 1. Списываем ставку
+    // Списываем ставку и заносим в банк Блэкджека этого партнера
     req.player.balance -= config.cost;
-    await state.updateBalance(username, req.player.balance);
+    await state.updateBalance(username, partnerId, req.player.balance);
+    state.addBlackjackBank(partnerId, config.cost); // Добавляем метод в state
 
-    // 2. Инициализируем игру
-    const deck = createDeck();
-    const playerHand = [deck.pop(), deck.pop()];
-    const dealerHand = [deck.pop(), deck.pop()];
+    let deck, playerHand, dealerHand, playerScore, dealerScore;
+    let attempts = 0;
+    const maxAttempts = 5; // Защита от бесконечного цикла
 
-    const playerScore = calculateScore(playerHand);
+    // ЦИКЛ КОНТРОЛЯ RTP / ЗАЩИТЫ КАССЫ
+    do {
+        deck = engine.createDeck();
+        playerHand = [deck.pop(), deck.pop()];
+        dealerHand = [deck.pop(), deck.pop()];
+        playerScore = engine.calculateScore(playerHand);
+        dealerScore = engine.calculateScore(dealerHand);
 
-    // Если у игрока сразу 21 (Натуральный Блэкджек) — игра завершается мгновенно
+        // Проверяем, есть ли у игрока мгновенный выигрыш (21 очко)
+        if (playerScore === 21 && dealerScore !== 21) {
+            const potentialPrize = config.cost * 2.5;
+            const currentBank = state.getBlackjackBank(partnerId);
+
+            // Если в кассе партнера нет денег на выплату — делаем пересдачу (Re-roll)
+            if (potentialPrize > currentBank) {
+                attempts++;
+                continue;
+            }
+        }
+        break; // Раздача безопасна для кассы, выходим из цикла
+    } while (attempts < maxAttempts);
+
+    // Если у игрока остался натуральный Блэкджек (касса одобрила)
     if (playerScore === 21) {
-        const dealerScore = calculateScore(dealerHand);
-        let prize = config.cost * 2.5; // Выплата 3 к 2 (вернуть ставку + 1.5 сверху)
+        let prize = config.cost * 2.5;
         let status = 'BLACKJACK';
 
         if (dealerScore === 21) {
-            prize = config.cost; // Ничья (Push)
+            prize = config.cost;
             status = 'PUSH';
         }
 
         req.player.balance += prize;
-        await state.updateBalance(username, req.player.balance);
-        await saveHistory(username, playerHand, dealerHand, prize, true);
+        await state.updateBalance(username, partnerId, req.player.balance);
+        state.reduceBlackjackBank(partnerId, prize); // Списываем из кассы партнера
+        await saveHistory(username, partnerId, playerHand, dealerHand, prize, true);
 
         return res.json({
-            status,
-            playerHand,
-            dealerHand, // Сразу показываем обе карты дилера
-            playerScore,
-            dealerScore,
-            prize,
-            balance: req.player.balance
+            status, playerHand, dealerHand, playerScore, dealerScore, prize, balance: req.player.balance
         });
     }
 
-    // Сохраняем сессию в память сервера
+    // Если игра продолжается, сохраняем сессию
     activeGames.set(username, {
-        bet: config.cost,
-        deck,
-        playerHand,
-        dealerHand
+        bet: config.cost, partnerId, deck, playerHand, dealerHand
     });
 
-    // Отдаем клиенту состояние. ВАЖНО: вторую карту дилера маскируем под 'XX'!
     res.json({
         status: 'IN_PROGRESS',
         playerHand,
@@ -109,6 +122,7 @@ exports.deal = async (req, res) => {
         balance: req.player.balance
     });
 };
+
 
 exports.action = async (req, res) => {
     const username = req.username;

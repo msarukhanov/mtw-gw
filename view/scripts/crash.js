@@ -198,6 +198,8 @@ function drawCrashGraph(multiplier, stateStr) {
 // Хранилище для отрисовки текущей таблицы ставок
 let currentRoundBetsCache = {};
 
+socket.emit('join_game_room', {username:currentUser, partnerId:globalPartnerId, game:'crash'});
+
 socket.on('crash_state', (data) => {
     crashClientState = data.status;
     const betsBox = document.getElementById('crashLiveBetsBox');

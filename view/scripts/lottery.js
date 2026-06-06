@@ -293,6 +293,7 @@ async function runClientDrawAnimation(winningNumbers, totalPrize, newBalance) {
     }, 7000);
 }
 
+socket.emit('join_game_room', {username:currentUser, partnerId:globalPartnerId, game:'lottery'});
 // СЛУШАЕМ СЕРВЕР: Событие для авторизованного игрока, сделавшего ставки
 socket.on('lottery_result', (data) => {
     runClientDrawAnimation(data.winningNumbers, data.totalPrize, data.newBalance);

@@ -1,5 +1,34 @@
 const state = require('../state');
 
+let blackjackBanks = {};
+let holdemBanks = {};
+
+// Блэкджек касса
+addBlackjackBank = (partnerId, amount) => {
+    if (!blackjackBanks[partnerId]) blackjackBanks[partnerId] = 0;
+    blackjackBanks[partnerId] += amount;
+};
+getBlackjackBank = (partnerId) => {
+    return blackjackBanks[partnerId] || 0;
+};
+reduceBlackjackBank = (partnerId, amount) => {
+    if (!blackjackBanks[partnerId]) blackjackBanks[partnerId] = 0;
+    blackjackBanks[partnerId] -= amount;
+};
+
+// Холдем касса
+addHoldemBank = (partnerId, amount) => {
+    if (!holdemBanks[partnerId]) holdemBanks[partnerId] = 0;
+    holdemBanks[partnerId] += amount;
+};
+getHoldemBank = (partnerId) => {
+    return holdemBanks[partnerId] || 0;
+};
+reduceHoldemBank = (partnerId, amount) => {
+    if (!holdemBanks[partnerId]) holdemBanks[partnerId] = 0;
+    holdemBanks[partnerId] -= amount;
+};
+
 const CARD_RANKS = {
     '2':2, '3':3, '4':4, '5':5, '6':6, '7':7, '8':8, '9':9, 'T':10, 'J':11, 'Q':12, 'K':13, 'A':14
 };
@@ -112,80 +141,94 @@ function evaluate7Cards(cards7) {
     return { score: 0, name: HAND_NAMES[0], tieBreaker: parsed[0].rank };
 }
 
-exports.spinPoker = async (req, res) => {
-    const config = state.getConfig().poker || { cost: 20 };
+exports.spinHoldem = async (req, res) => {
+    const partnerId = req.partnerId;
     const username = req.username;
 
-    console.log(username);
+    const partnerConfig = state.getConfig(partnerId) || {};
+    const config = partnerConfig.holdem || { cost: 20, rtp: 95 };
 
     if (req.player.balance < config.cost) {
         return res.status(400).json({ error: "Insufficient funds" });
     }
 
-    // 1. Списываем стоимость участия
+    // Списываем ставку в кассу Холдема этого партнера
     req.player.balance -= config.cost;
+    await state.updateBalance(username, partnerId, req.player.balance);
+    addHoldemBank(partnerId, config.cost);
 
-    // 2. Генерируем раздачу
-    const deck = createDeck();
+    let deck, playerHand, dealerHand, communityCards;
+    let playerEval, dealerEval, status, prize;
+    let attempts = 0;
+    const maxAttempts = 10; // Покер требует больше попыток для хорошего re-roll
 
-    const playerHand = [deck.pop(), deck.pop()]; // 2 карты игрока
-    const dealerHand = [deck.pop(), deck.pop()]; // 2 карты дилера
-    const communityCards = [deck.pop(), deck.pop(), deck.pop(), deck.pop(), deck.pop()]; // 5 карт стола (Флоп, Терн, Ривер)
+    // ЦИКЛ КОНТРОЛЯ RTP И КАССЫ ОПЕРАТОРА
+    do {
+        deck = blackjackEngine.createDeck();
+        playerHand = [deck.pop(), deck.pop()];
+        dealerHand = [deck.pop(), deck.pop()];
+        communityCards = [deck.pop(), deck.pop(), deck.pop(), deck.pop(), deck.pop()];
 
-    // 3. Соединяем карты для оценки (2 свои + 5 общих)
-    const player7 = playerHand.concat(communityCards);
-    const dealer7 = dealerHand.concat(communityCards);
+        const player7 = playerHand.concat(communityCards);
+        const dealer7 = dealerHand.concat(communityCards);
 
-    const playerEval = evaluate7Cards(player7);
-    const dealerEval = evaluate7Cards(dealer7);
+        playerEval = evaluator.evaluate7Cards(player7);
+        dealerEval = evaluator.evaluate7Cards(dealer7);
 
-    // 4. Сравниваем результаты
-    let status = 'LOSE';
-    let prize = 0;
+        status = 'LOSE';
+        prize = 0;
 
-    if (playerEval.score > dealerEval.score) {
-        status = 'WIN';
-    } else if (playerEval.score === dealerEval.score) {
-        if (playerEval.tieBreaker > dealerEval.tieBreaker) {
+        if (playerEval.score > dealerEval.score) {
             status = 'WIN';
-        } else if (playerEval.tieBreaker === dealerEval.tieBreaker) {
-            status = 'PUSH';
+        } else if (playerEval.score === dealerEval.score) {
+            if (playerEval.tieBreaker > dealerEval.tieBreaker) status = 'WIN';
+            else if (playerEval.tieBreaker === dealerEval.tieBreaker) status = 'PUSH';
         }
-    }
 
-    // Расчет выплаты: за победу даем х2, за редкие комбинации можно накрутить больше
-    if (status === 'WIN') {
-        let multiplier = 2;
-        if (playerEval.score >= 4) multiplier = 3; // Стрит и выше платят x3
-        if (playerEval.score >= 6) multiplier = 5; // Фулл-хаус и выше платят x5
-        prize = config.cost * multiplier;
-    } else if (status === 'PUSH') {
-        prize = config.cost;
-    }
+        if (status === 'WIN') {
+            let multiplier = 2;
+            if (playerEval.score >= 4) multiplier = 3;
+            if (playerEval.score >= 6) multiplier = 5;
+            prize = config.cost * multiplier;
+        } else if (status === 'PUSH') {
+            prize = config.cost;
+        }
 
-    // 5. Обновляем баланс
+        // ПРОВЕРКА БАНКА ПАРТНЕРА
+        const currentBank = getHoldemBank(partnerId);
+
+        // Дополнительный ролл на чистый RTP (если выпал выигрыш, даем случайный шанс на слив в рамках RTP)
+        const rtpRoll = Math.random() * 100;
+        const forceLossByRtp = (status === 'WIN' && rtpRoll > config.rtp);
+
+        if ((prize > currentBank || forceLossByRtp) && attempts < maxAttempts) {
+            attempts++;
+            continue; // Банк пуст или сработал лимит RTP — пересдаем карты!
+        }
+        break; // Касса одобрила исход раздачи
+    } while (true);
+
+    // Окончательное начисление одобренного выигрыша
     req.player.balance += prize;
-    await state.updateBalance(username, req.player.balance);
+    await state.updateBalance(username, partnerId, req.player.balance);
 
-    // 6. Логируем историю в вашем стиле
-    const save = await state.savePlayerActionHistory(username, {
+    if (prize > 0) {
+        reduceHoldemBank(partnerId, prize); // Минусуем выплату из кассы партнера
+    }
+
+    await state.savePlayerActionHistory(username, partnerId, {
         game: "Casino-Holdem",
-        details: `P: ${playerHand.join(',')} (${playerEval.name}) | D: ${dealerHand.join(',')} (${dealerEval.name}) | Board: ${communityCards.join(',')}`,
+        details: `P: ${playerHand.join(',')} (${playerEval.name}) | D: ${dealerHand.join(',')} | Board: ${communityCards.join(',')}`,
         change: prize > 0 ? `+${prize} 🪙` : `Loss`,
         win: prize > 0
     });
 
-    // 7. Отдаем полный JSON для фронтенда
     res.json({
-        status,
-        playerHand,
-        dealerHand,
-        communityCards,
-        playerCombo: playerEval.name,
-        dealerCombo: dealerEval.name,
-        prize,
-        balance: req.player.balance
+        status, playerHand, dealerHand, communityCards,
+        playerCombo: playerEval.name, dealerCombo: dealerEval.name,
+        prize, balance: req.player.balance
     });
 };
+
 
 

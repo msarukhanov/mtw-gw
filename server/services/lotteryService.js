@@ -14,7 +14,7 @@ function initLotteryService(io) {
         for (const partnerId of partnerIds) {
             if (partnerId === 'lottery' || partnerId === 'slots' || partnerId === 'wheel' || partnerId === 'scratch' || partnerId === 'gamification') continue;
 
-            io.to(partnerId).emit('timer_update', {
+            io.to(partnerId+'_lottery').emit('timer_update', {
                 timeLeft: timeToDraw,
                 jackpot: state.getJackpot(partnerId) // Возвращаем джекпот конкретного бренда
             });
@@ -151,7 +151,7 @@ async function runGlobalDraw(io, partnerIds) {
         await state.saveDrawToHistory(drawHistoryRecord);
 
         // Транслируем информацию о выпавших числах строго в комнату текущего бренда
-        io.to(partnerId).emit('global_draw_info', { winningNumbers, historyRecord: drawHistoryRecord });
+        io.to(partnerId+'_lottery').emit('global_draw_info', { winningNumbers, historyRecord: drawHistoryRecord });
     }
 }
 

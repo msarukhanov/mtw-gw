@@ -27,7 +27,7 @@ globalHistoryDiv.id = 'globalHistoryBox';
 globalHistoryDiv.style.cssText = "margin-top: 25px; border-top: 1px solid #393e46; padding-top: 15px; text-align: left; max-height: 200px; overflow-y: auto;";
 document.body.appendChild(globalHistoryDiv);
 
-const gameTabs = ['lottery','scratch','slots3x3','slots5x3','wof','mines','crash','dice','hilo'];
+const gameTabs = ['lottery','scratch','slots3x3','slots5x3','wof','mines','crash','dice','hilo','blackjack','holdem','roulette'];
 
 // --- Табы / Переключение вкладок ---
 function changeTab(tab) {

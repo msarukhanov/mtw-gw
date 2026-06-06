@@ -7,6 +7,7 @@ const auth = require('./authRoutes'); // импорт middleware
 const slots3x3 = require('../controllers/slots3x3Controller');
 const slots5x3 = require('../controllers/slots5x3Controller');
 const wheel = require('../controllers/wheelController');
+const roulette = require('../controllers/rouletteController');
 const scratch = require('../controllers/scratchController');
 const mines = require('../controllers/minesController');
 const crash = require('../controllers/crashController');
@@ -42,7 +43,9 @@ router.post('/crash/cashout', auth.checkPlayer, crash.cashout);
 router.post('/blackjack/deal', auth.checkPlayer, blackjack.deal);
 router.post('/blackjack/action', auth.checkPlayer, blackjack.action);
 
-router.post('/holdem/spin', auth.checkPlayer, holdem.spinPoker);
+router.post('/holdem/spin', auth.checkPlayer, holdem.spinHoldem);
+
+router.post('/roulette/bet', auth.checkPlayer, roulette.placeBet);
 
 router.post('/wheel/spin', auth.checkPlayer, wheel.spin);
 router.post('/scratch/buy', auth.checkPlayer, scratch.buy);

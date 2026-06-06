@@ -61,7 +61,7 @@ async function runNextRoundLoop(io) {
         for (const partnerId of partnerIds) {
             if (partnerId === 'lottery' || partnerId === 'slots' || partnerId === 'wheel' || partnerId === 'scratch' || partnerId === 'gamification') continue;
 
-            io.to(partnerId).emit('crash_state', {
+            io.to(partnerId+'_crash').emit('crash_state', {
                 status: "betting",
                 timeLeft: timer,
                 bets: state.getCrashBets(partnerId) // Отдаем ставки только ЭТОГО партнера
@@ -140,7 +140,7 @@ async function startFlight(io, partnerIds) {
                 });
 
                 // Отправляем тик полета в комнату этого партнера
-                io.to(partnerId).emit('crash_state', {
+                io.to(partnerId+'_crash').emit('crash_state', {
                     status: "flying",
                     multiplier: currentMultiplier,
                     cashedOut: cashedOutHistory[partnerId] || {}
@@ -150,7 +150,7 @@ async function startFlight(io, partnerIds) {
             else if (state.getCrashBets(partnerId) && Object.keys(state.getCrashBets(partnerId)).length > 0) {
 
                 // Фиксируем краш для этой комнаты
-                io.to(partnerId).emit('crash_state', {
+                io.to(partnerId+'_crash').emit('crash_state', {
                     status: "crashed",
                     multiplier: targetCrashPoint,
                     cashedOut: cashedOutHistory[partnerId] || {}
