@@ -11,6 +11,8 @@ const SECTORS_WoF = [
     {label: '7', prize: 10},
 ];
 
+let isSpinning = false;
+
 const SPIN_COST_WoF = 20;
 let currentAngle = 0; // Текущий угол поворота колеса в радианах
 
@@ -112,6 +114,9 @@ spinBtnWof.onclick = async () => {
             return;
         }
 
+        // Сервер прислал точный индекс победного сектора (0-9)
+        // Примечание: серверный индекс берется от деления остатка на количество секторов,
+        // поэтому бэкенд-логика автоматически подстроится под вашу структуру!
         const winningSectorIndex = data.sectorIndex;
         const serverPrize = data.prize;
         const serverLabel = data.label;

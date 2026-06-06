@@ -12,6 +12,8 @@ const mines = require('../controllers/minesController');
 const crash = require('../controllers/crashController');
 const dice = require('../controllers/diceController');
 const hilo = require('../controllers/hiloController');
+const blackjack = require('../controllers/blackjackController');
+const holdem = require('../controllers/holdemController');
 const leaderboard = require('../controllers/leaderboardController');
 const promo = require('../controllers/promoController');
 
@@ -37,7 +39,10 @@ router.post('/crash/cashout', auth.checkPlayer, crash.cashout);
 
 // 2. Назначаем защищенные роуты (добавьте к остальным играм)
 
-// Назначаем роуты и защищаем их проверкой игрока (auth.checkPlayer)
+router.post('/blackjack/deal', auth.checkPlayer, blackjack.deal);
+router.post('/blackjack/action', auth.checkPlayer, blackjack.action);
+
+router.post('/holdem/spin', auth.checkPlayer, holdem.spinPoker);
 
 router.post('/wheel/spin', auth.checkPlayer, wheel.spin);
 router.post('/scratch/buy', auth.checkPlayer, scratch.buy);

@@ -454,6 +454,7 @@ const playerMethods = {
     },
 
     // ИСПРАВЛЕНО: Добавлен partnerId в аргументы для изоляции правок
+
     savePlayerActionHistory: async (username, partnerId, actionData) => {
         const player = await db.findOne({username: username, partnerId: partnerId});
         if (player) {

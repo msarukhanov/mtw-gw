@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTWTech casino</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDAgNTAwIj4KPHJlY3Qgd2lkdGg9IjUwMCIgaGVpZ2h0PSI1MDAiIGZpbGw9IiMxMjEyMTIiIHJ4PSI0MCIvPgo8dGV4dCB4PSI1MCUiIHk9IjQ1JSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IidKZXRCcmFpbnMgTW9ubycsICdGaXJhIENvZGUnLCAnTW9udHNlcnJhdCcsIHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSI5MDAiPgo8dHNwYW4geD0iNTAlIiBkeT0iMCIgZm9udC1zaXplPSIxMjUiIGZpbGw9IiNmZjVhNWYiIHRleHRMZW5ndGg9IjM2MCIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nQW5kR2x5cGhzIj5NVFc8L3RzcGFuPgo8dHNwYW4geD0iNTAlIiBkeT0iMTE1IiBmb250LXNpemU9IjExNSIgZmlsbD0iIzRlY2NhMyIgdGV4dExlbmd0aD0iMzYwIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiPlRFQ0g8L3RzcGFuPgo8L3RleHQ+Cjwvc3ZnPg==">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a2e;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 400px;
+            background: #16213e;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        .jackpot-banner {
+            background: linear-gradient(90deg, #951c30, #e94560);
+            padding: 10px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            font-size: 18px;
+            box-shadow: 0 0 15px rgba(233, 69, 96, 0.4);
+            animation: pulse 1.5s infinite alternate;
+        }
+        @keyframes pulse { to { transform: scale(1.02); } }
+
+        .auth-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #0f3460;
+            padding: 10px 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .login-btn {
+            background: #e94560;
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .balance-value {
+            color: #4ecca3;
+            font-weight: bold;
+        }
+
+        h1 {
+            font-size: 22px;
+            margin-bottom: 15px;
+            color: #e94560;
+        }
+
+        .spin-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #e94560, #951c30);
+            border: none;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 16px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(233, 69, 96, 0.4);
+            transition: transform 0.1s, filter 0.2s;
+            letter-spacing: 1px;
+        }
+        .spin-btn:active { transform: scale(0.98); }
+        .spin-btn:disabled {
+            background: #333344;
+            color: #777;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        /* Информационные плашки */
+        .bet-info { margin-bottom: 15px; font-size: 14px; color: #8a8ab0; }
+        .bet-info span { color: #fff; font-weight: bold; }
+        .msg-box { min-height: 24px; font-size: 18px; font-weight: bold; color: #4ecca3; text-shadow: 0 0 5px rgba(78,204,163,0.3); }
+
+        /* Класс бесконечной быстрой прокрутки (запускается через JS) */
+        .blur-spin {
+            animation: spinningStrip 0.2s linear infinite;
+        }
+
+        @keyframes spinningStrip {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-360px); } /* Смещение на высоту 4 элементов */
+        }
+
+        /* Область колеса со стрелкой */
+        .wheel-box {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            margin: 0 auto 25px auto;
+        }
+
+        /* Маркер/Стрелка сверху */
+        .pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 30px solid #e94560;
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5));
+            z-index: 10;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+
+        /* Кнопка */
+        .spin-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #4ecca3, #2b9371);
+            border: none;
+            color: #12122c;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 16px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(78, 204, 163, 0.3);
+            transition: transform 0.1s, filter 0.2s;
+            letter-spacing: 1px;
+        }
+
+        .spin-btn:active {
+            transform: scale(0.98);
+        }
+
+        .spin-btn:disabled {
+            background: #333344;
+            color: #777;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        .bet-info {
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #8a8ab0;
+        }
+
+        .bet-info span {
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .msg-box {
+            min-height: 24px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #e94560;
+            text-shadow: 0 0 5px rgba(233, 69, 96, 0.3);
+        }
+
+
+    </style>
+
+    <script src="https://cdn.socket.io/4.8.3/socket.io.min.js" integrity="sha384-kzavj5fiMwLKzzD1f8S7TeoVIEi7uKHvbTA3ueZkrzYq75pNQUiUi6Dy98Q3fxb0" crossorigin="anonymous"></script>
+
+</head>
+<body>
+
+<div class="game-container">
+    <div class="auth-panel">
+        <div id="userInfo">Player: <span id="usernameLabel" style="color:#e94560">Guest</span></div>
+        <div>Balance: <span class="balance-value" id="balanceLabel">0</span> 🪙</div>
+        <button class="login-btn" id="authBtn" onclick="handleAuth()">Login</button>
+    </div>
+
+    <div class="jackpot-banner">💥 JACKPOT: <span id="jackpotLabel">1000</span> 🪙</div>
+</div>
+
+<button id="backToLobbyBtn" onclick="goToLobby()" style="display:none; margin: 10px auto; padding: 8px 16px; background: #222831; color: #8a8ab0; border: 1px solid #393e46; border-radius: 8px; cursor: pointer;">⬅ Back to Lobby</button>
+
+<div class="game-container" id="wof1">
+
+    <h1>🎰 LUCKY WHEEL</h1>
+
+    <div class="wheel-box">
+        <div class="pointer"></div>
+        <canvas id="wheelCanvas" width="560" height="560"></canvas>
+    </div>
+
+    <div class="bet-info">Cost per spin: <span>20 🪙</span></div>
+
+    <button class="spin-btn" id="spinBtnWof">SPIN WHEEL</button>
+
+    <div class="msg-box" id="msgBoxWof" style="margin-top: 20px;">Spin and Win!</div>
+</div>
+
+<div id="lobby" style="height: 0;"></div>
+
+<script src="../view/scripts/main.js"></script>
+
+<script src="./wof.js"></script>
+
+</body>
+</html>
