@@ -690,7 +690,7 @@ const financialMethods = {
     getFinancialReport: async (partnerId) => {
         // Вытаскиваем все логи транзакций партнера
         const res = await global.pool.query(
-            'SELECT type, amount, game, EXTRACT(EPOCH FROM timestamp) * 1000 as ts FROM accounting_logs WHERE partner_id = $1 ORDER BY timestamp DESC',
+            'SELECT type, amount, game, username, EXTRACT(EPOCH FROM timestamp) * 1000 as ts FROM accounting_logs WHERE partner_id = $1 ORDER BY timestamp DESC',
             [partnerId]
         );
         const txs = res.rows;

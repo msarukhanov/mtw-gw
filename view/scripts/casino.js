@@ -413,7 +413,7 @@ function setWidgets() {
         const iframe = document.createElement('iframe');
         iframe.className = item;
         // iframe.src = `${location.origin}/widgets/${item}.html?partnerId=${partnerId}&sessionId=${sessionId}`;
-        iframe.src = `./widgets/${item}.html?partnerId=${partnerId}&sessionId=${sessionId}`;
+        iframe.src = `./widgets/${item}?partnerId=${partnerId}&sessionId=${sessionId}`;
         // iframe.src = `${location.origin}/admin.html`;
         container.appendChild(iframe);
     });
