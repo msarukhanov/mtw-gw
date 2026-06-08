@@ -340,7 +340,7 @@ function closeActiveGame() {
 // Справочник иконок по слагам для красоты сетки
 function getGameIcon(game) {
     if(game.image) {
-        return `<img src="${game.image}">`;
+        return `<img class="game-image" src="${game.image}">`;
     }
     const icons = {
         'crash-aviator': '🚀',
