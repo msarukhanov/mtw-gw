@@ -63,9 +63,6 @@ router.post('/auth/seamless', async (req, res) => {
     if (!sessionId) return res.status(400).json({ error: "Session ID required" });
     if (!partnerId) return res.status(400).json({ error: "Partner ID required for B2B routing" });
 
-    let gameSession;
-
-
     try {
         // Идем к конкретной внешней платформе проверять токен (передаем partnerId)
         let externalUser = await seamless.validateSession(sessionId, partnerId);
