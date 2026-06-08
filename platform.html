@@ -1655,19 +1655,28 @@
         // Establish persistent real-time socket listeners
         if (typeof io !== 'undefined') {
             socket = io(CORE_SERVER);
+            console.log('WS Connect', {
+                username: currentUsername,
+                partnerId: 'demo_mtwtech'
+            });
             socket.on('connect', () => {
-                socket.emit('platform_join', {
-                    username: currentUsername,
-                    partnerId: 'demo_mtwtech'
-                });
+                console.log('🚀 Sending handshake now...');
+                setTimeout(() => {
+                    socket.emit('platform_join', {
+                        username: currentUsername,
+                        partnerId: 'demo_mtwtech'
+                    });
+                }, 250);
             });
             socket.on('wallet_update', (wsData) => {
+                console.log('⚡ Live WS Wallet Update:', data.balance);
                 const liveWallet = document.getElementById('wallet-display');
                 const liveProfile = document.getElementById('profile-balance');
                 if (liveWallet) liveWallet.innerText = wsData.balance + ' 🪙';
                 if (liveProfile) liveProfile.innerText = wsData.balance + ' 🪙';
             });
         }
+
 
         toggleView('home');
     }
