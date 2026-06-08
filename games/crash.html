@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTWTech Blackjack</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDAgNTAwIj4KPHJlY3Qgd2lkdGg9IjUwMCIgaGVpZ2h0PSI1MDAiIGZpbGw9IiMxMjEyMTIiIHJ4PSI0MCIvPgo8dGV4dCB4PSI1MCUiIHk9IjQ1JSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IidKZXRCcmFpbnMgTW9ubycsICdGaXJhIENvZGUnLCAnTW9udHNlcnJhdCcsIHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSI5MDAiPgo8dHNwYW4geD0iNTAlIiBkeT0iMCIgZm9udC1zaXplPSIxMjUiIGZpbGw9IiNmZjVhNWYiIHRleHRMZW5ndGg9IjM2MCIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nQW5kR2x5cGhzIj5NVFc8L3RzcGFuPgo8dHNwYW4geD0iNTAlIiBkeT0iMTE1IiBmb250LXNpemU9IjExNSIgZmlsbD0iIzRlY2NhMyIgdGV4dExlbmd0aD0iMzYwIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiPlRFQ0g8L3RzcGFuPgo8L3RleHQ+Cjwvc3ZnPg==">
+
+    <link rel="stylesheet" href="../view/styles/gameBase.css">
+    <link rel="stylesheet" href="./crash.css">
+
+    <script src="../view/scripts/socket.io.min.js" integrity="sha384-kzavj5fiMwLKzzD1f8S7TeoVIEi7uKHvbTA3ueZkrzYq75pNQUiUi6Dy98Q3fxb0" crossorigin="anonymous"></script>
+
+</head>
+<body>
+
+<div class="game-container">
+    <div class="auth-panel">
+        <div id="userInfo">Player: <span id="usernameLabel" style="color:#e94560">Guest</span></div>
+        <div>Balance: <span class="balance-value" id="balanceLabel">0</span> 🪙</div>
+        <button class="login-btn" id="authBtn" onclick="handleAuth()">Login</button>
+    </div>
+
+    <div class="jackpot-banner">💥 JACKPOT: <span id="jackpotLabel">1000</span> 🪙</div>
+</div>
+
+<div class="game-container" id="crash">
+    <div class="crash-wrapper" style="display: flex; flex-direction: column; gap: 15px; width: 100%;">
+
+        <!-- Экран полета -->
+        <div class="crash-display" style="position: relative; width: 100%; height: 220px; background: #070714; border-radius: 18px; border: 2px solid #25254d; overflow: hidden;">
+            <canvas id="crashCanvas" width="500" height="220"></canvas>
+            <div id="crashLiveMult" class="crash-multiplier-live" style="display: none;">1.00x</div>
+            <div id="crashOverlay" class="crash-overlay-msg">Waiting for next round...</div>
+        </div>
+
+        <!-- Панель ставки -->
+        <div class="crash-panel" style="display: flex; width: 100%; gap: 12px;">
+            <div class="crash-input-box" style="flex: 1;">
+                <label>Bet Amount</label>
+                <input type="number" id="crashBetInput" class="crash-input" value="10" min="1">
+            </div>
+        </div>
+
+        <button id="crashActionBtn" class="crash-btn">PLACE BET</button>
+        <div id="crashMsg" class="crash-msg"></div>
+
+        <!-- КЛЮЧЕВОЕ ДОБАВЛЕНИЕ: ТАБЛИЦА LIVE-СТАВОК ОНЛАЙН -->
+        <div style="width: 100%; background: #101026; border-radius: 14px; border: 1px solid #25254d; padding: 15px; text-align: left;">
+            <div style="font-size: 13px; font-weight: bold; color: #4ecca3; margin-bottom: 10px; letter-spacing: 0.5px;">LIVE BETS (ALL PLAYERS)</div>
+            <div id="crashLiveBetsBox" style="max-height: 180px; overflow-y: auto; font-size: 12px; color: #8a8ab0; display: flex; flex-direction: column; gap: 6px;">
+                <!-- Сюда сокеты будут динамически вбрасывать строки игроков -->
+                <div style="text-align: center; color: #555; padding: 10px;">Waiting for bets...</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!--<div class="crash-wrapper">-->
+    <!--&lt;!&ndash; Экран полета &ndash;&gt;-->
+    <!--<div class="crash-display">-->
+    <!--<canvas id="crashCanvas" width="500" height="220"></canvas>-->
+    <!--<div id="crashLiveMult" class="crash-multiplier-live" style="display: none;">1.00x</div>-->
+    <!--<div id="crashOverlay" class="crash-overlay-msg">Waiting for next round...</div>-->
+    <!--</div>-->
+
+    <!--&lt;!&ndash; Панель ставки &ndash;&gt;-->
+    <!--<div class="crash-panel">-->
+    <!--<div class="crash-input-box">-->
+    <!--<label>Bet Amount</label>-->
+    <!--<input type="number" id="crashBetInput" class="crash-input" value="10" min="1">-->
+    <!--</div>-->
+    <!--</div>-->
+
+    <!--&lt;!&ndash; Одна универсальная кнопка управления (Ставка / Кэшаут) &ndash;&gt;-->
+    <!--<button id="crashActionBtn" class="crash-btn">PLACE BET</button>-->
+    <!--</div>-->
+</div>
+
+<script src="../view/scripts/main.js"></script>
+<script src="./crash.js"></script>
+
+</body>
+</html>

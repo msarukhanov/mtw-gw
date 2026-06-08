@@ -1,0 +1,18 @@
+.leaderboard-widget { max-width: 600px; background: #1a1d24; color: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-family: sans-serif; }
+.leaderboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #2a2f3a; padding-bottom: 15px; }
+.leaderboard-header h2 { margin: 0; font-size: 22px; color: #ffb703; }
+.leaderboard-tabs { display: flex; gap: 8px; }
+.tab-btn { background: #2a2f3a; border: 0; color: #a0a5b5; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: all 0.2s; font-size: 13px; }
+.tab-btn:hover { background: #3a4150; color: #fff; }
+.tab-btn.active { background: #ffb703; color: #1a1d24; }
+.lb-table { width: 100%; border-collapse: collapse; text-align: left; }
+.lb-table th { color: #a0a5b5; font-size: 14px; padding: 10px; border-bottom: 1px solid #2a2f3a; }
+.lb-table td { padding: 12px 10px; border-bottom: 1px solid #232730; font-size: 15px; }
+.lb-row-1 { background: rgba(255, 183, 3, 0.08); font-weight: bold; }
+.lb-row-2 { background: rgba(206, 212, 218, 0.05); }
+.lb-row-3 { background: rgba(205, 127, 50, 0.05); }
+.rank-badge { display: inline-block; width: 26px; height: 26px; text-align: center; line-height: 26px; border-radius: 50%; font-weight: bold; }
+.rank-1 .rank-badge { background: #ffb703; color: #1a1d24; }
+.rank-2 .rank-badge { background: #e0e0e0; color: #1a1d24; }
+.rank-3 .rank-badge { background: #cd7f32; color: #1a1d24; }
+.val-highlight { color: #00f5d4; font-weight: bold; }

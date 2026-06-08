@@ -1,0 +1,102 @@
+.bj-wrapper {
+    background: #0f3460;
+    padding: 15px;
+    border-radius: 12px;
+    text-align: left;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.bj-header {
+    font-size: 14px;
+    color: #8a8ab0;
+    margin-bottom: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Сетка для игральных карт */
+.bj-cards-row {
+    display: flex;
+    gap: 8px;
+    min-height: 90px;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+/* Специфичные стили самой карты */
+.bj-card-unit {
+    width: 60px;
+    height: 85px;
+    background: #ffffff !important;
+    color: #000000 !important;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 6px;
+    font-weight: bold;
+    font-size: 18px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+    position: relative;
+    user-select: none;
+    box-sizing: border-box;
+}
+
+/* Красные масти */
+.bj-card-unit.bj-red {
+    color: #e94560 !important;
+}
+
+/* Рубашка карты дилера */
+.bj-card-unit.bj-back {
+    background: linear-gradient(135deg, #951c30, #e94560) !important;
+    border: 2px solid #ffffff;
+    color: transparent !important;
+    box-shadow: 0 0 10px rgba(233, 69, 96, 0.4);
+}
+
+/* Уникальные кнопки Блэкджека */
+.bj-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, #4ecca3, #2b9371);
+    border: none;
+    color: #12122c;
+    font-size: 20px;
+    font-weight: bold;
+    border-radius: 16px;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(78, 204, 163, 0.3);
+    transition: transform 0.1s, filter 0.2s;
+    letter-spacing: 1px;
+    box-sizing: border-box;
+}
+
+.bj-btn:active {
+    transform: scale(0.98);
+}
+
+.bj-btn:disabled {
+    background: #333344 !important;
+    color: #777 !important;
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
+/* Кнопка HIT отдельно */
+.bj-btn-hit {
+    background: linear-gradient(135deg, #e94560, #951c30);
+    color: white;
+    box-shadow: 0 6px 20px rgba(233, 69, 96, 0.3);
+}
+
+.msg-box {
+    min-height: 24px;
+    font-size: 18px;
+    font-weight: bold;
+    color: #e94560;
+    text-shadow: 0 0 5px rgba(233, 69, 96, 0.3);
+}

@@ -1,0 +1,132 @@
+:root {
+    --bg-main: #1a1a2e;
+    --bg-container: #16213e;
+    --bg-panel: #0f3460;
+    --bg-timer: #222831;
+    --border-color: #25254d;
+    --color-text: #ffffff;
+    --color-accent: #e94560;
+    --color-success: #4ecca3;
+    --gradient-jackpot: linear-gradient(90deg, #951c30, #e94560);
+}
+
+body.theme-light {
+    --bg-main: #f0f2f5;
+    --bg-container: #ffffff;
+    --bg-panel: #e4e6eb;
+    --bg-timer: #f0f2f5;
+    --border-color: #ccd0d5;
+    --color-text: #1c1e21;
+    --color-accent: #0076ff;
+    --color-success: #2baf2b;
+    --gradient-jackpot: linear-gradient(90deg, #0056b3, #0076ff);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: var(--bg-main);
+    color: var(--color-text);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 100vh;
+    padding: 15px;
+    transition: background 0.3s, color 0.3s;
+}
+
+.game-container {
+    width: 100%;
+    max-width: 1000px;
+    background: var(--bg-container);
+    padding: 20px;
+    border-radius: 20px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.jackpot-banner {
+    background: var(--gradient-jackpot);
+    padding: 12px;
+    border-radius: 12px;
+    margin-bottom: 5px;
+    font-weight: bold;
+    font-size: 18px;
+    box-shadow: 0 0 15px rgba(233, 69, 96, 0.4);
+    animation: pulse 1.5s infinite alternate;
+}
+
+@keyframes pulse {
+    to {
+        transform: scale(1.02);
+    }
+}
+
+.tabs-container {
+    width: 100%;
+    max-width: 1000px;
+    background: linear-gradient(145deg, #12122c, #1a1a3a);
+    padding: 12px 20px;
+    border-radius: 16px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7), 0 0 20px rgba(233, 69, 96, 0.2);
+    text-align: center;
+    border: 2px solid var(--border-color);
+    display: flex;
+    justify-content: space-around;
+    overflow-x: auto;
+    margin: 0 auto 20px auto;
+}
+
+.game-tab {
+    display: inline-block;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 6px 16px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.game-tab.selected {
+    color: #fff;
+    background: var(--color-accent);
+}
+
+/* Панель пользователя */
+.auth-panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-panel);
+    padding: 10px 15px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    font-size: 14px;
+}
+
+.login-btn {
+    background: var(--color-accent);
+    border: none;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: opacity 0.2s;
+}
+
+.login-btn:hover {
+    opacity: 0.9;
+}
+
+.balance-value {
+    color: var(--color-success);
+    font-weight: bold;
+}

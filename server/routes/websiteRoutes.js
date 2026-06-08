@@ -15,6 +15,13 @@ router.post('/showcase/credit', showcaseController.credit);
 router.get('/showcase/user-info', showcaseController.getUserInfo);
 router.post('/showcase/login', showcaseController.login);
 
+// Роуты, которые имитируют эндпоинты внешней платформы
+router.post('/seamless/validate', showcaseController.validate);
+router.post('/seamless/debit', showcaseController.debit);
+router.post('/seamless/credit', showcaseController.credit);
+router.get('/seamless/user-info', showcaseController.getUserInfo);
+router.post('/seamless/login', showcaseController.login);
+
 // 1. Эндпоинт проверки сессии (Validate)
 router.post('/platform/validate', (req, res) => {
     const { token, secret } = req.body;

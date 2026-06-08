@@ -32,8 +32,8 @@ const gameTabs = ['lottery','scratch','slots3x3','slots5x3','wof','mines','crash
 // --- Табы / Переключение вкладок ---
 function changeTab(tab) {
     if(tab) {
-        document.getElementById('lobby').style.display = 'none';
-        document.getElementById('backToLobbyBtn').style.display = 'block';
+        // document.getElementById('lobby').style.display = 'none';
+        // document.getElementById('backToLobbyBtn').style.display = 'block';
 
         gameTabs.forEach(t => {
             const element = document.getElementById(t);
@@ -44,7 +44,7 @@ function changeTab(tab) {
                 element.style.display = 'block';
                 if (tabBtn) tabBtn.classList.add('selected');
             } else {
-                element.style.display = 'none';
+                // element.style.display = 'none';
                 if (tabBtn) tabBtn.classList.remove('selected');
             }
         });
@@ -56,19 +56,19 @@ function changeTab(tab) {
     else {
         gameTabs.forEach(t => {
             const element = document.getElementById(t);
-            if(element) element.style.display = 'none';
+            // if(element) element.style.display = 'none';
         });
-        document.getElementById('lobby').style.display = 'block';
-        document.getElementById('backToLobbyBtn').style.display = 'none';
+        // document.getElementById('lobby').style.display = 'block';
+        // document.getElementById('backToLobbyBtn').style.display = 'none';
     }
 }
 window.goToLobby = function() {
     gameTabs.forEach(t => {
         const element = document.getElementById(t);
-        if(element) element.style.display = 'none';
+        // if(element) element.style.display = 'none';
     });
-    document.getElementById('lobby').style.display = 'block';
-    document.getElementById('backToLobbyBtn').style.display = 'none';
+    // document.getElementById('lobby').style.display = 'block';
+    // document.getElementById('backToLobbyBtn').style.display = 'none';
 };
 
 // --- Функция обновления шапки профиля ---
@@ -280,7 +280,7 @@ async function initSeamlessGame(sessionId, partnerId) {
         if (data.error) {
             console.error("Seamless login failed:", data.error);
             // Красиво выводим ошибку вместо лобби или поверх открытой игры
-            document.getElementById('lobby').innerHTML = `<h3 style="color:#e94560; text-align:center;">Session Expired: ${data.error}</h3>`;
+            // document.getElementById('lobby').innerHTML = `<h3 style="color:#e94560; text-align:center;">Session Expired: ${data.error}</h3>`;
             return;
         }
 

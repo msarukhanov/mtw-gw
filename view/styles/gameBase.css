@@ -1,0 +1,71 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #1a1a2e;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 15px;
+}
+
+.game-container {
+    width: 100%;
+    max-width: 400px;
+    background: #16213e;
+    padding: 20px;
+    border-radius: 20px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    text-align: center;
+}
+
+.jackpot-banner {
+    background: linear-gradient(90deg, #951c30, #e94560);
+    padding: 10px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    font-weight: bold;
+    font-size: 18px;
+    box-shadow: 0 0 15px rgba(233, 69, 96, 0.4);
+    animation: pulse 1.5s infinite alternate;
+}
+@keyframes pulse { to { transform: scale(1.02); } }
+
+.auth-panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #0f3460;
+    padding: 10px 15px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    font-size: 14px;
+}
+
+.login-btn {
+    background: #e94560;
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.balance-value {
+    color: #4ecca3;
+    font-weight: bold;
+}
+
+h1 {
+    font-size: 22px;
+    margin-bottom: 15px;
+    color: #e94560;
+}

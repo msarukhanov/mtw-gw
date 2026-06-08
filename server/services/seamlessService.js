@@ -3,16 +3,21 @@ const state = require('../state');
 
 const isDemo = process.env.env === 'demo';
 // Исправлены опечатки в протоколе https:// и хосте localhost
-const demoUrl = (isDemo ? 'https://mtw-gw.onrender.com' : 'http://localhost:3000') + '/api/showcase/';
+const demoUrl = (isDemo ? 'https://mtw-gw.onrender.com' : 'http://localhost:3000') + '/api/seamless/';
 
 module.exports = {
     validateSession: async (sessionId, partnerId) => {
         try {
-            const partnerConfig = state.getConfig(partnerId);
-            const integration = partnerConfig.integration || {
-                url: demoUrl + 'validate',
-                secret: 'your_secret_key_here'
+            const partnerConfig = global.CONFIG[partnerId];
+            // const integration = partnerConfig.integration || {
+            //     url: demoUrl,
+            //     secret: 'your_secret_key_here'
+            // };
+            const integration = {
+                url: demoUrl,
+                secret: 'demo_showcase_secure_token'
             };
+            integration.url += 'validate';
 
             const response = await axios.post(`${integration.url}`, {
                 token: sessionId,
@@ -28,11 +33,16 @@ module.exports = {
 
     debit: async (username, partnerId, sessionId, amount, gameName, roundId) => {
         try {
-            const partnerConfig = state.getConfig(partnerId);
-            const integration = partnerConfig.integration || {
-                url: demoUrl + 'debit',
-                secret: 'your_secret_key_here'
+            const partnerConfig = global.CONFIG[partnerId];
+            // const integration = partnerConfig.integration || {
+            //     url: demoUrl,
+            //     secret: 'your_secret_key_here'
+            // };
+            const integration = {
+                url: demoUrl,
+                secret: 'demo_showcase_secure_token'
             };
+            integration.url += 'debit';
 
             const response = await axios.post(`${integration.url}`, {
                 username,
@@ -53,11 +63,16 @@ module.exports = {
 
     credit: async (username, partnerId, sessionId, amount, gameName, roundId) => {
         try {
-            const partnerConfig = state.getConfig(partnerId);
-            const integration = partnerConfig.integration || {
-                url: demoUrl + 'credit', // Было исправлено на credit
-                secret: 'your_secret_key_here'
+            const partnerConfig = global.CONFIG[partnerId];
+            // const integration = partnerConfig.integration || {
+            //     url: demoUrl,
+            //     secret: 'your_secret_key_here'
+            // };
+            const integration = {
+                url: demoUrl,
+                secret: 'demo_showcase_secure_token'
             };
+            integration.url += 'credit';
 
             const response = await axios.post(`${integration.url}`, {
                 username,

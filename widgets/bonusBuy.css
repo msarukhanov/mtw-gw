@@ -1,0 +1,36 @@
+.bonus-buy-container {
+    margin: 10px 0;
+    text-align: center;
+}
+.bonus-buy-btn {
+    background: linear-gradient(135deg, #ff007f, #7928ca);
+    border: 2px solid #ff007f;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-family: sans-serif;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 0 15px rgba(255, 0, 127, 0.4);
+    transition: all 0.3s ease;
+    outline: none;
+}
+.bonus-buy-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 25px rgba(255, 0, 127, 0.7);
+    background: linear-gradient(135deg, #ff1a8c, #8a3cd8);
+}
+.bonus-buy-btn:active {
+    transform: scale(0.98);
+}
+.bonus-buy-btn:disabled {
+    background: #2a2f3a;
+    border-color: #3a4150;
+    color: #a0a5b5;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}

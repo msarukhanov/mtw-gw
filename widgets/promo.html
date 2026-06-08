@@ -3,46 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MTWTech WoF</title>
+    <title>MTWTech Promo</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDAgNTAwIj4KPHJlY3Qgd2lkdGg9IjUwMCIgaGVpZ2h0PSI1MDAiIGZpbGw9IiMxMjEyMTIiIHJ4PSI0MCIvPgo8dGV4dCB4PSI1MCUiIHk9IjQ1JSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IidKZXRCcmFpbnMgTW9ubycsICdGaXJhIENvZGUnLCAnTW9udHNlcnJhdCcsIHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSI5MDAiPgo8dHNwYW4geD0iNTAlIiBkeT0iMCIgZm9udC1zaXplPSIxMjUiIGZpbGw9IiNmZjVhNWYiIHRleHRMZW5ndGg9IjM2MCIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nQW5kR2x5cGhzIj5NVFc8L3RzcGFuPgo8dHNwYW4geD0iNTAlIiBkeT0iMTE1IiBmb250LXNpemU9IjExNSIgZmlsbD0iIzRlY2NhMyIgdGV4dExlbmd0aD0iMzYwIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiPlRFQ0g8L3RzcGFuPgo8L3RleHQ+Cjwvc3ZnPg==">
 
     <link rel="stylesheet" href="../view/styles/gameBase.css">
-    <link rel="stylesheet" href="./wof.css">
+    <link rel="stylesheet" href="./promo.css">
 
     <script src="../view/scripts/socket.io.min.js" integrity="sha384-kzavj5fiMwLKzzD1f8S7TeoVIEi7uKHvbTA3ueZkrzYq75pNQUiUi6Dy98Q3fxb0" crossorigin="anonymous"></script>
 
 </head>
 <body>
 
-<div class="game-container">
-    <div class="auth-panel">
-        <div id="userInfo">Player: <span id="usernameLabel" style="color:#e94560">Guest</span></div>
-        <div>Balance: <span class="balance-value" id="balanceLabel">0</span> 🪙</div>
-        <button class="login-btn" id="authBtn" onclick="handleAuth()">Login</button>
-    </div>
+<div class="promo-widget">
+    <h3>🎫 PromoCode</h3>
+    <p>Enter code to get instant bonus</p>
 
-    <div class="jackpot-banner">💥 JACKPOT: <span id="jackpotLabel">1000</span> 🪙</div>
-</div>
+    <form id="frontPromoForm">
+        <div class="promo-input-group">
+            <input
+                    type="text"
+                    id="frontPromoInput"
+                    class="promo-input"
+                    placeholder="Например: BONUS100"
+                    required
+                    autocomplete="off"
+            >
+            <button type="submit" id="frontPromoBtn" class="promo-btn">SEND</button>
+        </div>
+    </form>
 
-<div class="game-container" id="wof1">
-
-    <h1>🎰 LUCKY WHEEL</h1>
-
-    <div class="wheel-box">
-        <div class="pointer"></div>
-        <canvas id="wheelCanvas" width="560" height="560"></canvas>
-    </div>
-
-    <div class="bet-info">Cost per spin: <span>20 🪙</span></div>
-
-    <button class="spin-btn" id="spinBtnWof">SPIN WHEEL</button>
-
-    <div class="msg-box" id="msgBoxWof" style="margin-top: 20px;">Spin and Win!</div>
+    <div id="frontPromoMessage" class="promo-message"></div>
 </div>
 
 <script src="../view/scripts/main.js"></script>
-
-<script src="./wof.js"></script>
+<script src="./promo.js"></script>
 
 </body>
 </html>

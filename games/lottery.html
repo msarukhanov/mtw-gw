@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MTWTech Crash</title>
+    <title>MTWTech Lottery</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDAgNTAwIj4KPHJlY3Qgd2lkdGg9IjUwMCIgaGVpZ2h0PSI1MDAiIGZpbGw9IiMxMjEyMTIiIHJ4PSI0MCIvPgo8dGV4dCB4PSI1MCUiIHk9IjQ1JSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IidKZXRCcmFpbnMgTW9ubycsICdGaXJhIENvZGUnLCAnTW9udHNlcnJhdCcsIHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSI5MDAiPgo8dHNwYW4geD0iNTAlIiBkeT0iMCIgZm9udC1zaXplPSIxMjUiIGZpbGw9IiNmZjVhNWYiIHRleHRMZW5ndGg9IjM2MCIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nQW5kR2x5cGhzIj5NVFc8L3RzcGFuPgo8dHNwYW4geD0iNTAlIiBkeT0iMTE1IiBmb250LXNpemU9IjExNSIgZmlsbD0iIzRlY2NhMyIgdGV4dExlbmd0aD0iMzYwIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiPlRFQ0g8L3RzcGFuPgo8L3RleHQ+Cjwvc3ZnPg==">
 
     <link rel="stylesheet" href="../view/styles/gameBase.css">
-    <link rel="stylesheet" href="./holdem.css">
+    <link rel="stylesheet" href="./lottery.css">
 
     <script src="../view/scripts/socket.io.min.js" integrity="sha384-kzavj5fiMwLKzzD1f8S7TeoVIEi7uKHvbTA3ueZkrzYq75pNQUiUi6Dy98Q3fxb0" crossorigin="anonymous"></script>
 
@@ -24,40 +24,30 @@
     <div class="jackpot-banner">💥 JACKPOT: <span id="jackpotLabel">1000</span> 🪙</div>
 </div>
 
-<div class="game-container" id="hlGame" style="margin-top: 20px;">
-    <h1>🃏 CASINO HOLDEM</h1>
+<div class="game-container" id="lottery">
 
-    <!-- Зона Дилера -->
-    <div class="hl-wrapper">
-        <div class="hl-header">Dealer's Hand (<span id="hlDealerComboLabel">?</span>)</div>
-        <div class="hl-cards-row" id="hlDealerCards"></div>
+    <!-- 2. Таймер фиксированных розыгрышей -->
+    <div class="timer-banner">
+        Next draw in: <span class="timer-val" id="timerDisplay">05:00</span>
     </div>
 
-    <!-- Общие карты (Борд / Стол) -->
-    <div class="hl-wrapper" style="margin-top: 15px; background: #16213e; border: 1px dashed #4ecca3;">
-        <div class="hl-header" style="color: #4ecca3;">Community Cards (Board)</div>
-        <div class="hl-cards-row" id="hlBoardCards"></div>
-    </div>
+    <h1>🎰 5-Minute Lottery</h1>
 
-    <!-- Зона Игрока -->
-    <div class="hl-wrapper" style="margin-top: 15px;">
-        <div class="hl-header">Your Hand (<span id="hlPlayerComboLabel">?</span>)</div>
-        <div class="hl-cards-row" id="hlPlayerCards"></div>
-    </div>
+    <div class="balls-container" id="ballsBox"></div>
+    <div class="ticket" id="ticketBox"></div>
 
-    <div class="bet-info" style="margin-top: 20px;">Cost per game: <span>20 🪙</span></div>
+    <button id="quickPickBtn" style="width: 100%; padding: 10px; background: #0f3460; border: 1px dashed #e94560; color: white; font-size: 14px; font-weight: bold; border-radius: 8px; margin-bottom: 10px; cursor: pointer;">
+        ⚡ Quick Pick (Random 6)
+    </button>
 
-    <!-- Управление -->
-    <div style="display: flex; width: 100%; margin-top: 15px;">
-        <button class="hl-btn" id="hlSpinBtn" onclick="hlSpin()">PLAY HAND</button>
-    </div>
+    <!-- Кнопка теперь регистрирует билет на будущий тираж -->
+    <button class="action-btn" id="betBtn" disabled>Choose 6 numbers</button>
 
-    <div class="msg-box" id="msgBoxHl" style="margin-top: 20px;">Beat the dealer's poker hand!</div>
+    <div class="result" id="resultBox"></div>
 </div>
 
 <script src="../view/scripts/main.js"></script>
-
-<script src="./holdem.js"></script>
+<script src="./lottery.js"></script>
 
 </body>
 </html>

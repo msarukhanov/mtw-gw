@@ -1,0 +1,98 @@
+.timer-banner {
+    background: #222831;
+    padding: 8px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    border: 1px solid #393e46;
+}
+
+.timer-val {
+    color: #e94560;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.balls-container {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    min-height: 50px;
+    margin-bottom: 20px;
+}
+
+.ball {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #ff4b5c, #ff1f3b);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 16px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    transform: scale(0);
+    animation: popIn 0.4s ease forwards;
+}
+
+@keyframes popIn {
+    to {
+        transform: scale(1);
+    }
+}
+
+.ticket {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+    margin-bottom: 15px;
+}
+
+.number-btn {
+    aspect-ratio: 1;
+    background: #0f3460;
+    border: none;
+    color: white;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.number-btn.selected {
+    background: #e94560;
+}
+
+.number-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.action-btn {
+    width: 100%;
+    padding: 15px;
+    background: #4ecca3;
+    border: none;
+    color: #1a1a2e;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 5px 15px rgba(78, 204, 163, 0.3);
+}
+
+.action-btn:disabled {
+    background: #555;
+    color: #888;
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
+.result {
+    margin-top: 15px;
+    font-size: 16px;
+    font-weight: bold;
+    min-height: 24px;
+    color: #4ecca3;
+}

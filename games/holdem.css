@@ -1,0 +1,96 @@
+.hl-wrapper {
+    background: #0f3460;
+    padding: 12px;
+    border-radius: 12px;
+    text-align: left;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.hl-header {
+    font-size: 13px;
+    color: #8a8ab0;
+    margin-bottom: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Строки для карт */
+.hl-cards-row {
+    display: flex;
+    gap: 6px;
+    min-height: 85px;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    flex-wrap: wrap;
+}
+
+/* Уникальный класс карты для Холдема */
+.hl-card-unit {
+    width: 55px;
+    height: 80px;
+    background: #ffffff !important;
+    color: #000000 !important;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 5px;
+    font-weight: bold;
+    font-size: 16px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.4);
+    position: relative;
+    user-select: none;
+    box-sizing: border-box;
+}
+
+/* Красные масти */
+.hl-card-unit.hl-red {
+    color: #e94560 !important;
+}
+
+/* Рубашка карт (для анимации/ожидания) */
+.hl-card-unit.hl-back {
+    background: linear-gradient(135deg, #1f1f45, #0f3460) !important;
+    border: 2px solid #4ecca3;
+    color: transparent !important;
+    box-shadow: 0 0 8px rgba(78, 204, 163, 0.3);
+}
+
+/* Кнопка Холдема */
+.hl-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, #4ecca3, #2b9371);
+    border: none;
+    color: #12122c;
+    font-size: 20px;
+    font-weight: bold;
+    border-radius: 16px;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(78, 204, 163, 0.3);
+    transition: transform 0.1s, filter 0.2s;
+    letter-spacing: 1px;
+    box-sizing: border-box;
+}
+
+.hl-btn:active {
+    transform: scale(0.98);
+}
+
+.hl-btn:disabled {
+    background: #333344 !important;
+    color: #777 !important;
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
+.msg-box {
+    min-height: 24px;
+    font-size: 18px;
+    font-weight: bold;
+    color: #e94560;
+    text-shadow: 0 0 5px rgba(233, 69, 96, 0.3);
+}

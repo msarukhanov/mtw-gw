@@ -48,6 +48,8 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     // Запускаем автопереключение промо-слайдера
     initSliderInterval();
+
+    setWidgets();
 });
 
 // Загрузка списков с Postgres бэкенда (Пункт 1)
@@ -395,3 +397,16 @@ function initSliderInterval() {
     }, 5000); // Интервал автоматической смены баннера — 5 секунд
 }
 
+function setWidgets() {
+    const container = document.getElementById('widgets');
+
+    // ['leaderboard','promo','bonusBuy'].forEach(item => {
+    ['leaderboard','promo'].forEach(item => {
+        const iframe = document.createElement('iframe');
+        iframe.className = item;
+        // iframe.src = `${location.origin}/widgets/${item}.html?partnerId=${partnerId}&sessionId=${sessionId}`;
+        iframe.src = `./widgets/${item}.html?partnerId=${partnerId}&sessionId=${sessionId}`;
+        // iframe.src = `${location.origin}/admin.html`;
+        container.appendChild(iframe);
+    });
+}

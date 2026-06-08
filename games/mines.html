@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MTWTech Crash</title>
+    <title>MTWTech Mines</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDAgNTAwIj4KPHJlY3Qgd2lkdGg9IjUwMCIgaGVpZ2h0PSI1MDAiIGZpbGw9IiMxMjEyMTIiIHJ4PSI0MCIvPgo8dGV4dCB4PSI1MCUiIHk9IjQ1JSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IidKZXRCcmFpbnMgTW9ubycsICdGaXJhIENvZGUnLCAnTW9udHNlcnJhdCcsIHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSI5MDAiPgo8dHNwYW4geD0iNTAlIiBkeT0iMCIgZm9udC1zaXplPSIxMjUiIGZpbGw9IiNmZjVhNWYiIHRleHRMZW5ndGg9IjM2MCIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nQW5kR2x5cGhzIj5NVFc8L3RzcGFuPgo8dHNwYW4geD0iNTAlIiBkeT0iMTE1IiBmb250LXNpemU9IjExNSIgZmlsbD0iIzRlY2NhMyIgdGV4dExlbmd0aD0iMzYwIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiPlRFQ0g8L3RzcGFuPgo8L3RleHQ+Cjwvc3ZnPg==">
 
     <link rel="stylesheet" href="../view/styles/gameBase.css">
-    <link rel="stylesheet" href="./holdem.css">
+    <link rel="stylesheet" href="./mines.css">
 
     <script src="../view/scripts/socket.io.min.js" integrity="sha384-kzavj5fiMwLKzzD1f8S7TeoVIEi7uKHvbTA3ueZkrzYq75pNQUiUi6Dy98Q3fxb0" crossorigin="anonymous"></script>
 
@@ -24,40 +24,36 @@
     <div class="jackpot-banner">💥 JACKPOT: <span id="jackpotLabel">1000</span> 🪙</div>
 </div>
 
-<div class="game-container" id="hlGame" style="margin-top: 20px;">
-    <h1>🃏 CASINO HOLDEM</h1>
+<div class="game-container" id="mines">
+    <div class="mines-wrapper">
+        <!-- Панель настроек ставки -->
+        <div class="mines-panel">
+            <div class="mines-input-group">
+                <label>Bet Amount</label>
+                <input type="number" id="minesBetInput" class="mines-input" value="10" min="1">
+            </div>
+            <div class="mines-input-group">
+                <label>Mines Count (1-24)</label>
+                <input type="number" id="minesCountInput" class="mines-input" value="3" min="1" max="24">
+            </div>
+        </div>
 
-    <!-- Зона Дилера -->
-    <div class="hl-wrapper">
-        <div class="hl-header">Dealer's Hand (<span id="hlDealerComboLabel">?</span>)</div>
-        <div class="hl-cards-row" id="hlDealerCards"></div>
+        <!-- Игровое поле 5х5 -->
+        <div class="mines-grid" id="minesGrid"></div>
+
+        <!-- Кнопки управления действиями -->
+        <div class="mines-controls">
+            <button id="minesStartBtn" class="mines-btn">START GAME</button>
+            <button id="minesCashoutBtn" class="mines-btn" disabled>TAKE WIN</button>
+        </div>
+
+        <!-- Оповещения игры -->
+        <div id="minesMsg" class="mines-msg">Choose bet, mines and press Start!</div>
     </div>
-
-    <!-- Общие карты (Борд / Стол) -->
-    <div class="hl-wrapper" style="margin-top: 15px; background: #16213e; border: 1px dashed #4ecca3;">
-        <div class="hl-header" style="color: #4ecca3;">Community Cards (Board)</div>
-        <div class="hl-cards-row" id="hlBoardCards"></div>
-    </div>
-
-    <!-- Зона Игрока -->
-    <div class="hl-wrapper" style="margin-top: 15px;">
-        <div class="hl-header">Your Hand (<span id="hlPlayerComboLabel">?</span>)</div>
-        <div class="hl-cards-row" id="hlPlayerCards"></div>
-    </div>
-
-    <div class="bet-info" style="margin-top: 20px;">Cost per game: <span>20 🪙</span></div>
-
-    <!-- Управление -->
-    <div style="display: flex; width: 100%; margin-top: 15px;">
-        <button class="hl-btn" id="hlSpinBtn" onclick="hlSpin()">PLAY HAND</button>
-    </div>
-
-    <div class="msg-box" id="msgBoxHl" style="margin-top: 20px;">Beat the dealer's poker hand!</div>
 </div>
 
 <script src="../view/scripts/main.js"></script>
-
-<script src="./holdem.js"></script>
+<script src="./mines.js"></script>
 
 </body>
 </html>

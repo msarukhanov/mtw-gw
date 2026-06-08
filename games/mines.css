@@ -1,0 +1,85 @@
+.mines-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+.mines-panel {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+.mines-input-group {
+    flex: 1;
+    text-align: left;
+}
+.mines-input-group label {
+    display: block;
+    font-size: 12px;
+    color: #8a8ab0;
+    margin-bottom: 4px;
+}
+.mines-input {
+    width: 100%;
+    padding: 10px;
+    background: #0f3460;
+    border: 1px solid #25254d;
+    border-radius: 8px;
+    color: #fff;
+    font-weight: bold;
+    font-size: 14px;
+    outline: none;
+}
+.mines-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    width: 100%;
+    aspect-ratio: 1;
+    background: #070714;
+    padding: 12px;
+    border-radius: 18px;
+    border: 2px solid #25254d;
+    margin-bottom: 15px;
+}
+.mines-cell {
+    background: #101026;
+    border: 1px solid #2d2d5f;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: bold;
+    transition: background 0.2s, transform 0.1s;
+    user-select: none;
+}
+.mines-cell:active { transform: scale(0.95); }
+.mines-cell.safe { background: #4ecca3; border-color: #4ecca3; color: #12122c; }
+.mines-cell.mine { background: #e94560; border-color: #e94560; }
+.mines-cell:disabled { cursor: not-allowed; opacity: 0.8; }
+
+.mines-controls {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 15px;
+}
+.mines-btn {
+    flex: 1;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    color: white;
+    letter-spacing: 1px;
+}
+#minesStartBtn { background: linear-gradient(135deg, #e94560, #951c30); }
+#minesCashoutBtn { background: linear-gradient(135deg, #4ecca3, #2b9371); color: #12122c; }
+.mines-btn:disabled { background: #333344; color: #777; cursor: not-allowed; }
+.mines-msg { min-height: 20px; font-size: 15px; font-weight: bold; color: #8a8ab0; text-align: center; }

@@ -1,0 +1,84 @@
+.promo-widget {
+    max-width: 400px;
+    margin: 10px 0;
+    background: #1a1d24;
+    color: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    font-family: sans-serif;
+}
+.promo-widget h3 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-size: 18px;
+    color: #ffb703;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.promo-widget p {
+    font-size: 13px;
+    color: #a0a5b5;
+    margin: 0 0 15px 0;
+    line-height: 1.4;
+}
+.promo-input-group {
+    display: flex;
+    gap: 8px;
+}
+.promo-input {
+    flex: 1;
+    background: #2a2f3a;
+    border: 1px solid #3a4150;
+    color: #fff;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: bold;
+    text-transform: uppercase; /* Автоматически делает буквы заглавными при вводе */
+    outline: none;
+    transition: border-color 0.2s;
+}
+.promo-input:focus {
+    border-color: #ffb703;
+}
+.promo-btn {
+    background: #ffb703;
+    border: 0;
+    color: #1a1d24;
+    padding: 10px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+.promo-btn:hover {
+    background: #e5a502;
+}
+.promo-btn:disabled {
+    background: #3a4150;
+    color: #a0a5b5;
+    cursor: not-allowed;
+}
+.promo-message {
+    margin-top: 12px;
+    font-size: 13px;
+    font-weight: bold;
+    display: none;
+    padding: 8px;
+    border-radius: 4px;
+}
+.promo-message.success {
+    display: block;
+    background: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+    border: 1px solid rgba(40, 167, 69, 0.2);
+}
+.promo-message.error {
+    display: block;
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    border: 1px solid rgba(220, 53, 69, 0.2);
+}

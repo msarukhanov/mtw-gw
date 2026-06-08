@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTWTech Dice</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDAgNTAwIj4KPHJlY3Qgd2lkdGg9IjUwMCIgaGVpZ2h0PSI1MDAiIGZpbGw9IiMxMjEyMTIiIHJ4PSI0MCIvPgo8dGV4dCB4PSI1MCUiIHk9IjQ1JSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IidKZXRCcmFpbnMgTW9ubycsICdGaXJhIENvZGUnLCAnTW9udHNlcnJhdCcsIHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSI5MDAiPgo8dHNwYW4geD0iNTAlIiBkeT0iMCIgZm9udC1zaXplPSIxMjUiIGZpbGw9IiNmZjVhNWYiIHRleHRMZW5ndGg9IjM2MCIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nQW5kR2x5cGhzIj5NVFc8L3RzcGFuPgo8dHNwYW4geD0iNTAlIiBkeT0iMTE1IiBmb250LXNpemU9IjExNSIgZmlsbD0iIzRlY2NhMyIgdGV4dExlbmd0aD0iMzYwIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiPlRFQ0g8L3RzcGFuPgo8L3RleHQ+Cjwvc3ZnPg==">
+
+    <link rel="stylesheet" href="../view/styles/gameBase.css">
+    <link rel="stylesheet" href="./dice.css">
+
+    <script src="../view/scripts/socket.io.min.js" integrity="sha384-kzavj5fiMwLKzzD1f8S7TeoVIEi7uKHvbTA3ueZkrzYq75pNQUiUi6Dy98Q3fxb0" crossorigin="anonymous"></script>
+
+</head>
+<body>
+
+<div class="game-container">
+    <div class="auth-panel">
+        <div id="userInfo">Player: <span id="usernameLabel" style="color:#e94560">Guest</span></div>
+        <div>Balance: <span class="balance-value" id="balanceLabel">0</span> 🪙</div>
+        <button class="login-btn" id="authBtn" onclick="handleAuth()">Login</button>
+    </div>
+
+    <div class="jackpot-banner">💥 JACKPOT: <span id="jackpotLabel">1000</span> 🪙</div>
+</div>
+
+<div class="game-container" id="dice">
+    <div class="dice-wrapper">
+        <!-- Результат броска -->
+        <div class="dice-display">
+            <div style="font-size: 12px; color: #8a8ab0; letter-spacing: 1px;">LATEST ROLL</div>
+            <div id="diceResultNum" class="dice-result-number">--</div>
+
+            <div class="dice-stats">
+                <div>Win Chance: <span id="diceChanceLabel">49%</span></div>
+                <div>Multiplier: <span id="diceMultLabel">1.95x</span></div>
+            </div>
+        </div>
+
+        <!-- Переключатель условий (Больше / Меньше) -->
+        <div class="dice-condition-toggle">
+            <button id="diceToggleUnder" class="dice-toggle-btn active" onclick="setDiceCondition('under')">Roll Under</button>
+            <button id="diceToggleOver" class="dice-toggle-btn" onclick="setDiceCondition('over')">Roll Over</button>
+        </div>
+
+        <!-- Поля ввода числовых значений -->
+        <div class="dice-panel">
+            <div class="dice-input-box">
+                <label>Bet Amount</label>
+                <input type="number" id="diceBetInput" class="dice-input" value="10" min="1">
+            </div>
+            <div class="dice-input-box">
+                <label id="diceTargetLabel">Target Number (< 50)</label>
+                <input type="number" id="diceTargetInput" class="dice-input" value="50" min="2" max="98">
+            </div>
+        </div>
+
+        <!-- Кнопка броска -->
+        <button id="diceRollBtn" class="dice-btn">ROLL DICE</button>
+        <div id="diceMsg" class="dice-msg">Set target, bet and roll!</div>
+    </div>
+</div>
+
+<script src="../view/scripts/main.js"></script>
+<script src="./dice.js"></script>
+
+</body>
+</html>

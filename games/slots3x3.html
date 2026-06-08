@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MTWTech Crash</title>
+    <title>MTWTech Classic Slots</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDAgNTAwIj4KPHJlY3Qgd2lkdGg9IjUwMCIgaGVpZ2h0PSI1MDAiIGZpbGw9IiMxMjEyMTIiIHJ4PSI0MCIvPgo8dGV4dCB4PSI1MCUiIHk9IjQ1JSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IidKZXRCcmFpbnMgTW9ubycsICdGaXJhIENvZGUnLCAnTW9udHNlcnJhdCcsIHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSI5MDAiPgo8dHNwYW4geD0iNTAlIiBkeT0iMCIgZm9udC1zaXplPSIxMjUiIGZpbGw9IiNmZjVhNWYiIHRleHRMZW5ndGg9IjM2MCIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nQW5kR2x5cGhzIj5NVFc8L3RzcGFuPgo8dHNwYW4geD0iNTAlIiBkeT0iMTE1IiBmb250LXNpemU9IjExNSIgZmlsbD0iIzRlY2NhMyIgdGV4dExlbmd0aD0iMzYwIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiPlRFQ0g8L3RzcGFuPgo8L3RleHQ+Cjwvc3ZnPg==">
 
     <link rel="stylesheet" href="../view/styles/gameBase.css">
-    <link rel="stylesheet" href="./holdem.css">
+    <link rel="stylesheet" href="./slots3x3.css">
 
     <script src="../view/scripts/socket.io.min.js" integrity="sha384-kzavj5fiMwLKzzD1f8S7TeoVIEi7uKHvbTA3ueZkrzYq75pNQUiUi6Dy98Q3fxb0" crossorigin="anonymous"></script>
 
@@ -24,40 +24,33 @@
     <div class="jackpot-banner">💥 JACKPOT: <span id="jackpotLabel">1000</span> 🪙</div>
 </div>
 
-<div class="game-container" id="hlGame" style="margin-top: 20px;">
-    <h1>🃏 CASINO HOLDEM</h1>
+<div class="game-container" id="slots3x3">
+    <!-- Верхняя панель игрока -->
+    <h1>🎰 CYBER SLOTS</h1>
 
-    <!-- Зона Дилера -->
-    <div class="hl-wrapper">
-        <div class="hl-header">Dealer's Hand (<span id="hlDealerComboLabel">?</span>)</div>
-        <div class="hl-cards-row" id="hlDealerCards"></div>
+    <!-- Игровой автомат -->
+    <div class="slot-machine">
+        <div class="win-line-pointer"></div>
+
+        <!-- Барабан 1 -->
+        <div class="reel-window"><div class="reel-strip" id="reel1"></div></div>
+        <!-- Барабан 2 -->
+        <div class="reel-window"><div class="reel-strip" id="reel2"></div></div>
+        <!-- Барабан 3 -->
+        <div class="reel-window"><div class="reel-strip" id="reel3"></div></div>
     </div>
 
-    <!-- Общие карты (Борд / Стол) -->
-    <div class="hl-wrapper" style="margin-top: 15px; background: #16213e; border: 1px dashed #4ecca3;">
-        <div class="hl-header" style="color: #4ecca3;">Community Cards (Board)</div>
-        <div class="hl-cards-row" id="hlBoardCards"></div>
-    </div>
-
-    <!-- Зона Игрока -->
-    <div class="hl-wrapper" style="margin-top: 15px;">
-        <div class="hl-header">Your Hand (<span id="hlPlayerComboLabel">?</span>)</div>
-        <div class="hl-cards-row" id="hlPlayerCards"></div>
-    </div>
-
-    <div class="bet-info" style="margin-top: 20px;">Cost per game: <span>20 🪙</span></div>
+    <div class="bet-info">Cost per spin: <span>10 🪙</span></div>
 
     <!-- Управление -->
-    <div style="display: flex; width: 100%; margin-top: 15px;">
-        <button class="hl-btn" id="hlSpinBtn" onclick="hlSpin()">PLAY HAND</button>
-    </div>
+    <button class="spin-btn" id="spinBtn">SPIN!</button>
 
-    <div class="msg-box" id="msgBoxHl" style="margin-top: 20px;">Beat the dealer's poker hand!</div>
+    <!-- Результат -->
+    <div class="msg-box" id="msgBox" style="margin-top: 20px;">Good Luck!</div>
 </div>
 
 <script src="../view/scripts/main.js"></script>
-
-<script src="./holdem.js"></script>
+<script src="./slots3x3.js"></script>
 
 </body>
 </html>

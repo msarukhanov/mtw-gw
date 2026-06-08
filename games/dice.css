@@ -1,0 +1,103 @@
+.dice-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+.dice-display {
+    position: relative;
+    width: 100%;
+    background: #070714;
+    border-radius: 18px;
+    border: 2px solid #25254d;
+    padding: 25px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+.dice-result-number {
+    font-size: 48px;
+    font-weight: 900;
+    color: #8a8ab0;
+    text-shadow: 0 0 10px rgba(138, 138, 176, 0.2);
+    margin: 10px 0;
+    transition: color 0.2s, text-shadow 0.2s;
+}
+.dice-result-number.win { color: #4ecca3; text-shadow: 0 0 15px rgba(78, 204, 163, 0.4); }
+.dice-result-number.lose { color: #e94560; text-shadow: 0 0 15px rgba(233, 69, 96, 0.4); }
+.dice-stats {
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+    background: rgba(15, 52, 96, 0.3);
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 13px;
+    color: #8a8ab0;
+}
+.dice-stats span { color: #fff; font-weight: bold; }
+.dice-panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    width: 100%;
+    margin-bottom: 15px;
+}
+.dice-input-box {
+    text-align: left;
+}
+.dice-input-box label {
+    display: block;
+    font-size: 12px;
+    color: #8a8ab0;
+    margin-bottom: 4px;
+}
+.dice-input {
+    width: 100%;
+    padding: 12px;
+    background: #0f3460;
+    border: 1px solid #25254d;
+    border-radius: 10px;
+    color: #fff;
+    font-weight: bold;
+    font-size: 16px;
+    outline: none;
+}
+.dice-condition-toggle {
+    display: flex;
+    background: #070714;
+    padding: 4px;
+    border-radius: 12px;
+    border: 1px solid #25254d;
+    width: 100%;
+    margin-bottom: 15px;
+}
+.dice-toggle-btn {
+    flex: 1;
+    padding: 10px;
+    background: transparent;
+    border: none;
+    color: #8a8ab0;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: 0.2s;
+}
+.dice-toggle-btn.active {
+    background: #e94560;
+    color: #fff;
+}
+.dice-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, #e94560, #951c30);
+    border: none;
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    border-radius: 16px;
+    cursor: pointer;
+    letter-spacing: 1px;
+}
+.dice-btn:disabled { background: #333344; color: #777; cursor: not-allowed; }
+.dice-msg { min-height: 20px; font-size: 15px; font-weight: bold; color: #8a8ab0; text-align: center; margin-top: 15px; }
