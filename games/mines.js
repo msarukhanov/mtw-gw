@@ -53,7 +53,7 @@ minesStartBtn.onclick = async () => {
         const response = await fetch(baseUrlApi + '/mines/start', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: currentUser, partnerId: globalPartnerId, minesCount, bet })
+            body: JSON.stringify({ username: currentUser, partnerId: globalPartnerId, token:globalGameSession, minesCount, bet })
         });
         const data = await response.json();
 
@@ -107,7 +107,7 @@ async function openMinesCell(index, cellButton) {
         const response = await fetch(baseUrlApi + '/mines/open', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: currentUser, partnerId: globalPartnerId, cellIndex: index })
+            body: JSON.stringify({ username: currentUser, partnerId: globalPartnerId, token:globalGameSession, cellIndex: index })
         });
         const data = await response.json();
 
@@ -161,7 +161,7 @@ minesCashoutBtn.onclick = async () => {
         const response = await fetch(baseUrlApi + '/mines/cashout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: currentUser, partnerId: globalPartnerId })
+            body: JSON.stringify({ username: currentUser, partnerId: globalPartnerId, token:globalGameSession })
         });
         const data = await response.json();
 

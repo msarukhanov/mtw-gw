@@ -51,7 +51,7 @@ buyBtn.onclick = async () => {
         const response = await fetch(baseUrlApi + '/scratch/buy', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: currentUser, partnerId: globalPartnerId })
+            body: JSON.stringify({ username: currentUser, partnerId: globalPartnerId, token:globalGameSession })
         });
         const data = await response.json();
 

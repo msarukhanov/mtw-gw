@@ -76,7 +76,7 @@ async function makeHiloTurn(choiceMode) {
         const response = await fetch(baseUrlApi + '/hilo/turn', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: currentUser, partnerId: globalPartnerId, choice: choiceMode, bet })
+            body: JSON.stringify({ username: currentUser, partnerId: globalPartnerId, token:globalGameSession, choice: choiceMode, bet })
         });
         const data = await response.json();
 

@@ -63,7 +63,7 @@ async function handleAuth() {
             const response = await fetch(baseUrlApi + '/auth', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: name, partnerId: globalPartnerId })
+                body: JSON.stringify({ username: name, partnerId: globalPartnerId, token:globalGameSession })
             });
             const data = await response.json();
 
@@ -144,7 +144,7 @@ betBtn.onclick = async () => {
         const response = await fetch(baseUrlApi + '/lottery/buy', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: currentUser, partnerId: globalPartnerId, numbers: ticket })
+            body: JSON.stringify({ username: currentUser, partnerId: globalPartnerId, token:globalGameSession, numbers: ticket })
         });
         const data = await response.json();
 

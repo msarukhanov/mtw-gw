@@ -99,7 +99,7 @@ if (diceRollBtn) {
             const response = await fetch(baseUrlApi + '/dice/roll', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: currentUser, partnerId: globalPartnerId, target, condition: diceCondition, bet })
+                body: JSON.stringify({ username: currentUser, partnerId: globalPartnerId, token:globalGameSession, target, condition: diceCondition, bet })
             });
             const data = await response.json();
 

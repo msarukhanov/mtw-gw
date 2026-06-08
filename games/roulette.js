@@ -123,6 +123,7 @@ async function mrPlaceBet(betType, betValue) {
             body: JSON.stringify({
                 username: currentUser,
                 partnerId: globalPartnerId,
+                token:globalGameSession,
                 betAmount,
                 betType,
                 betValue

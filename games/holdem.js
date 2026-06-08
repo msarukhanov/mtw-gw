@@ -59,7 +59,7 @@ async function hlSpin() {
         const response = await fetch(baseUrlApi + '/holdem/spin', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: currentUser, partnerId: globalPartnerId })
+            body: JSON.stringify({ username: currentUser, partnerId: globalPartnerId, token:globalGameSession })
         });
         const data = await response.json();
 

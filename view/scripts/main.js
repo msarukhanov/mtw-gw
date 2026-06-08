@@ -211,6 +211,7 @@ socket.on('timer_update', (data) => {
 
 let globalSessionId = null;
 let globalPartnerId = 'demo_mtwtech';
+let globalGameSession = null;
 
 // Функция парсинга параметров из ссылки (?game=mines&session_id=123)
 function getUrlParams() {
@@ -221,6 +222,7 @@ function getUrlParams() {
     if(urlParams.has('game')) params.game = urlParams.get('game');
     if(urlParams.has('sessionId')) params.sessionId = urlParams.get('sessionId');
     if(urlParams.has('partnerId')) params.partnerId = urlParams.get('partnerId');
+    if(urlParams.has('gameSession')) params.gameSession = urlParams.get('gameSession');
     return params;
 }
 
@@ -241,6 +243,7 @@ function handleUrlRoutingAndStart() {
     if (urlParams.sessionId && urlParams.partnerId) {
         globalSessionId = urlParams.sessionId;
         globalPartnerId = urlParams.partnerId;
+        globalGameSession = urlParams.gameSession;
         initSeamlessGame(globalSessionId, globalPartnerId);
     } else {
         // Если сессии нет — просто обновляем интерфейс для гостя

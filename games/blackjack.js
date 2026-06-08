@@ -55,7 +55,7 @@ async function bjDeal() {
         const response = await fetch(baseUrlApi + '/blackjack/deal', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: currentUser, partnerId: globalPartnerId })
+            body: JSON.stringify({ username: currentUser, partnerId: globalPartnerId, token:globalGameSession })
         });
         const data = await response.json();
 
@@ -104,7 +104,7 @@ async function bjAction(playerChoice) {
         const response = await fetch(baseUrlApi + '/blackjack/action', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: currentUser, partnerId: globalPartnerId, action: playerChoice })
+            body: JSON.stringify({ username: currentUser, partnerId: globalPartnerId, token:globalGameSession, action: playerChoice })
         });
         const data = await response.json();
 

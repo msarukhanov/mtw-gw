@@ -63,7 +63,7 @@ spinBtn.onclick = async () => {
         const response = await fetch(baseUrlApi + '/slots3x3/spin', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: currentUser, partnerId: globalPartnerId })
+            body: JSON.stringify({ username: currentUser, partnerId: globalPartnerId, token:globalGameSession })
         });
         const data = await response.json();
 
