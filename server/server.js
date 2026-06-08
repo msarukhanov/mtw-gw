@@ -24,14 +24,6 @@ const pool = new Pool({
 // Пробрасываем пул в глобальную видимость Node.js, чтобы state.js имел к нему доступ
 global.pool = pool;
 
-const authRoutes = require('./routes/authRoutes');
-const gameRoutes = require('./routes/gameRoutes');
-const adminRoutes = require('./routes/adminRoutes');
-const sportRoutes = require('./routes/sportRoutes');
-const seamlessRoutes = require('./routes/seamlessRoutes');
-const websiteRoutes = require('./routes/websiteRoutes');
-
-
 const app = express();
 app.use(cors({
     origin: '*',
@@ -41,7 +33,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const server = http.createServer(app);
-
 io = new Server(server, {
     cors: {
         origin: "*", // Позволяет фронтенду с любого домена слать события
@@ -50,7 +41,34 @@ io = new Server(server, {
     },
     transports: ['websocket', 'polling']
 });
+io.on('connection', (socket) => {
+    socket.on('join_game', (username) => {
+        socket.join(username);
+    });
 
+    socket.on('join_game_room', ({ username, partnerId, game }) => {
+        console.log(`Socket joining room: ${partnerId}_${game}`);
+        socket.join(partnerId + '_' + game);
+    });
+
+    socket.on('platform_join', (data) => {
+        const { username, partnerId } = data;
+        if (username && partnerId) {
+            // Создаем уникальную изолированную комнату для обновлений, например: siteA_john
+            const roomKey = `${partnerId}_${username}`;
+            socket.join(roomKey);
+        }
+    });
+});
+global.io = io;
+
+
+const authRoutes = require('./routes/authRoutes');
+const gameRoutes = require('./routes/gameRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const sportRoutes = require('./routes/sportRoutes');
+const seamlessRoutes = require('./routes/seamlessRoutes');
+const websiteRoutes = require('./routes/websiteRoutes');
 // Подключаем разделенные роуты
 app.use('/api/seamless/', seamlessRoutes);
 app.use('/api', authRoutes);
@@ -332,25 +350,7 @@ async function initConfig222() {
 initConfig().catch(err => console.error("❌ B2B Initialization crashed:", err.message));
 
 // Обработка подключений Веб-сокетов
-io.on('connection', (socket) => {
-    socket.on('join_game', (username) => {
-        socket.join(username);
-    });
 
-    socket.on('join_game_room', ({ username, partnerId, game }) => {
-        console.log(`Socket joining room: ${partnerId}_${game}`);
-        socket.join(partnerId + '_' + game);
-    });
-
-    socket.on('platform_join', (data) => {
-        const { username, partnerId } = data;
-        if (username && partnerId) {
-            // Создаем уникальную изолированную комнату для обновлений, например: siteA_john
-            const roomKey = `${partnerId}_${username}`;
-            socket.join(roomKey);
-        }
-    });
-});
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
