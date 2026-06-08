@@ -2,7 +2,6 @@ const crypto = require('crypto');
 const state = require('../state');
 
 // Хранилище активных демо-сессий витрины в оперативной памяти: { "session_token_xyz": "username" }
-const activeShowcaseSessions = {};
 
 // 1. ЛОГИН НА ПЛАТФОРМУ: Генерируем sessionId для фронтенда
 exports.login = async (req, res) => {
@@ -22,10 +21,10 @@ exports.login = async (req, res) => {
         const sessionId = 'ss_' + crypto.randomBytes(16).toString('hex');
 
         // Связываем токен сессии с реальным именем игрока в памяти
-        activeShowcaseSessions[sessionId] = cleanName;
+        global.activePlayerSessions[sessionId] = cleanName;
 
         // Удаляем сессию через 24 часа для безопасности
-        setTimeout(() => { delete activeShowcaseSessions[sessionId]; }, 24 * 60 * 60 * 1000);
+        setTimeout(() => { delete global.activePlayerSessions[sessionId]; }, 24 * 60 * 60 * 1000);
 
         res.json({
             success: true,
@@ -41,9 +40,8 @@ exports.login = async (req, res) => {
 // 2. ВАЛИДАЦИЯ (Seamless Webhook): Игровой сервер присылает токен из iFrame, мы отдаем имя и баланс
 exports.validate = async (req, res) => {
     const { token, secret } = req.body; // Игровой сервер присылает sessionId в поле token
-
     // Ищем, какому игроку принадлежит этот токен сессии
-    const realUsername = activeShowcaseSessions[token];
+    const realUsername = global.activePlayerSessions[token];
     if (!realUsername) {
         return res.status(401).json({ error: "Session token invalid or expired" });
     }
@@ -57,7 +55,7 @@ exports.validate = async (req, res) => {
 // 3. Списание баланса (Debit) по токену сессии
 exports.debit = async (req, res) => {
     const { token, amount } = req.body; // Игры шлют либо token, либо username
-    const realUsername = activeShowcaseSessions[token] || req.body.username;
+    const realUsername = global.activePlayerSessions[token] || req.body.username;
     const partnerId = "demo_mtwtech";
 
     if (!realUsername) return res.status(401).json({ error: "Session authentication failed" });
@@ -82,7 +80,7 @@ exports.debit = async (req, res) => {
 // 4. Начисление выигрыша (Credit) по токену сессии
 exports.credit = async (req, res) => {
     const { token, amount } = req.body;
-    const realUsername = activeShowcaseSessions[token] || req.body.username;
+    const realUsername = global.activePlayerSessions[token] || req.body.username;
     const partnerId = "demo_mtwtech";
 
     if (!realUsername) return res.status(401).json({ error: "Session authentication failed" });
@@ -104,7 +102,7 @@ exports.credit = async (req, res) => {
 // Эндпоинт для обновления шапки сайта-витрины (по токену сессии)
 exports.getUserInfo = async (req, res) => {
     const { sessionId } = req.query;
-    const realUsername = activeShowcaseSessions[sessionId];
+    const realUsername = global.activePlayerSessions[sessionId];
     if (!realUsername) return res.status(401).json({ error: "Session invalid" });
 
     const player = await state.getOrCreatePlayer(realUsername, "demo_mtwtech");

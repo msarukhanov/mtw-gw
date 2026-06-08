@@ -167,7 +167,7 @@ exports.launchGame = async (req, res) => {
 
         // 1. Проверяем, существует ли игра и не выключена ли она у этого партнера
         const gameCheck = await pool.query(`
-            SELECT g.url, COALESCE(pg.is_active, true) as is_game_active, COALESCE(pa.is_active, true) as is_aggregator_active
+            SELECT g.url,g.name, COALESCE(pg.is_active, true) as is_game_active, COALESCE(pa.is_active, true) as is_aggregator_active
             FROM games g
             LEFT JOIN partner_games pg ON g.id = pg.game_id AND pg.partner_id = $1
             LEFT JOIN partner_aggregators pa ON g.aggregator = pa.aggregator AND pa.partner_id = $1
@@ -214,13 +214,14 @@ exports.launchGame = async (req, res) => {
         // Движок игры развернется по своему внутреннему роуту (например /games/blackjack)
         // и сам считает параметры из query-строки при загрузке!
         const cleanBaseUrl = game.url.endsWith('/') ? game.url.slice(0, -1) : game.url;
-        const iframeUrl = `${cleanBaseUrl}?token=${launchToken}&partnerId=${partnerId}&mode=${demoMode ? 'demo' : 'real'}&theme=${theme || 'default'}`;
+        const iframeUrl = `${cleanBaseUrl}?sessionId=${launchToken}&partnerId=${partnerId}&mode=${demoMode ? 'demo' : 'real'}&theme=${theme || 'default'}`;
 
         res.json({
             success: true,
             gameSlug,
+            name: game.name,
             mode: demoMode ? "DEMO" : "REAL",
-            iframeUrl: iframeUrl // Эту ссылку партнер зашивает в свой тег <iframe src="...">
+            iframeUrl // Эту ссылку партнер зашивает в свой тег <iframe src="...">
         });
 
     } catch (err) {

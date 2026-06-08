@@ -1,7 +1,10 @@
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
+
 const state = require('../state');
 const seamless = require('../services/seamlessService');
+const showcase = require('../controllers/showcaseController');
 
 // ПОСРЕДНИК АВТОРИЗАЦИИ (Изолирует игрока на основе пары username + partnerId)
 router.checkPlayer = async (req, res, next) => {
@@ -85,6 +88,7 @@ router.post('/auth/seamless', async (req, res) => {
             username: player.username,
             partnerId: partnerId,
             balance: freshBalance,
+            sessionId,
             jackpot: state.getJackpot(partnerId),
             config: state.getConfig(partnerId)
         });
@@ -106,12 +110,18 @@ router.post('/auth', async (req, res) => {
     try {
         // Инициализируем демо-игрока внутри нужного скина.
         // Для демо-входа шлюз не опрашиваем, игрок стартует с балансом по умолчанию из NeDB
-        const player = await state.getOrCreatePlayer(username.trim(), targetPartnerId);
+        const player = await state.getOrCreatePlayer(username, targetPartnerId);
+
+        const sessionId = 'ss_' + crypto.randomBytes(16).toString('hex');
+        global.activePlayerSessions[sessionId] = username;
+
+        setTimeout(() => { delete global.activePlayerSessions[sessionId]; }, 24 * 60 * 60 * 1000);
 
         res.json({
             username: player.username,
             partnerId: targetPartnerId,
             balance: player.balance,
+            sessionId,
             jackpot: state.getJackpot(targetPartnerId),
             config: state.getConfig(targetPartnerId)
         });

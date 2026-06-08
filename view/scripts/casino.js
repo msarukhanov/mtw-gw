@@ -214,11 +214,16 @@ async function launchGame(gameSlug, isDemo = false) {
 
         // СКРЫВАЕМ СЛАЙДЕР И ЛОББИ, чтобы не мешали игре (Пункт 6)
         document.querySelector('.promo-slider').style.display = 'none';
+        document.getElementById('playerZone').style.display = 'none';
+        document.querySelector('.tabs-container').style.display = 'none';
+        document.getElementById('subTabsContainer').style.display = 'none';
         document.getElementById('section-home').style.display = 'none';
 
         // Разворачиваем iFrame игры на странице в специальный выделенный контейнер
         const iframeContainer = document.getElementById('iframePlayZone');
         const iframe = document.getElementById('activeGameIframe');
+
+        document.getElementById('iframeName').innerHTML = '🎮 ' + result.name;
 
         iframe.src = result.iframeUrl;
         iframeContainer.style.display = 'block';
@@ -336,6 +341,9 @@ function closeActiveGame() {
 
     // ВОЗВРАЩАЕМ СЛАЙДЕР И ЛОББИ обратно (Пункт 6)
     document.querySelector('.promo-slider').style.display = 'block';
+    document.getElementById('playerZone').style.display = 'block';
+    document.querySelector('.tabs-container').style.display = 'block';
+    document.getElementById('subTabsContainer').style.display = 'block';
     document.getElementById('section-home').style.display = 'block';
 }
 

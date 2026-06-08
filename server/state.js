@@ -3,6 +3,8 @@ const seamless = require('./services/seamlessService');
 
 const pool = global.pool;
 
+global.activePlayerSessions = {};
+
 // Внутренние структуры для оперативной памяти сохраняем без изменений
 const activeTickets = {};
 const activeMinesGames = {};
@@ -1201,21 +1203,23 @@ const catalogMethods = {
 const sessionMethods = {
     // 1. Создать игровую сессию и сгенерировать токен запуска
     createGameSession: async (partnerId, gameSlug, data = {}) => {
-        const { username, isDemo, theme } = data;
+        try {
+            const { username, isDemo, theme } = data;
 
-        // Генерируем уникальный криптографический токен запуска
-        const token = 'gl_' + crypto.randomBytes(24).toString('hex');
+            // Генерируем уникальный криптографический токен запуска
+            const token = 'gl_' + crypto.randomBytes(24).toString('hex');
 
-        // Сессия автоматически сгорает через 24 часа
-        const expiredAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+            // Сессия автоматически сгорает через 24 часа
+            const expiredAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-        await global.pool.query(
-            `INSERT INTO game_sessions (token, partner_id, username, game_slug, is_demo, theme, expired_at)
+            const add = await global.pool.query(
+                `INSERT INTO game_sessions (token, partner_id, username, game_slug, is_demo, theme, expired_at)
              VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-            [token, partnerId, isDemo ? null : username, gameSlug, !!isDemo, theme || 'default', expiredAt]
-        );
+                [token, partnerId, isDemo ? null : username, gameSlug, !!isDemo, theme || 'default', expiredAt]
+            );
 
-        return token;
+            return token;
+        } catch (e) {}
     },
 
     // 2. Валидация сессии при загрузке самого iFrame игры
