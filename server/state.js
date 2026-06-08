@@ -62,6 +62,10 @@ const playerMethods = {
         return player;
     },
     updateBalance: async (username, partnerId, newBalance) => {
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`${partnerId}_${username}`).emit('wallet_update', { balance: newBalance });
+        }
         return await global.pool.query(
             'UPDATE players SET balance = $1 WHERE username = $2 AND partner_id = $3',
             [Number(newBalance), username, partnerId]

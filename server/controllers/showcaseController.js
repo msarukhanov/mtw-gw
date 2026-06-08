@@ -68,9 +68,6 @@ exports.debit = async (req, res) => {
         const upd = await state.updateBalance(realUsername, partnerId, newBalance);
 
         const io = req.app.get('io');
-        if (io) {
-            io.to(`${partnerId}_${realUsername}`).emit('wallet_update', { balance: newBalance });
-        }
 
         res.json({ balance: newBalance });
     } catch (err) { res.status(500).json({ error: "Debit processing failed" }); }
@@ -88,11 +85,6 @@ exports.credit = async (req, res) => {
         const player = await state.getOrCreatePlayer(realUsername, partnerId);
         const newBalance = Number(player.balance) + Number(amount);
         const upd = await state.updateBalance(realUsername, partnerId, newBalance);
-
-        const io = req.app.get('io');
-        if (io) {
-            io.to(`${partnerId}_${realUsername}`).emit('wallet_update', { balance: newBalance });
-        }
 
         res.json({ balance: newBalance });
     } catch (err) { res.status(500).json({ error: "Credit processing failed" }); }

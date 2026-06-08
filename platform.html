@@ -1655,18 +1655,27 @@
         // Establish persistent real-time socket listeners
         if (typeof io !== 'undefined') {
             socket = io(CORE_SERVER);
-            console.log('WS Connect', {
-                username: currentUsername,
-                partnerId: 'demo_mtwtech'
-            });
+
             socket.on('connect', () => {
-                console.log('🚀 Sending handshake now...');
+                console.log('WS Connect', {
+                    username: currentUsername,
+                    partnerId: 'demo_mtwtech'
+                });
                 setTimeout(() => {
+                    console.log('🚀 Sending handshake now...');
                     socket.emit('platform_join', {
                         username: currentUsername,
                         partnerId: 'demo_mtwtech'
                     });
-                }, 250);
+                }, 500);
+
+                setTimeout(() => {
+                    console.log('🚀 Sending handshake now...2');
+                    socket.emit('platform_join', {
+                        username: currentUsername,
+                        partnerId: 'demo_mtwtech'
+                    });
+                }, 1000);
             });
             socket.on('wallet_update', (wsData) => {
                 console.log('⚡ Live WS Wallet Update:', data.balance);
