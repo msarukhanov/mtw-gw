@@ -5,6 +5,84 @@ const isDemo = process.env.env === 'demo';
 // Исправлены опечатки в протоколе https:// и хосте localhost
 const demoUrl = (isDemo ? 'https://mtw-gw.onrender.com' : 'http://localhost:3000') + '/api/seamless/';
 
+const financialMethods = {
+
+    logFinancialTransaction: async (partnerId, username, type, amount, game) => {
+        // Записываем лог в таблицу бухгалтерского учета accounting_logs
+        await global.pool.query(
+            `INSERT INTO accounting_logs (partner_id, username, type, amount, game, timestamp) 
+             VALUES ($1, $2, $3, $4, $5, NOW())`,
+            [partnerId, username, type, Number(amount), game || "Unknown Game"]
+        );
+    },
+
+    getFinancialReport: async (partnerId) => {
+        // Вытаскиваем все логи транзакций партнера
+        const res = await global.pool.query(
+            'SELECT type, amount, game, EXTRACT(EPOCH FROM timestamp) * 1000 as ts FROM accounting_logs WHERE partner_id = $1 ORDER BY timestamp DESC',
+            [partnerId]
+        );
+        const txs = res.rows;
+
+        let totalBets = 0;
+        let totalWins = 0;
+        let totalAffiliate = 0;
+
+        txs.forEach(tx => {
+            const amt = Number(tx.amount);
+            if (tx.type === "DEBIT") totalBets += amt;
+            if (tx.type === "CREDIT") totalWins += amt;
+            if (tx.type === "AFFILIATE") totalAffiliate += amt;
+        });
+
+        const ggr = totalBets - totalWins;
+        const netProfit = ggr - totalAffiliate;
+
+        // Форматируем под структуру объектов, которую ожидала админка из NeDB
+        const formattedTxs = txs.map(tx => ({
+            partnerId,
+            username: tx.username,
+            type: tx.type,
+            amount: Number(tx.amount),
+            game: tx.game,
+            timestamp: Number(tx.ts)
+        }));
+
+        // 🎰 ЛОГ СТАВОК: Исключаем промокоды, кэшбэки и бонусы
+        const latestBets = formattedTxs.filter(tx => {
+            const gameName = tx.game || "";
+            return (tx.type === "DEBIT" || tx.type === "CREDIT") &&
+                !gameName.includes("Promo") &&
+                !gameName.includes("Cashback") &&
+                !gameName.includes("Quest") &&
+                !gameName.includes("VIP");
+        }).slice(0, 50);
+
+        // 💳 ЛОГ КАССЫ: Чистый Cashflow
+        const latestTransactions = formattedTxs.filter(tx => {
+            const gameName = tx.game || "";
+            return tx.type === "AFFILIATE" ||
+                gameName.includes("Promo") ||
+                gameName.includes("Cashback") ||
+                gameName.includes("Quest") ||
+                gameName.includes("VIP") ||
+                gameName.includes("Deposit") ||
+                gameName.includes("Withdraw");
+        }).slice(0, 50);
+
+        return {
+            totalBets,
+            totalWins,
+            totalAffiliate,
+            ggr,
+            netProfit,
+            transactionsCount: txs.length,
+            latestTransactions,
+            latestBets
+        };
+    }
+};
+
 module.exports = {
     validateSession: async (sessionId, partnerId) => {
         try {
@@ -52,7 +130,7 @@ module.exports = {
                 roundId,
                 secret: integration.secret
             });
-            await state.logFinancialTransaction(partnerId, username, "DEBIT", amount, gameName);
+            await financialMethods.logFinancialTransaction(partnerId, username, "DEBIT", amount, gameName);
 
             return response.data; // { balance: NewBalance }
         } catch (err) {
@@ -88,7 +166,7 @@ module.exports = {
             else if (gameName && (gameName.includes("Promo") || gameName.includes("Cashback") || gameName.includes("Quest") || gameName.includes("VIP"))) {
                 txType = "BONUS_CASH";
             }
-            await state.logFinancialTransaction(partnerId, username, txType, amount, gameName);
+            await financialMethods.logFinancialTransaction(partnerId, username, txType, amount, gameName);
 
             return response.data; // { balance: NewBalance }
         } catch (err) {

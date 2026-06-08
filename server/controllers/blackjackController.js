@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const state = require('../state');
+const seamless = require('../services/seamlessService');
 
 // Значения карт для Блэкджека
 const CARD_VALUES = {
@@ -65,7 +66,7 @@ exports.deal = async (req, res) => {
     let debitResult;
     try {
         // Списываем ставку через HTTP-запрос к платформе
-        debitResult = await seamlessService.debit(username, partnerId, sessionId, config.cost, gameName, roundId);
+        debitResult = await seamless.debit(username, partnerId, sessionId, config.cost, gameName, roundId);
     } catch (err) {
         // Если на платформе не хватило денег или упала сеть, сервис выбросит ошибку
         return res.status(400).json({ error: err.message || "Insufficient funds or platform error" });
@@ -112,7 +113,7 @@ exports.deal = async (req, res) => {
         }
 
         // Начисляем выигрыш через HTTP-запрос к платформе
-        const creditResult = await seamlessService.credit(username, partnerId, sessionId, prize, gameName, roundId);
+        const creditResult = await seamless.credit(username, partnerId, sessionId, prize, gameName, roundId);
         currentBalance = creditResult.balance; // Обновляем баланс из ответа
 
         state.reduceBlackjackBank(partnerId, prize);
@@ -203,7 +204,7 @@ exports.action = async (req, res) => {
         let currentBalance;
         if (prize > 0) {
             // Если есть выигрыш или возврат (PUSH), шлем HTTP-запрос кредита
-            const creditResult = await seamlessService.credit(game.username || username, game.partnerId, game.sessionId, prize, gameName, game.roundId);
+            const creditResult = await seamless.credit(game.username || username, game.partnerId, game.sessionId, prize, gameName, game.roundId);
             currentBalance = creditResult.balance;
         } else {
             // Если проигрыш, просто смотрим текущий баланс в базе
