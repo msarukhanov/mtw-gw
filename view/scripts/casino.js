@@ -279,7 +279,7 @@ function renderLobbyCollections() {
             <div class="horizontal-games-scroll">
                 ${col.games.map(game => `
                     <div class="game-card">
-                        <div class="game-icon" style="font-size: 32px; margin-bottom: 6px;">${getGameIcon(game.slug)}</div>
+                        <div class="game-icon" style="font-size: 32px; margin-bottom: 6px;">${getGameIcon(game)}</div>
                         <h3 style="font-size: 14px; margin-bottom: 6px; line-height: 1.2;">${game.name}</h3>
                         <span style="font-size: 11px; color:#a0a5b5; display:block; margin-bottom:10px;">${game.provider}</span>
                         <div style="display:flex; gap:4px; width:100%; justify-content:center; margin-top:auto;">
@@ -309,7 +309,7 @@ function renderGamesGrid(games) {
         <div class="games-grid" style="grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; width:100%;">
             ${games.map(game => `
                 <div class="game-card">
-                    <div class="game-icon" style="font-size: 32px; margin-bottom: 8px;">${getGameIcon(game.slug)}</div>
+                    <div class="game-icon" style="font-size: 32px; margin-bottom: 8px;">${getGameIcon(game)}</div>
                     <h3 style="font-size: 14px; margin-bottom: 6px;">${game.name}</h3>
                     <span style="font-size: 11px; color:#a0a5b5; display:block; margin-bottom:10px;">${game.provider}</span>
                     <div style="display:flex; gap:6px; width:100%; justify-content:center; margin-top:auto;">
@@ -338,7 +338,10 @@ function closeActiveGame() {
 }
 
 // Справочник иконок по слагам для красоты сетки
-function getGameIcon(slug) {
+function getGameIcon(game) {
+    if(game.image) {
+        return `<img src="${game.image}">`;
+    }
     const icons = {
         'crash-aviator': '🚀',
         '5-min-lottery': '🎰',
@@ -354,7 +357,7 @@ function getGameIcon(slug) {
         'naruto-shinobi': '🥷',
         'scratch-cards': '🎫'
     };
-    return icons[slug] || '🎮';
+    return icons[game.slug] || '🎮';
 }
 
 // -------------------------------------------------------------------------
