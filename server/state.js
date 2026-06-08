@@ -62,7 +62,7 @@ const playerMethods = {
         return player;
     },
     updateBalance: async (username, partnerId, newBalance) => {
-        await global.pool.query(
+        return await global.pool.query(
             'UPDATE players SET balance = $1 WHERE username = $2 AND partner_id = $3',
             [Number(newBalance), username, partnerId]
         );

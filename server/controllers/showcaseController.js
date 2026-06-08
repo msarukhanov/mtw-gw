@@ -64,10 +64,9 @@ exports.debit = async (req, res) => {
         const player = await state.getOrCreatePlayer(realUsername, partnerId);
         if (player.balance < amount) return res.status(400).json({ error: "Insufficient funds" });
 
-        const newBalance = player.balance - Number(amount);
-        await state.updateBalance(realUsername, partnerId, newBalance);
+        const newBalance = Number(player.balance) - Number(amount);
+        const upd = await state.updateBalance(realUsername, partnerId, newBalance);
 
-        // Отправляем пуш-обновление в комнату сокетов витрины
         const io = req.app.get('io');
         if (io) {
             io.to(`${partnerId}_${realUsername}`).emit('wallet_update', { balance: newBalance });
@@ -87,8 +86,8 @@ exports.credit = async (req, res) => {
 
     try {
         const player = await state.getOrCreatePlayer(realUsername, partnerId);
-        const newBalance = player.balance + Number(amount);
-        await state.updateBalance(realUsername, partnerId, newBalance);
+        const newBalance = Number(player.balance) + Number(amount);
+        const upd = await state.updateBalance(realUsername, partnerId, newBalance);
 
         const io = req.app.get('io');
         if (io) {
