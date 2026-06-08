@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const state = require('../state');
 
 // Значения карт для Блэкджека
