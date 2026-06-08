@@ -214,7 +214,7 @@ exports.launchGame = async (req, res) => {
         // Движок игры развернется по своему внутреннему роуту (например /games/blackjack)
         // и сам считает параметры из query-строки при загрузке!
         const cleanBaseUrl = game.url.endsWith('/') ? game.url.slice(0, -1) : game.url;
-        const iframeUrl = `${cleanBaseUrl}?sessionId=${launchToken}&partnerId=${partnerId}&mode=${demoMode ? 'demo' : 'real'}&theme=${theme || 'default'}`;
+        const iframeUrl = `${cleanBaseUrl}?sessionId=${sessionId}&gameSession=${launchToken}&partnerId=${partnerId}&mode=${demoMode ? 'demo' : 'real'}&theme=${theme || 'default'}`;
 
         res.json({
             success: true,

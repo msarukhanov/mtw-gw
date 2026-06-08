@@ -63,13 +63,16 @@ router.post('/auth/seamless', async (req, res) => {
     if (!sessionId) return res.status(400).json({ error: "Session ID required" });
     if (!partnerId) return res.status(400).json({ error: "Partner ID required for B2B routing" });
 
+    let gameSession;
+
+
     try {
         // Идем к конкретной внешней платформе проверять токен (передаем partnerId)
         let externalUser = await seamless.validateSession(sessionId, partnerId);
 
         // Исправлено: безопасный фолбэк перенесен выше критических проверок
         if (!externalUser || !externalUser.username) {
-            externalUser = { username: 'Player1', balance: 200 };
+            externalUser = { username: 'Demo', balance: 200 };
         }
 
         // Создаем/обновляем локальный кэш игрока под нужного партнера,
