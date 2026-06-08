@@ -1,28 +1,31 @@
+const crypto = require('crypto');
 const state = require('../state');
 const seamless = require('../services/seamlessService');
 
 exports.spin = async (req, res) => {
-    const partnerId = req.partnerId; // Извлекаем partnerId, добавленный мидлваром checkPlayer
+    const partnerId = req.partnerId;
     const username = req.username;
+    const sessionId = req.sessionId || req.headers['x-session-id'] || (req.player && req.player.sessionId); // Надежно извлекаем сессию
 
-    // ИСПРАВЛЕНО: Берем конфигурацию слотов конкретного партнера
+    // Берем конфигурацию слотов конкретного партнера
     const config = state.getConfig(partnerId).slots3x3;
 
-    if (req.player.balance < config.cost) {
-        return res.status(400).json({ error: "Insufficient funds" });
+    // Генерируем уникальный ID раунда
+    const roundId = `slots3x3_${crypto.randomBytes(8).toString('hex')}`;
+    const gameName = 'Slots3x3';
+
+    let debitResult;
+    try {
+        // Списываем баланс через HTTP-запрос к платформе вместо RAM с проверкой средств
+        debitResult = await seamless.debit(username, partnerId, sessionId, config.cost, gameName, roundId);
+    } catch (err) {
+        return res.status(400).json({ error: err.message || "Insufficient funds or platform error" });
     }
 
-    const roundId = `slots3x3_round_${Date.now()}_${state.getRandomInt(100000) + 1}`;
+    // Получаем актуальный баланс из ответа сервера платформы
+    let currentBalance = debitResult.balance;
 
-    // ИСПРАВЛЕНО: Пробрасываем partnerId вторым аргументом в бесшовное списание
-    if (req.player.sessionId) {
-        await seamless.debit(username, partnerId, req.player.sessionId, config.cost, 'Slots3x3', roundId);
-    }
-
-    // Списываем ставку в локальном кэше B2B
-    req.player.balance -= config.cost;
-
-    // ИСПРАВЛЕНО: Начисляем отчисления в джекпот конкретного партнера
+    // Начисляем отчисления в джекпот конкретного партнера
     state.addJackpot(partnerId, 1);
 
     // Генерируем случайное число от 0 до 99 для определения категории исхода
@@ -32,9 +35,8 @@ exports.spin = async (req, res) => {
     // ФОРМУЛА: рассчитываем границу выигрыша на основе RTP конкретного бренда
     const loseBoundary = Math.max(40, Math.min(95, 100 - (config.rtp * 0.45)));
 
-    // МАТЕМАТИЧЕСКАЯ НАСТРОЙКА RTP (Всего 100%)
     if (roll < loseBoundary) {
-        // Абсолютный ПРОИГРЫШ (все 3 символа гарантированно разные)
+        // Абсолютный ПРОИГРЫШ
         const s = config.symbols;
         const first = s[state.getRandomInt(s.length)];
 
@@ -47,7 +49,7 @@ exports.spin = async (req, res) => {
         results = [first, second, third];
     }
     else if (roll < 96) {
-        // Совпадение ДВУХ символов (Выигрыш 25)
+        // Совпадение ДВУХ символов
         const s = config.symbols;
         const pairSymbol = s[state.getRandomInt(s.length)];
 
@@ -57,7 +59,7 @@ exports.spin = async (req, res) => {
         results = [pairSymbol, pairSymbol, thirdSymbol].sort(() => Math.random() - 0.5);
     }
     else {
-        // Совпадение ТРЕХ символов (Выигрыш 150 или 500 за алмазы)
+        // Совпадение ТРЕХ символов
         const s = config.symbols;
         const winSymbol = s[state.getRandomInt(s.length)];
         results = [winSymbol, winSymbol, winSymbol];
@@ -71,23 +73,22 @@ exports.spin = async (req, res) => {
         prize = 25;
     }
 
-    // Начисляем выигрыш в локальном кэше B2B
-    req.player.balance += prize;
-
-    // ИСПРАВЛЕНО: Если есть выигрыш, отправляем бесшовное начисление на шлюз этого оператора
-    if (prize > 0 && req.player.sessionId) {
+    // Если есть выигрыш, отправляем бесшовное начисление на шлюз этого оператора
+    if (prize > 0) {
         try {
-            await seamless.credit(username, partnerId, req.player.sessionId, prize, 'Slots3x3', roundId);
+            const creditResult = await seamless.credit(username, partnerId, sessionId, prize, gameName, roundId);
+            currentBalance = creditResult.balance; // Обновляем баланс из ответа
         } catch (err) {
             console.error(`[Partner: ${partnerId}] Failed to credit slot win for ${username}:`, err.message);
         }
     }
-    else if(prize === 0) {
-        await state.trackAffiliatePayout(username, partnerId, bet, req.player.sessionId);
+    else if (prize === 0) {
+        // Исправлено: заменено bet на config.cost
+        await state.trackAffiliatePayout(username, partnerId, config.cost, seamless.credit);
+        // await state.trackAffiliatePayout(username, partnerId, config.cost, sessionId);
     }
 
-    // ИСПРАВЛЕНО: Сохраняем баланс и пишем историю с привязкой к partnerId
-    await state.updateBalance(username, partnerId, req.player.balance);
+    // Пишем историю с привязкой к partnerId
     await state.savePlayerActionHistory(username, partnerId, {
         game: "Slots3x3",
         details: `Spin: [ ${results.join(' | ')} ]`,
@@ -98,8 +99,7 @@ exports.spin = async (req, res) => {
     res.json({
         results,
         prize,
-        balance: req.player.balance,
-        // ИСПРАВЛЕНО: Возвращаем джекпот конкретного партнера
+        balance: currentBalance,
         jackpot: state.getJackpot(partnerId)
     });
 };

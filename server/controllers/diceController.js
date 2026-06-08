@@ -1,19 +1,19 @@
+const crypto = require('crypto');
 const state = require('../state');
+const seamlessService = require('../services/seamlessService'); // Подключите ваш сервис
 
 exports.roll = async (req, res) => {
     const { target, condition, bet } = req.body;
-    const partnerId = req.partnerId; // Извлекаем partnerId, добавленный мидлваром checkPlayer
+    const partnerId = req.partnerId;
     const username = req.username;
+    const sessionId = req.sessionId || req.headers['x-session-id']; // Извлекаем сессию
 
-    // ИСПРАВЛЕНО: Достаем конфигурацию и комиссию (houseEdge) конкретного партнера
+    // Достаем конфигурацию и комиссию (houseEdge) конкретного партнера
     const config = state.getConfig(partnerId).dice;
 
     // ВАЛИДАЦИЯ ВХОДЯЩИХ ДАННЫХ
     if (!Number.isInteger(bet) || bet <= 0) {
         return res.status(400).json({ error: "Invalid bet amount" });
-    }
-    if (req.player.balance < bet) {
-        return res.status(400).json({ error: "Insufficient funds" });
     }
     if (!Number.isInteger(target) || target < 2 || target > 98) {
         return res.status(400).json({ error: "Target must be between 2 and 98" });
@@ -29,26 +29,34 @@ exports.roll = async (req, res) => {
     const multiplier = parseFloat(((100 / winChance) * (1 - config.houseEdge)).toFixed(4));
     const potentialPrize = Math.floor(bet * multiplier);
 
-    // Списываем баланс в рамках B2B-сессии запроса
-    req.player.balance -= bet;
+    // Генерируем ID раунда для HTTP-запросов
+    const roundId = 'dice_' + crypto.randomBytes(8).toString('hex');
+    const gameName = "Dice";
 
-    // ИСПРАВЛЕНО: Закидываем ставку в изолированную копилку конкретного партнера
+    let debitResult;
+    try {
+        // Списываем баланс через HTTP-запрос дебита к платформе
+        debitResult = await seamlessService.debit(username, partnerId, sessionId, bet, gameName, roundId);
+    } catch (err) {
+        return res.status(400).json({ error: err.message || "Insufficient funds or platform error" });
+    }
+
+    let currentBalance = debitResult.balance;
+
+    // Закидываем ставку в изолированную копилку конкретного партнера
     state.addDiceBank(partnerId, bet);
 
     // КРИПТО-РАНДОМ (Число от 1 до 100)
     let rollResult = state.getRandomInt(100) + 1;
 
     // --- ПРОВЕРКА RTP (КОНТРОЛЬ БАНКА ТЕНАНТА) ---
-    // ИСПРАВЛЕНО: Проверяем банк строго текущего партнера
     const currentBank = state.getDiceBank(partnerId);
     let forceLose = false;
 
-    // Если у конкретного партнера в банке нет денег — включаем защиту от ухода в минус
     if (potentialPrize > currentBank) {
         forceLose = true;
     }
 
-    // Если сработал слив, подменяем результат
     if (forceLose) {
         if (condition === "over") {
             rollResult = state.getRandomInt(target - 1) + 1;
@@ -65,15 +73,16 @@ exports.roll = async (req, res) => {
     let prize = 0;
     if (isWin) {
         prize = potentialPrize;
-        req.player.balance += prize;
-        // ИСПРАВЛЕНО: Выплачиваем строго из банка этого партнера
+
+        // Выплачиваем строго из банка этого партнера
         state.reduceDiceBank(partnerId, prize);
+
+        // Начисляем выигрыш через HTTP-запрос кредита к платформе
+        const creditResult = await seamlessService.credit(username, partnerId, sessionId, prize, gameName, roundId);
+        currentBalance = creditResult.balance;
     }
 
-    // ИСПРАВЛЕНО: Сохраняем измененный баланс в NeDB с привязкой к паре Игрок + Партнер
-    await state.updateBalance(username, partnerId, req.player.balance);
-
-    // ИСПРАВЛЕНО: Запись в единую историю активности с передачей partnerId
+    // Запись в единую историю активности с передачей partnerId
     await state.savePlayerActionHistory(username, partnerId, {
         game: "Dice",
         details: `Rolled ${rollResult} (${condition === "over" ? ">" : "<"} ${target}). Chance: ${winChance}%`,
@@ -81,12 +90,12 @@ exports.roll = async (req, res) => {
         win: isWin
     });
 
-    // Возвращаем изолированный результат клиенту
+    // Возвращаем результат клиенту
     res.json({
         rollResult,
         isWin,
         prize,
         multiplier,
-        balance: req.player.balance
+        balance: currentBalance
     });
 };

@@ -60,6 +60,7 @@ function initRouletteService(io) {
 }
 
 async function runNextRoundLoop(io) {
+    if(!state.BGS.roulette) return;
     gameStatus = "betting";
 
     const partnerIds = Object.keys(state.getConfig() || {});
@@ -111,7 +112,12 @@ async function runNextRoundLoop(io) {
 
         if (timer <= 0) {
             clearInterval(bettingInterval);
-            startWheelSpin(io, partnerIds);
+            if(state.BGS.crash) {
+                startWheelSpin(io, partnerIds);
+            }
+        }
+        if(!state.BGS.crash) {
+            clearInterval(bettingInterval);
         }
     }, 1000);
 }

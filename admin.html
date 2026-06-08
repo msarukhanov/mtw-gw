@@ -80,6 +80,25 @@
         .sidebar-header h1 { font-size: 18px; color: #fff; margin: 0; }
         .sidebar-header span { font-size: 11px; color: var(--text-muted); }
 
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 900;
+            color: #4ecca3;
+            text-shadow: 0 0 10px rgba(78, 204, 163, 0.3);
+            letter-spacing: 1px;
+            text-decoration: none;
+        }
+
+        .logo span {
+            color: #e94560;
+            font-size: 24px;
+        }
         /* TAB BUTTONS */
         .nav-btn {
             background: transparent;
@@ -101,6 +120,12 @@
             color: var(--accent-blue);
             border-left: 4px solid var(--accent-blue);
         }
+        .nav-btn.nav-title {
+            font-size: 18px;
+            font-weight: bold;
+            padding-left: 37px;
+            color: var(--neon-green);
+        }
 
         /* MAIN CONTENT AREA */
         .main-content {
@@ -114,6 +139,13 @@
         }
         .tab-content.active {
             display: block;
+        }
+
+        .tab-content iframe {
+            width: 100%;
+            height: calc(100vh - 60px);
+            border: 1px solid var(--neon-green);
+            border-radius: 4px;
         }
 
         /* CARDS & ENGINE TABLES */
@@ -195,20 +227,33 @@
     <!-- SIDEBAR MENU LEFT -->
     <aside class="sidebar">
         <div class="sidebar-header">
-            <h1>MTWTech BackOffice</h1>
+            <h1> <a href="#" class="logo">MTW<span>TECH</span></a></h1>
+
             <span>Demo Management System</span>
         </div>
-        <button class="nav-btn active" onclick="switchTab('tab-finance', this)">📊 Financial Reports</button>
 
+        <div class="nav-btn nav-title">Financial</div>
+        <button class="nav-btn active" onclick="switchTab('tab-finance', this)">📊 Totals</button>
         <button class="nav-btn" onclick="switchTab('tab-bets-registry', this)">🎰 Bets Registry</button>
         <button class="nav-btn" onclick="switchTab('tab-transactions-ledger', this)">💳 Transactions</button>
 
-        <button class="nav-btn" onclick="switchTab('tab-config', this)">🎰 Game Engine</button>
+        <div class="nav-btn nav-title">Players</div>
         <button class="nav-btn" onclick="switchTab('tab-players', this)">👥 Players</button>
         <button class="nav-btn" onclick="switchTab('tab-jackpot', this)">💰 Jackpot</button>
         <button class="nav-btn" onclick="switchTab('tab-gamification', this)">🎮 Gamification</button>
         <button class="nav-btn" onclick="switchTab('tab-cashback', this)">🎫 Promos & Cashback</button>
+
+        <div class="nav-btn nav-title">Sportsbook</div>
         <button class="nav-btn" onclick="switchTab('tab-sportsbook', this)">🏟️ Sportsbook</button>
+
+        <div class="nav-btn nav-title">Casino</div>
+        <button class="nav-btn" onclick="switchTab('tab-config', this)">🎰 Engine</button>
+        <button class="nav-btn" onclick="switchTab('tab-collections', this)">📦 Collections</button>
+        <button class="nav-btn" onclick="switchTab('tab-providers', this)">🔌 Aggregators</button>
+        <button class="nav-btn" onclick="switchTab('tab-games', this)">🎮 Games</button>
+
+        <div class="nav-btn nav-title">Builder</div>
+        <button class="nav-btn" onclick="switchTab('tab-slotsbuilder', this)">Slots Builder</button>
 
         <button class="nav-btn" onclick="logoutDemo()" style="margin-top: auto; color: var(--accent-red);">🛑 Log Out</button>
     </aside>
@@ -307,9 +352,16 @@
             </div>
         </div>
 
-
         <!-- TAB 1: GAME ENGINE CONFIGURATION -->
         <div id="tab-config" class="tab-content">
+            <div class="card" style="margin-top: 25px;">
+                <h2>🔄 Live Shared Engines</h2>
+                <p style="color:var(--text-muted); font-size:13px; margin-bottom:20px;">Background services control.</p>
+
+                <div id="adminBackgroundServicesGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 15px;">
+                    <!-- Карточки сервисов Лотереи, Краша и Рулетки сгенерируются здесь -->
+                </div>
+            </div>
             <div class="card">
                 <h2>🎰 RTP, Prices & Pools Configuration</h2>
                 <form id="configForm">
@@ -538,6 +590,86 @@
             </div>
         </div>
 
+        <!-- ========================================================================= -->
+        <!-- НОВЫЕ ТАБЫ УПРАВЛЕНИЯ B2B КАТАЛОГОМ И КОЛЛЕКЦИЯМИ НА POSTGRES -->
+        <!-- ========================================================================= -->
+
+        <!-- 1. Вкладка Коллекций -->
+        <div id="tab-collections" class="tab-content">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>Game collections</h2>
+                    <button class="btn-primary" style="width:auto; padding:8px 16px;" onclick="openCollectionModal()">+ Create</button>
+                </div>
+                <div id="adminCollectionsList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px;">
+                    <!-- Наполняется скриптом -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Вкладка Настройки Игр и RTP -->
+        <div id="tab-games" class="tab-content">
+            <div class="card">
+                <h2>🎮 Games settings и RTP</h2>
+                <div style="overflow-x: auto; margin-top: 15px;">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Provider</th>
+                            <th>Name</th>
+                            <th>Custom name (B2B)</th>
+                            <th>Custom RTP (%)</th>
+                            <th>Status</th>
+                            <th style="text-align: right; padding-right: 20px;">Action</th>
+                        </tr>
+                        </thead>
+                        <tbody id="adminGamesTableBody">
+                        <!-- Наполняется скриптом -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Вкладка Настройки Агрегаторов -->
+        <div id="tab-providers" class="tab-content">
+            <div class="card">
+                <h2>Aggregators and providers</h2>
+                <p style="color:var(--text-muted); font-size:13px; margin-bottom:15px;">Disabling provider will disable all game of it.</p>
+                <div id="adminProvidersGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 15px;">
+                    <!-- Наполняется скриптом -->
+                </div>
+            </div>
+        </div>
+
+        <!-- МОДАЛЬНОЕ ОКНО: КОНСТРУКТОР КОЛЛЕКЦИЙ -->
+        <div id="collectionModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10000; align-items: center; justify-content: center;">
+            <div class="card" style="width: 100%; max-width: 460px; margin: 0; text-align: left;">
+                <h3 id="modalTitle" style="color: var(--accent-yellow); margin-bottom: 15px; font-size: 18px;">Collection Constructor</h3>
+                <div style="margin-bottom: 12px;">
+                    Collection name: <input type="text" id="modalCollName" style="width: 100%; margin-top:5px;" placeholder="Популярные слоты">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    URL-slug (latin): <input type="text" id="modalCollSlug" style="width: 100%; margin-top:5px;" placeholder="popular-slots">
+                </div>
+                <div style="margin-bottom: 20px;">
+                    Choose games (hold Ctrl/Cmd):
+                    <select id="modalCollGamesSelect" multiple style="width: 100%; height: 160px; background: #2a2f3a; border: 1px solid #3a4150; color: #fff; padding: 8px; border-radius: 6px; margin-top:5px; outline: none;">
+                        <!-- Игры загрузятся сюда -->
+                    </select>
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button class="btn-primary" onclick="closeCollectionModal()" style="background: #3a4150; border-color:#3a4150; width:auto; padding:8px 16px;">Отмена</button>
+                    <button class="btn-primary" style="width:auto; padding:8px 16px;" onclick="saveCollectionData()">Save</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-slotsbuilder" class="tab-content">
+            <iframe src="https://mtwtech.onrender.com/games/slots5x3?edit=true"></iframe>
+        </div>
+
     </main>
 </div>
 
@@ -587,7 +719,6 @@
         document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
         // Clear buttons selection state
         document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-
         // Expose target content block & button state
         document.getElementById(tabId).classList.add('active');
         element.classList.add('active');
@@ -652,7 +783,19 @@
     // 🔄 CORE RE-FETCH THREAD
     async function loadData() {
         try {
-            const res = await fetch(`${SERVER_URL}/api/admin/data`);
+            // ИСПРАВЛЕНО ДЛЯ POSTGRES: Вытаскиваем partnerId из хранилища админки
+            const currentPartnerId = localStorage.getItem('partnerId') || 'demo_skin_default';
+
+            // Передаем partnerId в query-параметрах, чтобы бэкенд знал, чьи конфиги, джекпоты и игроков тянуть из Neon
+            const res = await fetch(`${SERVER_URL}/api/admin/data?partnerId=${currentPartnerId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // Если у тебя используется токен админа, пробрасываем его сюда:
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken') || ''}`
+                }
+            });
+
             if (res.status === 401) return alert('No access');
             const data = await res.json();
 
@@ -825,10 +968,16 @@
             // Запуск рендеринга спортивных купонов
             loadPendingSportsBets();
 
+            loadAdminCollections();
+            loadAdminGamesConfig();
+            loadAdminProvidersConfig();
+
         } catch (err) {
             console.error(err);
             alert('Server core data synchronization error.');
         }
+
+        loadAdminBackgroundServices();
     }
 
     // 📬 AJAX FORMS INTERCEPTORS & API REQUESTS
@@ -991,6 +1140,263 @@
 
         if (res.ok) { alert('Cashback percentage successfully updated!'); loadData(); }
     });
+
+    let allSystemGames = [];
+    let editCollectionMode = false;
+    let currentEditingSlug = null;
+
+    // Хелпер переключения табов (чтобы работал наряду с твоей текущей системой вкладок)
+    function openAdminCatalogTab(tabId, element) {
+        document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+        document.getElementById(`tab-${tabId}`).style.display = 'block';
+        element.classList.add('active');
+    }
+
+    // Загрузка списков коллекций для админки (Запросы 1, 5, 6, 7)
+    async function loadAdminCollections() {
+        const container = document.getElementById('adminCollectionsList');
+        if (!container) return;
+        const currentPartnerId = localStorage.getItem('partnerId') || 'demo_skin_default';
+        try {
+            const res = await fetch(`${SERVER_URL}/api/catalog/collections?partnerId=${currentPartnerId}`);
+            const data = await res.json();
+
+            if (!data.success || data.collections.length === 0) {
+                container.innerHTML = '<p style="color:var(--text-muted); padding:10px;">No collections</p>';
+                return;
+            }
+
+            container.innerHTML = data.collections.map(col => `
+            <div class="game-block" style="text-align: left; margin: 0; padding:15px; border:1px solid var(--border-color); border-radius:8px;">
+                <h4 style="color:#ffb703; font-size:15px; margin-bottom:5px;">📦 ${col.name}</h4>
+                <small style="color:var(--text-muted); display:block;">Slug: <b>${col.slug}</b></small>
+                <small style="color:var(--neon-green); display:block; margin-bottom:10px;">Games: <b>${col.games.length}</b></small>
+                <div style="display:flex; gap:6px;">
+                    <button class="btn-primary" style="padding:4px 8px; font-size:12px; width:auto; background:var(--bg-panel);" onclick="openCollectionModal('${col.slug}', '${col.name}', ${JSON.stringify(col.games.map(g => g.id))})">✏️ Change</button>
+                    <button class="btn-danger" style="padding:4px 8px; font-size:12px; width:auto; margin:0;" onclick="deleteCollectionRequest('${col.slug}')">🗑️ Delete</button>
+                </div>
+            </div>
+        `).join('');
+        } catch (e) { console.error(e); }
+    }
+
+    // Открытие конструктора коллекций
+    function openCollectionModal(slug = '', name = '', attachedGameIds = []) {
+        editCollectionMode = !!slug;
+        currentEditingSlug = slug;
+
+        document.getElementById('modalCollName').value = name;
+        document.getElementById('modalCollSlug').value = slug;
+        document.getElementById('modalCollSlug').disabled = editCollectionMode;
+        document.getElementById('modalTitle').innerText = editCollectionMode ? '✏️ Изменить состав коллекции' : '📦 Создать новую коллекцию';
+
+        // Собираем уникальный список всех 13 игр, которые бэкенд отдал в loadData
+        if (allSystemGames.length === 0) {
+            // Если массив еще пуст, лениво собираем его из инпутов твоей формы configForm
+            const gamesList = ['slots3x3', 'slots5x3', 'wheel', 'scratch', 'lottery', 'mines', 'crash', 'dice', 'hilo', 'roulette', 'blackjack', 'holdem', 'scratch-cards'];
+            allSystemGames = gamesList.map((g, idx) => ({ id: idx + 1, name: g.toUpperCase(), provider: 'MTWTech' }));
+        }
+
+        const select = document.getElementById('modalCollGamesSelect');
+        select.innerHTML = allSystemGames.map(g => `
+        <option value="${g.id}" ${attachedGameIds.includes(g.id) ? 'selected' : ''}>${g.name}</option>
+    `).join('');
+
+        document.getElementById('collectionModal').style.display = 'flex';
+    }
+
+    function closeCollectionModal() {
+        document.getElementById('collectionModal').style.display = 'none';
+    }
+
+    // Запись коллекции в Postgres (Запросы 5, 6)
+    async function saveCollectionData() {
+        const name = document.getElementById('modalCollName').value.trim();
+        const slug = document.getElementById('modalCollSlug').value.trim().toLowerCase();
+        const select = document.getElementById('modalCollGamesSelect');
+        const gameIds = Array.from(select.selectedOptions).map(opt => parseInt(opt.value));
+
+        if (!name || !slug) return alert("Заполните все поля!");
+        const currentPartnerId = localStorage.getItem('partnerId') || 'demo_skin_default';
+
+        const url = editCollectionMode ? `${SERVER_URL}/api/admin/catalog/collection/${slug}` : `${SERVER_URL}/api/admin/catalog/collection`;
+        const method = editCollectionMode ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, slug, gameIds, partnerId: currentPartnerId })
+        });
+        if (res.ok) { closeCollectionModal(); loadAdminCollections(); }
+    }
+
+    // Удаление коллекции (Запрос 7)
+    async function deleteCollectionRequest(slug) {
+        if (!confirm('Удалить эту подборку из лобби?')) return;
+        const currentPartnerId = localStorage.getItem('partnerId') || 'demo_skin_default';
+
+        const res = await fetch(`${SERVER_URL}/api/admin/catalog/collection/${slug}`, { method: 'DELETE', body: JSON.stringify({ partnerId: currentPartnerId }) });
+        if (res.ok) loadAdminCollections();
+    }
+
+    // Таблица кастомного тюнинга RTP и Игр (Запрос 9)
+    async function loadAdminGamesConfig() {
+        const tbody = document.getElementById('adminGamesTableBody');
+        if (!tbody) return;
+        const currentPartnerId = localStorage.getItem('partnerId') || 'demo_skin_default';
+
+        try {
+            // ИСПРАВЛЕНО: Строго CamelCase параметр 'partnerId' в строке запроса
+            const res = await fetch(`${SERVER_URL}/api/catalog/collections?partnerId=${currentPartnerId}`);
+            const data = await res.json();
+
+            const gameMap = new Map();
+            data.collections.forEach(c => c.games.forEach(g => gameMap.set(g.id, g)));
+            allSystemGames = Array.from(gameMap.values()); // Синхронизируем точный реестр 13 игр
+
+            tbody.innerHTML = investorsGamesFix(allSystemGames).map(g => `
+            <tr>
+                <td>#${g.id}</td>
+                <td><b style="color:var(--neon-green);">${g.provider}</b></td>
+                <td><b>${g.name}</b></td>
+                <td><input type="text" id="cust-name-${g.id}" value="${g.name}" style="width:130px; margin:0; padding:4px;"></td>
+                <td><input type="number" id="cust-rtp-${g.id}" value="${g.rtp || 95}" style="width:65px; margin:0; padding:4px;"></td>
+                <td>
+                    <select id="cust-active-${g.id}" style="background:#2a2f3a; color:#fff; border:1px solid #3a4150; padding:4px; border-radius:4px; outline:none;">
+                        <option value="true" ${g.is_game_active !== false ? 'selected' : ''}>On</option>
+                        <option value="false" ${g.is_game_active === false ? 'selected' : ''}>Off</option>
+                    </select>
+                </td>
+                <td style="text-align: right; padding-right:15px;">
+                    <button class="btn-primary" style="width:auto; padding:4px 10px; font-size:12px;" onclick="saveSingleGameSettings(${g.id})">Save</button>
+                </td>
+            </tr>
+        `).join('');
+        } catch (e) { console.error(e); }
+    }
+
+    function investorsGamesFix(arr) {
+        // Вспомогательный фильтр, гарантирующий уникальность вывода строк в админ-таблицу
+        const seen = new Set();
+        return arr.filter(el => { const duplicate = seen.has(el.id); seen.add(el.id); return !duplicate; });
+    }
+
+    async function saveSingleGameSettings(gameId) {
+        const customName = document.getElementById(`cust-name-${gameId}`).value.trim();
+        const customRtp = parseFloat(document.getElementById(`cust-rtp-${gameId}`).value);
+        const isActive = document.getElementById(`cust-active-${gameId}`).value === 'true';
+
+        const res = await fetch(`${SERVER_URL}/api/admin/catalog/game-setup`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ gameId, isActive, customName, customRtp })
+        });
+        if (res.ok) { alert('Параметры игры сохранены в Postgres!'); loadAdminGamesConfig(); }
+    }
+
+    // Сетка провайдеров / агрегаторов (Запрос 8)
+    function loadAdminProvidersConfig() {
+        const grid = document.getElementById('adminProvidersGrid');
+        if (!grid) return;
+        const aggregators = Array.from(new Set(allSystemGames.map(g => g.aggregator || 'INTERNAL')));
+
+        grid.innerHTML = aggregators.map(agg => `
+        <div class="game-block" style="text-align: left; margin: 0; padding:15px; border:1px solid var(--border-color); border-radius:8px;">
+            <h4>🔌 Provider: ${agg}</h4>
+            <div style="display:flex; gap:6px; margin-top:10px;">
+                <button class="btn-primary" style="font-size:12px; padding:6px; background:var(--accent-green);" onclick="setAggregatorStatus('${agg}', true)">Enable</button>
+                <button class="btn-danger" style="font-size:12px; padding:6px;" onclick="setAggregatorStatus('${agg}', false)">Disable</button>
+            </div>
+        </div>
+    `).join('');
+    }
+
+    async function setAggregatorStatus(aggregator, isActive) {
+        const res = await fetch(`${SERVER_URL}/api/admin/catalog/aggregator`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ aggregator, isActive })
+        });
+        if (res.ok) alert(`Статус шлюза провайдера '${aggregator}' успешно изменен!`);
+    }
+
+    // Загрузить текущий статус фоновых сервисов с бэкенда при загрузке страницы
+    async function loadAdminBackgroundServices() {
+        const grid = document.getElementById('adminBackgroundServicesGrid');
+        if (!grid) return;
+
+        try {
+            const res = await fetch(`${SERVER_URL}/api/admin/bgs`, {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken') || ''}` }
+            });
+            const data = await res.json();
+
+            if (data.success && data.BGS) {
+                const services = [
+                    { key: 'sport', name: '🎰 Sport Live Engine', desc: 'Sport live engine' },
+                    { key: 'lottery', name: '🎰 5-Min Lottery Engine', desc: 'Lottery 6/49' },
+                    { key: 'crash', name: '🚀 Crash Aviator Engine', desc: 'Crash' },
+                    { key: 'roulette', name: '🎡 Casino Roulette Engine', desc: 'Roulette LIVE' }
+                ];
+
+                grid.innerHTML = services.map(srv => {
+                    const isActive = data.BGS[srv.key];
+                    // Меняем цвет индикатора и текста в зависимости от статуса базы
+                    const badgeColor = isActive ? 'var(--accent-green)' : 'var(--accent-red)';
+                    const badgeText = isActive ? 'RUNNING' : 'PAUSED';
+
+                    return `
+                    <div class="game-block" style="text-align: left; margin: 0; padding:15px; border:1px solid var(--border-color); border-radius:8px; display:flex; flex-direction:column; justify-content:space-between;">
+                        <div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                <h4 style="font-size:14px; color:#fff;">${srv.name}</h4>
+                                <span style="font-size:10px; font-weight:bold; color:${badgeColor}; border:1px solid ${badgeColor}; padding:2px 6px; border-radius:4px;">${badgeText}</span>
+                            </div>
+                            <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px; line-height:1.3;">${srv.desc}</p>
+                        </div>
+                        <div style="display:flex; gap:6px;">
+
+                             ${isActive ? `
+                                <button class="btn-danger" style="font-size:13px; padding:8px 12px; margin:0; width:100%; font-weight:bold; letter-spacing:0.5px;" onclick="toggleServiceRequest('${srv.key}', false)">🛑 Stop</button>
+                            ` : `
+                                <button class="btn-primary" style="font-size:13px; padding:8px 12px; margin:0; background:var(--accent-green); border-color:var(--accent-green); color:#1a1d24; width:100%; font-weight:bold; letter-spacing:0.5px;" onclick="toggleServiceRequest('${srv.key}', true)">▶️ Start</button>
+                            `}
+                        </div>
+                    </div>
+                `;
+                }).join('');
+            }
+        } catch (err) {
+            console.error("Failed to sync background services panel:", err);
+        }
+    }
+
+    // Отправить POST запрос на переключение статуса крона (Лотерея/Краш/Рулетка)
+    async function toggleServiceRequest(engineName, statusValue) {
+        try {
+            const res = await fetch(`${SERVER_URL}/api/admin/bgs`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken') || ''}`
+                },
+                body: JSON.stringify({ service: engineName, status: statusValue })
+            });
+
+            const result = await res.json();
+            if (result.success) {
+                // Перерисовываем виджеты, чтобы кнопка обновила свое состояние On/Off
+                loadAdminBackgroundServices();
+            } else {
+                alert("Server error");
+            }
+        } catch (err) {
+            alert("Server error");
+        }
+    }
+
 
     // Run auth validation sequence on page boot
     checkDemoAuth();

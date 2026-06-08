@@ -1,12 +1,15 @@
+const crypto = require('crypto');
 const state = require('../state');
+const seamlessService = require('../services/seamlessService'); // Подключите ваш сервис
 
 // 1. СТАРТ ИГРЫ (Игрок делает ставку и выбирает количество мин)
-module.exports.start = async (req, res) => {
+exports.start = async (req, res) => {
     const { minesCount, bet } = req.body;
-    const partnerId = req.partnerId; // Извлекаем partnerId, добавленный мидлваром checkPlayer
+    const partnerId = req.partnerId;
     const username = req.username;
+    const sessionId = req.sessionId || req.headers['x-session-id']; // Извлекаем сессию
 
-    // ИСПРАВЛЕНО: Достаем настройки игры конкретного партнера
+    // Достаем настройки игры конкретного партнера
     const config = state.getConfig(partnerId).mines;
 
     // ВАЛИДАЦИЯ ВХОДЯЩИХ ДАННЫХ
@@ -16,20 +19,27 @@ module.exports.start = async (req, res) => {
     if (!Number.isInteger(bet) || bet <= 0) {
         return res.status(400).json({ error: "Invalid bet amount" });
     }
-    if (req.player.balance < bet) {
-        return res.status(400).json({ error: "Insufficient funds" });
-    }
 
-    // ИСПРАВЛЕНО: Проверяем наличие активной игры с учетом партнера
+    // Проверяем наличие активной игры с учетом партнера
     if (state.getMinesGame(username, partnerId)) {
         return res.status(400).json({ error: "You already have an active game. Cashout or explode first!" });
     }
 
-    // Списываем баланс у игрока в SQLite/NeDB с привязкой к паре Игрок + Партнер
-    req.player.balance -= bet;
-    await state.updateBalance(username, partnerId, req.player.balance);
+    // Генерируем ID раунда для HTTP-запросов и сохраняем его на протяжении всей игры
+    const roundId = 'mines_' + crypto.randomBytes(8).toString('hex');
+    const gameName = "Mines";
 
-    // ИСПРАВЛЕНО: Добавляем чистую ставку игрока в изолированный банк (копилку) этого партнера
+    let debitResult;
+    try {
+        // Списываем баланс через HTTP-запрос дебита к платформе вместо RAM
+        debitResult = await seamlessService.debit(username, partnerId, sessionId, bet, gameName, roundId);
+    } catch (err) {
+        return res.status(400).json({ error: err.message || "Insufficient funds or platform error" });
+    }
+
+    const currentBalance = debitResult.balance;
+
+    // Добавляем чистую ставку игрока в изолированный банк (копилку) этого партнера
     state.addMinesBank(partnerId, bet);
 
     // Генерация первоначального скрытого поля (0 - пусто, 1 - мина)
@@ -43,33 +53,34 @@ module.exports.start = async (req, res) => {
         }
     }
 
-    // Сохраняем сессию раунда в оперативной памяти бэкенда
+    // Сохраняем сессию раунда в оперативной памяти бэкенда (включая sessionId и roundId)
     const gameSession = {
         bet: bet,
         minesCount: minesCount,
         board: board,
         openedCells: [],
-        status: "playing"
+        status: "playing",
+        sessionId: sessionId,
+        roundId: roundId
     };
 
-    // ИСПРАВЛЕНО: Записываем сессию в память в рамках текущего бренда
+    // Записываем сессию в память в рамках текущего бренда
     state.setMinesGame(username, partnerId, gameSession);
 
     res.json({
         message: "Game started",
-        balance: req.player.balance,
-        // Множитель рассчитывается на основе формулы, завязанной на глобальный CONFIG
-        nextMultiplier: state.getMinesMultiplier(config.gridSize, minesCount, 1)
+        balance: currentBalance,
+        nextMultiplier: state.getMinesMultiplier(config.gridSize, minesCount, 1, partnerId)
     });
 };
 
 // 2. ОТКРЫТИЕ ЯЧЕЙКИ (С жестким контролем RTP в реальном времени)
-module.exports.openCell = async (req, res) => {
+exports.openCell = async (req, res) => {
     const { cellIndex } = req.body;
-    const partnerId = req.partnerId; // Извлекаем partnerId, добавленный мидлваром checkPlayer
+    const partnerId = req.partnerId;
     const username = req.username;
 
-    // ИСПРАВЛЕНО: Достаем сессию игры и конфигурацию строго для текущего партнера
+    // Достаем сессию игры и конфигурацию строго для текущего партнера
     const game = state.getMinesGame(username, partnerId);
     const config = state.getConfig(partnerId).mines;
 
@@ -88,7 +99,6 @@ module.exports.openCell = async (req, res) => {
     const potentialWin = Math.floor(game.bet * currentMultiplier);
 
     // --- КЛЮЧЕВАЯ ЛОГИКА RTP СЕРВЕРА (ИЗОЛИРОВАННАЯ) ---
-    // ИСПРАВЛЕНО: Проверяем копилку игры строго текущего партнера
     const currentBank = state.getMinesBank(partnerId);
     let forceExplode = false;
 
@@ -103,12 +113,14 @@ module.exports.openCell = async (req, res) => {
 
     game.openedCells.push(cellIndex);
 
+    const gameName = "Mines";
+
     // ПРОВЕРКА НА ВЗРЫВ
     if (game.board[cellIndex] === 1) {
-        // ИСПРАВЛЕНО: Удаляем сессию этого игрока в рамках текущего бренда
+        // Удаляем сессию этого игрока в рамках текущего бренда
         state.deleteMinesGame(username, partnerId);
 
-        // ИСПРАВЛЕНО: Логируем историю с привязкой к partnerId
+        // Логируем историю с привязкой к partnerId
         await state.savePlayerActionHistory(username, partnerId, {
             game: "Mines",
             details: `Exploded on cell ${cellIndex}. Total opened: ${game.openedCells.length - 1}`,
@@ -116,10 +128,13 @@ module.exports.openCell = async (req, res) => {
             win: false
         });
 
+        // Деньги уже списаны на этапе start(), поэтому запрашиваем текущий баланс у базы данных для ответа
+        const platformUser = await state.getOrCreatePlayer(username, partnerId);
+
         return res.json({
             outcome: "explode",
             fullBoard: game.board,
-            balance: req.player.balance
+            balance: platformUser.balance
         });
     }
 
@@ -129,11 +144,12 @@ module.exports.openCell = async (req, res) => {
     const maxCleanCells = config.gridSize - game.minesCount;
     if (game.openedCells.length === maxCleanCells) {
 
-        req.player.balance += potentialWin;
-        // ИСПРАВЛЕНО: Апдейтим баланс и банк с учетом partnerId
-        await state.updateBalance(username, partnerId, req.player.balance);
-        state.reduceMinesBank(partnerId, potentialWin);
+        // Начисляем финальный выигрыш через HTTP-запрос кредита к платформе
+        const creditResult = await seamlessService.credit(username, partnerId, game.sessionId, potentialWin, gameName, game.roundId);
+        const currentBalance = creditResult.balance;
 
+        // Апдейтим локальный банк
+        state.reduceMinesBank(partnerId, potentialWin);
         state.deleteMinesGame(username, partnerId);
 
         await state.savePlayerActionHistory(username, partnerId, {
@@ -147,7 +163,7 @@ module.exports.openCell = async (req, res) => {
             outcome: "win",
             fullBoard: game.board,
             prize: potentialWin,
-            balance: req.player.balance
+            balance: currentBalance
         });
     }
 
@@ -161,11 +177,11 @@ module.exports.openCell = async (req, res) => {
 };
 
 // 3. КНОПКА «ЗАБРАТЬ ВЫИГРЫШ» (CASHOUT)
-module.exports.cashout = async (req, res) => {
+exports.cashout = async (req, res) => {
     const partnerId = req.partnerId;
     const username = req.username;
 
-    // ИСПРАВЛЕНО: Получаем сессию и конфиг конкретного партнера
+    // Получаем сессию и конфиг конкретного партнера
     const game = state.getMinesGame(username, partnerId);
     const config = state.getConfig(partnerId).mines;
 
@@ -178,16 +194,19 @@ module.exports.cashout = async (req, res) => {
 
     const finalMultiplier = state.getMinesMultiplier(config.gridSize, game.minesCount, game.openedCells.length);
     const totalWin = Math.floor(game.bet * finalMultiplier);
+    const gameName = "Mines";
 
-    req.player.balance += totalWin;
-    // ИСПРАВЛЕНО: Зачисляем выигрыш и вычитаем его из изолированной копилки бренда
-    await state.updateBalance(username, partnerId, req.player.balance);
+    // Начисляем выигрыш через HTTP-запрос кредита к платформе
+    const creditResult = await seamlessService.credit(username, partnerId, game.sessionId, totalWin, gameName, game.roundId);
+    const currentBalance = creditResult.balance;
+
+    // Вычитаем выигрыш из изолированной копилки бренда
     state.reduceMinesBank(partnerId, totalWin);
 
-    // ИСПРАВЛЕНО: Стираем сессию в рамках текущего бренда
+    // Стираем сессию в рамках текущего бренда
     state.deleteMinesGame(username, partnerId);
 
-    // ИСПРАВЛЕНО: Пишем лог с передачей partnerId
+    // Пишем лог с передачей partnerId
     await state.savePlayerActionHistory(username, partnerId, {
         game: "Mines",
         details: `Cashout after ${game.openedCells.length} cells. Multiplier: ${finalMultiplier}x`,
@@ -197,8 +216,9 @@ module.exports.cashout = async (req, res) => {
 
     res.json({
         prize: totalWin,
-        balance: req.player.balance,
+        balance: currentBalance,
         fullBoard: game.board
     });
 };
+
 

@@ -43,50 +43,61 @@ function calculateScore(hand) {
 // Временное хранилище активных игр в оперативной памяти сервера
 const activeGames = new Map();
 
+
 exports.deal = async (req, res) => {
     const partnerId = req.partnerId;
     const username = req.username;
+    // Берем sessionId, который заехал в req (например, из middleware авторизации)
+    const sessionId = req.sessionId || req.headers['x-session-id'];
 
     const partnerConfig = state.getConfig(partnerId) || {};
-    const config = partnerConfig.blackjack || { cost: 20, rtp: 95 }; // Читаем ваш RTP из конфига
+    const config = partnerConfig.blackjack || { cost: 20, rtp: 95 };
 
     if (activeGames.has(username)) {
         return res.status(400).json({ error: "You already have an active game!" });
     }
 
-    if (req.player.balance < config.cost) {
-        return res.status(400).json({ error: "Insufficient funds" });
+    // Создаем уникальный ID раунда для этой раздачи
+    const roundId = 'bj_' + crypto.randomBytes(8).toString('hex');
+    const gameName = "Blackjack";
+
+    let debitResult;
+    try {
+        // Списываем ставку через HTTP-запрос к платформе
+        debitResult = await seamlessService.debit(username, partnerId, sessionId, config.cost, gameName, roundId);
+    } catch (err) {
+        // Если на платформе не хватило денег или упала сеть, сервис выбросит ошибку
+        return res.status(400).json({ error: err.message || "Insufficient funds or platform error" });
     }
 
-    // Списываем ставку и заносим в банк Блэкджека этого партнера
-    req.player.balance -= config.cost;
-    await state.updateBalance(username, partnerId, req.player.balance);
-    state.addBlackjackBank(partnerId, config.cost); // Добавляем метод в state
+    // Получаем актуальный баланс из ответа сервера
+    let currentBalance = debitResult.balance;
+
+    // Заносим в локальный банк Блэкджека этого партнера для контроля RTP
+    state.addBlackjackBank(partnerId, config.cost);
 
     let deck, playerHand, dealerHand, playerScore, dealerScore;
     let attempts = 0;
-    const maxAttempts = 5; // Защита от бесконечного цикла
+    const maxAttempts = 5;
 
     // ЦИКЛ КОНТРОЛЯ RTP / ЗАЩИТЫ КАССЫ
     do {
-        deck = engine.createDeck();
+        deck = createDeck();
         playerHand = [deck.pop(), deck.pop()];
         dealerHand = [deck.pop(), deck.pop()];
-        playerScore = engine.calculateScore(playerHand);
-        dealerScore = engine.calculateScore(dealerHand);
+        playerScore = calculateScore(playerHand);
+        dealerScore = calculateScore(dealerHand);
 
-        // Проверяем, есть ли у игрока мгновенный выигрыш (21 очко)
         if (playerScore === 21 && dealerScore !== 21) {
             const potentialPrize = config.cost * 2.5;
             const currentBank = state.getBlackjackBank(partnerId);
 
-            // Если в кассе партнера нет денег на выплату — делаем пересдачу (Re-roll)
             if (potentialPrize > currentBank) {
                 attempts++;
                 continue;
             }
         }
-        break; // Раздача безопасна для кассы, выходим из цикла
+        break;
     } while (attempts < maxAttempts);
 
     // Если у игрока остался натуральный Блэкджек (касса одобрила)
@@ -99,19 +110,21 @@ exports.deal = async (req, res) => {
             status = 'PUSH';
         }
 
-        req.player.balance += prize;
-        await state.updateBalance(username, partnerId, req.player.balance);
-        state.reduceBlackjackBank(partnerId, prize); // Списываем из кассы партнера
+        // Начисляем выигрыш через HTTP-запрос к платформе
+        const creditResult = await seamlessService.credit(username, partnerId, sessionId, prize, gameName, roundId);
+        currentBalance = creditResult.balance; // Обновляем баланс из ответа
+
+        state.reduceBlackjackBank(partnerId, prize);
         await saveHistory(username, partnerId, playerHand, dealerHand, prize, true);
 
         return res.json({
-            status, playerHand, dealerHand, playerScore, dealerScore, prize, balance: req.player.balance
+            status, playerHand, dealerHand, playerScore, dealerScore, prize, balance: currentBalance
         });
     }
 
-    // Если игра продолжается, сохраняем сессию
+    // Если игра продолжается, сохраняем сессию (включая sessionId и roundId)
     activeGames.set(username, {
-        bet: config.cost, partnerId, deck, playerHand, dealerHand
+        bet: config.cost, partnerId, sessionId, roundId, deck, playerHand, dealerHand
     });
 
     res.json({
@@ -119,10 +132,9 @@ exports.deal = async (req, res) => {
         playerHand,
         dealerHand: [dealerHand[0], 'XX'],
         playerScore,
-        balance: req.player.balance
+        balance: currentBalance
     });
 };
-
 
 exports.action = async (req, res) => {
     const username = req.username;
@@ -133,21 +145,28 @@ exports.action = async (req, res) => {
         return res.status(400).json({ error: "No active game found" });
     }
 
+    const gameName = "Blackjack";
+
     if (action === 'HIT') {
         game.playerHand.push(game.deck.pop());
         const playerScore = calculateScore(game.playerHand);
 
-        // Перебор (Bust)
+        // Перебор (Bust) -> деньги уже списаны на этапе deal(), баланс не меняется
         if (playerScore > 21) {
             activeGames.delete(username);
-            await saveHistory(username, game.playerHand, game.dealerHand, 0, false);
+            await saveHistory(username, game.partnerId, game.playerHand, game.dealerHand, 0, false);
+
+            // Запрашиваем инфо о балансе, чтобы вернуть актуальный (так как мы ничего не начисляем)
+            // Либо можно передать старый баланс, но безопаснее получить актуальный
+            const platformUser = await state.getOrCreatePlayer(username, game.partnerId);
+
             return res.json({
                 status: 'BUST',
                 playerHand: game.playerHand,
                 dealerHand: game.dealerHand,
                 playerScore,
                 prize: 0,
-                balance: req.player.balance
+                balance: platformUser.balance
             });
         }
 
@@ -163,7 +182,6 @@ exports.action = async (req, res) => {
         activeGames.delete(username);
 
         let dealerScore = calculateScore(game.dealerHand);
-        // Дилер обязан брать карты, пока у него меньше 17 очков
         while (dealerScore < 17) {
             game.dealerHand.push(game.deck.pop());
             dealerScore = calculateScore(game.dealerHand);
@@ -181,9 +199,18 @@ exports.action = async (req, res) => {
             status = 'PUSH';
         }
 
-        req.player.balance += prize;
-        await state.updateBalance(username, req.player.balance);
-        await saveHistory(username, game.playerHand, game.dealerHand, prize, prize > 0);
+        let currentBalance;
+        if (prize > 0) {
+            // Если есть выигрыш или возврат (PUSH), шлем HTTP-запрос кредита
+            const creditResult = await seamlessService.credit(game.username || username, game.partnerId, game.sessionId, prize, gameName, game.roundId);
+            currentBalance = creditResult.balance;
+        } else {
+            // Если проигрыш, просто смотрим текущий баланс в базе
+            const platformUser = await state.getOrCreatePlayer(username, game.partnerId);
+            currentBalance = platformUser.balance;
+        }
+
+        await saveHistory(username, game.partnerId, game.playerHand, game.dealerHand, prize, prize > 0);
 
         return res.json({
             status,
@@ -192,10 +219,11 @@ exports.action = async (req, res) => {
             playerScore,
             dealerScore,
             prize,
-            balance: req.player.balance
+            balance: currentBalance
         });
     }
 };
+
 
 // Хелпер логирования в вашем стиле
 async function saveHistory(username, pHand, dHand, prize, isWin) {

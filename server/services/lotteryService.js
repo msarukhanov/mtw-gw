@@ -2,7 +2,7 @@ const state = require('../state');
 const ROUND_DURATION = 5 * 60 * 1000; // 5 minutes
 
 function initLotteryService(io) {
-    setInterval(() => {
+    const lotteryInterval = setInterval(() => {
         const now = Date.now();
         const msPassed = now % ROUND_DURATION;
         const timeToDraw = ROUND_DURATION - msPassed;
@@ -22,7 +22,12 @@ function initLotteryService(io) {
 
         // Время вышло — запускаем тираж
         if (timeToDraw <= 1000) {
-            runGlobalDraw(io, partnerIds);
+            if(state.BGS.crash) {
+                runGlobalDraw(io, partnerIds);
+            }
+        }
+        if(!state.BGS.crash) {
+            clearInterval(lotteryInterval);
         }
     }, 1000);
 }
@@ -154,7 +159,5 @@ async function runGlobalDraw(io, partnerIds) {
         io.to(partnerId+'_lottery').emit('global_draw_info', { winningNumbers, historyRecord: drawHistoryRecord });
     }
 }
-
-
 
 module.exports = { initLotteryService };

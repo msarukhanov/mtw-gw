@@ -64,7 +64,7 @@ exports.debit = async (req, res) => {
 
     try {
         const player = await state.getOrCreatePlayer(realUsername, partnerId);
-        if (player.balance < amount) return res.status(400).json({ error: "Low platform balance" });
+        if (player.balance < amount) return res.status(400).json({ error: "Insufficient funds" });
 
         const newBalance = player.balance - Number(amount);
         await state.updateBalance(realUsername, partnerId, newBalance);

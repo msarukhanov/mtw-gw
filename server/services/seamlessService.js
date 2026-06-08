@@ -1,47 +1,40 @@
 const axios = require('axios');
 const state = require('../state');
 
+const isDemo = process.env.env === 'demo';
+// Исправлены опечатки в протоколе https:// и хосте localhost
+const demoUrl = (isDemo ? 'https://mtw-gw.onrender.com' : 'http://localhost:3000') + '/api/showcase/';
+
 module.exports = {
-    // 3.1 Проверка сессии и автологин с учетом партнера
     validateSession: async (sessionId, partnerId) => {
-        return true;
         try {
-            // Динамически достаем конфигурацию конкретного B2B-партнера
             const partnerConfig = state.getConfig(partnerId);
             const integration = partnerConfig.integration || {
-                url: 'https://casino-platform.com',
+                url: demoUrl + 'validate',
                 secret: 'your_secret_key_here'
             };
 
-            // Если для демо-презентации нужно пропустить запрос без реального API партнера:
-            // if (integration.isDemoMode) return { username: "Demo_Player", balance: 5000 };
-
-            const response = await axios.post(`${integration.url}/validate`, {
+            const response = await axios.post(`${integration.url}`, {
                 token: sessionId,
                 secret: integration.secret
             });
 
-            // Ожидаем ответ: { username: "Player_1", balance: 5000 }
-            return response.data;
+            return response.data; // { username: "Player_1", balance: 5000 }
         } catch (err) {
             console.error(`[Partner: ${partnerId}] Seamless validate error:`, err.message);
             return null;
         }
     },
 
-    // 3.2 Запрос при ставке (Debit) с динамической маршрутизацией
     debit: async (username, partnerId, sessionId, amount, gameName, roundId) => {
-        await state.logFinancialTransaction(partnerId, username, "DEBIT", amount, gameName);
-
-        return true;
         try {
             const partnerConfig = state.getConfig(partnerId);
             const integration = partnerConfig.integration || {
-                url: 'https://casino-platform.com',
+                url: demoUrl + 'debit',
                 secret: 'your_secret_key_here'
             };
 
-            const response = await axios.post(`${integration.url}/debit`, {
+            const response = await axios.post(`${integration.url}`, {
                 username,
                 token: sessionId,
                 amount: Number(amount),
@@ -49,33 +42,24 @@ module.exports = {
                 roundId,
                 secret: integration.secret
             });
+            await state.logFinancialTransaction(partnerId, username, "DEBIT", amount, gameName);
 
-            // Ожидаем ответ: { balance: NewBalance }
-            return response.data;
+            return response.data; // { balance: NewBalance }
         } catch (err) {
             console.error(`[Partner: ${partnerId}] Seamless debit error:`, err.message);
             throw new Error(`Platform debit failed for partner ${partnerId}`);
         }
     },
 
-    // 3.3 Запрос при результате (Credit) с динамической маршрутизацией
     credit: async (username, partnerId, sessionId, amount, gameName, roundId) => {
-
-        let txType = "CREDIT";
-        if (gameName && gameName.includes("Affiliate")) txType = "AFFILIATE";
-        else if (gameName && (gameName.includes("Promo") || gameName.includes("Cashback") || gameName.includes("Quest") || gameName.includes("VIP"))) {
-            txType = "BONUS_CASH"; // Маркируем как бонусное пополнение счета
-        }
-
-        return true;
         try {
             const partnerConfig = state.getConfig(partnerId);
             const integration = partnerConfig.integration || {
-                url: 'https://casino-platform.com',
+                url: demoUrl + 'credit', // Было исправлено на credit
                 secret: 'your_secret_key_here'
             };
 
-            const response = await axios.post(`${integration.url}/credit`, {
+            const response = await axios.post(`${integration.url}`, {
                 username,
                 token: sessionId,
                 amount: Number(amount),
@@ -84,8 +68,14 @@ module.exports = {
                 secret: integration.secret
             });
 
-            // Ожидаем ответ: { balance: NewBalance }
-            return response.data;
+            let txType = "CREDIT";
+            if (gameName && gameName.includes("Affiliate")) txType = "AFFILIATE";
+            else if (gameName && (gameName.includes("Promo") || gameName.includes("Cashback") || gameName.includes("Quest") || gameName.includes("VIP"))) {
+                txType = "BONUS_CASH";
+            }
+            await state.logFinancialTransaction(partnerId, username, txType, amount, gameName);
+
+            return response.data; // { balance: NewBalance }
         } catch (err) {
             console.error(`[Partner: ${partnerId}] Seamless credit error:`, err.message);
             throw new Error(`Platform credit failed for partner ${partnerId}`);

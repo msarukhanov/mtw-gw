@@ -1,12 +1,13 @@
+const crypto = require('crypto');
 const state = require('../state');
 const rouletteService = require('../services/rouletteService');
+const seamlessService = require('../services/seamlessService'); // Подключите ваш сервис
 
 exports.placeBet = async (req, res) => {
-    // betType может быть 'color' или 'parity'
-    // betValue соответственно: 'red'/'black' или 'even'/'odd'
     const { betAmount, betType, betValue } = req.body;
-    const partnerId = req.partnerId; // Извлекаем partnerId, добавленный мидлваром checkPlayer
+    const partnerId = req.partnerId;
     const username = req.username;
+    const sessionId = req.sessionId || req.headers['x-session-id']; // Извлекаем сессию
 
     // 1. Проверяем, открыт ли прием ставок в рулетке
     if (rouletteService.getStatus() !== "betting") {
@@ -31,20 +32,25 @@ exports.placeBet = async (req, res) => {
         return res.status(400).json({ error: "Invalid parity value. Choose even or odd." });
     }
 
-    // 5. Проверка баланса игрока
-    if (req.player.balance < betAmount) {
-        return res.status(400).json({ error: "Insufficient funds" });
-    }
-
-    // 6. Защита от повторной ставки (если у вас по правилам одна ставка на раунд)
+    // 6. Защита от повторной ставки
     const currentBets = rouletteService.getRouletteBets(partnerId) || {};
     if (currentBets[username]) {
         return res.status(400).json({ error: "You already placed a bet for this round" });
     }
 
-    // 7. Списание баланса в локальном кэше B2B (как в Краше)
-    req.player.balance -= betAmount;
-    await state.updateBalance(username, partnerId, req.player.balance);
+    // Получаем ID текущего раунда рулетки
+    const roundId = rouletteService.getRoundId ? rouletteService.getRoundId() : 'roulette_round';
+    const gameName = "Roulette";
+
+    let debitResult;
+    try {
+        // 7. Списание баланса через HTTP-запрос к платформе вместо RAM
+        debitResult = await seamlessService.debit(username, partnerId, sessionId, betAmount, gameName, roundId);
+    } catch (err) {
+        return res.status(400).json({ error: err.message || "Insufficient funds or platform error" });
+    }
+
+    const currentBalance = debitResult.balance;
 
     // 8. Фиксация ставки в изолированном банке оператора
     rouletteService.addRouletteBank(partnerId, betAmount);
@@ -54,6 +60,7 @@ exports.placeBet = async (req, res) => {
         betAmount
     });
 
-    // Возвращаем успешный ответ и обновленный баланс
-    res.json({ message: "Bet accepted", balance: req.player.balance });
+    // Возвращаем успешный ответ и обновленный баланс из HTTP-ответа
+    res.json({ message: "Bet accepted", balance: currentBalance });
 };
+

@@ -1,11 +1,38 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
+    <title>MTWTech Casino</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MTWTech casino</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDAgNTAwIj4KPHJlY3Qgd2lkdGg9IjUwMCIgaGVpZ2h0PSI1MDAiIGZpbGw9IiMxMjEyMTIiIHJ4PSI0MCIvPgo8dGV4dCB4PSI1MCUiIHk9IjQ1JSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IidKZXRCcmFpbnMgTW9ubycsICdGaXJhIENvZGUnLCAnTW9udHNlcnJhdCcsIHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSI5MDAiPgo8dHNwYW4geD0iNTAlIiBkeT0iMCIgZm9udC1zaXplPSIxMjUiIGZpbGw9IiNmZjVhNWYiIHRleHRMZW5ndGg9IjM2MCIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nQW5kR2x5cGhzIj5NVFc8L3RzcGFuPgo8dHNwYW4geD0iNTAlIiBkeT0iMTE1IiBmb250LXNpemU9IjExNSIgZmlsbD0iIzRlY2NhMyIgdGV4dExlbmd0aD0iMzYwIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiPlRFQ0g8L3RzcGFuPgo8L3RleHQ+Cjwvc3ZnPg==">
     <style>
+        /* =========================================================================
+           🏙️ БАЗОВЫЕ СТИЛИ И ИНТЕРФЕЙС ЛОББИ
+           ========================================================================= */
+        :root {
+            --bg-main: #1a1a2e;
+            --bg-container: #16213e;
+            --bg-panel: #0f3460;
+            --bg-timer: #222831;
+            --border-color: #25254d;
+            --color-text: #ffffff;
+            --color-accent: #e94560;
+            --color-success: #4ecca3;
+            --gradient-jackpot: linear-gradient(90deg, #951c30, #e94560);
+        }
+
+        body.theme-light {
+            --bg-main: #f0f2f5;
+            --bg-container: #ffffff;
+            --bg-panel: #e4e6eb;
+            --bg-timer: #f0f2f5;
+            --border-color: #ccd0d5;
+            --color-text: #1c1e21;
+            --color-accent: #0076ff;
+            --color-success: #2baf2b;
+            --gradient-jackpot: linear-gradient(90deg, #0056b3, #0076ff);
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -14,65 +41,73 @@
 
         body {
             font-family: Arial, sans-serif;
-            background: #1a1a2e;
-            color: #fff;
+            background: var(--bg-main);
+            color: var(--color-text);
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             min-height: 100vh;
             padding: 15px;
+            transition: background 0.3s, color 0.3s;
         }
 
         .game-container {
             width: 100%;
-            max-width: 400px;
-            background: #16213e;
+            max-width: 1000px;
+            background: var(--bg-container);
             padding: 20px;
             border-radius: 20px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
             text-align: center;
+            margin-bottom: 20px;
         }
 
         .jackpot-banner {
-            background: linear-gradient(90deg, #951c30, #e94560);
-            padding: 10px;
+            background: var(--gradient-jackpot);
+            padding: 12px;
             border-radius: 12px;
-            margin-bottom: 20px;
+            margin-bottom: 5px;
             font-weight: bold;
             font-size: 18px;
             box-shadow: 0 0 15px rgba(233, 69, 96, 0.4);
             animation: pulse 1.5s infinite alternate;
         }
-        @keyframes pulse { to { transform: scale(1.02); } }
+
+        @keyframes pulse {
+            to {
+                transform: scale(1.02);
+            }
+        }
 
         .tabs-container {
             width: 100%;
-            max-width: 380px;
+            max-width: 1000px;
             background: linear-gradient(145deg, #12122c, #1a1a3a);
-            padding: 25px;
-            border-radius: 24px;
+            padding: 12px 20px;
+            border-radius: 16px;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7), 0 0 20px rgba(233, 69, 96, 0.2);
             text-align: center;
-            border: 2px solid #25254d;
-
+            border: 2px solid var(--border-color);
             display: flex;
             justify-content: space-around;
-
             overflow-x: auto;
+            margin: 0 auto 20px auto;
         }
 
         .game-tab {
             display: inline-block;
-            font-size: 24px;
-
+            font-size: 18px;
+            font-weight: bold;
             cursor: pointer;
-
-            padding: 0 6px;
+            padding: 6px 16px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
         }
 
         .game-tab.selected {
-            color: #4ecca3;
+            color: #fff;
+            background: var(--color-accent);
         }
 
         /* Панель пользователя */
@@ -80,7 +115,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: #0f3460;
+            background: var(--bg-panel);
             padding: 10px 15px;
             border-radius: 12px;
             margin-bottom: 15px;
@@ -88,31 +123,36 @@
         }
 
         .login-btn {
-            background: #e94560;
+            background: var(--color-accent);
             border: none;
             color: white;
-            padding: 5px 10px;
+            padding: 6px 12px;
             border-radius: 6px;
             cursor: pointer;
             font-weight: bold;
+            transition: opacity 0.2s;
+        }
+
+        .login-btn:hover {
+            opacity: 0.9;
         }
 
         .balance-value {
-            color: #4ecca3;
+            color: var(--color-success);
             font-weight: bold;
         }
 
         /* Таймер тиража */
         .timer-banner {
-            background: #222831;
+            background: var(--bg-timer);
             padding: 8px;
             border-radius: 8px;
             margin-bottom: 15px;
-            border: 1px solid #393e46;
+            border: 1px solid var(--border-color);
         }
 
         .timer-val {
-            color: #e94560;
+            color: var(--color-accent);
             font-weight: bold;
             font-size: 18px;
         }
@@ -120,863 +160,322 @@
         h1 {
             font-size: 22px;
             margin-bottom: 15px;
-            color: #e94560;
+            color: var(--color-accent);
         }
 
-        .balls-container {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            min-height: 50px;
-            margin-bottom: 20px;
-        }
-
-        .ball {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: radial-gradient(circle at 30% 30%, #ff4b5c, #ff1f3b);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 16px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-            transform: scale(0);
-            animation: popIn 0.4s ease forwards;
-        }
-
-        @keyframes popIn {
-            to {
-                transform: scale(1);
-            }
-        }
-
-        .ticket {
+        /* Сетка игр лобби */
+        .games-grid {
             display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 5px;
-            margin-bottom: 15px;
-        }
-
-        .number-btn {
-            aspect-ratio: 1;
-            background: #0f3460;
-            border: none;
-            color: white;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .number-btn.selected {
-            background: #e94560;
-        }
-
-        .number-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .action-btn {
-            width: 100%;
-            padding: 15px;
-            background: #4ecca3;
-            border: none;
-            color: #1a1a2e;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 12px;
-            cursor: pointer;
-            box-shadow: 0 5px 15px rgba(78, 204, 163, 0.3);
-        }
-
-        .action-btn:disabled {
-            background: #555;
-            color: #888;
-            box-shadow: none;
-            cursor: not-allowed;
-        }
-
-        .result {
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 16px;
             margin-top: 15px;
-            font-size: 16px;
-            font-weight: bold;
-            min-height: 24px;
-            color: #4ecca3;
+            width: 100%;
         }
 
-
-
-
-
-
-        /* Верхняя панель */
-        .header-panel {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(15, 52, 96, 0.5);
-            padding: 12px 18px;
+        .game-card {
+            background: var(--bg-panel);
             border-radius: 14px;
-            margin-bottom: 25px;
-            font-size: 14px;
-            border: 1px solid #1f1f45;
-        }
-        .balance-box { font-weight: bold; color: #4ecca3; font-size: 16px; }
-
-        h1 {
-            font-size: 26px;
-            margin-bottom: 20px;
-            color: #e94560;
-            text-shadow: 0 0 10px rgba(233, 69, 96, 0.6);
-            letter-spacing: 1px;
-        }
-
-        /* Игровое поле (Барабаны) */
-        .slot-machine {
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-            background: #070714;
             padding: 15px;
-            border-radius: 18px;
-            border: 3px solid #e94560;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.9), 0 0 15px rgba(233, 69, 96, 0.3);
-            margin-bottom: 25px;
-            position: relative;
-            overflow: hidden;
+            text-align: center;
+            border: 1px solid transparent;
+            transition: transform 0.2s, border-color 0.2s;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         }
 
-        /* Красивая рамка/визир по центру строки выигрыша */
-        .slot-machine::blur {
+        .game-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--color-accent);
+        }
+
+        .lobby-cat-btn {
+            background: #2a2f3a;
+            border: 0;
+            color: #a0a5b5;
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        .lobby-cat-btn:hover {
+            background: #3a4150;
+            color: #fff;
+        }
+
+        .lobby-cat-btn.active {
+            background: var(--color-accent);
+            color: #fff;
+        }
+
+        /* =========================================================================
+           🏙️ БАННЕРНЫЙ СЛАЙДЕР И КНОПКИ
+           ========================================================================= */
+        .promo-slider {
+            width: 100%;
+            max-width: 1000px;
+            height: 300px;
+            margin: 0 auto 30px auto;
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        .slide-container {
+            display: flex;
+            width: 300%;
+            height: 100%;
+            transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .slide-item {
+            width: 33.333%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 40px 60px;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .slide-item::before {
             content: '';
             position: absolute;
-            left: 0; width: 100%; height: 100%;
-            background: linear-gradient(to bottom, rgba(7,7,20,0.8) 0%, transparent 25%, transparent 75%, rgba(7,7,20,0.8) 100%);
-            pointer-events: none;
-            z-index: 2;
-        }
-
-        .win-line-pointer {
-            position: absolute;
-            left: 0; top: 50%;
-            transform: translateY(-50%);
-            width: 100%; height: 2px;
-            background: rgba(233, 69, 96, 0.5);
-            box-shadow: 0 0 8px #e94560;
-            z-index: 3;
-            pointer-events: none;
-        }
-
-        /* Отдельный барабан */
-        .reel-window {
-            width: 85px;
-            height: 90px; /* Показывает ровно 1 символ по центру */
-            background: #101026;
-            border-radius: 12px;
-            overflow: hidden;
-            position: relative;
-            border: 1px solid #2d2d5f;
-        }
-
-        .reel-strip {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            will-change: transform;
-        }
-
-        /* Слот-символ */
-        .symbol {
-            width: 100%;
-            height: 90px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 42px; /* Под ваши будущие картинки */
-            user-select: none;
-        }
-
-        /* Кнопка вращения */
-        .spin-btn {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, #e94560, #951c30);
-            border: none;
-            color: white;
-            font-size: 20px;
-            font-weight: bold;
-            border-radius: 16px;
-            cursor: pointer;
-            box-shadow: 0 6px 20px rgba(233, 69, 96, 0.4);
-            transition: transform 0.1s, filter 0.2s;
-            letter-spacing: 1px;
-        }
-        .spin-btn:active { transform: scale(0.98); }
-        .spin-btn:disabled {
-            background: #333344;
-            color: #777;
-            box-shadow: none;
-            cursor: not-allowed;
-        }
-
-        /* Информационные плашки */
-        .bet-info { margin-bottom: 15px; font-size: 14px; color: #8a8ab0; }
-        .bet-info span { color: #fff; font-weight: bold; }
-        .msg-box { min-height: 24px; font-size: 18px; font-weight: bold; color: #4ecca3; text-shadow: 0 0 5px rgba(78,204,163,0.3); }
-
-        /* Класс бесконечной быстрой прокрутки (запускается через JS) */
-        .blur-spin {
-            animation: spinningStrip 0.2s linear infinite;
-        }
-
-        @keyframes spinningStrip {
-            0% { transform: translateY(0); }
-            100% { transform: translateY(-360px); } /* Смещение на высоту 4 элементов */
-        }
-
-        /* Область колеса со стрелкой */
-        .wheel-box {
-            position: relative;
-            width: 280px;
-            height: 280px;
-            margin: 0 auto 25px auto;
-        }
-
-        /* Маркер/Стрелка сверху */
-        .pointer {
-            position: absolute;
-            top: -15px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: 15px solid transparent;
-            border-right: 15px solid transparent;
-            border-top: 30px solid #e94560;
-            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5));
-            z-index: 10;
-        }
-
-        canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.1);
-        }
-
-        /* Кнопка */
-        .spin-btn {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, #4ecca3, #2b9371);
-            border: none;
-            color: #12122c;
-            font-size: 20px;
-            font-weight: bold;
-            border-radius: 16px;
-            cursor: pointer;
-            box-shadow: 0 6px 20px rgba(78, 204, 163, 0.3);
-            transition: transform 0.1s, filter 0.2s;
-            letter-spacing: 1px;
-        }
-
-        .spin-btn:active {
-            transform: scale(0.98);
-        }
-
-        .spin-btn:disabled {
-            background: #333344;
-            color: #777;
-            box-shadow: none;
-            cursor: not-allowed;
-        }
-
-        .bet-info {
-            margin-bottom: 15px;
-            font-size: 14px;
-            color: #8a8ab0;
-        }
-
-        .bet-info span {
-            color: #fff;
-            font-weight: bold;
-        }
-
-        .msg-box {
-            min-height: 24px;
-            font-size: 18px;
-            font-weight: bold;
-            color: #e94560;
-            text-shadow: 0 0 5px rgba(233, 69, 96, 0.3);
-        }
-
-        .card-area {
-            position: relative;
-            width: 260px;
-            height: 260px;
-            margin: 0 auto 20px auto;
-            background: #070714;
-            border-radius: 16px;
-            border: 3px solid #25254d;
-            overflow: hidden;
-        }
-
-        /* Сетка призов под защитным слоем (3х3) */
-        .prizes-grid {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(3, 1fr);
-            gap: 2px;
-            background: #25254d;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, rgba(13, 17, 23, 0.85) 30%, rgba(13, 17, 23, 0.2) 100%);
             z-index: 1;
         }
-        .cell {
-            background: #101026;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 32px;
-            user-select: none;
-        }
 
-        /* Холст, который мы стираем */
-        canvas {
-            position: absolute;
-            top: 0; left: 0;
-            cursor: crosshair;
-            touch-action: none; /* Отключает скролл экрана при стирании пальцем */
-            border-radius: 12px;
+        .slide-content {
+            position: relative;
             z-index: 2;
-        }
-
-        .buy-btn {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, #e94560, #951c30);
-            border: none;
-            color: white;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 16px;
-            cursor: pointer;
-            box-shadow: 0 6px 20px rgba(233, 69, 96, 0.3);
-        }
-        .buy-btn:disabled { background: #333344; color: #777; box-shadow: none; }
-
-
-
-        .mines-wrapper {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-        }
-        .mines-panel {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        .mines-input-group {
-            flex: 1;
+            max-width: 450px;
             text-align: left;
         }
-        .mines-input-group label {
-            display: block;
-            font-size: 12px;
-            color: #8a8ab0;
-            margin-bottom: 4px;
-        }
-        .mines-input {
-            width: 100%;
-            padding: 10px;
-            background: #0f3460;
-            border: 1px solid #25254d;
-            border-radius: 8px;
+
+        .slide-content h2 {
+            font-size: 28px;
             color: #fff;
-            font-weight: bold;
-            font-size: 14px;
-            outline: none;
+            margin: 0 0 10px 0;
+            font-weight: 800;
         }
-        .mines-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
+
+        .slide-content p {
+            font-size: 14px;
+            color: #a0a5b5;
+            margin: 0 0 20px 0;
+            line-height: 1.4;
+        }
+
+        .slide-content button, .slide-content .btn-primary {
+            background: linear-gradient(135deg, #ffb703, #ff8503) !important;
+            border: 2px solid #ffb703 !important;
+            color: #0d1117 !important;
+            padding: 12px 28px !important;
+            border-radius: 8px !important;
+            font-size: 14px !important;
+            font-weight: 800 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 1px !important;
+            cursor: pointer !important;
+            box-shadow: 0 0 15px rgba(255, 183, 3, 0.3) !important;
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1) !important;
+            outline: none !important;
+            display: inline-block !important;
+        }
+
+        .slide-content button:hover, .slide-content .btn-primary:hover {
+            transform: translateY(-3px) scale(1.02) !important;
+            box-shadow: 0 0 25px rgba(255, 183, 3, 0.6) !important;
+            background: linear-gradient(135deg, #ffc83b, #ff9100) !important;
+            border-color: #ffc83b !important;
+        }
+
+        .slide-content button:active, .slide-content .btn-primary:active {
+            transform: translateY(1px) scale(0.98) !important;
+            box-shadow: 0 0 10px rgba(255, 183, 3, 0.4) !important;
+        }
+
+        .slide-item:nth-child(2) .slide-content button, .slide-item:nth-child(3) .slide-content button {
+            background: linear-gradient(135deg, #58a6ff, #0056b3) !important;
+            border-color: #58a6ff !important;
+            color: #fff !important;
+            box-shadow: 0 0 15px rgba(88, 166, 255, 0.3) !important;
+        }
+
+        .slide-item:nth-child(2) .slide-content button:hover, .slide-item:nth-child(3) .slide-content button:hover {
+            background: linear-gradient(135deg, #79b8ff, #0066d6) !important;
+            border-color: #79b8ff !important;
+            box-shadow: 0 0 25px rgba(88, 166, 255, 0.6) !important;
+        }
+
+        .slider-dots {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
             gap: 8px;
-            width: 100%;
-            aspect-ratio: 1;
-            background: #070714;
-            padding: 12px;
-            border-radius: 18px;
-            border: 2px solid #25254d;
-            margin-bottom: 15px;
+            z-index: 5;
         }
-        .mines-cell {
-            background: #101026;
-            border: 1px solid #2d2d5f;
+
+        .slider-dot {
+            width: 10px;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .slider-dot.active {
+            background: #ffb703;
+            width: 24px;
             border-radius: 10px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            font-weight: bold;
-            transition: background 0.2s, transform 0.1s;
-            user-select: none;
         }
-        .mines-cell:active { transform: scale(0.95); }
-        .mines-cell.safe { background: #4ecca3; border-color: #4ecca3; color: #12122c; }
-        .mines-cell.mine { background: #e94560; border-color: #e94560; }
-        .mines-cell:disabled { cursor: not-allowed; opacity: 0.8; }
 
-        .mines-controls {
-            display: flex;
-            gap: 10px;
+        .leaderboard-widget {
             width: 100%;
-            margin-bottom: 15px;
-        }
-        .mines-btn {
-            flex: 1;
-            padding: 14px;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            color: white;
-            letter-spacing: 1px;
-        }
-        #minesStartBtn { background: linear-gradient(135deg, #e94560, #951c30); }
-        #minesCashoutBtn { background: linear-gradient(135deg, #4ecca3, #2b9371); color: #12122c; }
-        .mines-btn:disabled { background: #333344; color: #777; cursor: not-allowed; }
-        .mines-msg { min-height: 20px; font-size: 15px; font-weight: bold; color: #8a8ab0; text-align: center; }
-
-        .crash-wrapper {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-        }
-        .crash-display {
-            position: relative;
-            width: 100%;
-            height: 220px;
-            background: #070714;
-            border-radius: 18px;
-            border: 2px solid #25254d;
-            margin-bottom: 15px;
-            overflow: hidden;
-        }
-        #crashCanvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
-        .crash-overlay-msg {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 24px;
-            font-weight: bold;
+            max-width: 1000px;
+            margin: 30px auto;
+            background: #1a1d24;
             color: #fff;
-            text-shadow: 0 0 10px rgba(0,0,0,0.8);
-            pointer-events: none;
-            text-align: center;
-        }
-        .crash-multiplier-live {
-            position: absolute;
-            top: 20px; right: 20px;
-            font-size: 36px;
-            font-weight: 900;
-            color: #4ecca3;
-            text-shadow: 0 0 15px rgba(78, 204, 163, 0.4);
-        }
-        .crash-panel {
-            display: flex;
-            width: 100%;
-            gap: 12px;
-            margin-bottom: 15px;
-        }
-        .crash-input-box {
-            flex: 1;
-            text-align: left;
-        }
-        .crash-input-box label {
-            display: block;
-            font-size: 12px;
-            color: #8a8ab0;
-            margin-bottom: 4px;
-        }
-        .crash-input {
-            width: 100%;
-            padding: 12px;
-            background: #0f3460;
-            border: 1px solid #25254d;
-            border-radius: 10px;
-            color: #fff;
-            font-weight: bold;
-            font-size: 16px;
-            outline: none;
-        }
-        .crash-btn {
-            width: 100%;
-            padding: 16px;
-            border: none;
-            border-radius: 16px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            color: white;
-            letter-spacing: 1px;
-            transition: transform 0.1s;
-        }
-        .crash-btn:active { transform: scale(0.98); }
-        #crashActionBtn {
-            background: linear-gradient(135deg, #e94560, #951c30);
-        }
-        #crashActionBtn.cashout-active {
-            background: linear-gradient(135deg, #4ecca3, #2b9371);
-            color: #12122c;
-        }
-        .crash-btn:disabled { background: #333344; color: #777; cursor: not-allowed; transform: none; }
-
-
-        .dice-wrapper {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-        }
-        .dice-display {
-            position: relative;
-            width: 100%;
-            background: #070714;
-            border-radius: 18px;
-            border: 2px solid #25254d;
             padding: 25px;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-        .dice-result-number {
-            font-size: 48px;
-            font-weight: 900;
-            color: #8a8ab0;
-            text-shadow: 0 0 10px rgba(138, 138, 176, 0.2);
-            margin: 10px 0;
-            transition: color 0.2s, text-shadow 0.2s;
-        }
-        .dice-result-number.win { color: #4ecca3; text-shadow: 0 0 15px rgba(78, 204, 163, 0.4); }
-        .dice-result-number.lose { color: #e94560; text-shadow: 0 0 15px rgba(233, 69, 96, 0.4); }
-
-        .dice-stats {
-            display: flex;
-            justify-content: space-around;
-            width: 100%;
-            background: rgba(15, 52, 96, 0.3);
-            padding: 10px;
-            border-radius: 10px;
-            font-size: 13px;
-            color: #8a8ab0;
-        }
-        .dice-stats span { color: #fff; font-weight: bold; }
-
-        .dice-panel {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            width: 100%;
-            margin-bottom: 15px;
-        }
-        .dice-input-box {
-            text-align: left;
-        }
-        .dice-input-box label {
-            display: block;
-            font-size: 12px;
-            color: #8a8ab0;
-            margin-bottom: 4px;
-        }
-        .dice-input {
-            width: 100%;
-            padding: 12px;
-            background: #0f3460;
-            border: 1px solid #25254d;
-            border-radius: 10px;
-            color: #fff;
-            font-weight: bold;
-            font-size: 16px;
-            outline: none;
-        }
-        .dice-condition-toggle {
-            display: flex;
-            background: #070714;
-            padding: 4px;
             border-radius: 12px;
-            border: 1px solid #25254d;
-            width: 100%;
-            margin-bottom: 15px;
-        }
-        .dice-toggle-btn {
-            flex: 1;
-            padding: 10px;
-            background: transparent;
-            border: none;
-            color: #8a8ab0;
-            font-weight: bold;
-            font-size: 14px;
-            cursor: pointer;
-            border-radius: 8px;
-            transition: 0.2s;
-        }
-        .dice-toggle-btn.active {
-            background: #e94560;
-            color: #fff;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
         }
 
-        .dice-btn {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, #e94560, #951c30);
-            border: none;
-            color: white;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 16px;
-            cursor: pointer;
-            letter-spacing: 1px;
-        }
-        .dice-btn:disabled { background: #333344; color: #777; cursor: not-allowed; }
-        .dice-msg { min-height: 20px; font-size: 15px; font-weight: bold; color: #8a8ab0; text-align: center; margin-top: 15px; }
-
-        .hilo-wrapper {
+        .leaderboard-header {
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-        }
-        .hilo-display {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            background: #070714;
-            border-radius: 18px;
-            border: 2px solid #25254d;
-            padding: 20px;
-            margin-bottom: 15px;
-        }
-        /* Стиль игральной карты */
-        .hilo-card {
-            width: 100px;
-            height: 145px;
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.5), 0 0 10px rgba(255,255,255,0.1);
-            display: flex;
-            flex-direction: column;
             justify-content: space-between;
-            padding: 12px;
-            color: #000;
-            font-weight: bold;
-            user-select: none;
-            margin: 10px 0;
-            transition: transform 0.2s;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #2a2f3a;
+            padding-bottom: 15px;
         }
-        .hilo-card.red-suit { color: #e94560; }
-        .hilo-card-top { font-size: 24px; text-align: left; line-height: 1; }
-        .hilo-card-center { font-size: 42px; text-align: center; line-height: 1; }
-        .hilo-card-bottom { font-size: 24px; text-align: right; line-height: 1; transform: rotate(180deg); }
 
-        .hilo-panel {
-            display: flex;
-            width: 100%;
-            gap: 12px;
-            margin-bottom: 15px;
+        .leaderboard-header h2 {
+            margin: 0;
+            font-size: 22px;
+            color: #ffb703;
         }
-        .hilo-input-box {
-            flex: 1;
+
+        .leaderboard-tabs {
+            display: flex;
+            gap: 8px;
+        }
+
+        .tab-btn {
+            background: #2a2f3a;
+            border: 0;
+            color: #a0a5b5;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+            font-size: 13px;
+        }
+
+        .tab-btn:hover {
+            background: #3a4150;
+            color: #fff;
+        }
+
+        .tab-btn.active {
+            background: #ffb703;
+            color: #1a1d24;
+        }
+
+        .lb-table {
+            width: 100%;
+            border-collapse: collapse;
             text-align: left;
         }
-        .hilo-input-box label {
-            display: block;
-            font-size: 12px;
-            color: #8a8ab0;
-            margin-bottom: 4px;
-        }
-        .hilo-input {
-            width: 100%;
-            padding: 12px;
-            background: #0f3460;
-            border: 1px solid #25254d;
-            border-radius: 10px;
-            color: #fff;
-            font-weight: bold;
-            font-size: 16px;
-            outline: none;
+
+        .lb-table th {
+            color: #a0a5b5;
+            font-size: 14px;
+            padding: 10px;
+            border-bottom: 1px solid #2a2f3a;
         }
 
-        .hilo-controls {
-            display: flex;
-            gap: 12px;
-            width: 100%;
-        }
-        .hilo-action-btn {
-            flex: 1;
-            padding: 16px;
-            border: none;
-            border-radius: 16px;
+        .lb-table td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #232730;
             font-size: 15px;
+        }
+
+        .lb-row-1 {
+            background: rgba(255, 183, 3, 0.08);
             font-weight: bold;
-            cursor: pointer;
-            color: white;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            transition: transform 0.1s;
         }
-        .hilo-action-btn:active { transform: scale(0.97); }
-        .hilo-action-btn span { font-size: 12px; opacity: 0.7; font-weight: normal; }
 
-        #hiloHigherBtn { background: linear-gradient(135deg, #4ecca3, #2b9371); color: #12122c; }
-        #hiloLowerBtn { background: linear-gradient(135deg, #e94560, #951c30); }
-        .hilo-action-btn:disabled { background: #333344 !important; color: #777 !important; cursor: not-allowed; box-shadow: none; transform: none; }
+        .lb-row-2 {
+            background: rgba(206, 212, 218, 0.05);
+        }
 
-        .hilo-msg { min-height: 20px; font-size: 15px; font-weight: bold; color: #8a8ab0; text-align: center; margin-top: 15px; }
+        .lb-row-3 {
+            background: rgba(205, 127, 50, 0.05);
+        }
 
-
-        .slots53-wrapper {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-        }
-        /* Рамка игрового автомата */
-        .slots53-machine {
-            position: relative;
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 6px;
-            background: #070714;
-            padding: 10px;
-            border-radius: 18px;
-            border: 3px solid #e94560;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.9), 0 0 20px rgba(233, 69, 96, 0.3);
-            margin-bottom: 15px;
-            width: 100%;
-            overflow: hidden;
-        }
-        /* Вертикальный барабан */
-        .slots53-reel {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            position: relative;
-        }
-        /* Отдельная ячейка с символом */
-        .slots53-cell {
-            aspect-ratio: 1;
-            background: #101026;
-            border: 1px solid #2d2d5f;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 32px;
-            user-select: none;
-            transition: background 0.2s, transform 0.2s;
-        }
-        /* Подсветка выигрышного символа на линии */
-        .slots53-cell.highlight {
-            background: rgba(78, 204, 163, 0.25);
-            border-color: #4ecca3;
-            box-shadow: 0 0 10px rgba(78, 204, 163, 0.5);
-            transform: scale(1.03);
-        }
-        /* Баннер режима бесплатных вращений */
-        .fs-banner {
-            width: 100%;
-            background: linear-gradient(90deg, #951c30, #e94560);
-            padding: 10px;
-            border-radius: 12px;
-            margin-bottom: 15px;
-            font-weight: bold;
-            font-size: 16px;
-            box-shadow: 0 0 15px rgba(233, 69, 96, 0.4);
-            display: none; /* Включается сервером */
+        .rank-badge {
+            display: inline-block;
+            width: 26px;
+            height: 26px;
             text-align: center;
-        }
-
-        .slots53-controls {
-            display: flex;
-            gap: 12px;
-            width: 100%;
-            margin-bottom: 15px;
-        }
-        .slots53-btn {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, #e94560, #951c30);
-            border: none;
-            color: white;
-            font-size: 18px;
+            line-height: 26px;
+            border-radius: 50%;
             font-weight: bold;
-            border-radius: 16px;
-            cursor: pointer;
-            letter-spacing: 1px;
-        }
-        .slots53-btn:disabled { background: #333344; color: #777; cursor: not-allowed; }
-
-        /* Кнопка меняет цвет в режиме фриспинов */
-        .slots53-btn.fs-active {
-            background: linear-gradient(135deg, #4ecca3, #2b9371);
-            color: #12122c;
         }
 
-        .slots53-msg { min-height: 24px; font-size: 16px; font-weight: bold; color: #8a8ab0; text-align: center; }
+        .rank-1 .rank-badge {
+            background: #ffb703;
+            color: #1a1d24;
+        }
 
+        .rank-2 .rank-badge {
+            background: #e0e0e0;
+            color: #1a1d24;
+        }
 
-        .leaderboard-widget { max-width: 600px; margin: 40px auto; background: #1a1d24; color: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-family: sans-serif; }
-        .leaderboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #2a2f3a; padding-bottom: 15px; }
-        .leaderboard-header h2 { margin: 0; font-size: 22px; color: #ffb703; }
-        .leaderboard-tabs { display: flex; gap: 8px; }
-        .tab-btn { background: #2a2f3a; border: 0; color: #a0a5b5; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: all 0.2s; font-size: 13px; }
-        .tab-btn:hover { background: #3a4150; color: #fff; }
-        .tab-btn.active { background: #ffb703; color: #1a1d24; }
-        .lb-table { width: 100%; border-collapse: collapse; text-align: left; }
-        .lb-table th { color: #a0a5b5; font-size: 14px; padding: 10px; border-bottom: 1px solid #2a2f3a; }
-        .lb-table td { padding: 12px 10px; border-bottom: 1px solid #232730; font-size: 15px; }
-        .lb-row-1 { background: rgba(255, 183, 3, 0.08); font-weight: bold; }
-        .lb-row-2 { background: rgba(206, 212, 218, 0.05); }
-        .lb-row-3 { background: rgba(205, 127, 50, 0.05); }
-        .rank-badge { display: inline-block; width: 26px; height: 26px; text-align: center; line-height: 26px; border-radius: 50%; font-weight: bold; }
-        .rank-1 .rank-badge { background: #ffb703; color: #1a1d24; }
-        .rank-2 .rank-badge { background: #e0e0e0; color: #1a1d24; }
-        .rank-3 .rank-badge { background: #cd7f32; color: #1a1d24; }
-        .val-highlight { color: #00f5d4; font-weight: bold; }
+        .rank-3 .rank-badge {
+            background: #cd7f32;
+            color: #1a1d24;
+        }
+
+        .val-highlight {
+            color: #00f5d4;
+            font-weight: bold;
+        }
+
+        .widgets-row {
+            display: flex;
+            width: 100%;
+            max-width: 1000px;
+            gap: 20px;
+            margin: 0 auto 30px auto;
+        }
 
         .promo-widget {
-            max-width: 400px;
-            margin: 20px auto;
+            flex: 1;
             background: #1a1d24;
             color: #fff;
             padding: 20px;
             border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            font-family: sans-serif;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
         }
+
         .promo-widget h3 {
             margin-top: 0;
             margin-bottom: 12px;
@@ -986,16 +485,19 @@
             align-items: center;
             gap: 8px;
         }
+
         .promo-widget p {
             font-size: 13px;
             color: #a0a5b5;
             margin: 0 0 15px 0;
             line-height: 1.4;
         }
+
         .promo-input-group {
             display: flex;
             gap: 8px;
         }
+
         .promo-input {
             flex: 1;
             background: #2a2f3a;
@@ -1005,13 +507,15 @@
             border-radius: 6px;
             font-size: 14px;
             font-weight: bold;
-            text-transform: uppercase; /* Автоматически делает буквы заглавными при вводе */
+            text-transform: uppercase;
             outline: none;
             transition: border-color 0.2s;
         }
+
         .promo-input:focus {
             border-color: #ffb703;
         }
+
         .promo-btn {
             background: #ffb703;
             border: 0;
@@ -1023,14 +527,17 @@
             font-size: 14px;
             transition: background 0.2s;
         }
+
         .promo-btn:hover {
             background: #e5a502;
         }
+
         .promo-btn:disabled {
             background: #3a4150;
             color: #a0a5b5;
             cursor: not-allowed;
         }
+
         .promo-message {
             margin-top: 12px;
             font-size: 13px;
@@ -1039,12 +546,14 @@
             padding: 8px;
             border-radius: 4px;
         }
+
         .promo-message.success {
             display: block;
             background: rgba(40, 167, 69, 0.1);
             color: #28a745;
             border: 1px solid rgba(40, 167, 69, 0.2);
         }
+
         .promo-message.error {
             display: block;
             background: rgba(220, 53, 69, 0.1);
@@ -1053,16 +562,22 @@
         }
 
         .bonus-buy-container {
-            margin: 15px auto;
-            text-align: center;
+            flex: 1;
+            background: #1a1d24;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
+
         .bonus-buy-btn {
             background: linear-gradient(135deg, #ff007f, #7928ca);
             border: 2px solid #ff007f;
             color: #fff;
-            padding: 12px 24px;
+            padding: 14px 28px;
             border-radius: 8px;
-            font-family: sans-serif;
             font-size: 15px;
             font-weight: bold;
             cursor: pointer;
@@ -1071,15 +586,20 @@
             box-shadow: 0 0 15px rgba(255, 0, 127, 0.4);
             transition: all 0.3s ease;
             outline: none;
+            width: 100%;
         }
+
         .bonus-buy-btn:hover {
-            transform: scale(1.05);
+            transform: scale(1.03);
             box-shadow: 0 0 25px rgba(255, 0, 127, 0.7);
             background: linear-gradient(135deg, #ff1a8c, #8a3cd8);
         }
+
         .bonus-buy-btn:active {
             transform: scale(0.98);
         }
+
+        /* Продолжение блока стилей после .bonus-buy-btn:disabled */
         .bonus-buy-btn:disabled {
             background: #2a2f3a;
             border-color: #3a4150;
@@ -1088,314 +608,256 @@
             box-shadow: none;
             transform: none;
         }
+
+        /* 🎮 СЕТКА И КАРТОЧКИ ИГР (Новая плостая структура) */
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 15px;
+            margin: 20px auto;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .game-card {
+            background: #16213e;
+            border-radius: 16px;
+            padding: 15px;
+            text-align: center;
+            border: 2px solid #25254d;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+            transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), border-color 0.2s;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            min-height: 180px;
+        }
+
+        .game-card:hover {
+            transform: translateY(-5px);
+            border-color: #ffb703;
+            box-shadow: 0 12px 25px rgba(255, 183, 3, 0.15);
+        }
+
+        /* 🎛️ БЫСТРЫЕ КНОПКИ СУБФИЛЬТРОВ И КАТЕГОРИЙ */
+        .lobby-categories {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 25px;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .lobby-cat-btn {
+            background: #0f3460;
+            border: 1px solid #25254d;
+            color: #fff;
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .lobby-cat-btn:hover {
+            background: #16213e;
+            border-color: #ffb703;
+        }
+
+        .lobby-cat-btn.active {
+            background: #ffb703;
+            color: #1a1d24;
+            border-color: #ffb703;
+            box-shadow: 0 0 10px rgba(255, 183, 3, 0.3);
+        }
+
+        /* 🖥️ ЗОНА ДЛЯ РАЗВЕРТЫВАНИЯ IFRAME ИГРЫ И КНОПКА ЗАКРЫТИЯ */
+        #iframePlayZone {
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Адаптивность для мобильных экранов */
+        @media (max-width: 600px) {
+            .slide-item {
+                padding: 20px 30px;
+            }
+            .slide-content h2 {
+                font-size: 22px;
+            }
+            .slide-content p {
+                font-size: 12px;
+            }
+            .games-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            .game-card {
+                padding: 10px;
+                min-height: 160px;
+            }
+            .promo-slider {
+                height: 220px;
+            }
+        }
+
+        /* Контейнер для одной коллекции (Заголовок + Лента игр) */
+        .collection-block {
+            margin-bottom: 35px;
+            text-align: left;
+            width: 100%;
+        }
+
+        .collection-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ffb703;
+            margin-bottom: 12px;
+            padding-left: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* 🔥 ИСПРАВЛЕНО: Горизонтальный скролл-контейнер для мобилок */
+        .horizontal-games-scroll {
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            white-space: nowrap;
+            padding: 5px 5px 15px 5px;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch; /* Плавный инерционный скролл на iOS */
+        }
+
+        /* Скрываем уродливый стандартный скроллбар */
+        .horizontal-games-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Фиксируем ширину карточки внутри горизонтальной ленты */
+        .horizontal-games-scroll .game-card {
+            flex: 0 0 160px; /* Карточка не сжимается и имеет ширину 160px */
+            min-height: 190px;
+            white-space: normal; /* Разрешаем перенос длинных названий игр внутри карточки */
+        }
+
     </style>
 
-    <script src="https://cdn.socket.io/4.8.3/socket.io.min.js" integrity="sha384-kzavj5fiMwLKzzD1f8S7TeoVIEi7uKHvbTA3ueZkrzYq75pNQUiUi6Dy98Q3fxb0" crossorigin="anonymous"></script>
 
-
-
+    <script src="https://cdn.socket.io/4.8.3/socket.io.min.js"
+            integrity="sha384-kzavj5fiMwLKzzD1f8S7TeoVIEi7uKHvbTA3ueZkrzYq75pNQUiUi6Dy98Q3fxb0"
+            crossorigin="anonymous"></script>
 
 </head>
 <body>
 
-<div class="game-container">
-    <!-- 1. Панель Логина и Баланса -->
+<!-- 1. Панель Логина и Баланса -->
+<div class="game-container" style="max-width: 1000px; margin: 0 auto 20px auto;">
     <div class="auth-panel">
         <div id="userInfo">Player: <span id="usernameLabel" style="color:#e94560">Guest</span></div>
         <div>Balance: <span class="balance-value" id="balanceLabel">0</span> 🪙</div>
         <button class="login-btn" id="authBtn" onclick="handleAuth()">Login</button>
     </div>
 
-    <div class="jackpot-banner">💥 JACKPOT: <span id="jackpotLabel">1000</span> 🪙</div>
+    <div class="jackpot-banner" style="display: none">💥 JACKPOT: <span id="jackpotLabel">1000</span> 🪙</div>
 </div>
 
-<div id="lobby" class="game-container" style="display: block; margin: 20px auto;">
-    <h1 style="color: #4ecca3; text-align: center; margin-bottom: 20px;">🎮 GAME LOBBY</h1>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-        <button onclick="changeTab('lottery')" style="padding: 20px; background: #0f3460; color: #fff; border: 2px solid #25254d; border-radius: 12px; font-weight: bold; cursor: pointer;">🎰 Lottery 6/49</button>
-        <button onclick="changeTab('slots3x3')" style="padding: 20px; background: #0f3460; color: #fff; border: 2px solid #25254d; border-radius: 12px; font-weight: bold; cursor: pointer;">🎰 Slots 3x3</button>
-        <button onclick="changeTab('slots5x3')" style="padding: 20px; background: #0f3460; color: #fff; border: 2px solid #25254d; border-radius: 12px; font-weight: bold; cursor: pointer;">🎰 Slots 5x3</button>
-        <button onclick="changeTab('wof')" style="padding: 20px; background: #0f3460; color: #fff; border: 2px solid #25254d; border-radius: 12px; font-weight: bold; cursor: pointer;">🎡 Wheel</button>
-        <button onclick="changeTab('roulette')" style="padding: 20px; background: #0f3460; color: #fff; border: 2px solid #25254d; border-radius: 12px; font-weight: bold; cursor: pointer;">🎡 Roulette</button>
-        <button onclick="changeTab('scratch')" style="padding: 20px; background: #0f3460; color: #fff; border: 2px solid #25254d; border-radius: 12px; font-weight: bold; cursor: pointer;">🎫 Scratch Cards</button>
-        <button onclick="changeTab('mines')" style="padding: 20px; background: #0f3460; color: #fff; border: 2px solid #25254d; border-radius: 12px; font-weight: bold; cursor: pointer;">💣 Mines Sweeper</button>
-        <button onclick="changeTab('crash')" style="padding: 20px; background: #0f3460; color: #fff; border: 2px solid #25254d; border-radius: 12px; font-weight: bold; cursor: pointer;">🚀 Crash Aviator</button>
-        <button onclick="changeTab('dice')" style="padding: 20px; background: #0f3460; color: #fff; border: 2px solid #25254d; border-radius: 12px; font-weight: bold; cursor: pointer;">🪙 Dice</button>
-        <button onclick="changeTab('hilo')" style="padding: 20px; background: #0f3460; color: #fff; border: 2px solid #25254d; border-radius: 12px; font-weight: bold; cursor: pointer;">🃏 Hi-Lo Card</button>
-        <button onclick="changeTab('holdem')" style="padding: 20px; background: #0f3460; color: #fff; border: 2px solid #25254d; border-radius: 12px; font-weight: bold; cursor: pointer;">🃏 Holdem</button>
-        <button onclick="changeTab('blackjack')" style="padding: 20px; background: #0f3460; color: #fff; border: 2px solid #25254d; border-radius: 12px; font-weight: bold; cursor: pointer;">🃏 Blackjack</button>
+<!-- 🖥️ ЗОНА ДЛЯ РАЗВЕРТЫВАНИЯ IFRAME ИГРЫ НА СТРАНИЦЕ (Пункт 6) -->
+<div id="iframePlayZone" style="display: none; width: 100%; max-width: 1000px; margin: 0 auto 20px auto; background: #16213e; border-radius: 16px; overflow: hidden; border: 2px solid #25254d;">
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; background: #0f3460; border-bottom: 2px solid #25254d;">
+        <span style="font-weight: bold; color: #ffb703; display: flex; align-items: center; gap: 8px;">🎮 Active Game Session</span>
+        <button onclick="closeActiveGame()" style="background: #e94560; border: none; color: white; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: background 0.2s;">❌ Close Game</button>
+    </div>
+    <!-- Сюда наш JS-скрипт будет монтировать iFrame с токеном gl_... -->
+    <iframe id="activeGameIframe" src="" style="width: 100%; height: 600px; border: none; background: #000;"></iframe>
+</div>
+
+<!-- 🏞️ PREMIUM PROMO SLIDER (Пункт 6: будет скрываться во время игры) -->
+<div class="promo-slider">
+    <div class="slide-container" id="sliderContainer">
+
+        <!-- Slide 1: Welcome Bonus -->
+        <div class="slide-item" style="background-image: linear-gradient(135deg, rgba(26,11,46,0.95) 0%, rgba(13,17,23,0.8) 100%), linear-gradient(45deg, #ff007f 0%, #7928ca 100%); border-left: 5px solid #ff007f;">
+            <div class="slide-content">
+                <h2>Welcome Package +200%</h2>
+                <p>Activate your secret promo voucher in your personal profile dashboard and multiply your coins instantly!</p>
+                <button class="btn-primary" style="background:var(--accent-yellow); color:#1a1d24;" onclick="alert('Open your profile menu and enter code!')">Claim Now</button>
+            </div>
+        </div>
+
+        <!-- Slide 2: Crash Tournament -->
+        <div class="slide-item" style="background-image: linear-gradient(135deg, rgba(11,36,46,0.95) 0%, rgba(13,17,23,0.8) 100%), linear-gradient(45deg, #00f5d4 0%, #0056b3 100%); border-left: 5px solid #00f5d4;">
+            <div class="slide-content">
+                <h2>Live Aviator Tournament</h2>
+                <p>Fly high, match maximum win multiplier coordinates, secure top place points and win your fraction of the 5,000 🪙 prize pool!</p>
+                <button class="btn-primary" onclick="switchMainTab('collections'); selectSubFilter('slots-multiplayer');">Launch Crash</button>
+            </div>
+        </div>
+
+        <!-- Slide 3: Live Sports bets -->
+        <div class="slide-item" style="background-image: linear-gradient(135deg, rgba(36,28,11,0.95) 0%, rgba(13,17,23,0.8) 100%), linear-gradient(45deg, #ffb703 0%, #161b22 100%); border-left: 5px solid #ffb703;">
+            <div class="slide-content">
+                <h2>In-Play Sportsbook Engine</h2>
+                <p>Combine your favorite outcomes from soccer, basketball, and tennis into elite combo slips with boosted total odds multipliers.</p>
+                <button class="btn-primary" onclick="switchMainTab('categories'); selectSubFilter('live');">Open Arena</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Точки навигации слайдера -->
+    <div class="slider-dots">
+        <div class="slider-dot active" onclick="moveSlide(0)"></div>
+        <div class="slider-dot" onclick="moveSlide(1)"></div>
+        <div class="slider-dot" onclick="moveSlide(2)"></div>
     </div>
 </div>
 
-<!-- Кнопка возврата в лобби (показывать внутри игровых вкладок) -->
-<button id="backToLobbyBtn" onclick="goToLobby()" style="display:none; margin: 10px auto; padding: 8px 16px; background: #222831; color: #8a8ab0; border: 1px solid #393e46; border-radius: 8px; cursor: pointer;">⬅ Back to Lobby</button>
-
-
-<!--<div class="tabs-container">-->
-    <!--<div class="game-tab" id="tab_lottery" onclick="changeTab('lottery')">Lottery</div>-->
-    <!--<div class="game-tab" id="tab_scratch" onclick="changeTab('scratch')">Scratch</div>-->
-    <!--<div class="game-tab" id="tab_slots" onclick="changeTab('slots')">Slots</div>-->
-    <!--<div class="game-tab" id="tab_wof" onclick="changeTab('wof')">WoF</div>-->
-    <!--<div class="game-tab" id="tab_mines" onclick="changeTab('mines')">Mines</div>-->
-    <!--<div class="game-tab" id="tab_crash" onclick="changeTab('crash')">Crash</div>-->
-    <!--<div class="game-tab" id="tab_dice" onclick="changeTab('dice')">Dice</div>-->
-    <!--<div class="game-tab" id="tab_hilo" onclick="changeTab('hilo')">HiLo</div>-->
+<!-- 🎛️ ПАНЕЛЬ ПЕРЕКЛЮЧЕНИЯ: Коллекции, Категории, Провайдеры (Пункт 2) -->
+<!--<div class="tabs-container" style="max-width: 1000px; margin: 0 auto 15px auto;">-->
+    <!--<span class="game-tab selected" id="tab-collections" onclick="switchMainTab('collections')">📦 Collections</span>-->
+    <!--<span class="game-tab" id="tab-categories" onclick="switchMainTab('categories')">🎰 Categories</span>-->
+    <!--<span class="game-tab" id="tab-providers" onclick="switchMainTab('providers')">🔌 Providers</span>-->
 <!--</div>-->
 
-<div class="game-container" id="lottery">
+<!--&lt;!&ndash; 📜 ГОРИЗОНТАЛЬНЫЙ СКРОЛЛ-БАР ПОДКАТЕГОРИЙ (Пункты 3, 4, 5) &ndash;&gt;-->
+<!--<div id="subTabsContainer" class="lobby-categories">-->
+    <!--&lt;!&ndash; Сюда кнопки (например: Популярные, Слоты, Покер) динамически инжектит JavaScript &ndash;&gt;-->
+<!--</div>-->
 
-    <!-- 2. Таймер фиксированных розыгрышей -->
-    <div class="timer-banner">
-        Next draw in: <span class="timer-val" id="timerDisplay">05:00</span>
-    </div>
-
-    <h1>🎰 5-Minute Lottery</h1>
-
-    <div class="balls-container" id="ballsBox"></div>
-    <div class="ticket" id="ticketBox"></div>
-
-    <button id="quickPickBtn" style="width: 100%; padding: 10px; background: #0f3460; border: 1px dashed #e94560; color: white; font-size: 14px; font-weight: bold; border-radius: 8px; margin-bottom: 10px; cursor: pointer;">
-        ⚡ Quick Pick (Random 6)
-    </button>
-
-    <!-- Кнопка теперь регистрирует билет на будущий тираж -->
-    <button class="action-btn" id="betBtn" disabled>Choose 6 numbers</button>
-
-    <div class="result" id="resultBox"></div>
-</div>
-
-<div class="game-container" id="scratch">
-
-    <div class="card-area">
-        <!-- Призы под слоем -->
-        <div class="prizes-grid" id="prizesGrid"></div>
-        <!-- Защитный слой -->
-        <canvas id="scratchCanvas" width="260" height="260"></canvas>
-    </div>
-
-    <div style="margin-bottom: 15px; font-size: 14px; color: #8a8ab0;">Ticket price: <span>15 🪙</span></div>
-    <button class="buy-btn" id="buyBtn">BUY SCRATCH CARD</button>
-    <div class="msg-box" id="msgBox_Scratch">Buy a card and scratch it!</div>
-</div>
-
-<div class="game-container" id="slots3x3">
-    <!-- Верхняя панель игрока -->
-    <h1>🎰 CYBER SLOTS</h1>
-
-    <!-- Игровой автомат -->
-    <div class="slot-machine">
-        <div class="win-line-pointer"></div>
-
-        <!-- Барабан 1 -->
-        <div class="reel-window"><div class="reel-strip" id="reel1"></div></div>
-        <!-- Барабан 2 -->
-        <div class="reel-window"><div class="reel-strip" id="reel2"></div></div>
-        <!-- Барабан 3 -->
-        <div class="reel-window"><div class="reel-strip" id="reel3"></div></div>
-    </div>
-
-    <div class="bet-info">Cost per spin: <span>10 🪙</span></div>
-
-    <!-- Управление -->
-    <button class="spin-btn" id="spinBtn">SPIN!</button>
-
-    <!-- Результат -->
-    <div class="msg-box" id="msgBox" style="margin-top: 20px;">Good Luck!</div>
-</div>
-
-<div class="game-container" id="slots5x3">
-    <!-- Верхняя панель игрока -->
-    <div class="slots53-wrapper">
-
-        <!-- Баннер бонусной игры -->
-        <div id="fsBanner" class="fs-banner">🎰 FREE SPINS MODE: <span id="fsCountLabel">10</span> LEFT</div>
-
-        <!-- Игровое поле 5 барабанов на 3 ряда -->
-        <div class="slots53-machine" id="slots53Machine">
-            <!-- Колонки будут сгенерированы через JS динамически -->
-        </div>
-
-        <div style="margin-bottom: 15px; font-size: 14px; color: #8a8ab0;">Cost per spin: <span style="color:#fff; font-weight:bold;">20 🪙</span> | Lines: <span style="color:#fff; font-weight:bold;">20</span></div>
-
-        <!-- Управление -->
-        <button id="slots53SpinBtn" class="slots53-btn">SPIN</button>
-        <div id="slots53Msg" class="slots53-msg">Match lines left to right! Wild (W) replaces all icons!</div>
-    </div>
-</div>
-
-<div class="game-container" id="wof">
-
-    <h1>🎰 LUCKY WHEEL</h1>
-
-    <!-- Колесо фортуны -->
-    <div class="wheel-box">
-        <div class="pointer"></div>
-        <canvas id="wheelCanvas" width="560" height="560"></canvas>
-    </div>
-
-    <div class="bet-info">Cost per spin: <span>20 🪙</span></div>
-
-    <button class="spin-btn" id="spinBtnWof">SPIN WHEEL</button>
-
-    <div class="msg-box" id="msgBoxWof" style="margin-top: 20px;">Spin and Win!</div>
-</div>
-
-<div class="game-container" id="mines">
-    <div class="mines-wrapper">
-        <!-- Панель настроек ставки -->
-        <div class="mines-panel">
-            <div class="mines-input-group">
-                <label>Bet Amount</label>
-                <input type="number" id="minesBetInput" class="mines-input" value="10" min="1">
-            </div>
-            <div class="mines-input-group">
-                <label>Mines Count (1-24)</label>
-                <input type="number" id="minesCountInput" class="mines-input" value="3" min="1" max="24">
-            </div>
-        </div>
-
-        <!-- Игровое поле 5х5 -->
-        <div class="mines-grid" id="minesGrid"></div>
-
-        <!-- Кнопки управления действиями -->
-        <div class="mines-controls">
-            <button id="minesStartBtn" class="mines-btn">START GAME</button>
-            <button id="minesCashoutBtn" class="mines-btn" disabled>TAKE WIN</button>
-        </div>
-
-        <!-- Оповещения игры -->
-        <div id="minesMsg" class="mines-msg">Choose bet, mines and press Start!</div>
-    </div>
-</div>
-
-<div class="game-container" id="crash">
-    <div class="crash-wrapper" style="display: flex; flex-direction: column; gap: 15px; width: 100%;">
-
-        <!-- Экран полета -->
-        <div class="crash-display" style="position: relative; width: 100%; height: 220px; background: #070714; border-radius: 18px; border: 2px solid #25254d; overflow: hidden;">
-            <canvas id="crashCanvas" width="500" height="220"></canvas>
-            <div id="crashLiveMult" class="crash-multiplier-live" style="display: none;">1.00x</div>
-            <div id="crashOverlay" class="crash-overlay-msg">Waiting for next round...</div>
-        </div>
-
-        <!-- Панель ставки -->
-        <div class="crash-panel" style="display: flex; width: 100%; gap: 12px;">
-            <div class="crash-input-box" style="flex: 1;">
-                <label>Bet Amount</label>
-                <input type="number" id="crashBetInput" class="crash-input" value="10" min="1">
-            </div>
-        </div>
-
-        <button id="crashActionBtn" class="crash-btn">PLACE BET</button>
-        <div id="crashMsg" class="crash-msg"></div>
-
-        <!-- КЛЮЧЕВОЕ ДОБАВЛЕНИЕ: ТАБЛИЦА LIVE-СТАВОК ОНЛАЙН -->
-        <div style="width: 100%; background: #101026; border-radius: 14px; border: 1px solid #25254d; padding: 15px; text-align: left;">
-            <div style="font-size: 13px; font-weight: bold; color: #4ecca3; margin-bottom: 10px; letter-spacing: 0.5px;">LIVE BETS (ALL PLAYERS)</div>
-            <div id="crashLiveBetsBox" style="max-height: 180px; overflow-y: auto; font-size: 12px; color: #8a8ab0; display: flex; flex-direction: column; gap: 6px;">
-                <!-- Сюда сокеты будут динамически вбрасывать строки игроков -->
-                <div style="text-align: center; color: #555; padding: 10px;">Waiting for bets...</div>
-            </div>
-        </div>
-
-    </div>
-
-    <!--<div class="crash-wrapper">-->
-        <!--&lt;!&ndash; Экран полета &ndash;&gt;-->
-        <!--<div class="crash-display">-->
-            <!--<canvas id="crashCanvas" width="500" height="220"></canvas>-->
-            <!--<div id="crashLiveMult" class="crash-multiplier-live" style="display: none;">1.00x</div>-->
-            <!--<div id="crashOverlay" class="crash-overlay-msg">Waiting for next round...</div>-->
-        <!--</div>-->
-
-        <!--&lt;!&ndash; Панель ставки &ndash;&gt;-->
-        <!--<div class="crash-panel">-->
-            <!--<div class="crash-input-box">-->
-                <!--<label>Bet Amount</label>-->
-                <!--<input type="number" id="crashBetInput" class="crash-input" value="10" min="1">-->
-            <!--</div>-->
-        <!--</div>-->
-
-        <!--&lt;!&ndash; Одна универсальная кнопка управления (Ставка / Кэшаут) &ndash;&gt;-->
-        <!--<button id="crashActionBtn" class="crash-btn">PLACE BET</button>-->
+<!--&lt;!&ndash; 🎰 ГЛАВНАЯ СЕТКА ИГР КАЗИНО (Пункты 3, 4, 5) &ndash;&gt;-->
+<!--<main id="section-home" class="content-section active">-->
+    <!--<div class="games-grid" id="lobbyGamesGrid">-->
+        <!--&lt;!&ndash; Сюда карточки игр с кнопками Real/Demo подгружает Postgres-запрос бэкенда &ndash;&gt;-->
     <!--</div>-->
+<!--</main>-->
+
+<!-- 🎛️ ПАНЕЛЬ ОСТАЕТСЯ ДЛЯ КАТЕГОРИЙ И ПРОВАЙДЕРОВ -->
+<div class="tabs-container" style="max-width: 1000px; margin: 20px auto 15px auto;">
+    <span class="game-tab selected" id="tab-lobby" onclick="switchLobbyMode('lobby')">Collections</span>
+    <span class="game-tab" id="tab-categories" onclick="switchLobbyMode('categories')">Categories</span>
+    <span class="game-tab" id="tab-providers" onclick="switchLobbyMode('providers')">Providers</span>
 </div>
 
-<div class="game-container" id="dice">
-    <div class="dice-wrapper">
-        <!-- Результат броска -->
-        <div class="dice-display">
-            <div style="font-size: 12px; color: #8a8ab0; letter-spacing: 1px;">LATEST ROLL</div>
-            <div id="diceResultNum" class="dice-result-number">--</div>
+<!-- Горизонтальный скролл-бар (понадобится только для фильтров Категорий/Провайдеров) -->
+<div id="subTabsContainer" class="lobby-categories" style="display: none; max-width: 1000px; margin: 0 auto 20px auto;"></div>
 
-            <div class="dice-stats">
-                <div>Win Chance: <span id="diceChanceLabel">49%</span></div>
-                <div>Multiplier: <span id="diceMultLabel">1.95x</span></div>
-            </div>
-        </div>
+<!-- ГЛАВНАЯ ЗОНА КАЗИНО -->
+<main id="section-home" class="content-section active" style="width: 100%; max-width: 1000px; margin: 0 auto;">
+    <!-- Сюда JS начнет рендерить коллекции одну за другой (сверху вниз), внутри которых игры скроллятся вбок -->
+    <div id="lobbyCollectionsContainer"></div>
+</main>
 
-        <!-- Переключатель условий (Больше / Меньше) -->
-        <div class="dice-condition-toggle">
-            <button id="diceToggleUnder" class="dice-toggle-btn active" onclick="setDiceCondition('under')">Roll Under</button>
-            <button id="diceToggleOver" class="dice-toggle-btn" onclick="setDiceCondition('over')">Roll Over</button>
-        </div>
 
-        <!-- Поля ввода числовых значений -->
-        <div class="dice-panel">
-            <div class="dice-input-box">
-                <label>Bet Amount</label>
-                <input type="number" id="diceBetInput" class="dice-input" value="10" min="1">
-            </div>
-            <div class="dice-input-box">
-                <label id="diceTargetLabel">Target Number (< 50)</label>
-                <input type="number" id="diceTargetInput" class="dice-input" value="50" min="2" max="98">
-            </div>
-        </div>
-
-        <!-- Кнопка броска -->
-        <button id="diceRollBtn" class="dice-btn">ROLL DICE</button>
-        <div id="diceMsg" class="dice-msg">Set target, bet and roll!</div>
-    </div>
-</div>
-
-<div class="game-container" id="hilo">
-    <div class="hilo-wrapper">
-        <!-- Экран отображения карты -->
-        <div class="hilo-display">
-            <div style="font-size: 12px; color: #8a8ab0; letter-spacing: 1px;">CURRENT CARD</div>
-
-            <!-- Интерактивный DOM карты -->
-            <div id="hiloCardView" class="hilo-card">
-                <div class="hilo-card-top" id="hiloCardTop">A</div>
-                <div class="hilo-card-center" id="hiloCardCenter">♠</div>
-                <div class="hilo-card-bottom" id="hiloCardBottom">A</div>
-            </div>
-        </div>
-
-        <!-- Поле ввода ставки -->
-        <div class="hilo-panel">
-            <div class="hilo-input-box">
-                <label>Bet Amount</label>
-                <input type="number" id="hiloBetInput" class="hilo-input" value="10" min="1">
-            </div>
-        </div>
-
-        <!-- Кнопки выбора направления -->
-        <div class="hilo-controls">
-            <button id="hiloHigherBtn" class="hilo-action-btn">
-                HIGHER / EQUAL
-                <span id="hiloHigherMult">1.50x</span>
-            </button>
-            <button id="hiloLowerBtn" class="hilo-action-btn">
-                LOWER / EQUAL
-                <span id="hiloLowerMult">1.50x</span>
-            </button>
-        </div>
-
-        <div id="hiloMsg" class="hilo-msg">Guess if the next card is Higher or Lower!</div>
-    </div>
-</div>
-
+<!-- 📊 ВИДЖЕТ ТОР-ИГРОКОВ (ЛИДЕРБОРД ИЗ POSTGRES) -->
 <div class="leaderboard-widget">
     <div class="leaderboard-header">
         <h2>📊 Top players</h2>
@@ -1416,11 +878,12 @@
         </tr>
         </thead>
         <tbody id="frontLeaderboardBody">
-        <!-- Сюда данные загрузит скрипт -->
+        <!-- Заполняется динамически -->
         </tbody>
     </table>
 </div>
 
+<!-- 🎫 ВИДЖЕТ АКТИВАЦИИ ПРОМОКОДОВ -->
 <div class="promo-widget">
     <h3>🎫 PromoCode</h3>
     <p>Enter code to get instant bonus</p>
@@ -1439,31 +902,24 @@
         </div>
     </form>
 
-    <!-- Блок для вывода статуса активации -->
     <div id="frontPromoMessage" class="promo-message"></div>
 </div>
 
+<!-- 💎 КНОПКА ХАЙРОЛЛЕРОВ: BUY BONUS ROUND -->
 <div class="bonus-buy-container">
-    <!-- Цену 100 🪙 можно подставлять динамически из конфига слотов (cost * 10) -->
     <button id="buyBonusBtn" class="bonus-buy-btn" onclick="triggerBonusBuy()">
-        💎 Buy Bonus Round (100 🪙)
+        💎 Buy Bonus Round (200 🪙)
     </button>
 </div>
 
+<div id="lobby" style="visibility: hidden"></div>
+<div id="backToLobbyBtn" style="visibility: hidden"></div>
+
 <script src="./view/scripts/main.js"></script>
+<script src="./view/scripts/casino.js"></script>
 <script src="./view/scripts/leaderboard.js"></script>
 <script src="./view/scripts/promo.js"></script>
 <script src="./view/scripts/bonusBuy.js"></script>
-
-<script src="./view/scripts/lottery.js"></script>
-<script src="./view/scripts/scratch.js"></script>
-<script src="./view/scripts/slots3x3.js"></script>
-<script src="./view/scripts/slots5x3.js"></script>
-<script src="./view/scripts/wof.js"></script>
-<script src="./view/scripts/mines.js"></script>
-<script src="./view/scripts/crash.js"></script>
-<script src="./view/scripts/dice.js"></script>
-<script src="./view/scripts/hilo.js"></script>
 
 
 </body>

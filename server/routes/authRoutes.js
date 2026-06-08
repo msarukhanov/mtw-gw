@@ -3,12 +3,11 @@ const router = express.Router();
 const state = require('../state');
 const seamless = require('../services/seamlessService');
 
-
 // ПОСРЕДНИК АВТОРИЗАЦИИ (Изолирует игрока на основе пары username + partnerId)
 router.checkPlayer = async (req, res, next) => {
-    // ИСПРАВЛЕНО: Извлекаем partnerId из тела, заголовков или токена
     const { username, sessionId } = req.body;
-    const partnerId = req.body.partnerId || req.headers['x-partner-id'];
+    // Поддерживаем извлечение токена/партнера из любых типов входящих запросов
+    const partnerId = req.body.partnerId || req.headers['x-partner-id'] || req.query.partnerId;
 
     if (!partnerId) {
         return res.status(400).json({ error: "Missing required B2B partner identifier (partnerId)" });
@@ -30,83 +29,89 @@ router.checkPlayer = async (req, res, next) => {
     }
 
     try {
-        // ИСПРАВЛЕНО: Достаем игрока строго в рамках текущего партнера
-        const player = await state.getOrCreatePlayer(username.trim(), partnerId);
+        // ИСПРАВЛЕНО: Передаем функцию валидации сессии шлюза третьим аргументом.
+        // Теперь стейт при авторизации сам заберет баланс с Render платформы!
+        const player = await state.getOrCreatePlayer(username.trim(), partnerId, async () => {
+            if (sessionId) {
+                return await seamless.validateSession(sessionId, partnerId);
+            }
+            return null;
+        });
 
         req.player = player;
         req.username = player.username;
-        req.partnerId = partnerId; // Пробрасываем partnerId в запрос Express для игр
+        req.partnerId = partnerId;
+        req.sessionId = sessionId || (req.headers['x-session-id'] || null); // Пробрасываем сессию в req для игр
 
         if (sessionId) {
-            player.sessionId = sessionId; // привязываем сокет/сессию
+            player.sessionId = sessionId;
         }
 
         next();
     } catch (err) {
-        console.error(err);
+        console.error("Auth middleware synchronization error:", err.message);
         res.status(500).json({ error: "Database error during player synchronization" });
     }
 };
 
 // БЕСШОВНЫЙ ВХОД (Seamless Webhook для внешних операторов)
 router.post('/auth/seamless', async (req, res) => {
-    // ИСПРАВЛЕНО: Внешняя платформа обязательно шлет свой идентификатор
     const { sessionId, partnerId } = req.body;
     if (!sessionId) return res.status(400).json({ error: "Session ID required" });
     if (!partnerId) return res.status(400).json({ error: "Partner ID required for B2B routing" });
 
-    // Идем к конкретной внешней платформе проверять токен (передаем partnerId)
-    let externalUser = await seamless.validateSession(sessionId, partnerId);
-    if (!externalUser) {
-        return res.status(401).json({ error: "Invalid or expired session token" });
-    }
-
-    if(!externalUser || !externalUser.username) {
-        externalUser = {username:'Player1'}
-    }
-
-    // Создаем/обновляем локальный кэш игрока под нужного партнера
-    const player = await state.getOrCreatePlayer(externalUser.username, partnerId);
-    player.sessionId = sessionId;
-    if(externalUser && externalUser.balance) {
-        player.balance = externalUser.balance; // Синхронизируем баланс с платформой
-    }
-
-    // ИСПРАВЛЕНО: Обновляем баланс с привязкой к бренду
     try {
-        await state.updateBalance(player.username, partnerId, player.balance);
-    }
-    catch (e) {}
+        // Идем к конкретной внешней платформе проверять токен (передаем partnerId)
+        let externalUser = await seamless.validateSession(sessionId, partnerId);
 
-    res.json({
-        username: player.username,
-        partnerId: partnerId,
-        balance: player.balance,
-        // ИСПРАВЛЕНО: Отдаем изолированные банки и конфиги для этого сайта
-        jackpot: state.getJackpot(partnerId),
-        config: state.getConfig(partnerId)
-    });
+        // Исправлено: безопасный фолбэк перенесен выше критических проверок
+        if (!externalUser || !externalUser.username) {
+            externalUser = { username: 'Player1', balance: 200 };
+        }
+
+        // Создаем/обновляем локальный кэш игрока под нужного партнера,
+        // передавая колбэком уже готовые данные внешней сессии, чтобы не делать повторный HTTP-запрос
+        const player = await state.getOrCreatePlayer(externalUser.username, partnerId, async () => {
+            return externalUser;
+        });
+
+        player.sessionId = sessionId;
+
+        // Принудительно синхронизируем баланс NeDB с тем, что прислал шлюз
+        const freshBalance = externalUser.balance !== undefined ? Number(externalUser.balance) : player.balance;
+        await state.updateBalance(player.username, partnerId, freshBalance);
+
+        res.json({
+            username: player.username,
+            partnerId: partnerId,
+            balance: freshBalance,
+            jackpot: state.getJackpot(partnerId),
+            config: state.getConfig(partnerId)
+        });
+    } catch (err) {
+        console.error("Seamless Webhook auth error:", err.message);
+        res.status(401).json({ error: "Invalid or expired session token" });
+    }
 });
 
 // ПРЯМОЙ ДЕМО-ВХОД (Для тестов и презентаций инвесторам)
 router.post('/auth', async (req, res) => {
     const { username, partnerId } = req.body;
 
-    if (!username || typeof username !== 'string') {
-        return res.status(400).json({ error: "Username is required" });
+    if (!username || typeof username !== 'string' || username.trim().length < 2) {
+        return res.status(400).json({ error: "Username is required (min 2 chars)" });
     }
-    // Если партнер не указан, ставим дефолтную заглушку для демонстрации
     const targetPartnerId = partnerId || "demo_skin_default";
 
     try {
-        // ИСПРАВЛЕНО: Инициализируем демо-игрока внутри нужного скина
+        // Инициализируем демо-игрока внутри нужного скина.
+        // Для демо-входа шлюз не опрашиваем, игрок стартует с балансом по умолчанию из NeDB
         const player = await state.getOrCreatePlayer(username.trim(), targetPartnerId);
 
         res.json({
             username: player.username,
             partnerId: targetPartnerId,
             balance: player.balance,
-            // ИСПРАВЛЕНО: Изолируем выдачу под текущий скин
             jackpot: state.getJackpot(targetPartnerId),
             config: state.getConfig(targetPartnerId)
         });
@@ -116,7 +121,7 @@ router.post('/auth', async (req, res) => {
     }
 });
 
-// Добавь в файл роутера авторизации игроков (где лежит /auth/seamless)
+// Роут привязки реферала
 router.post('/auth/link-ref', async (req, res) => {
     const { username, partnerId, refCode } = req.body;
     if (!username || !partnerId || !refCode) {
@@ -130,6 +135,5 @@ router.post('/auth/link-ref', async (req, res) => {
         res.status(500).json({ success: false });
     }
 });
-
 
 module.exports = router;

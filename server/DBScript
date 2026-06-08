@@ -1,0 +1,192 @@
+-- 1. Таблица игроков
+CREATE TABLE IF NOT EXISTS players (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    partner_id VARCHAR(50) NOT NULL,
+    balance NUMERIC(15, 2) DEFAULT 0.00,
+    xp INT DEFAULT 0,
+    level INT DEFAULT 1,
+    invited_by VARCHAR(50),
+    daily_quests JSONB DEFAULT '{"gamesPlayed": 0, "claimed": false}'::jsonb,
+    used_promos JSONB DEFAULT '{}'::jsonb,
+    history JSONB DEFAULT '[]'::jsonb,
+    tournament_points INT DEFAULT 0,
+    UNIQUE(username, partner_id)
+);
+
+-- 2. Логи транзакций
+CREATE TABLE IF NOT EXISTS accounting_logs (
+    id SERIAL PRIMARY KEY,
+    partner_id VARCHAR(50) NOT NULL,
+    username VARCHAR(50) NOT NULL,
+    type VARCHAR(20) NOT NULL,
+    amount NUMERIC(15, 2) NOT NULL,
+    game VARCHAR(100) NOT NULL,
+    timestamp TIMESTAMP DEFAULT NOW()
+);
+
+-- 3. Спортивные ставки
+CREATE TABLE IF NOT EXISTS sports_bets (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    partner_id VARCHAR(50) NOT NULL,
+    type VARCHAR(20) NOT NULL,
+    items JSONB NOT NULL,
+    total_odds NUMERIC(8, 2) NOT NULL,
+    stake NUMERIC(15, 2) NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    prize NUMERIC(15, 2) DEFAULT 0.00,
+    timestamp TIMESTAMP DEFAULT NOW()
+);
+
+-- 4. Матчи виртуального футбола
+CREATE TABLE IF NOT EXISTS matches (
+    id SERIAL PRIMARY KEY,
+    match_id VARCHAR(100) UNIQUE NOT NULL, -- Строковый ID (например, fb_ucl_1717768800)
+    sport VARCHAR(50) NOT NULL,
+    league VARCHAR(100) NOT NULL,
+    teams JSONB NOT NULL,                 -- Имена и сырые данные команд
+    status VARCHAR(20) NOT NULL,           -- PREMATCH, LIVE, FINISHED
+    minute INT DEFAULT 0,
+    score_home INT DEFAULT 0,
+    score_away INT DEFAULT 0,
+    markets JSONB NOT NULL,               -- Сгенерированные коэффициенты рынков
+    ball_zone INT DEFAULT 0               -- Зона мяча в лайве
+);
+
+-- 5. История лотереи
+CREATE TABLE IF NOT EXISTS lottery_history (
+    id SERIAL PRIMARY KEY,
+    draw_data JSONB NOT NULL
+);
+
+-- 6. Бэкенд-конфигурации партнеров
+CREATE TABLE IF NOT EXISTS b2b_configs (
+    id VARCHAR(50) PRIMARY KEY,
+    config_data JSONB NOT NULL
+);
+
+-- Удаляем старые таблицы, чтобы пересоздать их с правильными типами данных
+DROP TABLE IF EXISTS partner_collections CASCADE;
+DROP TABLE IF EXISTS partner_games CASCADE;
+DROP TABLE IF EXISTS partner_aggregators CASCADE;
+DROP TABLE IF EXISTS game_sessions CASCADE;
+DROP TABLE IF EXISTS games CASCADE;
+
+-- 1. Таблица каталога игр
+CREATE TABLE games (
+    id SERIAL PRIMARY KEY,
+    slug VARCHAR(100) UNIQUE NOT NULL,
+    name VARCHAR(150) NOT NULL,
+    aggregator VARCHAR(100) DEFAULT 'INTERNAL',
+    provider VARCHAR(100) NOT NULL,
+    has_demo BOOLEAN DEFAULT TRUE,
+    is_multiplayer BOOLEAN DEFAULT FALSE,
+    description TEXT,
+    image VARCHAR(255),
+    base VARCHAR(50),
+    theme VARCHAR(100),
+    url VARCHAR(255) NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    categories JSONB DEFAULT '[]'::jsonb, -- Категории хранятся в JSONB
+    rtp_settings JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- 2. Настройки провайдеров для партнеров
+CREATE TABLE partner_aggregators (
+    id SERIAL PRIMARY KEY,
+    partner_id VARCHAR(50) NOT NULL,
+    aggregator VARCHAR(100) NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    updated_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(partner_id, aggregator)
+);
+
+-- 3. Настройки конкретных игр для партнеров
+CREATE TABLE partner_games (
+    id SERIAL PRIMARY KEY,
+    partner_id VARCHAR(50) NOT NULL,
+    game_id INT REFERENCES games(id) ON DELETE CASCADE, -- При удалении игры чистим настройки
+    is_active BOOLEAN DEFAULT TRUE,
+    custom_name VARCHAR(150),
+    custom_slug VARCHAR(100),
+    custom_theme VARCHAR(100),
+    custom_rtp NUMERIC(5,2),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(partner_id, game_id)
+);
+
+-- 4. ИСПРАВЛЕНО: Таблица коллекций игр партнеров (game_ids теперь строго INT[])
+CREATE TABLE partner_collections (
+    id SERIAL PRIMARY KEY,
+    partner_id VARCHAR(50) NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    slug VARCHAR(100) NOT NULL,
+    game_ids INT[] DEFAULT '{}'::int[], -- Нативный целочисленный массив Postgres!
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(partner_id, slug)
+);
+
+-- 5. Игровые сессии запуска (iFrame)
+CREATE TABLE game_sessions (
+    id SERIAL PRIMARY KEY,
+    token VARCHAR(100) UNIQUE NOT NULL,
+    partner_id VARCHAR(50) NOT NULL,
+    username VARCHAR(50),
+    game_slug VARCHAR(100) NOT NULL,
+    is_demo BOOLEAN DEFAULT FALSE,
+    theme VARCHAR(50) DEFAULT 'default',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    expired_at TIMESTAMP NOT NULL
+);
+
+-- Индексы для максимальной скорости запросов
+CREATE INDEX idx_games_slug ON games(slug);
+CREATE INDEX idx_partner_games_route ON partner_games(partner_id, game_id);
+CREATE INDEX idx_partner_coll_route ON partner_collections(partner_id, slug);
+CREATE INDEX idx_game_sessions_token ON game_sessions(token);
+
+
+
+TRUNCATE TABLE games RESTART IDENTITY CASCADE;
+
+INSERT INTO games (slug, name, aggregator, provider, has_demo, is_multiplayer, description, image, base, theme, url, categories, rtp_settings)
+VALUES 
+('crash-aviator', 'Crash Aviator', 'INTERNAL', 'MTWTech', true, true, 'High-speed multiplayer scale scaling. Cashout before the sudden crash occurs.', 'crash.jpg', 'CRASH', 'SPACE', '/games/crash', '["slots", "multiplayer"]'::jsonb, '{"default_rtp": 96.0}'::jsonb),
+('5-min-lottery', '5-Min Lottery', 'INTERNAL', 'MTWTech', true, true, 'Synchronous global draw matrix room. Six unique numbers pooled from 49 variants.', 'lottery.jpg', 'LOTTERY', 'CASINO', '/games/lottery', '["lottery", "live"]'::jsonb, '{"default_rtp": 75.0}'::jsonb),
+('mines-sweeper', 'Mines Sweeper', 'INTERNAL', 'MTWTech', true, false, 'Customizable bomb fields 5x5. Uncover multipliers or detonate hidden grid charges.', 'mines.jpg', 'MINES', 'CASINO', '/games/mines', '["instant"]'::jsonb, '{"default_rtp": 80.0}'::jsonb),
+('dice-roll', 'Dice Roll', 'INTERNAL', 'MTWTech', true, false, 'Slider-based roll over/under predictor. Higher risks trigger larger wallet multipliers.', 'dice.jpg', 'DICE', 'CASINO', '/games/dice', '["instant"]'::jsonb, '{"default_rtp": 96.0}'::jsonb),
+('hi-lo-card', 'Hi-Lo Card', 'INTERNAL', 'MTWTech', true, false, 'Dynamic ratio card value scanner. Guess the sequential suit patterns on the deck.', 'hilo.jpg', 'CARDS', 'CASINO', '/games/hilo', '["instant"]'::jsonb, '{"default_rtp": 96.0}'::jsonb),
+('blackjack', 'Blackjack', 'INTERNAL', 'MTWTech', true, false, 'Beat the dealers hand without busting. Score as close to 21 as possible in this casino classic.', 'blackjack.jpg', 'CARDS', 'CASINO', '/games/blackjack', '["instant", "cards"]'::jsonb, '{"default_rtp": 95.0}'::jsonb),
+('holdem', 'Holdem', 'INTERNAL', 'MTWTech', true, false, 'One-click fast showdown. Build the ultimate 5-card poker combination and crush the dealers score.', 'holdem.jpg', 'CARDS', 'CASINO', '/games/holdem', '["instant", "cards"]'::jsonb, '{"default_rtp": 95.0}'::jsonb),
+('wheel-of-fortune', 'Wheel of Fortune', 'INTERNAL', 'MTWTech', true, false, 'Smooth canvas rotating prize vector. Neon layout containing local jackpot segments.', 'wheel.jpg', 'WHEEL', 'NEON', '/games/wheel', '["instant"]'::jsonb, '{"default_rtp": 70.0}'::jsonb),
+('roulette', 'Roulette', 'INTERNAL', 'MTWTech', true, true, 'Smooth canvas rotating prize vector. Live multiplayer casino roulette wheel.', 'roulette.jpg', 'WHEEL', 'CASINO', '/games/roulette', '["instant", "live"]'::jsonb, '{"default_rtp": 95.0}'::jsonb),
+('classic-slots', 'Classic Slots', 'INTERNAL', 'MTWTech', true, false, 'Cascade strip rotation matrix. Real-time matching reels and luxury reward drops.', 'slots3x3.jpg', 'SLOTS', 'FRUITS', '/games/slots3x3', '["slots", "instant"]'::jsonb, '{"default_rtp": 80.0}'::jsonb),
+('5x3-slots', '5x3 Slots', 'INTERNAL', 'MTWTech', true, false, '5x3 strip rotation matrix, free spins, wild. Real-time matching reels and luxury reward drops.', 'slots5x3.jpg', 'SLOTS', 'FRUITS', '/games/slots5x3', '["slots"]'::jsonb, '{"default_rtp": 95.0}'::jsonb),
+-- ИСПРАВЛЕНО: Дали уникальный slug 'naruto-shinobi' и поставили на место image ('naruto_shinobi_slots.jpg') и base ('SLOTS')
+('naruto-shinobi', 'Naruto Shinobi', 'INTERNAL', 'MTWTech', true, false, 'Naruto Shinobi 5x3 strip rotation matrix, free spins, wild. Real-time matching reels and luxury reward drops.', 'naruto_shinobi_slots.jpg', 'SLOTS', 'FRUITS', '/games/slots5x3', '["slots"]'::jsonb, '{"default_rtp": 95.0}'::jsonb),
+('scratch-cards', 'Scratch Cards', 'INTERNAL', 'MTWTech', true, false, 'Interactive canvas coating eraser. Touch-driven matrix reveals instant prize matches.', 'scratch.jpg', 'SCRATCH', 'CASINO', '/games/scratch', '["instant"]'::jsonb, '{"default_rtp": 75.0}'::jsonb)
+
+-- Защита от дубликатов на случай повторного запуска
+ON CONFLICT (slug) DO UPDATE SET
+    name = EXCLUDED.name,
+    aggregator = EXCLUDED.aggregator,
+    provider = EXCLUDED.provider,
+    has_demo = EXCLUDED.has_demo,
+    is_multiplayer = EXCLUDED.is_multiplayer,
+    description = EXCLUDED.description,
+    image = EXCLUDED.image,
+    base = EXCLUDED.base,
+    theme = EXCLUDED.theme,
+    url = EXCLUDED.url,
+    categories = EXCLUDED.categories,
+    rtp_settings = EXCLUDED.rtp_settings,
+    updated_at = NOW();
+
+
+
+

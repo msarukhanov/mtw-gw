@@ -1,18 +1,25 @@
+const crypto = require('crypto');
 const state = require('../state');
 const seamless = require('../services/seamlessService');
 const vfootball = require('../vfootball');
+
 // 1. Отдать линию матчей на фронтенд
 exports.getLine = async (req, res) => {
-    // const line = await state.getSportsLine();
-    const line = await vfootball.getSportsLine();
-    res.json({ success: true, line });
+    try {
+        const line = await vfootball.getSportsLine();
+        res.json({ success: true, line });
+    } catch (err) {
+        console.error("Error fetching sports line:", err);
+        res.status(500).json({ error: "Failed to load line" });
+    }
 };
 
 exports.placeBet = async (req, res) => {
-    // items: [{matchId, market, outcome}, ...]
-    const { items, stake, sessionId } = req.body;
-    const partnerId = req.partnerId; // Извлекаем partnerId, добавленный мидлваром checkPlayer
+    const { items, stake, sessionId: bodySessionId } = req.body;
+    const partnerId = req.partnerId;
     const username = req.username;
+    // Надежно вытаскиваем сессию из всех возможных мест
+    const sessionId = bodySessionId || req.sessionId || req.headers['x-session-id'] || (req.player && req.player.sessionId);
 
     if (!items || !Array.isArray(items) || items.length === 0 || !stake || stake <= 0) {
         return res.status(400).json({ error: "Invalid bet slip data" });
@@ -43,21 +50,29 @@ exports.placeBet = async (req, res) => {
             });
         }
 
-        // Ограничим максимальный кэф для демо, например, 1000, чтобы не сломать экономику
+        // Ограничим максимальный кэф для демо, чтобы не сломать экономику
         calculatedTotalOdds = Math.min(1000, parseFloat(calculatedTotalOdds.toFixed(2)));
-        const roundId = `sports_${items.length > 1 ? 'multi' : 'single'}_${Date.now()}_${partnerId}_${username}`;
 
-        // 1. ИСПРАВЛЕНО: Списание одной общей транзакции через Seamless Wallet с передачей partnerId
-        await seamless.debit(username, partnerId, sessionId, Number(stake), "Sportsbook Bet", roundId);
+        // Исправлено: безопасный roundId вместо Date.now()
+        const roundId = `sports_${items.length > 1 ? 'multi' : 'single'}_${crypto.randomBytes(8).toString('hex')}`;
+        const gameName = "Sportsbook";
 
-        // 2. ИСПРАВЛЕНО: Сохраняем купон в базу bets.db с привязкой к partnerId
+        // 1. Списание одной общей транзакции через Seamless Wallet с проверкой средств
+        // Ошибки (например недостаточный баланс) автоматически улетят в блок catch
+        const debitResult = await seamless.debit(username, partnerId, sessionId, Number(stake), gameName, roundId);
+
+        // Берем актуальный авторизованный баланс строго из ответа платформы
+        const currentBalance = debitResult.balance;
+
+        // 2. Сохраняем купон в базу bets.db с привязкой к partnerId
         const savedBet = await state.createSportsBet(username, partnerId, {
             items: verifiedItems,
             totalOdds: calculatedTotalOdds,
-            stake
+            stake,
+            roundId // сохраняем roundId, чтобы использовать его при расчете или кэшауте ставки
         });
 
-        // 3. ИСПРАВЛЕНО: Отправляем в общую историю и лояльность с передачей partnerId
+        // 3. Отправляем в общую историю и лояльность с передачей partnerId
         const typeText = items.length > 1 ? "Multi Bet" : "Single Bet";
         await state.savePlayerActionHistory(username, partnerId, {
             game: "Sportsbook",
@@ -66,12 +81,13 @@ exports.placeBet = async (req, res) => {
             win: false
         });
 
-        if (req.player) req.player.balance -= stake;
+        // Безопасный фолбэк для локального стейта Express, если он используется
+        if (req.player) req.player.balance = currentBalance;
 
-        res.json({ success: true, balance: req.player.balance, betId: savedBet._id });
+        res.json({ success: true, balance: currentBalance, betId: savedBet._id });
     } catch (err) {
         console.error(`[Partner: ${partnerId}] Sportsbook bet placement failed:`, err.message);
-        res.status(500).json({ error: err.message || "Betting system error" });
+        res.status(400).json({ error: err.message || "Betting system error" });
     }
 };
 
@@ -80,7 +96,8 @@ exports.userBets = async (req, res) => {
         const { username, status } = req.query;
         if (!username) return res.status(400).json({ success: false, error: 'Username required' });
 
-        const bets = await vFootball.getUserBets(username, status);
+        // Исправлено: заменено vFootball на vfootball (согласно импорту в начале файла)
+        const bets = await vfootball.getUserBets(username, status);
         res.json({ success: true, bets });
     } catch (err) {
         console.error(err);
@@ -91,26 +108,43 @@ exports.userBets = async (req, res) => {
 exports.cashout = async (req, res) => {
     try {
         const { betId, username } = req.body;
+        const partnerId = req.partnerId;
+        const sessionId = req.sessionId || req.headers['x-session-id'] || (req.player && req.player.sessionId);
+
         if (!betId || !username) {
             return res.status(400).json({ success: false, error: 'Missing parameters' });
         }
 
-        const result = await vFootball.executeCashout(betId, username);
+        // Выполняем кэшаут во внутреннем движке футбола
+        const result = await vfootball.executeCashout(betId, username);
         if (!result.success) {
             return res.status(400).json({ success: false, error: result.message });
         }
 
-        // Получаем актуальный баланс пользователя после начисления кэшаута
-        const userBalance = await seamless.getBalance(username);
+        // ИСПРАВЛЕНО: Отправляем начисленный кэшаут на шлюз платформы через Credit!
+        // Вытаскиваем сумму кэшаута (сумма возврата ставки, рассчитанная движком)
+        const cashoutAmount = result.cashoutAmount || result.amount || 0;
+
+        let currentBalance;
+        if (cashoutAmount > 0) {
+            // Генерируем ID транзакции для кэшаута
+            const roundId = `sports_cashout_${crypto.randomBytes(8).toString('hex')}`;
+            const creditResult = await seamless.credit(username, partnerId, sessionId, cashoutAmount, "Sportsbook Cashout", roundId);
+            currentBalance = creditResult.balance;
+        } else {
+            // Если сумма 0, просто смотрим текущий баланс в базе
+            const platformUser = await state.getOrCreatePlayer(username, partnerId);
+            currentBalance = platformUser.balance;
+        }
 
         res.json({
             success: true,
             message: 'Cashout processed successfully',
-            newBalance: userBalance
+            newBalance: currentBalance
         });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, error: 'Internal server error' });
+        console.error("Sportsbook cashout error:", err);
+        res.status(500).json({ success: false, error: err.message || 'Internal server error' });
     }
 };
 
@@ -119,7 +153,7 @@ exports.cashoutValue = async (req, res) => {
         const { betId } = req.query;
         if (!betId) return res.status(400).json({ success: false, error: 'Bet ID required' });
 
-        const result = await vFootball.calculateCashout(betId);
+        const result = await vfootball.calculateCashout(betId);
         res.json(result);
     } catch (err) {
         console.error(err);
@@ -136,6 +170,3 @@ exports.results = async (req, res) => {
         res.status(500).json({ success: false, error: 'Internal server error' });
     }
 };
-
-
-

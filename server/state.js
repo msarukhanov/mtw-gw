@@ -1,424 +1,60 @@
-const Datastore = require('nedb-promises');
 const crypto = require('crypto');
-const path = require('path');
-
+// Импортируем наши таблицы Postgres из модуля DB
+const { GlobalConfig } = require('./DB');
 const seamless = require('./services/seamlessService');
 
-db = Datastore.create({filename: path.join(__dirname, 'game.db'), autoload: true});
-historyDb = Datastore.create({filename: path.join(__dirname, 'history.db'), autoload: true});
-betsDb = Datastore.create({filename: path.join(__dirname, 'bets.db'), autoload: true});
-accountingDb = Datastore.create({filename: path.join(__dirname, 'accounting.db'), autoload: true});
-matchesDb = Datastore.create({ filename: path.join(__dirname, 'matches.db'), autoload: true });
+const pool = global.pool;
 
-matchesDb.ensureIndex({ fieldName: 'status' });
-// Ускоряет поиск матча при проверке купонов
-matchesDb.ensureIndex({ fieldName: 'id', unique: true });
-// Ускоряет поиск нерассчитанных ставок по ID матча
-betsDb.ensureIndex({ fieldName: 'items.matchId' });
-
-// НАДЕЖНЫЙ B2B СИДДЕР ДЛЯ FINANCE REPORTS
-// async function seedFinancialData() {
-//     try {
-//         // Даем базе данных NeDB 1 секунду на полную загрузку файла accounting.db с диска
-//         await new Promise(resolve => setTimeout(resolve, 1000));
-//
-//         const check = await accountingDb.find({partnerId: "demo_skin_default"});
-//         console.log(`📊 [Accounting Sync] Found ${check.length} existing financial logs in database.`);
-//
-//         // Если в отчётах пусто — закидываем надежные демо-данные поштучно
-//         if (check.length === 0) {
-//             // Вставь этот массив внутрь функции seedFinancialData() в state.js вместо старого demoTx
-//             // Замени массив demoTx внутри функции seedFinancialData() в state.js
-//             const demoTx = [
-//                 // 💵 1. Реальные депозиты на платформу (Внешний шлюз Visa/Crypto)
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "Player_VIP",
-//                     type: "DEPOSIT",
-//                     amount: 20000,
-//                     game: "💳 Crypto Deposit Gate (USDT)",
-//                     timestamp: Date.now() - 900000
-//                 },
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "CryptoWhale",
-//                     type: "DEPOSIT",
-//                     amount: 50000,
-//                     game: "💳 Fiat Card Gateway (VISA)",
-//                     timestamp: Date.now() - 850000
-//                 },
-//
-//                 // Игровой оборот (Bets / Wins)
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "Player_VIP",
-//                     type: "DEBIT",
-//                     amount: 1500,
-//                     game: "Slots5x3",
-//                     timestamp: Date.now() - 500000
-//                 },
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "Player_VIP",
-//                     type: "CREDIT",
-//                     amount: 2400,
-//                     game: "Slots5x3",
-//                     timestamp: Date.now() - 480000
-//                 },
-//
-//                 // Бонусное пополнение (Промокод)
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "Player_VIP",
-//                     type: "BONUS_CASH",
-//                     amount: 500,
-//                     game: "🎁 Promo: WELCOME_BONUS",
-//                     timestamp: Date.now() - 470000
-//                 },
-//
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "CryptoWhale",
-//                     type: "DEBIT",
-//                     amount: 5000,
-//                     game: "Crash",
-//                     timestamp: Date.now() - 400000
-//                 },
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "CryptoWhale",
-//                     type: "CREDIT",
-//                     amount: 18500,
-//                     game: "Crash",
-//                     timestamp: Date.now() - 340000
-//                 },
-//
-//                 // Начисление кэшбэка
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "CryptoWhale",
-//                     type: "BONUS_CASH",
-//                     amount: 1200,
-//                     game: "💰 Weekly Cashback Drops",
-//                     timestamp: Date.now() - 300000
-//                 },
-//
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "Lucky_Striker",
-//                     type: "DEBIT",
-//                     amount: 4000,
-//                     game: "Sportsbook",
-//                     timestamp: Date.now() - 250000
-//                 },
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "Blogger_John",
-//                     type: "AFFILIATE",
-//                     amount: 400,
-//                     game: "RevShare",
-//                     timestamp: Date.now() - 240000
-//                 },
-//
-//                 // 📤 2. Вывод средств игроком (Withdraw)
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "CryptoWhale",
-//                     type: "WITHDRAW",
-//                     amount: 15000,
-//                     game: "📤 Crypto Payout (BTC)",
-//                     timestamp: Date.now() - 200000
-//                 },
-//
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "Alex_777",
-//                     type: "DEBIT",
-//                     amount: 500,
-//                     game: "Mines",
-//                     timestamp: Date.now() - 150000
-//                 },
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "Alex_777",
-//                     type: "CREDIT",
-//                     amount: 1250,
-//                     game: "Mines",
-//                     timestamp: Date.now() - 140000
-//                 },
-//
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "Player_VIP",
-//                     type: "DEBIT",
-//                     amount: 1500,
-//                     game: "Slots5x3",
-//                     timestamp: Date.now() - 500000
-//                 },
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "Player_VIP",
-//                     type: "CREDIT",
-//                     amount: 2400,
-//                     game: "Slots5x3",
-//                     timestamp: Date.now() - 480000
-//                 },
-//
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "CryptoWhale",
-//                     type: "DEBIT",
-//                     amount: 5000,
-//                     game: "Crash",
-//                     timestamp: Date.now() - 400000
-//                 },
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "CryptoWhale",
-//                     type: "DEBIT",
-//                     amount: 10000,
-//                     game: "Crash",
-//                     timestamp: Date.now() - 350000
-//                 },
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "CryptoWhale",
-//                     type: "CREDIT",
-//                     amount: 18500,
-//                     game: "Crash",
-//                     timestamp: Date.now() - 340000
-//                 },
-//
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "Lucky_Striker",
-//                     type: "DEBIT",
-//                     amount: 4000,
-//                     game: "Sportsbook",
-//                     timestamp: Date.now() - 250000
-//                 },
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "Lucky_Striker",
-//                     type: "CREDIT",
-//                     amount: 0,
-//                     game: "Sportsbook",
-//                     timestamp: Date.now() - 240000
-//                 },
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "Blogger_John",
-//                     type: "AFFILIATE",
-//                     amount: 400,
-//                     game: "RevShare",
-//                     timestamp: Date.now() - 240000
-//                 },
-//
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "Alex_777",
-//                     type: "DEBIT",
-//                     amount: 500,
-//                     game: "Mines",
-//                     timestamp: Date.now() - 150000
-//                 },
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "Alex_777",
-//                     type: "CREDIT",
-//                     amount: 1250,
-//                     game: "Mines",
-//                     timestamp: Date.now() - 140000
-//                 },
-//
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "HighRoller",
-//                     type: "DEBIT",
-//                     amount: 20000,
-//                     game: "Dice",
-//                     timestamp: Date.now() - 80000
-//                 },
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "HighRoller",
-//                     type: "DEBIT",
-//                     amount: 7000,
-//                     game: "Hi-Lo",
-//                     timestamp: Date.now() - 50000
-//                 },
-//
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "Player_VIP",
-//                     type: "DEBIT",
-//                     amount: 1500,
-//                     game: "Slots5x3",
-//                     timestamp: Date.now() - 500000
-//                 },
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "Player_VIP",
-//                     type: "CREDIT",
-//                     amount: 2400,
-//                     game: "Slots5x3",
-//                     timestamp: Date.now() - 480000
-//                 },
-//
-//                 // Пополнение счета через промокод (Пойдет в кассовую вкладку Transactions)
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "Player_VIP",
-//                     type: "BONUS_CASH",
-//                     amount: 500,
-//                     game: "🎁 Promo: WELCOME_BONUS",
-//                     timestamp: Date.now() - 470000
-//                 },
-//
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "CryptoWhale",
-//                     type: "DEBIT",
-//                     amount: 5000,
-//                     game: "Crash",
-//                     timestamp: Date.now() - 400000
-//                 },
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "CryptoWhale",
-//                     type: "CREDIT",
-//                     amount: 18500,
-//                     game: "Crash",
-//                     timestamp: Date.now() - 340000
-//                 },
-//
-//                 // Начисление еженедельного кэшбэка (Пойдет в кассовую вкладку Transactions)
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "CryptoWhale",
-//                     type: "BONUS_CASH",
-//                     amount: 1200,
-//                     game: "💰 Weekly Cashback Drops",
-//                     timestamp: Date.now() - 300000
-//                 },
-//
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "Lucky_Striker",
-//                     type: "DEBIT",
-//                     amount: 4000,
-//                     game: "Sportsbook",
-//                     timestamp: Date.now() - 250000
-//                 },
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "Blogger_John",
-//                     type: "AFFILIATE",
-//                     amount: 400,
-//                     game: "RevShare",
-//                     timestamp: Date.now() - 240000
-//                 },
-//
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "Alex_777",
-//                     type: "DEBIT",
-//                     amount: 500,
-//                     game: "Mines",
-//                     timestamp: Date.now() - 150000
-//                 },
-//                 {
-//                     partnerId: "demo_skin_default",
-//                     username: "Alex_777",
-//                     type: "CREDIT",
-//                     amount: 1250,
-//                     game: "Mines",
-//                     timestamp: Date.now() - 140000
-//                 }
-//             ];
-//
-//
-//             // Записываем каждый документ по очереди через цикл, чтобы NeDB железно зафиксировала их
-//             for (const tx of demoTx) {
-//                 await accountingDb.insert(tx);
-//             }
-//             console.log("🔥 [Accounting Seed] REAL TIME GGR DEMO VOLUME SEEDED SUCCESSFULLY!");
-//         }
-//     } catch (err) {
-//         console.error("❌ [Accounting Seed Error]:", err.message);
-//     }
-// }
-//
-// seedFinancialData();
-
-
+// Внутренние структуры для оперативной памяти сохраняем без изменений
 const activeTickets = {};
-let globalJackpot = 1000;
+const activeMinesGames = {};
+const activeFreeSpins = {};
+const activeHiloCards = {};
+const crashBetsByPartner = {};
+const crashPlayersInFlight = {};
 
 function getRandomInt(max) {
+    if (max <= 0) return 0;
     return crypto.randomBytes(4).readUInt32BE(0) % max;
 }
 
-let minesBankPool = 5000;
-const activeMinesGames = {};
-
-// 2. Хранилище для Авиатора в оперативной памяти бэкенда
-let crashBankPool = 5000;         // Копилка (банк) игры Авиатор
-let currentCrashBets = {};        // Ставки на текущий раунд: { username: betAmount }
-let currentActivePlayers = {};    // Игроки, которые еще в полете: { username: true }
-
-let diceBankPool = 3000;
-
-let hiloBankPool = 4000;
-const activeHiloCards = {}; // Хранит текущую карту игрока: { username: currentCardObject }
-
-
-let slots5x3BankPool = 10000;
-
-const activeFreeSpins = {};
-
-// 4. Математическая формула расчета множителя на основе теории вероятностей
-function getMinesMultiplier(totalCells, totalMines, openedCells) {
-    let multiplier = 1;
-    for (let i = 0; i < openedCells; i++) {
-        multiplier *= (totalCells - i) / (totalCells - totalMines - i);
-    }
-    // Слегка корректируем базовый множитель под заложенный RTP
-    const rtpFactor = CONFIG.mines.rtpPercent / 100;
-    return parseFloat((multiplier * rtpFactor).toFixed(2));
-}
-
-function getHiloMultipliers(currentValue) {
-    const config = CONFIG.hilo;
-    const totalCards = config.cards.length;
-
-    // Считаем сколько в колоде карт выше/равно и ниже/равно текущей
-    const higherCount = config.cards.filter(c => c.value >= currentValue).length;
-    const lowerCount = config.cards.filter(c => c.value <= currentValue).length;
-
-    // Формула: (Всего карт / Карт, подходящих под условие) * (1 - Комиссия)
-    const multHigher = parseFloat(((totalCards / higherCount) * (1 - config.houseEdge)).toFixed(2));
-    const multLower = parseFloat(((totalCards / lowerCount) * (1 - config.houseEdge)).toFixed(2));
-
-    return {
-        higher: multHigher > 1 ? multHigher : 1.01,
-        lower: multLower > 1 ? multLower : 1.01
-    };
-}
+// =========================================================================
+// ПЕРЕПИСАННЫЕ МЕТОДЫ ЯДРА ПОД POSTGRESQL (Sequelize ORM)
+// =========================================================================
 
 const playerMethods = {
-    getOrCreatePlayer: async (username, partnerId) => {
-        let player = await db.findOne({username, partnerId});
+    // Проверьте, чтобы в вашем файле этот метод выглядел так:
+    getOrCreatePlayer: async (username, partnerId, fetchPlatformBalance = null) => {
+        let res = await pool.query('SELECT * FROM players WHERE username = $1 AND partner_id = $2 LIMIT 1', [username, partnerId]);
+        let player = res.rowCount > 0 ? res.rows[0] : null;
+
         if (!player) {
-            player = {
-                username,
-                partnerId, // ВАЖНО: сохраняем partnerId в документ игрока
-                balance: 200
-            };
-            await db.insert(player);
+            let initialBalance = 0;
+            if (typeof fetchPlatformBalance === 'function') {
+                try {
+                    const platformData = await fetchPlatformBalance(username, partnerId);
+                    if (platformData && platformData.balance !== undefined) {
+                        initialBalance = Number(platformData.balance);
+                    }
+                } catch (err) {
+                    console.error(`[Postgres B2B] Failed platform balance sync:`, err.message);
+                }
+            }
+
+            const insertRes = await pool.query(
+                `INSERT INTO players (username, partner_id, balance, daily_quests, used_promos, history, tournament_points) 
+             VALUES ($1, $2, $3, '{"gamesPlayed": 0, "claimed": false}'::jsonb, '{}'::jsonb, '[]'::jsonb, 0) RETURNING *`,
+                [username, partnerId, initialBalance]
+            );
+            player = insertRes.rows[0];
         }
 
-        // Создаем составной ключ для оперативной памяти, чтобы избежать коллизий имен
+        // Десериализация JSONB (если драйвер вернул их строками)
+        player.dailyQuests = typeof player.daily_quests === 'string' ? JSON.parse(player.daily_quests) : player.daily_quests;
+        player.history = typeof player.history === 'string' ? JSON.parse(player.history) : player.history;
+        player.usedPromos = typeof player.used_promos === 'string' ? JSON.parse(player.used_promos) : player.used_promos;
+        player.tournamentPoints = Number(player.tournament_points);
+
         const memKey = `${partnerId}_${username}`;
         if (!activeTickets[memKey]) activeTickets[memKey] = [];
         player.tickets = activeTickets[memKey];
@@ -426,51 +62,41 @@ const playerMethods = {
         return player;
     },
     updateBalance: async (username, partnerId, newBalance) => {
-        await db.update({username, partnerId}, {$set: {balance: newBalance}});
-
-        if (io) {
-            io.to(`${partnerId}_${username}`).emit('wallet_update', {balance: newBalance});
-        }
+        await pool.query(
+            'UPDATE players SET balance = $1 WHERE username = $2 AND partner_id = $3',
+            [Number(newBalance), username, partnerId]
+        );
     },
-
-    // ИСПРАВЛЕНО: Метод собирает билеты игроков, разделяя их по тенантам (партнерам)
-    getGamersWithTickets: async () => {
-        const gamers = [];
-        const memKeys = Object.keys(activeTickets); // Ключи вида "siteA_john"
-
-        for (const memKey of memKeys) {
-            if (activeTickets[memKey].length > 0) {
-                // Разделяем составной ключ обратно на partnerId и username
-                const [partnerId, username] = memKey.split('_');
-
-                let player = await db.findOne({username: username, partnerId: partnerId});
-                if (player) {
-                    player.tickets = activeTickets[memKey];
-                    gamers.push(player);
-                }
-            }
-        }
-        return gamers;
-    },
-
-    // ИСПРАВЛЕНО: Добавлен partnerId в аргументы для изоляции правок
-
     savePlayerActionHistory: async (username, partnerId, actionData) => {
-        const player = await db.findOne({username: username, partnerId: partnerId});
-        if (player) {
-            // 1. Запись истории действий (твоя стандартная логика)
-            if (!player.history) player.history = [];
+        // 1. Извлекаем игрока из PostgreSQL
+        const playerRes = await pool.query(
+            'SELECT * FROM players WHERE username = $1 AND partner_id = $2 LIMIT 1',
+            [username, partnerId]
+        );
+
+        if (playerRes.rowCount > 0) {
+            const player = playerRes.rows[0];
+
+            // Десериализуем JSONB поля для работы внутри JS
+            let history = typeof player.history === 'string' ? JSON.parse(player.history) : (player.history || []);
+            let dailyQuests = typeof player.daily_quests === 'string' ? JSON.parse(player.daily_quests) : (player.daily_quests || { gamesPlayed: 0, claimed: false });
+            let xp = Number(player.xp || 0);
+            let level = Number(player.level || 1);
+            let tournamentPoints = Number(player.tournament_points || 0);
+            let currentBalance = Number(player.balance || 0);
+
+            // Запись истории действий
             const timeString = new Date().toLocaleTimeString([], {
                 hour: '2-digit',
                 minute: '2-digit',
                 second: '2-digit'
             });
-            player.history.unshift({time: timeString, ...actionData});
-            if (player.history.length > 30) player.history.pop();
+            history.unshift({ time: timeString, ...actionData });
+            if (history.length > 30) history.pop();
 
-            // 2. БЕЗОПАСНАЯ B2B ГЕЙМИФИКАЦИЯ: Достаем конфиг конкретного партнера
-            // Если у партнера нет своего конфига, берем дефолтный из CONFIG
-            const partnerConfig = CONFIG[partnerId] || CONFIG;
+            // 2. БЕЗОПАСНАЯ B2B ГЕЙМИФИКАЦИЯ
+            const globalConfig = global.CONFIG || {};
+            const partnerConfig = globalConfig[partnerId] || {};
             const gConfig = partnerConfig.gamification || {
                 xpPerGame: 10,
                 xpMultiplier: 1000,
@@ -480,94 +106,110 @@ const playerMethods = {
                 tournamentActive: 0
             };
 
-            // --- Начисляем XP и Уровни ---
-            if (!player.xp) player.xp = 0;
-            if (!player.level) player.level = 1;
-            player.xp += Number(gConfig.xpPerGame);
+            const walletService = seamless || require('./services/seamlessService');
 
-            const nextLevelXp = player.level * Number(gConfig.xpMultiplier);
-            if (player.xp >= nextLevelXp) {
-                player.level += 1;
-                // Начисление бонуса за уровень через Seamless Credit (по аналогии с квестом):
+            // --- Начисляем XP и Уровни ---
+            xp += Number(gConfig.xpPerGame);
+            const nextLevelXp = level * Number(gConfig.xpMultiplier);
+
+            if (xp >= nextLevelXp) {
+                level += 1;
                 try {
-                    const lvlRoundId = `lvlup_${player.level}_${Date.now()}_${username}`;
-                    await seamless.credit(
+                    const lvlRoundId = `lvlup_${crypto.randomBytes(6).toString('hex')}`;
+                    const creditResult = await walletService.credit(
                         username,
-                        partnerId, // Передаем partnerId, чтобы роут кошелька знал, куда слать запрос
+                        partnerId,
                         actionData.sessionId || null,
                         Number(gConfig.levelUpBonus),
-                        "🎁 VIP Level Up Reward",
+                        "VIP Level Up Reward",
                         lvlRoundId
                     );
+                    // Синхронизируем баланс из ответа шлюза
+                    if (creditResult && creditResult.balance !== undefined) {
+                        currentBalance = Number(creditResult.balance);
+                    }
                 } catch (err) {
                     console.error(`❌ Ошибка выплаты за уровень игроку ${username}:`, err.message);
                 }
             }
 
             // --- Считаем прогресс Ежедневного Квеста ---
-            if (!player.dailyQuests) player.dailyQuests = {gamesPlayed: 0, claimed: false};
-            if (player.dailyQuests.gamesPlayed < Number(gConfig.questTargetGames)) {
-                player.dailyQuests.gamesPlayed += 1;
+            if (dailyQuests.gamesPlayed < Number(gConfig.questTargetGames)) {
+                dailyQuests.gamesPlayed += 1;
 
-                if (player.dailyQuests.gamesPlayed === Number(gConfig.questTargetGames) && !player.dailyQuests.claimed) {
-                    player.dailyQuests.claimed = true;
+                if (dailyQuests.gamesPlayed === Number(gConfig.questTargetGames) && !dailyQuests.claimed) {
+                    dailyQuests.claimed = true;
                     try {
-                        const questRoundId = `quest_daily_${Date.now()}_${username}`;
-
-                        // ИСПРАВЛЕНО: Добавлен partnerId в вызов credit, чтобы деньги улетали на правильный сайт
-                        await seamless.credit(
+                        const questRoundId = `q_daily_${crypto.randomBytes(6).toString('hex')}`;
+                        const creditResult = await walletService.credit(
                             username,
                             partnerId,
                             actionData.sessionId || null,
                             Number(gConfig.questReward),
-                            "🎁 Daily Quest Reward",
+                            "Daily Quest Reward",
                             questRoundId
                         );
+                        // Синхронизируем баланс из ответа шлюза
+                        if (creditResult && creditResult.balance !== undefined) {
+                            currentBalance = Number(creditResult.balance);
+                        }
                     } catch (err) {
                         console.error(`❌ Ошибка выплаты за квест игроку ${username}:`, err.message);
-                        player.dailyQuests.claimed = false;
+                        dailyQuests.claimed = false; // Откатываем статус при сбое сети
                     }
                 }
             }
 
             // --- Начисляем Очки Турнира (Лидерборд) ---
             if (Number(gConfig.tournamentActive) === 1) {
-                if (!player.tournamentPoints) player.tournamentPoints = 0;
-                player.tournamentPoints += actionData.win ? 5 : 1;
+                tournamentPoints += actionData.win ? 5 : 1;
             }
 
-            // 3. Сохраняем обновленные данные в локальную NeDB
-            await db.update({username: username, partnerId: partnerId}, {
-                $set: {
-                    history: player.history,
-                    xp: player.xp,
-                    level: player.level,
-                    dailyQuests: player.dailyQuests,
-                    tournamentPoints: player.tournamentPoints
-                }
-            });
+            // 3. Сохраняем все обновленные данные в PostgreSQL
+            await pool.query(
+                `UPDATE players 
+                 SET history = $1::jsonb, 
+                     xp = $2, 
+                     level = $3, 
+                     daily_quests = $4::jsonb, 
+                     tournament_points = $5,
+                     balance = $6
+                 WHERE username = $7 AND partner_id = $8`,
+                [
+                    JSON.stringify(history),
+                    xp,
+                    level,
+                    JSON.stringify(dailyQuests),
+                    tournamentPoints,
+                    currentBalance,
+                    username,
+                    partnerId
+                ]
+            );
         }
     },
-
-    // ИСПРАВЛЕНО: Теперь кэшбэк считается изолированно для конкретного партнера
+    // ИСПРАВЛЕНО: Расчет и выплата кэшбэка переведены на Postgres и завязаны на global.CONFIG
     calculateAndPayCashback: async (partnerId, seamlessCredit) => {
-        // Достаем настройки кэшбэка именно этого партнера
-        const partnerConfig = CONFIG[partnerId] || CONFIG;
-        const gConfig = partnerConfig.gamification || {cashbackPercent: 10};
+        const globalConfig = global.CONFIG || {};
+        const partnerConfig = globalConfig[partnerId] || {};
+        // Корректно ищем процент кэшбэка в ветке gamification или берем дефолтные 10%
+        const gConfig = partnerConfig.gamification || { cashbackPercent: 10 };
         const pct = Number(gConfig.cashbackPercent) / 100;
 
-        // ИСПРАВЛЕНО: Находим игроков только этого конкретного партнера
-        const allPlayers = await db.find({partnerId: partnerId});
+        // Находим игроков строго текущего партнера из Postgres
+        const res = await pool.query('SELECT * FROM players WHERE partner_id = $1', [partnerId]);
+        const allPlayers = res.rows;
         const cashbackReport = [];
 
         for (const player of allPlayers) {
-            if (!player.history || player.history.length === 0) continue;
+            let history = typeof player.history === 'string' ? JSON.parse(player.history) : (player.history || []);
+            if (history.length === 0) continue;
 
             let totalDebits = 0;
             let totalCredits = 0;
 
             // Парсим историю последних действий игрока
-            player.history.forEach(action => {
+            history.forEach(action => {
                 const changeStr = action.change || "";
                 const amount = parseInt(changeStr.replace(/[^0-9]/g, '')) || 0;
 
@@ -584,38 +226,44 @@ const playerMethods = {
             if (netLoss > 0) {
                 const cashbackAmount = Math.floor(netLoss * pct);
 
-                if (cashbackAmount > 0) {
+                if (cashbackAmount > 0 && typeof seamlessCredit === 'function') {
                     try {
-                        const cashbackRoundId = `cashback_${Date.now()}_${player.username}`;
+                        // ИСПРАВЛЕНО: Безопасный криптографический roundId вместо Date.now() для предотвращения коллизий в цикле
+                        const cashbackRoundId = `cb_${crypto.randomBytes(6).toString('hex')}`;
 
-                        // ИСПРАВЛЕНО: Передаем partnerId в метод кредита, чтобы транзакция ушла на нужный сайт
-                        await seamlessCredit(
+                        // Отправляем начисление кэшбэка на шлюз платформы
+                        const creditResult = await seamlessCredit(
                             player.username,
                             partnerId,
-                            null,
+                            null, // Сессия null для фонового расчета
                             cashbackAmount,
-                            "💰 Weekly Cashback",
+                            "Weekly Cashback",
                             cashbackRoundId
                         );
 
-                        // Очищаем историю игрока или делаем отметку, чтобы не выдать кэшбэк повторно
-                        player.history.unshift({
-                            time: new Date().toLocaleTimeString(),
-                            game: "💰 Cashback System",
+                        // Получаем свежий баланс из ответа шлюза
+                        const freshBalance = creditResult && creditResult.balance !== undefined
+                            ? Number(creditResult.balance)
+                            : Number(player.balance) + cashbackAmount;
+
+                        // Добавляем запись о кэшбэке в начало лога истории
+                        history.unshift({
+                            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                            game: "Cashback System",
                             details: `Received weekly cashback ${gConfig.cashbackPercent}%`,
                             change: `+${cashbackAmount} 🪙`,
                             win: true
                         });
 
-                        // ИСПРАВЛЕНО: Апдейтим игрока с учетом составного ключа
-                        await db.update(
-                            {username: player.username, partnerId: partnerId},
-                            {$set: {history: player.history}}
+                        // Апдейтим историю и баланс игрока в PostgreSQL
+                        await pool.query(
+                            'UPDATE players SET history = $1::jsonb, balance = $2 WHERE username = $3 AND partner_id = $4',
+                            [JSON.stringify(history), freshBalance, player.username, partnerId]
                         );
 
-                        cashbackReport.push({username: player.username, loss: netLoss, paid: cashbackAmount});
+                        cashbackReport.push({ username: player.username, loss: netLoss, paid: cashbackAmount });
                     } catch (e) {
-                        console.error(`Ошибка выплаты кэшбэка для ${player.username}:`, e.message);
+                        console.error(`❌ Ошибка выплаты кэшбэка для ${player.username}:`, e.message);
                     }
                 }
             }
@@ -623,223 +271,132 @@ const playerMethods = {
         return cashbackReport;
     },
 
-    // ИСПРАВЛЕНО: Аргумент partnerId передан в функцию для поиска нужной истории
+    // ИСПРАВЛЕНО: Быстрое чтение истории игрока из JSONB колонки Postgres
     getPlayerHistory: async (username, partnerId) => {
-        const player = await db.findOne({username: username, partnerId: partnerId});
-        return player && player.history ? player.history : [];
+        const res = await pool.query('SELECT history FROM players WHERE username = $1 AND partner_id = $2 LIMIT 1', [username, partnerId]);
+        if (res.rowCount === 0) return [];
+
+        const history = res.rows[0].history;
+        return typeof history === 'string' ? JSON.parse(history) : (history || []);
     },
 
-    // ИСПРАВЛЕНО: Метод теперь принимает аргумент и отдает игроков только конкретного партнера
+    // ИСПРАВЛЕНО: Получение списка всех игроков конкретного бренда из Postgres
     getAllPlayers: async (partnerId) => {
-        return await db.find({partnerId: partnerId});
+        const res = await pool.query('SELECT * FROM players WHERE partner_id = $1', [partnerId]);
+        return res.rows.map(p => ({
+            ...p,
+            dailyQuests: typeof p.daily_quests === 'string' ? JSON.parse(p.daily_quests) : p.daily_quests,
+            history: typeof p.history === 'string' ? JSON.parse(p.history) : p.history,
+            usedPromos: typeof p.used_promos === 'string' ? JSON.parse(p.used_promos) : p.used_promos,
+            balance: Number(p.balance),
+            tournamentPoints: Number(p.tournament_points)
+        }));
     },
 
+    getGamersWithTickets: async () => {
+        const gamers = [];
+        const memKeys = Object.keys(activeTickets); // Ключи вида "partnerId_username"
+
+        for (const memKey of memKeys) {
+            if (activeTickets[memKey] && activeTickets[memKey].length > 0) {
+                // ИСПРАВЛЕНО: Безопасное разделение ключа на случай, если в username есть символы "_"
+                const firstUnderscoreIndex = memKey.indexOf('_');
+                if (firstUnderscoreIndex === -1) continue;
+
+                const partnerId = memKey.substring(0, firstUnderscoreIndex);
+                const username = memKey.substring(firstUnderscoreIndex + 1);
+
+                try {
+                    // Извлекаем игрока из Postgres
+                    const res = await pool.query(
+                        'SELECT * FROM players WHERE username = $1 AND partner_id = $2 LIMIT 1',
+                        [username, partnerId]
+                    );
+
+                    if (res.rowCount > 0) {
+                        const p = res.rows[0];
+
+                        // Приводим структуру к объекту, который ожидают ваши лотерейные сервисы
+                        const player = {
+                            ...p,
+                            dailyQuests: typeof p.daily_quests === 'string' ? JSON.parse(p.daily_quests) : p.daily_quests,
+                            history: typeof p.history === 'string' ? JSON.parse(p.history) : p.history,
+                            usedPromos: typeof p.used_promos === 'string' ? JSON.parse(p.used_promos) : p.used_promos,
+                            balance: Number(p.balance),
+                            tournamentPoints: Number(p.tournament_points || 0),
+                            tickets: activeTickets[memKey] // Привязываем актуальные билеты из памяти
+                        };
+
+                        gamers.push(player);
+                    }
+                } catch (err) {
+                    console.error(`[Postgres Lottery Error] Failed to fetch gamer ${username} for tickets sync:`, err.message);
+                }
+            }
+        }
+        return gamers;
+    }
 };
 
 const jackpotMethods = {
-    // ИСПРАВЛЕНО: Теперь джекпот изолирован для каждого партнера
     getJackpot: (partnerId) => {
-        if (!banks[partnerId]) banks[partnerId] = {
-            globalJackpot: 1000,
-            mines: 5000,
-            crash: 5000,
-            dice: 3000,
-            hilo: 4000,
-            slots5x3: 10000
-        };
-        return banks[partnerId].globalJackpot;
+        if (!global.banks) global.banks = {};
+        if (!global.banks[partnerId]) {
+            global.banks[partnerId] = { globalJackpot: 1000, mines: 5000, crash: 5000, dice: 3000, hilo: 4000, slots5x3: 10000 };
+        }
+        return global.banks[partnerId].globalJackpot;
     },
     addJackpot: (partnerId, amount) => {
-        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
-        banks[partnerId].globalJackpot += amount;
+        if (!global.banks || !global.banks[partnerId]) jackpotMethods.getJackpot(partnerId);
+        global.banks[partnerId].globalJackpot += amount;
     },
     resetJackpot: (partnerId) => {
-        if (banks[partnerId]) banks[partnerId].globalJackpot = 1000;
+        if (global.banks && global.banks[partnerId]) global.banks[partnerId].globalJackpot = 1000;
     },
     setJackpot: (partnerId, amount) => {
-        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
-        banks[partnerId].globalJackpot = Number(amount);
-    },
-};
-
-const minesMethods = {
-    // ИСПРАВЛЕНО: Сессии Mines теперь разделены по составному ключу "partnerId_username"
-    getMinesGame: (username, partnerId) => activeMinesGames[`${partnerId}_${username}`],
-    setMinesGame: (username, partnerId, gameData) => {
-        activeMinesGames[`${partnerId}_${username}`] = gameData;
-    },
-    deleteMinesGame: (username, partnerId) => {
-        delete activeMinesGames[`${partnerId}_${username}`];
-    },
-    getMinesMultiplier,
-
-    // ИСПРАВЛЕНО: Банк Mines теперь изолирован под каждого партнера отдельно
-    getMinesBank: (partnerId) => {
-        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
-        return banks[partnerId].mines;
-    },
-    addMinesBank: (partnerId, amount) => {
-        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
-        banks[partnerId].mines += amount;
-    },
-    reduceMinesBank: (partnerId, amount) => {
-        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
-        banks[partnerId].mines -= amount;
-    },
-
-    // Позволяет админке конкретного партнера менять свой RTP
-    setMinesRtp: (partnerId, newRtp) => {
-        const pConfig = CONFIG[partnerId] || CONFIG;
-        if (pConfig.mines) pConfig.mines.rtpPercent = newRtp;
-    },
-};
-
-const crashMethods = {
-    // ИСПРАВЛЕНО: Банк Crash изолирован по партнерам
-    getCrashBank: (partnerId) => {
-        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
-        return banks[partnerId].crash;
-    },
-    addCrashBank: (partnerId, amount) => {
-        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
-        banks[partnerId].crash += amount;
-    },
-    reduceCrashBank: (partnerId, amount) => {
-        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
-        banks[partnerId].crash -= amount;
-    },
-
-    // ИСПРАВЛЕНО: Ставки текущего раунда Crash теперь разделены по партнерам
-    getCrashBets: (partnerId) => {
-        if (!currentCrashBets[partnerId]) currentCrashBets[partnerId] = {};
-        return currentCrashBets[partnerId];
-    },
-    addCrashBet: (username, partnerId, amount) => {
-        if (!currentCrashBets[partnerId]) currentCrashBets[partnerId] = {};
-        currentCrashBets[partnerId][username] = amount;
-    },
-    clearCrashBets: (partnerId) => {
-        currentCrashBets[partnerId] = {};
-    },
-
-    // ИСПРАВЛЕНО: Активные игроки «в полете» разделены по партнерам
-    getActiveInFlight: (partnerId) => {
-        if (!currentActivePlayers[partnerId]) currentActivePlayers[partnerId] = {};
-        return currentActivePlayers[partnerId];
-    },
-    addPlayerToFlight: (username, partnerId) => {
-        if (!currentActivePlayers[partnerId]) currentActivePlayers[partnerId] = {};
-        currentActivePlayers[partnerId][username] = true;
-    },
-    removePlayerFromFlight: (username, partnerId) => {
-        if (currentActivePlayers[partnerId]) delete currentActivePlayers[partnerId][username];
-    },
-    clearFlightPlayers: (partnerId) => {
-        currentActivePlayers[partnerId] = {};
+        if (!global.banks || !global.banks[partnerId]) jackpotMethods.getJackpot(partnerId);
+        global.banks[partnerId].globalJackpot = Number(amount);
     }
 };
-
-const diceMethods = {
-    // ИСПРАВЛЕНО: Банк Dice изолирован
-    getDiceBank: (partnerId) => {
-        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
-        return banks[partnerId].dice;
-    },
-    addDiceBank: (partnerId, amount) => {
-        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
-        banks[partnerId].dice += amount;
-    },
-    reduceDiceBank: (partnerId, amount) => {
-        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
-        banks[partnerId].dice -= amount;
-    }
-};
-
-const hiloMethods = {
-    // ИСПРАВЛЕНО: Банк Hi-Lo изолирован
-    getHiloBank: (partnerId) => {
-        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
-        return banks[partnerId].hilo;
-    },
-    addHiloBank: (partnerId, amount) => {
-        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
-        banks[partnerId].hilo += amount;
-    },
-    reduceHiloBank: (partnerId, amount) => {
-        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
-        banks[partnerId].hilo -= amount;
-    },
-
-    // ИСПРАВЛЕНО: Карты в Hi-Lo разделены по составному ключу "partnerId_username"
-    getHiloCard: (username, partnerId) => activeHiloCards[`${partnerId}_${username}`],
-    setHiloCard: (username, partnerId, card) => {
-        activeHiloCards[`${partnerId}_${username}`] = card;
-    },
-    getHiloMultipliers
-};
-
-const slots5x3Methods = {
-    // ИСПРАВЛЕНО: Банк Слотов 5х3 изолирован
-    getSlots5x3Bank: (partnerId) => {
-        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
-        // Безопасный фолбэк, если поле slots5x3 еще не создано у этого партнера
-        if (!banks[partnerId].slots5x3) banks[partnerId].slots5x3 = 10000;
-        return banks[partnerId].slots5x3;
-    },
-    addSlots5x3Bank: (partnerId, amount) => {
-        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
-        if (!banks[partnerId].slots5x3) banks[partnerId].slots5x3 = 10000;
-        banks[partnerId].slots5x3 += amount;
-    },
-    reduceSlots5x3Bank: (partnerId, amount) => {
-        if (!banks[partnerId]) jackpotMethods.getJackpot(partnerId);
-        if (!banks[partnerId].slots5x3) banks[partnerId].slots5x3 = 10000;
-        banks[partnerId].slots5x3 -= amount;
-    },
-};
-
-const freeSpinMethods = {
-    // ИСПРАВЛЕНО: Фриспины разделены по составному ключу "partnerId_username"
-    getFreeSpins: (username, partnerId) => activeFreeSpins[`${partnerId}_${username}`],
-    setFreeSpins: (username, partnerId, fsData) => {
-        activeFreeSpins[`${partnerId}_${username}`] = fsData;
-    },
-    deleteFreeSpins: (username, partnerId) => {
-        delete activeFreeSpins[`${partnerId}_${username}`];
-    }
-};
-
 
 const gamificationMethods = {
-    // ИСПРАВЛЕНО: Теперь лидерборд строится строго внутри игроков конкретного партнера
+    // 1. Лидерборд строится строго внутри игроков конкретного партнера средствами СУБД (ультрабыстро)
     getLeaderboard: async (partnerId, criterion = 'balance', limit = 10) => {
-        const validCriteria = ['balance', 'xp', 'tournamentPoints'];
-        const sortField = validCriteria.includes(criterion) ? criterion : 'balance';
+        const validCriteria = ['balance', 'xp', 'tournament_points'];
+        // Мапим входящие критерии на правильные змеиные (snake_case) имена колонок в Postgres
+        let sortField = 'balance';
+        if (criterion === 'xp') sortField = 'xp';
+        if (criterion === 'tournamentPoints') sortField = 'tournament_points';
 
-        // Находим игроков только текущего партнера
-        const allPlayers = await db.find({partnerId: partnerId});
+        try {
+            // Сортировку и лимит доверяем самому Postgres — это не грузит RAM сервера
+            const res = await pool.query(
+                `SELECT username, level, balance, tournament_points 
+                 FROM players 
+                 WHERE partner_id = $1 
+                 ORDER BY ${sortField} DESC 
+                 LIMIT $2`,
+                [partnerId, limit]
+            );
 
-        return allPlayers
-            .sort((a, b) => {
-                const valA = a[sortField] || 0;
-                const valB = b[sortField] || 0;
-                return valB - valA;
-            })
-            .slice(0, limit)
-            .map((p, index) => ({
+            return res.rows.map((p, index) => ({
                 rank: index + 1,
                 username: p.username,
-                level: p.level || 1,
-                balance: p.balance,
-                tournamentPoints: p.tournamentPoints || 0
+                level: Number(p.level || 1),
+                balance: Number(p.balance),
+                tournamentPoints: Number(p.tournament_points || 0)
             }));
+        } catch (err) {
+            console.error(`[Postgres Leaderboard Error] Failed to fetch top:`, err.message);
+            return [];
+        }
     },
 
-    // ИСПРАВЛЕНО: Метод теперь принимает partnerId и завершает турнир изолированно
+    // 2. Завершение турнира на чистом SQL с защитой транзакций
     endCurrentTournament: async (partnerId) => {
-        // Достаем настройки турнира именно этого партнера
-        const partnerConfig = CONFIG[partnerId] || CONFIG;
-        const gConfig = partnerConfig.gamification || {tournamentPrize: 5000};
+        const globalConfig = global.CONFIG || {};
+        const partnerConfig = globalConfig[partnerId] || {};
+        const gConfig = partnerConfig.gamification || { tournamentPrize: 5000 };
         const totalPrize = Number(gConfig.tournamentPrize);
 
         const prizes = [
@@ -848,14 +405,14 @@ const gamificationMethods = {
             Math.floor(totalPrize * 0.20)  // 3 место
         ];
 
-        // Находим игроков только этого партнера
-        const allPlayers = await db.find({partnerId: partnerId});
-
-        const participants = allPlayers
-            .filter(p => p.tournamentPoints && p.tournamentPoints > 0)
-            .sort((a, b) => b.tournamentPoints - a.tournamentPoints);
-
+        // Запрашиваем из Postgres только участников с очками > 0, отсортированных по убыванию
+        const res = await pool.query(
+            'SELECT * FROM players WHERE partner_id = $1 AND tournament_points > 0 ORDER BY tournament_points DESC',
+            [partnerId]
+        );
+        const participants = res.rows;
         const winnersInfo = [];
+        const walletService = seamless || require('./services/seamlessService');
 
         for (let i = 0; i < participants.length; i++) {
             const player = participants[i];
@@ -863,188 +420,246 @@ const gamificationMethods = {
 
             if (i < 3) {
                 prizeWon = prizes[i];
-                player.balance += prizeWon;
 
                 try {
-                    const tournamentRoundId = `tournament_win_${Date.now()}_${player.username}`;
-
-                    // ИСПРАВЛЕНО: Добавлен partnerId в вызов для точной маршрутизации выплаты
-                    await seamless.credit(
+                    const tournamentRoundId = `trn_win_${crypto.randomBytes(6).toString('hex')}`;
+                    const creditResult = await walletService.credit(
                         player.username,
                         partnerId,
                         null,
                         prizeWon,
-                        `🏆 Tournament Place ${i + 1}`,
+                        `Tournament Place ${i + 1}`,
                         tournamentRoundId
                     );
+
+                    // Обновляем баланс на основе ответа шлюза
+                    player.balance = creditResult && creditResult.balance !== undefined
+                        ? Number(creditResult.balance)
+                        : Number(player.balance) + prizeWon;
 
                     winnersInfo.push({
                         username: player.username,
                         place: i + 1,
-                        points: player.tournamentPoints,
+                        points: Number(player.tournament_points),
                         prize: prizeWon
                     });
                 } catch (err) {
-                    console.error(`❌ Не удалось выплатить приз турнира для ${player.username}:`, err.message);
+                    console.error(`❌ Tournament payout failed for ${player.username}:`, err.message);
                 }
             }
 
-            if (!player.history) player.history = [];
-            const timeString = new Date().toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            });
+            // Корректно парсим и обновляем историю действий внутри JSONB поля Postgres
+            let currentHistory = typeof player.history === 'string' ? JSON.parse(player.history) : (player.history || []);
+            const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-            player.history.unshift({
+            currentHistory.unshift({
                 time: timeString,
                 game: "🏆 Tournament End",
-                details: `Tournament finished. Points: ${player.tournamentPoints}. Place: ${i + 1}`,
+                details: `Tournament finished. Points: ${player.tournament_points}. Place: ${i + 1}`,
                 change: prizeWon > 0 ? `+${prizeWon} 🪙` : `0 🪙`,
                 win: prizeWon > 0
             });
-            if (player.history.length > 30) player.history.pop();
+            if (currentHistory.length > 30) currentHistory.pop();
 
-            player.tournamentPoints = 0;
-
-            // ИСПРАВЛЕНО: Сохраняем игрока с использованием составного B2B-ключа
-            await db.update(
-                {username: player.username, partnerId: partnerId},
-                {
-                    $set: {
-                        balance: player.balance,
-                        tournamentPoints: player.tournamentPoints,
-                        history: player.history
-                    }
-                }
+            // Сохраняем изменения напрямую через SQL-запрос UPDATE
+            await pool.query(
+                `UPDATE players 
+                 SET history = $1::jsonb, tournament_points = 0, balance = $2 
+                 WHERE username = $3 AND partner_id = $4`,
+                [JSON.stringify(currentHistory), Number(player.balance), player.username, partnerId]
             );
         }
 
         return winnersInfo;
     },
 
-    // ИСПРАВЛЕНО: Метод теперь принимает аргумент, сбрасывая квесты только внутри конкретного бренда
-    resetDailyQuestsForAll: async (partnerId) => {
+    // 3. Массовый Крон-сброс квестов в Postgres одной строчкой (БЕЗ циклов, не нагружает базу данных)
+    resetDailyQuestsForAll: async (partnerId = null) => {
         try {
-            // Находим игроков только нужного партнера
-            const players = await db.find({partnerId: partnerId});
+            const globalConfig = global.CONFIG || {};
+            const partnersToReset = partnerId ? [partnerId] : Object.keys(globalConfig);
 
-            for (const player of players) {
-                if (player.dailyQuests) {
-                    player.dailyQuests = {gamesPlayed: 0, claimed: false};
-
-                    await db.update(
-                        {username: player.username, partnerId: partnerId},
-                        {$set: {dailyQuests: player.dailyQuests}}
-                    );
-                }
+            for (const pId of partnersToReset) {
+                // Атомарный UPDATE одной командой на всю таблицу players для выбранного partner_id
+                await pool.query(
+                    `UPDATE players 
+                     SET daily_quests = '{"gamesPlayed": 0, "claimed": false}'::jsonb 
+                     WHERE partner_id = $1`,
+                    [pId]
+                );
+                console.log(`📅 [Postgres Cron] Daily quests reset for partner: ${pId}`);
             }
-            console.log(`📅 [Cron] Daily quests successfully reset for partner: ${partnerId}`);
             return true;
         } catch (err) {
-            console.error(`❌ Error auto-resetting quests for partner ${partnerId}:`, err);
+            console.error(`❌ Error resetting quests via Postgres SQL:`, err.message);
             return false;
         }
     }
 };
 
-
 const promoMethods = {
-    // ИСПРАВЛЕНО: Создание промокода теперь намертво привязано к конкретному partnerId
+    // 1. Создание промокода теперь намертво привязано к конкретному partnerId внутри global.CONFIG и Postgres
     addPromoCode: async (partnerId, codeData) => {
-        // Подгружаем или создаем узел партнера в CONFIG
-        if (!CONFIG[partnerId]) CONFIG[partnerId] = {};
-        if (!CONFIG[partnerId].promoCodes) CONFIG[partnerId].promoCodes = [];
+        if (!global.CONFIG) global.CONFIG = {};
+        if (!global.CONFIG[partnerId]) global.CONFIG[partnerId] = {};
+        if (!global.CONFIG[partnerId].promoCodes) global.CONFIG[partnerId].promoCodes = [];
 
-        CONFIG[partnerId].promoCodes.push({
+        global.CONFIG[partnerId].promoCodes.push({
             code: codeData.code.toUpperCase().trim(),
             reward: Number(codeData.reward),
             maxUses: Number(codeData.maxUses || 1),
             active: 1
         });
 
-        // Перезаписываем в config.db только ветку текущего партнера
-        await configDb.update({_id: "global_config"}, {$set: {[partnerId]: CONFIG[partnerId]}});
+        try {
+            // Атомарно сохраняем обновленный конфиг в таблицу b2b_configs.
+            // Использование || (JSONB merge) защищает данные других партнеров от перезаписи.
+            await pool.query(
+                `INSERT INTO b2b_configs (id, config_data) 
+                 VALUES ($1, $2::jsonb)
+                 ON CONFLICT (id) 
+                 DO UPDATE SET config_data = b2b_configs.config_data || EXCLUDED.config_data`,
+                [
+                    'global_config',
+                    JSON.stringify({ [partnerId]: global.CONFIG[partnerId] })
+                ]
+            );
+        } catch (err) {
+            console.error(`[Postgres B2B Promo Error] Failed to add promo code for partner ${partnerId}:`, err.message);
+        }
     },
 
-    // ИСПРАВЛЕНО: Активация кода игроком теперь проверяет partnerId
+    // 2. Активация кода игроком на чистом нативном SQL
     usePromoCode: async (username, partnerId, code, seamlessCredit) => {
         const cleanCode = code.toUpperCase().trim();
-
-        // Ищем промокод внутри реестра конкретного партнера
-        const partnerConfig = CONFIG[partnerId] || {};
+        const globalConfig = global.CONFIG || {};
+        const partnerConfig = globalConfig[partnerId] || {};
         const promo = (partnerConfig.promoCodes || []).find(p => p.code === cleanCode && p.active === 1);
 
         if (!promo) throw new Error("Invalid code");
 
-        // Поиск игрока по составному ключу B2B
-        const player = await db.findOne({username: username, partnerId: partnerId});
-        if (!player) throw new Error("Player not found");
+        // Поиск игрока по составному B2B ключу на чистом SQL
+        const playerRes = await pool.query(
+            'SELECT * FROM players WHERE username = $1 AND partner_id = $2 LIMIT 1',
+            [username, partnerId]
+        );
+        if (playerRes.rowCount === 0) throw new Error("Player not found");
+        const player = playerRes.rows[0];
 
-        if (!player.usedPromos) player.usedPromos = {};
-        const timesUsed = player.usedPromos[cleanCode] || 0;
+        // Безопасно парсим вложенный JSONB-объект активированных промокодов
+        const currentPromos = typeof player.used_promos === 'string'
+            ? JSON.parse(player.used_promos)
+            : (player.used_promos || {});
+
+        const timesUsed = currentPromos[cleanCode] || 0;
 
         if (timesUsed >= promo.maxUses) throw new Error("You have already used this promo code maximum times");
 
-        // ИСПРАВЛЕНО: Пробрасываем partnerId в метод кредита для точной транзакции
-        const promoRoundId = `promo_${cleanCode}_${Date.now()}_${username}`;
-        await seamlessCredit(
+        // Безопасный криптографический roundId вместо Date.now()
+        const promoRoundId = `promo_${cleanCode.toLowerCase()}_${crypto.randomBytes(6).toString('hex')}`;
+
+        // Передаем сессию null (так как активация промокода — это фоновая операция кэша)
+        const creditResult = await seamlessCredit(
             username,
             partnerId,
             null,
-            `🎁 Promo: ${cleanCode}`,
+            Number(promo.reward),
+            "Promo Activation",
             promoRoundId
         );
 
-        // Фиксируем использование кода локально в рамках этого бренда
-        player.usedPromos[cleanCode] = timesUsed + 1;
-        await db.update({username: username, partnerId: partnerId}, {$set: {usedPromos: player.usedPromos}});
+        // Получаем свежий баланс, который вернул шлюз платформы витрины
+        const newBalance = creditResult && creditResult.balance !== undefined
+            ? Number(creditResult.balance)
+            : Number(player.balance) + promo.reward;
+
+        currentPromos[cleanCode] = timesUsed + 1;
+
+        // Фиксируем использование кода и пишем свежий баланс напрямую в Postgres таблицу players
+        await pool.query(
+            'UPDATE players SET used_promos = $1::jsonb, balance = $2 WHERE username = $3 AND partner_id = $4',
+            [JSON.stringify(currentPromos), newBalance, username, partnerId]
+        );
 
         return promo.reward;
     }
 };
 
+
 const affiliateMethods = {
 
     linkReferral: async (username, partnerId, refCode) => {
         const cleanRef = refCode.trim();
-        // Ищем, кому принадлежит этот реф-код (код равен юзернейму пригласителя)
-        const inviter = await db.findOne({username: cleanRef, partnerId: partnerId});
-        if (!inviter) return false;
 
-        // Привязываем реферала
-        await db.update({username: username, partnerId: partnerId}, {$set: {invitedBy: inviter.username}});
+        // Ищем, кому принадлежит этот реф-код (проверяем существование пригласителя)
+        const inviterRes = await pool.query(
+            'SELECT username FROM players WHERE username = $1 AND partner_id = $2 LIMIT 1',
+            [cleanRef, partnerId]
+        );
+
+        if (inviterRes.rowCount === 0) return false;
+
+        // Привязываем реферала к пригласителю
+        await pool.query(
+            'UPDATE players SET invited_by = $1 WHERE username = $2 AND partner_id = $3',
+            [cleanRef, username, partnerId]
+        );
         return true;
     },
 
-    trackAffiliatePayout: async (username, partnerId, lostAmount, sessionId) => {
-        const player = await db.findOne({username: username, partnerId: partnerId});
-        // Если игрока никто не приглашал — ничего не делаем
-        if (!player || !player.invitedBy) return;
+    trackAffiliatePayout: async (username, partnerId, lostAmount, seamlessCredit) => {
+        // Находим игрока и его пригласителя
+        const playerRes = await pool.query(
+            'SELECT invited_by FROM players WHERE username = $1 AND partner_id = $2 LIMIT 1',
+            [username, partnerId]
+        );
 
-        // Берем процент RevShare из конфига партнера (например, 10%)
-        const partnerConfig = CURRENT_CONFIG[partnerId] || CURRENT_CONFIG;
-        const refPercent = partnerConfig.affiliatePercent || 10;
+        if (playerRes.rowCount === 0 || !playerRes.rows[0].invited_by) return;
+        const invitedBy = playerRes.rows[0].invited_by;
+
+        // Достаем конфиг из глобального объекта памяти CONFIG
+        const globalConfig = global.CONFIG || {};
+        const partnerConfig = globalConfig[partnerId] || {};
+        const refPercent = partnerConfig.gamification?.affiliatePercent || 10;
 
         const commission = Math.floor(lostAmount * (refPercent / 100));
 
-        if (commission > 0) {
+        if (commission > 0 && typeof seamlessCredit === 'function') {
             try {
-                const refRoundId = `aff_pay_${Date.now()}_${player.invitedBy}`;
-                // Начисляем комиссию пригласителю через твой Seamless Credit!
-                const seamless = require('./services/seamlessService');
-                await seamless.credit(
-                    player.invitedBy,
+                const refRoundId = `aff_pay_${crypto.randomBytes(6).toString('hex')}`;
+                const gameName = "Affiliate RevShare Commission";
+
+                // Начисляем комиссию пригласителю через Seamless API шлюз платформы
+                const creditResult = await seamlessCredit(
+                    invitedBy,
                     partnerId,
-                    null, // или сессию пригласителя, если она активна
+                    null, // сессия null, так как транзакция фоновая
                     commission,
-                    "💰 Affiliate RevShare Commission",
+                    gameName,
                     refRoundId
                 );
 
-                console.log(`💸 Affiliate Revenue Share: ${player.invitedBy} earned +${commission} 🪙 from ${username}`);
+                // Запрашиваем текущие данные пригласителя, чтобы корректно обновить его баланс локально
+                const inviterRes = await pool.query(
+                    'SELECT balance FROM players WHERE username = $1 AND partner_id = $2 LIMIT 1',
+                    [invitedBy, partnerId]
+                );
+
+                if (inviterRes.rowCount > 0) {
+                    const freshBalance = creditResult && creditResult.balance !== undefined
+                        ? creditResult.balance
+                        : Number(inviterRes.rows[0].balance) + commission;
+
+                    // Обновляем локальный баланс партнера в PostgreSQL
+                    await pool.query(
+                        'UPDATE players SET balance = $1 WHERE username = $2 AND partner_id = $3',
+                        [freshBalance, invitedBy, partnerId]
+                    );
+                }
+
+                console.log(`💸 Affiliate Revenue Share: ${invitedBy} earned +${commission} 🪙 from ${username}'s loss`);
             } catch (err) {
-                console.error(`❌ Affiliate payout failed:`, err.message);
+                console.error(`❌ Affiliate payout failed for inviter ${invitedBy}:`, err.message);
             }
         }
     }
@@ -1053,55 +668,67 @@ const affiliateMethods = {
 const financialMethods = {
 
     logFinancialTransaction: async (partnerId, username, type, amount, game) => {
-        const record = {
-            partnerId,
-            username,
-            type, // "DEBIT", "CREDIT", "AFFILIATE"
-            amount: Number(amount),
-            game, // "Slots", "Crash", "Dice", "Sportsbook"
-            timestamp: Date.now()
-        };
-        await accountingDb.insert(record);
+        // Записываем лог в таблицу бухгалтерского учета accounting_logs
+        await pool.query(
+            `INSERT INTO accounting_logs (partner_id, username, type, amount, game, timestamp) 
+             VALUES ($1, $2, $3, $4, $5, NOW())`,
+            [partnerId, username, type, Number(amount), game || "Unknown Game"]
+        );
     },
 
     getFinancialReport: async (partnerId) => {
-        const txs = await accountingDb.find({partnerId: partnerId});
+        // Вытаскиваем все логи транзакций партнера
+        const res = await pool.query(
+            'SELECT type, amount, game, EXTRACT(EPOCH FROM timestamp) * 1000 as ts FROM accounting_logs WHERE partner_id = $1 ORDER BY timestamp DESC',
+            [partnerId]
+        );
+        const txs = res.rows;
 
         let totalBets = 0;
         let totalWins = 0;
         let totalAffiliate = 0;
 
         txs.forEach(tx => {
-            if (tx.type === "DEBIT") totalBets += tx.amount;
-            if (tx.type === "CREDIT") totalWins += tx.amount;
-            if (tx.type === "AFFILIATE") totalAffiliate += tx.amount;
+            const amt = Number(tx.amount);
+            if (tx.type === "DEBIT") totalBets += amt;
+            if (tx.type === "CREDIT") totalWins += amt;
+            if (tx.type === "AFFILIATE") totalAffiliate += amt;
         });
 
         const ggr = totalBets - totalWins;
         const netProfit = ggr - totalAffiliate;
 
-        // Сортируем от новых к старым
-        const sortedTxs = txs.sort((a, b) => b.timestamp - a.timestamp);
+        // Форматируем под структуру объектов, которую ожидала админка из NeDB
+        const formattedTxs = txs.map(tx => ({
+            partnerId,
+            username: tx.username,
+            type: tx.type,
+            amount: Number(tx.amount),
+            game: tx.game,
+            timestamp: Number(tx.ts)
+        }));
 
-        // 🎰 ЛОГ СТАВОК: Сюда идут ТОЛЬКО ставки и выигрыши в играх (исключаем промокоды, кэшбэки и бонусы)
-        const latestBets = sortedTxs.filter(tx =>
-            (tx.type === "DEBIT" || tx.type === "CREDIT") &&
-            !tx.game.includes("Promo") &&
-            !tx.game.includes("Cashback") &&
-            !tx.game.includes("Quest") &&
-            !tx.game.includes("VIP")
-        ).slice(0, 50);
+        // 🎰 ЛОГ СТАВОК: Исключаем промокоды, кэшбэки и бонусы
+        const latestBets = formattedTxs.filter(tx => {
+            const gameName = tx.game || "";
+            return (tx.type === "DEBIT" || tx.type === "CREDIT") &&
+                !gameName.includes("Promo") &&
+                !gameName.includes("Cashback") &&
+                !gameName.includes("Quest") &&
+                !gameName.includes("VIP");
+        }).slice(0, 50);
 
-        // 💳 ЛОГ КАССЫ (ПОПОЛНЕНИЯ / ВЫВОДЫ / БОНУСЫ): Сюда идет чистый Cashflow
-        const latestTransactions = sortedTxs.filter(tx =>
-            tx.type === "AFFILIATE" ||
-            tx.game.includes("Promo") ||
-            tx.game.includes("Cashback") ||
-            tx.game.includes("Quest") ||
-            tx.game.includes("VIP") ||
-            tx.game.includes("Deposit") ||
-            tx.game.includes("Withdraw")
-        ).slice(0, 50);
+        // 💳 ЛОГ КАССЫ: Чистый Cashflow
+        const latestTransactions = formattedTxs.filter(tx => {
+            const gameName = tx.game || "";
+            return tx.type === "AFFILIATE" ||
+                gameName.includes("Promo") ||
+                gameName.includes("Cashback") ||
+                gameName.includes("Quest") ||
+                gameName.includes("VIP") ||
+                gameName.includes("Deposit") ||
+                gameName.includes("Withdraw");
+        }).slice(0, 50);
 
         return {
             totalBets,
@@ -1114,300 +741,503 @@ const financialMethods = {
             latestBets
         };
     }
-
-
 };
 
-const vfootball = require('./vfootball');
-
-const sportsMethods = {
-    // 1. Отдаем линию матчей из файла matches.db на ваш контроллер и фронтенд
-    getSportsLine: async () => {
-        // Запрашиваем из файла все матчи, которые еще не завершились (лайв и прематч)
-        const activeMatches = await matchesDb.find({ status: { $ne: "FINISHED" } });
-        return activeMatches;
-
-        // return activeMatches.map(m => {
-        //     const formattedStatus = m.minute === 90
-        //         ? `FINISHED`
-        //         : `LIVE (${m.minute} min, ${m.score.home}:${m.score.away})`;
-        //
-        //     return {
-        //         id: m.id, // строковый ID для поиска .find(m => m.id === item.matchId)
-        //         sport: m.sport,
-        //         league: m.league,
-        //         // Формируем строковое поле команд, как требует ваш контроллер
-        //         teams: `${m.teams.home} - ${m.teams.away}`,
-        //         status: m.minute === 0 && m.status === "PREMATCH" ? "PREMATCH" : formattedStatus,
-        //         markets: m.markets // Свежие кэфы из файла
-        //     };
-        // });
+const minesMethods = {
+    getMinesGame: (username, partnerId) => activeMinesGames[`${partnerId}_${username}`],
+    setMinesGame: (username, partnerId, gameData) => {
+        activeMinesGames[`${partnerId}_${username}`] = gameData;
+    },
+    deleteMinesGame: (username, partnerId) => {
+        delete activeMinesGames[`${partnerId}_${username}`];
+    },
+    getMinesMultiplier: (totalCells, totalMines, openedCells, partnerId) => {
+        let multiplier = 1;
+        for (let i = 0; i < openedCells; i++) {
+            multiplier *= (totalCells - i) / (totalCells - totalMines - i);
+        }
+        const globalConfig = global.CONFIG || {};
+        const partnerConfig = globalConfig[partnerId] || {};
+        const minesConfig = partnerConfig.mines || { rtpPercent: 80 };
+        const rtpFactor = (minesConfig.rtpPercent || 80) / 100;
+        return parseFloat((multiplier * rtpFactor).toFixed(2));
     },
 
-    // 2. Сохраняем купон в файл bets.db, вытаскивая текущие условия тоталов/гандикапов из файла матчей
+    getMinesBank: (partnerId) => {
+        if (!global.banks || !global.banks[partnerId]) jackpotMethods.getJackpot(partnerId);
+        return global.banks[partnerId].mines;
+    },
+    addMinesBank: (partnerId, amount) => {
+        if (!global.banks || !global.banks[partnerId]) jackpotMethods.getJackpot(partnerId);
+        global.banks[partnerId].mines += amount;
+    },
+    reduceMinesBank: (partnerId, amount) => {
+        if (!global.banks || !global.banks[partnerId]) jackpotMethods.getJackpot(partnerId);
+        global.banks[partnerId].mines -= amount;
+    },
+    setMinesRtp: (partnerId, newRtp) => {
+        const globalConfig = global.CONFIG || {};
+        if (globalConfig[partnerId] && globalConfig[partnerId].mines) {
+            globalConfig[partnerId].mines.rtpPercent = Number(newRtp);
+        }
+    }
+};
+
+const crashMethods = {
+    getCrashBank: (partnerId) => {
+        if (!global.banks || !global.banks[partnerId]) jackpotMethods.getJackpot(partnerId);
+        return global.banks[partnerId].crash;
+    },
+    addCrashBank: (partnerId, amount) => {
+        if (!global.banks || !global.banks[partnerId]) jackpotMethods.getJackpot(partnerId);
+        global.banks[partnerId].crash += amount;
+    },
+    reduceCrashBank: (partnerId, amount) => {
+        if (!global.banks || !global.banks[partnerId]) jackpotMethods.getJackpot(partnerId);
+        global.banks[partnerId].crash -= amount;
+    },
+    getCrashBets: (partnerId) => {
+        if (!crashBetsByPartner[partnerId]) crashBetsByPartner[partnerId] = {};
+        return crashBetsByPartner[partnerId];
+    },
+    addCrashBet: (username, partnerId, amount) => {
+        if (!crashBetsByPartner[partnerId]) crashBetsByPartner[partnerId] = {};
+        crashBetsByPartner[partnerId][username] = amount;
+    },
+    clearCrashBets: (partnerId) => {
+        crashBetsByPartner[partnerId] = {};
+    },
+    getActiveInFlight: (partnerId) => {
+        if (!crashPlayersInFlight[partnerId]) crashPlayersInFlight[partnerId] = {};
+        return crashPlayersInFlight[partnerId];
+    },
+    addPlayerToFlight: (username, partnerId) => {
+        if (!crashPlayersInFlight[partnerId]) crashPlayersInFlight[partnerId] = {};
+        crashPlayersInFlight[partnerId][username] = true;
+    },
+    removePlayerFromFlight: (username, partnerId) => {
+        if (crashPlayersInFlight[partnerId]) delete crashPlayersInFlight[partnerId][username];
+    },
+    clearFlightPlayers: (partnerId) => {
+        crashPlayersInFlight[partnerId] = {};
+    }
+};
+
+const diceMethods = {
+    // ИСПРАВЛЕНО: Банк Dice изолирован через глобальный объект global.banks в Postgres
+    getDiceBank: (partnerId) => {
+        if (!global.banks || !global.banks[partnerId]) jackpotMethods.getJackpot(partnerId);
+        return global.banks[partnerId].dice;
+    },
+    addDiceBank: (partnerId, amount) => {
+        if (!global.banks || !global.banks[partnerId]) jackpotMethods.getJackpot(partnerId);
+        global.banks[partnerId].dice += amount;
+    },
+    reduceDiceBank: (partnerId, amount) => {
+        if (!global.banks || !global.banks[partnerId]) jackpotMethods.getJackpot(partnerId);
+        global.banks[partnerId].dice -= amount;
+    }
+};
+
+const hiloMethods = {
+    // ИСПРАВЛЕНО: Банк Hi-Lo изолирован через global.banks
+    getHiloBank: (partnerId) => {
+        if (!global.banks || !global.banks[partnerId]) jackpotMethods.getJackpot(partnerId);
+        return global.banks[partnerId].hilo;
+    },
+    addHiloBank: (partnerId, amount) => {
+        if (!global.banks || !global.banks[partnerId]) jackpotMethods.getJackpot(partnerId);
+        global.banks[partnerId].hilo += amount;
+    },
+    reduceHiloBank: (partnerId, amount) => {
+        if (!global.banks || !global.banks[partnerId]) jackpotMethods.getJackpot(partnerId);
+        global.banks[partnerId].hilo -= amount;
+    },
+
+    // ИСПРАВЛЕНО: Карты в Hi-Lo разделены по составному ключу "partnerId_username"
+    getHiloCard: (username, partnerId) => activeHiloCards[`${partnerId}_${username}`],
+    setHiloCard: (username, partnerId, card) => {
+        activeHiloCards[`${partnerId}_${username}`] = card;
+    },
+
+    // ИСПРАВЛЕНО: Считывание формулы множителей под конкретный бренд из global.CONFIG
+    getHiloMultipliers: (currentValue, partnerId) => {
+        const globalConfig = global.CONFIG || {};
+        const partnerConfig = globalConfig[partnerId] || {};
+        const config = partnerConfig.hilo || { houseEdge: 0.04, cards: [] };
+
+        const totalCards = config.cards.length || 13; // Защита от деления на 0, если массив пуст
+
+        // Считаем сколько в колоде карт выше/равно и ниже/равно текущей
+        const higherCount = config.cards.filter(c => c.value >= currentValue).length || 1;
+        const lowerCount = config.cards.filter(c => c.value <= currentValue).length || 1;
+
+        // Формула: (Всего карт / Карт, подходящих под условие) * (1 - Комиссия)
+        const multHigher = parseFloat(((totalCards / higherCount) * (1 - config.houseEdge)).toFixed(2));
+        const multLower = parseFloat(((totalCards / lowerCount) * (1 - config.houseEdge)).toFixed(2));
+
+        return {
+            higher: multHigher > 1 ? multHigher : 1.01,
+            lower: multLower > 1 ? multLower : 1.01
+        };
+    }
+};
+
+const freeSpinMethods = {
+    // ИСПРАВЛЕНО: Фриспины изолированы по составному ключу в локальной оперативной памяти
+    getFreeSpins: (username, partnerId) => {
+        if (typeof activeFreeSpins === 'undefined') return null;
+        return activeFreeSpins[`${partnerId}_${username}`];
+    },
+    setFreeSpins: (username, partnerId, fsData) => {
+        if (typeof activeFreeSpins !== 'undefined') {
+            activeFreeSpins[`${partnerId}_${username}`] = fsData;
+        }
+    },
+    deleteFreeSpins: (username, partnerId) => {
+        if (typeof activeFreeSpins !== 'undefined') {
+            delete activeFreeSpins[`${partnerId}_${username}`];
+        }
+    }
+};
+
+const sportsMethods = {
+    // 1. Отдаем линию матчей из таблицы matches в PostgreSQL
+    getSportsLine: async () => {
+        // Запрашиваем из Postgres все матчи, которые еще не завершились
+        const res = await pool.query('SELECT * FROM matches WHERE status != $1', ['FINISHED']);
+
+        return res.rows.map(m => {
+            // Десериализуем JSONB поля, если драйвер отдал их в виде строк (зависит от настроек pg)
+            const parsedTeams = typeof m.teams === 'string' ? JSON.parse(m.teams) : m.teams;
+            const parsedMarkets = typeof m.markets === 'string' ? JSON.parse(m.markets) : m.markets;
+
+            return {
+                id: m.match_id,
+                sport: m.sport,
+                league: m.league,
+                // Склеиваем команды в строку, как ожидает ваш sportsController
+                teams: typeof parsedTeams === 'string' ? parsedTeams : `${parsedTeams.home} - ${parsedTeams.away}`,
+                status: m.status,
+                markets: parsedMarkets
+            };
+        });
+    },
+
+    // 2. Сохраняем купон в таблицу sports_bets, вытаскивая текущие условия тоталов/гандикапов
     createSportsBet: async (username, partnerId, betData) => {
         const processedItems = [];
 
         for (let item of betData.items) {
-            // Находим матч напрямую в файле matches.db, чтобы зафиксировать точный тотал или фору
-            const dbMatch = await matchesDb.findOne({ id: item.matchId });
+            // Ищем матч в Postgres
+            const matchRes = await pool.query('SELECT markets FROM matches WHERE match_id = $1 LIMIT 1', [item.matchId]);
             let target = null;
             let handicapValue = null;
 
-            if (dbMatch && dbMatch.markets[item.market]) {
-                target = dbMatch.markets[item.market].target || null;
-                handicapValue = dbMatch.markets[item.market].value || null;
+            if (matchRes.rowCount > 0) {
+                const markets = typeof matchRes.rows[0].markets === 'string'
+                    ? JSON.parse(matchRes.rows[0].markets)
+                    : matchRes.rows[0].markets;
+
+                if (markets[item.market]) {
+                    target = markets[item.market].target || null;
+                    handicapValue = markets[item.market].value || null;
+                }
             }
 
             processedItems.push({
                 matchId: item.matchId,
-                teams: item.teams, // Строка "Team A - Team B" из вашего контроллера
+                teams: item.teams,
                 market: item.market,
                 selectedOutcome: item.outcome,
                 odds: Number(item.odds),
                 status: "PENDING",
-                target: target,          // Замораживаем тотал в файле купона (например: 2.5)
-                handicapValue: handicapValue // Замораживаем фору в файле купона (например: -1)
+                target: target,
+                handicapValue: handicapValue
             });
         }
 
-        const bet = {
-            username,
-            partnerId,
-            type: betData.items.length > 1 ? "MULTI" : "SINGLE",
-            items: processedItems,
-            totalOdds: Number(betData.totalOdds),
-            stake: Number(betData.stake),
-            status: "PENDING",
-            timestamp: Date.now()
-        };
+        const type = betData.items.length > 1 ? "MULTI" : "SINGLE";
 
-        // Сохраняем готовую ставку в ваш файл bets.db
-        return await betsDb.insert(bet);
+        // INSERT купона ставки в таблицу sports_bets с сохранением массива в JSONB
+        const betRes = await pool.query(
+            `INSERT INTO sports_bets (username, partner_id, type, items, total_odds, stake, status, timestamp) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, NOW()) RETURNING id`,
+            [username, partnerId, type, JSON.stringify(processedItems), Number(betData.totalOdds), Number(betData.stake), "PENDING"]
+        );
+
+        return { _id: betRes.rows[0].id };
     },
 
-    // 3. Запрос нерассчитанных ставок для админки партнера из вашего кода
+    // 3. Запрос нерассчитанных ставок для админки партнера из PostgreSQL
     getPendingBets: async (partnerId) => {
-        return await betsDb.find({ status: "PENDING", partnerId: partnerId });
+        const res = await pool.query('SELECT * FROM sports_bets WHERE status = $1 AND partner_id = $2', ['PENDING', partnerId]);
+
+        return res.rows.map(b => ({
+            _id: b.id,
+            username: b.username,
+            partnerId: b.partner_id,
+            type: b.type,
+            items: typeof b.items === 'string' ? JSON.parse(b.items) : b.items,
+            totalOdds: Number(b.total_odds),
+            stake: Number(b.stake),
+            status: b.status
+        }));
     },
 
-    // 4. Расчет купона и отправка денег партнеру из вашего кода
-    settleBet: async (betId, finalStatus, seamlessCredit) => {
-        const bet = await betsDb.findOne({ _id: betId });
-        if (!bet || bet.status !== "PENDING") return null;
+    // 4. Расчет купона и отправка денег партнеру через Seamless Credit
+    settleBet: async (betId, finalStatus, seamlessCredit = null) => {
+        const res = await pool.query('SELECT * FROM sports_bets WHERE id = $1 AND status = $2 LIMIT 1', [betId, 'PENDING']);
+        if (res.rowCount === 0) return null;
+        const b = res.rows[0];
 
         let prize = 0;
         if (finalStatus === "WON") {
-            prize = Math.floor(bet.stake * bet.totalOdds);
-            const sportsRoundId = `sports_win_${bet._id}_${Date.now()}`;
+            prize = Math.floor(Number(b.stake) * Number(b.total_odds));
+            const sportsRoundId = `sp_win_${crypto.randomBytes(6).toString('hex')}`;
+            const gameName = `Sportsbook Win (${b.type})`;
 
-            await seamlessCredit(
-                bet.username,
-                bet.partnerId,
-                null,
-                prize,
-                `⚽ Sportsbook Win (${bet.type})`,
-                sportsRoundId
-            );
+            const creditMethod = typeof seamlessCredit === 'function' ? seamlessCredit : seamless?.credit;
+
+            if (typeof creditMethod === 'function') {
+                try {
+                    // Отправляем транзакцию на шлюз платформы
+                    await creditMethod(b.username, b.partner_id, null, prize, gameName, sportsRoundId);
+
+                    // Синхронизируем локальный кэш баланса победителя в Postgres
+                    await pool.query(
+                        'UPDATE players SET balance = balance + $1 WHERE username = $2 AND partner_id = $3',
+                        [prize, b.username, b.partner_id]
+                    );
+                } catch (err) {
+                    console.error(`❌ Failed to credit sports win for ${b.username}:`, err.message);
+                    return null;
+                }
+            } else {
+                return null;
+            }
         }
 
-        await betsDb.update({ _id: betId }, { $set: { status: finalStatus, prize: prize } });
-        return { ...bet, status: finalStatus, prize };
+        // Обновляем статус купона в PostgreSQL
+        await pool.query('UPDATE sports_bets SET status = $1, prize = $2 WHERE id = $3', [finalStatus, prize, betId]);
+        return { _id: b.id, username: b.username, status: finalStatus, prize };
     }
 };
 
+const catalogMethods = {
 
+    // 1. Получить каталог игр с учетом B2B-настроек конкретного партнера
+    getPartnerGamesCatalog: async (partnerId, filters = {}) => {
+        const { provider, theme, base, search, category } = filters;
 
-const DEMO_MATCHES = [
-    // === ⚽ FOOTBALL / SOCCER ===
-    {
-        id: "fb_1",
-        sport: "⚽ Football",
-        league: "Champions League",
-        teams: "Real Madrid - Manchester City",
-        status: "LIVE (72 min, 2:2)",
-        markets: {
-            winner: {label: "Match Result (1X2)", odds: {p1: 2.85, x: 3.40, p2: 2.45}},
-            total: {label: "Total Goals (Over/Under 4.5)", odds: {over: 1.90, under: 1.80}},
-            handicap: {label: "Match Handicap (0)", odds: {h1: 2.10, h2: 1.75}}
-        }
-    },
-    {
-        id: "fb_2",
-        sport: "⚽ Football",
-        league: "English Premier League",
-        teams: "Arsenal - Chelsea",
-        status: "LIVE (34 min, 1:0)",
-        markets: {
-            winner: {label: "Match Result (1X2)", odds: {p1: 1.55, x: 4.20, p2: 6.00}},
-            total: {label: "Total Goals (Over/Under 2.5)", odds: {over: 1.75, under: 2.05}},
-            handicap: {label: "Match Handicap (-1 / +1)", odds: {h1: 1.95, h2: 1.85}}
-        }
-    },
-    {
-        id: "fb_3",
-        sport: "⚽ Football",
-        league: "La Liga",
-        teams: "Barcelona - Atletico Madrid",
-        status: "LIVE (12 min, 0:0)",
-        markets: {
-            winner: {label: "Match Result (1X2)", odds: {p1: 2.10, x: 3.30, p2: 3.70}},
-            total: {label: "Total Goals (Over/Under 2.5)", odds: {over: 1.95, under: 1.85}},
-            handicap: {label: "Match Handicap (0)", odds: {h1: 1.53, h2: 2.50}}
-        }
-    },
-    {
-        id: "fb_4",
-        sport: "⚽ Football",
-        league: "Serie A",
-        teams: "Juventus - Inter Milan",
-        status: "LIVE (51 min, 0:1)",
-        markets: {
-            winner: {label: "Match Result (1X2)", odds: {p1: 4.50, x: 3.10, p2: 1.95}},
-            total: {label: "Total Goals (Over/Under 1.5)", odds: {over: 1.65, under: 2.20}},
-            handicap: {label: "Match Handicap (+1 / -1)", odds: {h1: 1.80, h2: 2.00}}
-        }
-    },
-    {
-        id: "fb_5",
-        sport: "⚽ Football",
-        league: "Bundesliga",
-        teams: "Bayern Munich - Borussia Dortmund",
-        status: "LIVE (88 min, 3:1)",
-        markets: {
-            winner: {label: "Match Result (1X2)", odds: {p1: 1.05, x: 11.0, p2: 26.0}},
-            total: {label: "Total Goals (Over/Under 4.5)", odds: {over: 2.10, under: 1.65}},
-            handicap: {label: "Match Handicap (-2 / +2)", odds: {h1: 1.85, h2: 1.95}}
-        }
-    },
+        // Магия SQL JOIN: берем дефолтную игру, но джойним кастомные настройки партнера и статус агрегатора
+        let queryText = `
+            SELECT 
+                g.id,
+                COALESCE(pg.custom_name, g.name) as name,
+                COALESCE(pg.custom_slug, g.slug) as slug,
+                COALESCE(pg.custom_theme, g.theme) as theme,
+                COALESCE(pg.custom_rtp, (g.rtp_settings->>'default_rtp')::numeric) as rtp,
+                g.provider, g.aggregator, g.has_demo, g.is_multiplayer, g.description, 
+                g.image, g.base, g.url, g.categories,
+                COALESCE(pg.is_active, true) as is_game_active,
+                COALESCE(pa.is_active, true) as is_aggregator_active
+            FROM games g
+            LEFT JOIN partner_games pg ON g.id = pg.game_id AND pg.partner_id = $1
+            LEFT JOIN partner_aggregators pa ON g.aggregator = pa.aggregator AND pa.partner_id = $1
+            WHERE g.is_active = true
+        `;
 
-    // === 🏀 BASKETBALL ===
-    {
-        id: "bk_1",
-        sport: "🏀 Basketball",
-        league: "NBA",
-        teams: "LA Lakers - Boston Celtics",
-        status: "LIVE (3rd Quarter, 78:82)",
-        markets: {
-            winner: {label: "Moneyline (Inc. OT)", odds: {p1: 2.20, p2: 1.67}},
-            total: {label: "Total Points (Over/Under 215.5)", odds: {over: 1.92, under: 1.88}},
-            handicap: {label: "Point Spread (+3.5 / -3.5)", odds: {h1: 1.85, h2: 1.95}}
+        const queryParams = [partnerId];
+        let paramIndex = 2;
+
+        // Фильтрация на лету
+        if (provider) {
+            queryText += ` AND g.provider = $${paramIndex}`;
+            queryParams.push(provider);
+            paramIndex++;
         }
-    },
-    {
-        id: "bk_2",
-        sport: "🏀 Basketball",
-        league: "NBA",
-        teams: "Golden State - Milwaukee Bucks",
-        status: "LIVE (4th Quarter, 102:99)",
-        markets: {
-            winner: {label: "Moneyline (Inc. OT)", odds: {p1: 1.45, p2: 2.75}},
-            total: {label: "Total Points (Over/Under 228.5)", odds: {over: 2.10, under: 1.72}},
-            handicap: {label: "Point Spread (-5.5 / +5.5)", odds: {h1: 1.90, h2: 1.90}}
+        if (theme) {
+            queryText += ` AND COALESCE(pg.custom_theme, g.theme) = $${paramIndex}`;
+            queryParams.push(theme);
+            paramIndex++;
         }
-    },
-    {
-        id: "bk_3",
-        sport: "🏀 Basketball",
-        league: "EuroLeague",
-        teams: "Real Madrid Basket - Monaco",
-        status: "LIVE (2nd Quarter, 34:28)",
-        markets: {
-            winner: {label: "Moneyline (Inc. OT)", odds: {p1: 1.30, p2: 3.50}},
-            total: {label: "Total Points (Over/Under 162.5)", odds: {over: 1.85, under: 1.95}},
-            handicap: {label: "Point Spread (-7.5 / +7.5)", odds: {h1: 1.91, h2: 1.89}}
+        if (base) {
+            queryText += ` AND g.base = $${paramIndex}`;
+            queryParams.push(base);
+            paramIndex++;
         }
-    },
-    {
-        id: "bk_4",
-        sport: "🏀 Basketball",
-        league: "EuroLeague",
-        teams: "Olympiacos - Panathinaikos",
-        status: "LIVE (1st Quarter, 12:15)",
-        markets: {
-            winner: {label: "Moneyline (Inc. OT)", odds: {p1: 1.80, p2: 2.00}},
-            total: {label: "Total Points (Over/Under 155.5)", odds: {over: 1.90, under: 1.90}},
-            handicap: {label: "Point Spread (-1.5 / +1.5)", odds: {h1: 1.95, h2: 1.85}}
+        if (search) {
+            queryText += ` AND (g.name ILIKE $${paramIndex} OR pg.custom_name ILIKE $${paramIndex})`;
+            queryParams.push(`%${search}%`);
+            paramIndex++;
         }
-    },
-    {
-        id: "bk_5",
-        sport: "🏀 Basketball",
-        league: "NBA",
-        teams: "Miami Heat - New York Knicks",
-        status: "LIVE (3rd Quarter, 60:65)",
-        markets: {
-            winner: {label: "Moneyline (Inc. OT)", odds: {p1: 2.40, p2: 1.57}},
-            total: {label: "Total Points (Over/Under 208.5)", odds: {over: 1.80, under: 2.00}},
-            handicap: {label: "Point Spread (+4.5 / -4.5)", odds: {h1: 1.87, h2: 1.93}}
+        if (category) {
+            // Поиск внутри JSONB-массива категорий (например, проверка содержит ли ['slots'])
+            queryText += ` AND g.categories @> $${paramIndex}::jsonb`;
+            queryParams.push(JSON.stringify([category]));
+            paramIndex++;
         }
+
+        // Фильтруем, оставляя только то, что не выключено партнером или агрегатором
+        queryText += ` HAVING COALESCE(pg.is_active, true) = true AND COALESCE(pa.is_active, true) = true`;
+        queryText += ' ORDER BY g.id DESC';
+
+        const result = await pool.query(queryText, queryParams);
+        return result.rows.map(row => ({
+            ...row,
+            categories: typeof row.categories === 'string' ? JSON.parse(row.categories) : row.categories
+        }));
     },
 
-    // === 🎾 TENNIS ===
-    {
-        id: "tn_1",
-        sport: "🎾 Tennis",
-        league: "Wimbledon",
-        teams: "Jannik Sinner - Carlos Alcaraz",
-        status: "LIVE (Set 2, 1:1, Games 4:3)",
-        markets: {
-            winner: {label: "Match Winner", odds: {p1: 1.90, p2: 1.90}},
-            total: {label: "Total Games (Over/Under 38.5)", odds: {over: 1.85, under: 1.95}},
-            handicap: {label: "Handicap Games (0)", odds: {h1: 1.90, h2: 1.90}}
-        }
+    // 2. Управление настройками агрегатора (Включить/Выключить Softswiss, Hacksaw и т.д.)
+    updatePartnerAggregatorStatus: async (partnerId, aggregator, isActive) => {
+        await pool.query(
+            `INSERT INTO partner_aggregators (partner_id, aggregator, is_active, updated_at)
+             VALUES ($1, $2, $3, NOW())
+             ON CONFLICT (partner_id, aggregator)
+             DO UPDATE SET is_active = EXCLUDED.is_active, updated_at = NOW()`,
+            [partnerId, aggregator, isActive]
+        );
+        return true;
     },
-    {
-        id: "tn_2",
-        sport: "🎾 Tennis",
-        league: "Roland Garros",
-        teams: "Novak Djokovic - Daniil Medvedev",
-        status: "LIVE (Set 1, Games 5:2)",
-        markets: {
-            winner: {label: "Match Winner", odds: {p1: 1.22, p2: 4.30}},
-            total: {label: "Total Games (Over/Under 34.5)", odds: {over: 2.00, under: 1.72}},
-            handicap: {label: "Handicap Games (-4.5 / +4.5)", odds: {h1: 1.85, h2: 1.95}}
-        }
+
+    // 3. Сохранить или обновить кастомную настройку игры для партнера
+    updatePartnerGameSettings: async (partnerId, gameId, settings = {}) => {
+        const { isActive, customName, customSlug, customTheme, customRtp } = settings;
+        await pool.query(
+            `INSERT INTO partner_games (partner_id, game_id, is_active, custom_name, custom_slug, custom_theme, custom_rtp, updated_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+             ON CONFLICT (partner_id, game_id)
+             DO UPDATE SET 
+                is_active = COALESCE(EXCLUDED.is_active, partner_games.is_active),
+                custom_name = COALESCE(EXCLUDED.custom_name, partner_games.custom_name),
+                custom_slug = COALESCE(EXCLUDED.custom_slug, partner_games.custom_slug),
+                custom_theme = COALESCE(EXCLUDED.custom_theme, partner_games.custom_theme),
+                custom_rtp = COALESCE(EXCLUDED.custom_rtp, partner_games.custom_rtp),
+                updated_at = NOW()`,
+            [partnerId, gameId, isActive, customName, customSlug, customTheme, customRtp]
+        );
+        return true;
     },
-    {
-        id: "tn_3",
-        sport: "🎾 Tennis",
-        league: "US Open",
-        teams: "Alexander Zverev - Taylor Fritz",
-        status: "LIVE (Set 3, 2:0, Games 1:2)",
-        markets: {
-            winner: {label: "Match Winner", odds: {p1: 1.35, p2: 3.20}},
-            total: {label: "Total Games (Over/Under 36.5)", odds: {over: 1.90, under: 1.90}},
-            handicap: {label: "Handicap Games (-3.5 / +3.5)", odds: {h1: 1.80, h2: 2.00}}
-        }
+
+    // =========================================================================
+    // МЕТОДЫ УПРАВЛЕНИЯ КОЛЛЕКЦИЯМИ ИГР (Add, Edit, Delete)
+    // =========================================================================
+
+    // Удалить коллекцию
+    deletePartnerCollection: async (partnerId, collectionSlug) => {
+        const res = await pool.query(
+            'DELETE FROM partner_collections WHERE partner_id = $1 AND slug = $2',
+            [partnerId, collectionSlug]
+        );
+        return res.rowCount > 0;
     },
-    {
-        id: "tn_4",
-        sport: "🎾 Tennis",
-        league: "Australian Open",
-        teams: "Stefanos Tsitsipas - Holger Rune",
-        status: "LIVE (Set 1, Games 0:3)",
-        markets: {
-            winner: {label: "Match Winner", odds: {p1: 3.10, p2: 1.38}},
-            total: {label: "Total Games (Over/Under 39.5)", odds: {over: 1.75, under: 2.08}},
-            handicap: {label: "Handicap Games (+3.5 / -3.5)", odds: {h1: 1.95, h2: 1.85}}
-        }
+
+    // Создать новую коллекцию игр для партнера (Передаем массив чисел напрямую в Postgres INT[])
+    createPartnerCollection: async (partnerId, name, slug, gameIds = []) => {
+        const res = await pool.query(
+            `INSERT INTO partner_collections (partner_id, name, slug, game_ids)
+             VALUES ($1, $2, $3, $4::int[]) RETURNING id`, // Кастуем к целочисленному массиву
+            [partnerId, name, slug.toLowerCase().trim(), gameIds] // gameIds передается как обычный массив JS [1,2,3]
+        );
+        return res.rows[0].id;
     },
-    {
-        id: "tn_5",
-        sport: "🎾 Tennis",
-        league: "ATP Masters",
-        teams: "Andrey Rublev - Casper Ruud",
-        status: "LIVE (Set 2, 0:1, Games 5:5)",
-        markets: {
-            winner: {label: "Match Winner", odds: {p1: 1.75, p2: 2.08}},
-            total: {label: "Total Games (Over/Under 24.5)", odds: {over: 1.95, under: 1.85}},
-            handicap: {label: "Handicap Games (-1.5 / +1.5)", odds: {h1: 1.90, h2: 1.90}}
+
+    // Отредактировать существующую коллекцию
+    updatePartnerCollection: async (partnerId, collectionSlug, updatedData = {}) => {
+        const { name, gameIds } = updatedData;
+        await pool.query(
+            `UPDATE partner_collections 
+             SET name = COALESCE($1, name), 
+                 game_ids = COALESCE($2::int[], game_ids), -- Исправлено под тип INT[]
+                 updated_at = NOW()
+             WHERE partner_id = $3 AND slug = $4`,
+            [name, gameIds || null, partnerId, collectionSlug]
+        );
+        return true;
+    },
+
+    // Получить все коллекции партнера вместе с развернутыми объектами игр внутри них
+    getPartnerCollections: async (partnerId) => {
+        const res = await pool.query(
+            'SELECT * FROM partner_collections WHERE partner_id = $1 ORDER BY id ASC',
+            [partnerId]
+        );
+
+        const formattedCollections = [];
+        for (const col of res.rows) {
+            // ИСПРАВЛЕНО: Так как это INT[], поле col.game_ids из pg прилетает сразу как готовый массив JS [1, 2, 3]!
+            const gameIds = col.game_ids || [];
+
+            let gamesInCollection = [];
+            if (gameIds.length > 0) {
+                // Теперь оператор ANY($1::int[]) отработает мгновенно без синтаксических ошибок
+                const gamesRes = await pool.query(
+                    `SELECT id, name, slug, image, provider FROM games WHERE id = ANY($1::int[]) AND is_active = true`,
+                    [gameIds]
+                );
+                gamesInCollection = gamesRes.rows;
+            }
+
+            formattedCollections.push({
+                id: col.id,
+                name: col.name,
+                slug: col.slug,
+                games: gamesInCollection
+            });
         }
+        return formattedCollections;
+    },
+
+};
+
+const sessionMethods = {
+    // 1. Создать игровую сессию и сгенерировать токен запуска
+    createGameSession: async (partnerId, gameSlug, data = {}) => {
+        const { username, isDemo, theme } = data;
+
+        // Генерируем уникальный криптографический токен запуска
+        const token = 'gl_' + crypto.randomBytes(24).toString('hex');
+
+        // Сессия автоматически сгорает через 24 часа
+        const expiredAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+        await pool.query(
+            `INSERT INTO game_sessions (token, partner_id, username, game_slug, is_demo, theme, expired_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [token, partnerId, isDemo ? null : username, gameSlug, !!isDemo, theme || 'default', expiredAt]
+        );
+
+        return token;
+    },
+
+    // 2. Валидация сессии при загрузке самого iFrame игры
+    validateGameSession: async (token) => {
+        const res = await pool.query(
+            `SELECT * FROM game_sessions 
+             WHERE token = $1 AND is_active = true AND expired_at > NOW() 
+             LIMIT 1`,
+            [token]
+        );
+
+        if (res.rowCount === 0) return null;
+        return res.rows[0];
     }
-];
-
+};
 
 module.exports = {
+
+    BGS: {
+        sport: false,
+        crash: false,
+        lottery: false,
+        roulette: false,
+    },
+    setBGS: (service, state, partnerId='') => {
+        this.BGS[service] = state;
+    },
+
     getRandomInt,
 
     ...playerMethods,
@@ -1422,65 +1252,90 @@ module.exports = {
     ...diceMethods,
     ...hiloMethods,
 
-    ...slots5x3Methods,
     ...freeSpinMethods,
-
     ...sportsMethods,
+    ...catalogMethods,
+    ...sessionMethods,
 
-    // ИСПРАВЛЕНО: Теперь метод принимает partnerId и отдает индивидуальные настройки конкретного сайта
     getConfig: (partnerId) => {
-        // Если у этого партнера еще нет настроек в памяти, инициализируем их дефолтными
-        if (!CONFIG[partnerId]) {
-            CONFIG[partnerId] = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+        const globalConfig = global.CONFIG || {};
+        if (!globalConfig[partnerId]) {
+            globalConfig[partnerId] = {};
         }
-        return CONFIG[partnerId];
+        return globalConfig[partnerId];
     },
 
     getPartnerConfig: async (partnerId) => {
-        return await configDb.findOne({_id: partnerId});
+        // Читаем древо конфигурации конкретного партнера из таблицы b2b_configs
+        const res = await pool.query('SELECT config_data FROM b2b_configs WHERE id = $1 LIMIT 1', ['global_config']);
+        if (res.rowCount === 0) return null;
+
+        const configData = typeof res.rows[0].config_data === 'string'
+            ? JSON.parse(res.rows[0].config_data)
+            : res.rows[0].config_data;
+
+        return configData[partnerId] || null;
     },
 
-    // ИСПРАВЛЕНО: Полная B2B-изоляция сохранения настроек и балансов банков
     updateConfigParam: async (partnerId, game, param, value) => {
         let changed = false;
 
-        // Инициализируем банки и конфиг партнера, если их еще нет в памяти
-        if (!banks[partnerId]) {
-            banks[partnerId] = {globalJackpot: 1000, mines: 5000, crash: 5000, dice: 3000, hilo: 4000, slots5x3: 10000};
+        // Инициализируем глобальные контексты памяти Node.js, если они отсутствуют
+        if (!global.banks) global.banks = {};
+        if (!global.CONFIG) global.CONFIG = {};
+
+        // Задаем безопасные дефолтные значения банков и конфига текущего бренда
+        if (!global.banks[partnerId]) {
+            global.banks[partnerId] = { globalJackpot: 1000, mines: 5000, crash: 5000, dice: 3000, hilo: 4000, slots5x3: 10000 };
         }
-        if (!CONFIG[partnerId]) {
-            CONFIG[partnerId] = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+        if (!global.CONFIG[partnerId]) {
+            global.CONFIG[partnerId] = {};
         }
 
-        // 1. Если админ партнера меняет свой локальный БАНК (копилку) игры
+        // 1. Изменение локального баланса (копилки) конкретной игры партнера
         if (param === 'bank') {
             const numericValue = Number(value);
             if (!isNaN(numericValue)) {
-                if (game === 'mines' || game === 'crash' || game === 'dice' || game === 'hilo' || game === 'slots5x3') {
-                    banks[partnerId][game] = numericValue;
+                if (['mines', 'crash', 'dice', 'hilo', 'slots5x3'].includes(game)) {
+                    global.banks[partnerId][game] = numericValue;
                     changed = true;
                 }
             }
         }
-        // 2. Если админ партнера меняет параметры внутри своего CONFIG (RTP, цены ставок)
-        else if (CONFIG[partnerId][game] && CONFIG[partnerId][game][param] !== undefined) {
-            CONFIG[partnerId][game][param] = typeof CONFIG[partnerId][game][param] === 'number' ? Number(value) : value;
+        // 2. Изменение внутренних параметров игры (RTP, минимальные/максимальные ставки и т.д.)
+        else if (global.CONFIG[partnerId][game] && global.CONFIG[partnerId][game][param] !== undefined) {
+            global.CONFIG[partnerId][game][param] = typeof global.CONFIG[partnerId][game][param] === 'number' ? Number(value) : value;
             changed = true;
         }
 
-        // КЛЮЧЕВОЙ ШАГ: Если что-то изменилось, пишем настройки ЭТОГО партнера в config.db
+        // КЛЮЧЕВОЙ ШАГ: Если параметры изменились, атомарно пишем их в таблицу b2b_configs
         if (changed) {
-            // Обновляем ветку конкретного партнера, используя динамический ключ
-            await configDb.update(
-                {_id: 'global_config'},
-                {$set: {[partnerId]: CONFIG[partnerId], [`banks_${partnerId}`]: banks[partnerId]}}
-            );
-            return true;
+            try {
+                // Используем оператор слияния || (JSONB), чтобы обновить только ветку текущего партнера,
+                // не затирая при этом конфигурации и банки всех остальных брендов в базе данных
+                await pool.query(
+                    `INSERT INTO b2b_configs (id, config_data) 
+                     VALUES ($1, $2::jsonb)
+                     ON CONFLICT (id) 
+                     DO UPDATE SET config_data = b2b_configs.config_data || EXCLUDED.config_data`,
+                    [
+                        'global_config',
+                        JSON.stringify({
+                            [partnerId]: global.CONFIG[partnerId],
+                            [`banks_${partnerId}`]: global.banks[partnerId]
+                        })
+                    ]
+                );
+                return true;
+            } catch (err) {
+                console.error(`[Postgres B2B Config Error] Failed to update param for partner ${partnerId}:`, err.message);
+                return false;
+            }
         }
         return false;
     },
 
-    // ИСПРАВЛЕНО: Очищаем билеты лотереи с использованием составного B2B-ключа в памяти
+    // Очищаем билеты лотереи с использованием составного B2B-ключа в оперативной памяти бэкенда
     clearPlayerTickets: (username, partnerId) => {
         const memKey = `${partnerId}_${username}`;
         activeTickets[memKey] = [];
@@ -1488,12 +1343,34 @@ module.exports = {
 
     // --- Методы для работы с историей лотереи ---
     saveDrawToHistory: async (drawData) => {
-        await historyDb.insert(drawData);
+        try {
+            // Сериализуем и записываем данные тиража лотереи в таблицу lottery_history
+            await pool.query(
+                'INSERT INTO lottery_history (draw_data) VALUES ($1::jsonb)',
+                [JSON.stringify(drawData)]
+            );
+        } catch (err) {
+            console.error("[Postgres Lottery Error] Failed to save draw history:", err.message);
+        }
     },
 
     getLotteryHistory: async (limit = 20) => {
-        const history = await historyDb.find({});
-        return history.slice(-limit);
+        try {
+            // Запрашиваем последние N тиражей из таблицы PostgreSQL, сортируя по id по убыванию
+            const res = await pool.query(
+                'SELECT draw_data FROM lottery_history ORDER BY id DESC LIMIT $1',
+                [limit]
+            );
+
+            return res.rows.map(r => {
+                // Если драйвер возвращает jsonb сразу как объект, отдаем его, иначе парсим строку
+                return typeof r.draw_data === 'string' ? JSON.parse(r.draw_data) : r.draw_data;
+            });
+        } catch (err) {
+            console.error("[Postgres Lottery Error] Failed to fetch lottery history:", err.message);
+            return [];
+        }
     }
 };
+
 

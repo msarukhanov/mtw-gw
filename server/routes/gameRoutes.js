@@ -2,12 +2,16 @@ const express = require('express');
 const router = express.Router();
 const state = require('../state');
 const auth = require('./authRoutes'); // импорт middleware
+const checkSession = require('../middlewares/session'); // импорт middleware
 
 // Импорт контроллеров
+const game = require('../controllers/gameController');
+
 const slots3x3 = require('../controllers/slots3x3Controller');
 const slots5x3 = require('../controllers/slots5x3Controller');
 const wheel = require('../controllers/wheelController');
 const roulette = require('../controllers/rouletteController');
+const lottery = require('../controllers/lotteryController');
 const scratch = require('../controllers/scratchController');
 const mines = require('../controllers/minesController');
 const crash = require('../controllers/crashController');
@@ -18,100 +22,48 @@ const holdem = require('../controllers/holdemController');
 const leaderboard = require('../controllers/leaderboardController');
 const promo = require('../controllers/promoController');
 
+router.get('/catalog/collections', game.getCollections);
+router.get('/catalog/categories', game.getAllCategories);
+router.get('/catalog/providers', game.getAllProviders);
+router.get('/catalog/collection/:slug', game.getGamesByCollection);
+router.get('/catalog/category/:categoryName', game.getGamesByCategory);
+
+// Роут запуска игры. B2B операторы будут вызывать его со своего бэкенда, чтобы получить ссылку для iFrame
+router.post('/game/:gameSlug/launch', game.launchGame);
+
+
 // Публичный эндпоинт таблицы лидеров
 router.get('/leaderboard', leaderboard.getTop);
 router.post('/promo/activate', auth.checkPlayer, promo.activate);
 
-// Добавьте к остальным роутам ваших игр
-router.post('/slots5x3/spin', auth.checkPlayer, slots5x3.spin);
-router.post('/slots5x3/buy-bonus', slots5x3.buyBonus);
+router.post('/slots5x3/spin', checkSession, slots5x3.spin);
+router.post('/slots5x3/buy-bonus', checkSession, slots5x3.buyBonus);
 
-router.post('/slots3x3/spin', auth.checkPlayer, slots3x3.spin);
+router.post('/slots3x3/spin', checkSession, slots3x3.spin);
 
-// Добавьте к остальным роутам ваших игр
-router.post('/hilo/turn', auth.checkPlayer, hilo.turn);
+router.post('/hilo/turn', checkSession, hilo.turn);
 
-// Добавьте к остальным роутам ваших игр
-router.post('/dice/roll', auth.checkPlayer, dice.roll);
+router.post('/dice/roll', checkSession, dice.roll);
 
+router.post('/crash/bet', checkSession, crash.placeBet);
+router.post('/crash/cashout', checkSession, crash.cashout);
 
-router.post('/crash/bet', auth.checkPlayer, crash.placeBet);
-router.post('/crash/cashout', auth.checkPlayer, crash.cashout);
+router.post('/blackjack/deal', checkSession, blackjack.deal);
+router.post('/blackjack/action', checkSession, blackjack.action);
 
-// 2. Назначаем защищенные роуты (добавьте к остальным играм)
+router.post('/holdem/spin', checkSession, holdem.spinHoldem);
 
-router.post('/blackjack/deal', auth.checkPlayer, blackjack.deal);
-router.post('/blackjack/action', auth.checkPlayer, blackjack.action);
+router.post('/roulette/bet', checkSession, roulette.placeBet);
 
-router.post('/holdem/spin', auth.checkPlayer, holdem.spinHoldem);
+router.post('/wheel/spin', checkSession, wheel.spin);
+router.post('/scratch/buy', checkSession, scratch.buy);
 
-router.post('/roulette/bet', auth.checkPlayer, roulette.placeBet);
+router.post('/mines/start', checkSession, mines.start);
+router.post('/mines/open', checkSession, mines.openCell);
+router.post('/mines/cashout', checkSession, mines.cashout);
 
-router.post('/wheel/spin', auth.checkPlayer, wheel.spin);
-router.post('/scratch/buy', auth.checkPlayer, scratch.buy);
-
-router.post('/mines/start', auth.checkPlayer, mines.start);
-router.post('/mines/open', auth.checkPlayer, mines.openCell);
-router.post('/mines/cashout', auth.checkPlayer, mines.cashout);
-
-// Покупка билета лотереи с подгрузкой настроек сервера
-router.post('/lottery/buy', auth.checkPlayer, async (req, res) => {
-    const { numbers } = req.body;
-
-    // Подтягиваем конфиг лотереи
-    const config = state.getConfig().lottery;
-
-    // ВАЛИДАЦИЯ БИЛЕТА НА ОСНОВЕ КОНФИГА
-    if (!numbers || !Array.isArray(numbers) || numbers.length !== config.neededChoices) {
-        return res.status(400).json({ error: `You must select exactly ${config.neededChoices} numbers.` });
-    }
-
-    const numbersSet = new Set();
-    for (let num of numbers) {
-        // Проверяем диапазон чисел (от 1 до totalNumbers, то есть до 49)
-        if (!Number.isInteger(num) || num < 1 || num > config.totalNumbers) {
-            return res.status(400).json({ error: `Numbers must be integers between 1 and ${config.totalNumbers}.` });
-        }
-        numbersSet.add(num);
-    }
-
-    if (numbersSet.size !== config.neededChoices) {
-        return res.status(400).json({ error: "Duplicate numbers are not allowed." });
-    }
-
-    // Списание стоимости билета на основе цены из конфига (ticketPrice)
-    if (req.player.balance < config.ticketPrice) {
-        return res.status(400).json({ error: "Insufficient funds." });
-    }
-
-    req.player.balance -= config.ticketPrice;
-
-    // Сохраняем новый баланс в NeDB и добавляем 2 монеты в джекпот
-    await state.updateBalance(req.username, req.player.balance);
-    await state.savePlayerActionHistory(req.username, {
-        game: "Lottery",
-        details: `Bought ticket: [ ${numbers.join(', ')} ]`,
-        change: `-${config.ticketPrice} 🪙`,
-        win: false
-    });
-
-    state.addJackpot(2);
-
-    req.player.tickets.push(numbers.sort((a,b) => a-b));
-
-    res.json({ balance: req.player.balance, jackpot: state.getJackpot() });
-});
-
-
-// Эндпоинт получения глобальной истории лотерейных тиражей
-router.get('/lottery/history', async (req, res) => {
-    try {
-        const history = await state.getLotteryHistory(20); // Запрашиваем последние 20 игр
-        res.json({ history });
-    } catch (err) {
-        res.status(500).json({ error: "Failed to load history" });
-    }
-});
+router.post('/lottery/buy', checkSession, lottery.buy);
+router.get('/lottery/history', lottery.history);
 
 // Эндпоинт получения единой истории всех игр для игрока
 router.post('/player/history', auth.checkPlayer, async (req, res) => {

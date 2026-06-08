@@ -21,6 +21,7 @@ function forceRegisterCashout(username, partnerId, multiplier) {
 }
 
 async function runNextRoundLoop(io) {
+    if(!state.BGS.crash) return;
     gameStatus = "betting";
     currentMultiplier = 1.00;
     cashedOutHistory = {};
@@ -70,7 +71,12 @@ async function runNextRoundLoop(io) {
 
         if (timer <= 0) {
             clearInterval(bettingInterval);
-            startFlight(io, partnerIds);
+            if(state.BGS.crash) {
+                startFlight(io, partnerIds);
+            }
+        }
+        if(!state.BGS.crash) {
+            clearInterval(bettingInterval);
         }
     }, 1000);
 }

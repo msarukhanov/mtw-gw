@@ -1,9 +1,28 @@
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
 const path = require('path');
-const Datastore = require('nedb-promises');
+const { Pool } = require('pg');
+
 const { Server } = require('socket.io');
+
+const { configDb } = require('./DB');
+const state = require('./state');
+const vfootball = require('./vfootball');
+
+
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    // ВАЖНО ДЛЯ NEON: Облачные базы требуют обязательный SSL-сертификат
+    ssl: {
+        rejectUnauthorized: false
+    }
+});
+
+// Пробрасываем пул в глобальную видимость Node.js, чтобы state.js имел к нему доступ
+global.pool = pool;
 
 const authRoutes = require('./routes/authRoutes');
 const gameRoutes = require('./routes/gameRoutes');
@@ -38,9 +57,6 @@ app.use('/api', gameRoutes);
 app.use('/api', sportRoutes);
 app.use('/api', websiteRoutes);
 
-
-// Запуск фоновой службы лотереи по сокетам
-const configDb = Datastore.create({ filename: path.join(__dirname, 'config.db'), autoload: true });
 DEFAULT_CONFIG = {
 
     sport: {
@@ -157,58 +173,117 @@ DEFAULT_CONFIG = {
 
         tournamentActive: 1,    // 1 - идет турнир, 0 - выключен
         tournamentPrize: 5000,   // Призовой фонд турнира
-        cashbackPercent: 10,
-        affiliatePercent: 10
     },
+
+    cashbackPercent: 10,
+    affiliatePercent: 10,
 
     promoCodes: [
         { code: "START2026", reward: 100, maxUses: 1, active: 1 } // Пример дефолтного кода
     ]
 };
-banks = {
+
+// Вся необходимая конфигурация банков и оперативной памяти
+const banks = {
     globalJackpot: 1000,
     mines: 5000,
     crash: 5000,
     dice: 3000,
     hilo: 4000
 };
-CONFIG = {};
+const CONFIG = {};
 
-// // Асинхронная функция инициализации конфига
-// async function initConfig() {
-//     let cfg = await configDb.findOne({ _id: "global_config" });
-//     if (!cfg) {
-//         // Если файла config.db нет или он пустой — записываем дефолтный
-//         await configDb.insert(DEFAULT_CONFIG);
-//         CONFIG = DEFAULT_CONFIG;
-//         console.log("ℹ️ Создан дефолтный конфиг в config.db");
-//     } else {
-//         CONFIG = cfg;
-//         console.log("✅ Актуальный конфиг успешно загружен из config.db");
-//     }
-//
-//
-// }
+// Исправлено: Выносим инициализацию бэкенд-адресов без использования браузерного объекта location
+const isDemoMode = process.env.env === 'demo' || process.env.NODE_ENV === 'production';
+const defaultPlatformUrl = isDemoMode ? 'https://onrender.com' : 'http://localhost:3000/api/seamless';
 
-// ИСПРАВЛЕННАЯ ФУНКЦИЯ ИНИЦИАЛИЗАЦИИ В state.js
+// server.js -> Исправленная функция инициализации для Postgres
 async function initConfig() {
+    try {
+        // Запрашиваем глобальный конфиг из таблицы b2b_configs
+        const res = await global.pool.query(
+            "SELECT config_data FROM b2b_configs WHERE id = $1 LIMIT 1",
+            ['global_config']
+        );
+
+        // Если в базе ничего нет (первый запуск)
+        if (res.rowCount === 0) {
+            const firstB2BConfig = {
+                "demo_skin_default": {
+                    ...DEFAULT_CONFIG,
+                    integration: {
+                        url: defaultPlatformUrl,
+                        secret: 'demo_showcase_secure_token'
+                    }
+                },
+                "banks_demo_skin_default": {
+                    globalJackpot: 1000,
+                    mines: 5000,
+                    crash: 5000,
+                    dice: 3000,
+                    hilo: 4000,
+                    slots5x3: 10000
+                }
+            };
+
+            // ИСПРАВЛЕНО: Записываем стартовую конфигурацию в Postgres
+            await global.pool.query(
+                "INSERT INTO b2b_configs (id, config_data) VALUES ($1, $2::jsonb)",
+                ['global_config', JSON.stringify(firstB2BConfig)]
+            );
+
+            // Загружаем данные в оперативную память бэкенда
+            global.CONFIG = {};
+            global.banks = {};
+            global.CONFIG["demo_skin_default"] = firstB2BConfig["demo_skin_default"];
+            global.banks["demo_skin_default"] = firstB2BConfig["banks_demo_skin_default"];
+
+            console.log("ℹ️ [Postgres B2B] Core initialized with default partner: demo_skin_default");
+        } else {
+            // Если база уже заполнена, восстанавливаем CONFIG и banks в память из Postgres
+            const cfg = res.rows[0].config_data;
+
+            global.CONFIG = {};
+            global.banks = {};
+
+            Object.keys(cfg).forEach(key => {
+                if (key.startsWith('banks_')) {
+                    const pId = key.replace('banks_', '');
+                    global.banks[pId] = cfg[key];
+                } else {
+                    global.CONFIG[key] = cfg[key];
+                }
+            });
+            console.log("✅ [Postgres B2B] Multi-tenant config successfully loaded from Neon");
+        }
+
+
+
+    } catch (err) {
+        console.error("❌ Critical error during Postgres B2B initConfig:", err.message);
+    }
+}
+
+
+async function initConfig222() {
+    const res = await global.pool.query("SELECT config_data FROM b2b_configs WHERE id = 'global_config' LIMIT 1");
+    let cfg2 = res.rowCount > 0 ? res.rows[0].config_data : null;
+    console.log(cfg2);
+
+
     let cfg = await configDb.findOne({ _id: "global_config" });
+
     if (!cfg) {
         // Создаем стартовую структуру, где "demo_skin_default" — это наш первый B2B-партнер
         const firstB2BConfig = {
             _id: "global_config",
-            // Зашиваем дефолтного демо-партнера прямо в базу
-            "demo_skin_default": JSON.parse(JSON.stringify(
-                {
-                    ...DEFAULT_CONFIG,
-                    integration: {
-                        url: (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-                            ? 'http://localhost:3000/api/seamless'
-                            : 'https://onrender.com',
-                        secret: 'demo_showcase_secure_token'
-                    }
+            "demo_skin_default": JSON.parse(JSON.stringify({
+                ...DEFAULT_CONFIG,
+                integration: {
+                    url: defaultPlatformUrl,
+                    secret: 'demo_showcase_secure_token'
                 }
-            )),
+            })),
             "banks_demo_skin_default": {
                 globalJackpot: 1000,
                 mines: 5000,
@@ -224,41 +299,44 @@ async function initConfig() {
         CONFIG["demo_skin_default"] = firstB2BConfig["demo_skin_default"];
         banks["demo_skin_default"] = firstB2BConfig["banks_demo_skin_default"];
 
-
-
         console.log("ℹ️ B2B Core initialized with default partner: demo_skin_default");
     } else {
-        // Если база уже существует, просто переносим данные из файла в оперативку
-        CONFIG = {...DEFAULT_CONFIG,...cfg};
-        // Восстанавливаем банки для всех партнеров из сохраненного файла
+        // ИСПРАВЛЕНО: Правильно восстанавливаем мультитенентную структуру CONFIG из базы NeDB, не забивая корень
         Object.keys(cfg).forEach(key => {
-            if (key.startsWith('banks_')) {
-                const pId = key.replace('banks_', '');
-                banks[pId] = cfg[key];
+            if (key !== '_id') {
+                if (key.startsWith('banks_')) {
+                    const pId = key.replace('banks_', '');
+                    banks[pId] = cfg[key];
+                } else {
+                    CONFIG[key] = cfg[key];
+                }
             }
         });
         console.log("✅ B2B Multi-tenant config successfully loaded from config.db");
     }
 
+    // Инициализация фоновых сервисов совместных игр через io
     const { initLotteryService } = require('./services/lotteryService');
     const { initCrashService } = require('./services/crashService');
     const { initRouletteService } = require('./services/rouletteService');
+
     initLotteryService(io);
     initCrashService(io);
     initRouletteService(io);
 }
-initConfig();
 
+// Запускаем конфигурацию B2B ядра
+initConfig().catch(err => console.error("❌ B2B Initialization crashed:", err.message));
 
-// Подключение сокетов игроков к их комнатам
+// Обработка подключений Веб-сокетов
 io.on('connection', (socket) => {
     socket.on('join_game', (username) => {
         socket.join(username);
     });
 
-    socket.on('join_game_room', ({username,partnerId,game}) => {
-        console.log({username,partnerId,game});
-        socket.join(partnerId+'_'+game);
+    socket.on('join_game_room', ({ username, partnerId, game }) => {
+        console.log(`Socket joining room: ${partnerId}_${game}`);
+        socket.join(partnerId + '_' + game);
     });
 
     socket.on('platform_join', (data) => {
@@ -271,12 +349,12 @@ io.on('connection', (socket) => {
     });
 });
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Modular Server running on port ${PORT}`);
 });
 
-const state = require('./state'); // Укажи правильный путь к модулю state.js
+
 
 // Переменная, чтобы код сброса не выполнился несколько раз в течение одной минуты 00:00
 let lastResetDay = new Date().getDate();
@@ -292,10 +370,11 @@ setInterval(async () => {
         lastResetDay = currentDay; // Фиксируем новый день
 
         console.log("⏰ Наступила полночь. Запуск обнуления квестов...");
-        await state.resetDailyQuestsForAll();
+        try {
+            await state.resetDailyQuestsForAll();
+            await vfootball.generateDailySchedule();
+        } catch (err) {
+            console.error("Failed to reset daily quests:", err.message);
+        }
     }
 }, 60000);
-
-const vfootball = require('./vfootball');
-// vfootball.generateDailySchedule();
-// vfootball.startEngine(5000, io);

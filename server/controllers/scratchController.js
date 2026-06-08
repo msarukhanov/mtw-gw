@@ -1,20 +1,30 @@
+const crypto = require('crypto');
 const state = require('../state');
+const seamlessService = require('../services/seamlessService'); // Подключите ваш сервис
 
 exports.buy = async (req, res) => {
-    const partnerId = req.partnerId; // Извлекаем partnerId, добавленный мидлваром checkPlayer
+    const partnerId = req.partnerId;
     const username = req.username;
+    const sessionId = req.sessionId || req.headers['x-session-id']; // Извлекаем сессию
 
-    // ИСПРАВЛЕНО: Берем конфигурацию скретч-карт конкретного партнера
+    // Берем конфигурацию скретч-карт конкретного партнера
     const config = state.getConfig(partnerId).scratch;
 
-    if (req.player.balance < config.cost) {
-        return res.status(400).json({ error: "Insufficient funds" });
+    // Генерируем ID раунда для HTTP-запросов
+    const roundId = 'scratch_' + crypto.randomBytes(8).toString('hex');
+    const gameName = "Scratch";
+
+    let debitResult;
+    try {
+        // Списываем стоимость билета через HTTP-запрос дебита к платформе вместо RAM
+        debitResult = await seamlessService.debit(username, partnerId, sessionId, config.cost, gameName, roundId);
+    } catch (err) {
+        return res.status(400).json({ error: err.message || "Insufficient funds or platform error" });
     }
 
-    // Списываем стоимость билета в локальном кэше B2B
-    req.player.balance -= config.cost;
+    let currentBalance = debitResult.balance;
 
-    // ИСПРАВЛЕНО: Добавляем отчисления в джекпот конкретного партнера
+    // Добавляем отчисления в джекпот конкретного партнера
     state.addJackpot(partnerId, 3);
 
     let cells = [];
@@ -27,7 +37,7 @@ exports.buy = async (req, res) => {
     const loseBoundary = Math.max(50, Math.min(95, 100 - (config.rtp * 0.33)));
 
     if (winChance < 3) {
-        // 3% шанс на Джекпот (ИСПРАВЛЕНО: Списываем из джекпота текущего партнера)
+        // 3% шанс на Джекпот (Списываем из джекпота текущего партнера)
         selectedSymbol = '👑';
         prize = state.getJackpot(partnerId);
         state.resetJackpot(partnerId);
@@ -62,11 +72,13 @@ exports.buy = async (req, res) => {
         cells.sort(() => Math.random() - 0.5);
     }
 
-    // Начисляем выигрыш
-    req.player.balance += prize;
+    if (prize > 0) {
+        // Начисляем выигрыш через HTTP-запрос кредита к платформе
+        const creditResult = await seamlessService.credit(username, partnerId, sessionId, prize, gameName, roundId);
+        currentBalance = creditResult.balance;
+    }
 
-    // ИСПРАВЛЕНО: Сохраняем измененный баланс и историю действий с привязкой к partnerId
-    await state.updateBalance(username, partnerId, req.player.balance);
+    // Сохраняем историю действий с привязкой к partnerId
     await state.savePlayerActionHistory(username, partnerId, {
         game: "Scratch",
         details: `Card cleared`,
@@ -77,10 +89,7 @@ exports.buy = async (req, res) => {
     res.json({
         cells,
         prize,
-        balance: req.player.balance,
-        // ИСПРАВЛЕНО: Возвращаем актуальное состояние джекпота текущего партнера
+        balance: currentBalance,
         jackpot: state.getJackpot(partnerId)
     });
 };
-
-

@@ -1,4 +1,6 @@
+const crypto = require('crypto');
 const state = require('../state');
+const seamlessService = require('../services/seamlessService'); // Подключите ваш сервис
 
 let blackjackBanks = {};
 let holdemBanks = {};
@@ -144,27 +146,34 @@ function evaluate7Cards(cards7) {
 exports.spinHoldem = async (req, res) => {
     const partnerId = req.partnerId;
     const username = req.username;
+    const sessionId = req.sessionId || req.headers['x-session-id']; // Извлекаем сессию
 
     const partnerConfig = state.getConfig(partnerId) || {};
     const config = partnerConfig.holdem || { cost: 20, rtp: 95 };
 
-    if (req.player.balance < config.cost) {
-        return res.status(400).json({ error: "Insufficient funds" });
+    // Генерируем ID раунда для HTTP-запросов
+    const roundId = 'holdem_' + crypto.randomBytes(8).toString('hex');
+    const gameName = "Casino-Holdem";
+
+    let debitResult;
+    try {
+        // Списываем ставку через HTTP-запрос дебита к платформе вместо RAM
+        debitResult = await seamlessService.debit(username, partnerId, sessionId, config.cost, gameName, roundId);
+    } catch (err) {
+        return res.status(400).json({ error: err.message || "Insufficient funds or platform error" });
     }
 
-    // Списываем ставку в кассу Холдема этого партнера
-    req.player.balance -= config.cost;
-    await state.updateBalance(username, partnerId, req.player.balance);
+    let currentBalance = debitResult.balance;
     addHoldemBank(partnerId, config.cost);
 
     let deck, playerHand, dealerHand, communityCards;
     let playerEval, dealerEval, status, prize;
     let attempts = 0;
-    const maxAttempts = 10; // Покер требует больше попыток для хорошего re-roll
+    const maxAttempts = 10;
 
     // ЦИКЛ КОНТРОЛЯ RTP И КАССЫ ОПЕРАТОРА
     do {
-        deck = blackjackEngine.createDeck();
+        deck = createDeck();
         playerHand = [deck.pop(), deck.pop()];
         dealerHand = [deck.pop(), deck.pop()];
         communityCards = [deck.pop(), deck.pop(), deck.pop(), deck.pop(), deck.pop()];
@@ -172,8 +181,8 @@ exports.spinHoldem = async (req, res) => {
         const player7 = playerHand.concat(communityCards);
         const dealer7 = dealerHand.concat(communityCards);
 
-        playerEval = evaluator.evaluate7Cards(player7);
-        dealerEval = evaluator.evaluate7Cards(dealer7);
+        playerEval = evaluate7Cards(player7);
+        dealerEval = evaluate7Cards(dealer7);
 
         status = 'LOSE';
         prize = 0;
@@ -194,26 +203,24 @@ exports.spinHoldem = async (req, res) => {
             prize = config.cost;
         }
 
-        // ПРОВЕРКА БАНКА ПАРТНЕРА
         const currentBank = getHoldemBank(partnerId);
 
-        // Дополнительный ролл на чистый RTP (если выпал выигрыш, даем случайный шанс на слив в рамках RTP)
         const rtpRoll = Math.random() * 100;
         const forceLossByRtp = (status === 'WIN' && rtpRoll > config.rtp);
 
         if ((prize > currentBank || forceLossByRtp) && attempts < maxAttempts) {
             attempts++;
-            continue; // Банк пуст или сработал лимит RTP — пересдаем карты!
+            continue;
         }
-        break; // Касса одобрила исход раздачи
+        break;
     } while (true);
 
-    // Окончательное начисление одобренного выигрыша
-    req.player.balance += prize;
-    await state.updateBalance(username, partnerId, req.player.balance);
-
     if (prize > 0) {
-        reduceHoldemBank(partnerId, prize); // Минусуем выплату из кассы партнера
+        // Начисляем одобренный выигрыш/возврат через HTTP-запрос кредита к платформе
+        const creditResult = await seamlessService.credit(username, partnerId, sessionId, prize, gameName, roundId);
+        currentBalance = creditResult.balance;
+
+        reduceHoldemBank(partnerId, prize);
     }
 
     await state.savePlayerActionHistory(username, partnerId, {
@@ -226,9 +233,10 @@ exports.spinHoldem = async (req, res) => {
     res.json({
         status, playerHand, dealerHand, communityCards,
         playerCombo: playerEval.name, dealerCombo: dealerEval.name,
-        prize, balance: req.player.balance
+        prize, balance: currentBalance
     });
 };
+
 
 
 
