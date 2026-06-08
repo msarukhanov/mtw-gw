@@ -6,7 +6,7 @@ exports.validate = async (req, res) => {
     if (!token) return res.status(401).json({ error: "Invalid token" });
 
     try {
-        const player = await state.getOrCreatePlayer(token, "demo_skin_default");
+        const player = await state.getOrCreatePlayer(token, "demo_mtwtech");
         res.json({ username: player.username, balance: player.balance });
     } catch (err) {
         res.status(500).json({ error: "Showcase validation failed" });
@@ -17,11 +17,11 @@ exports.validate = async (req, res) => {
 exports.debit = async (req, res) => {
     const { username, amount } = req.body;
     try {
-        const player = await state.getOrCreatePlayer(username, "demo_skin_default");
+        const player = await state.getOrCreatePlayer(username, "demo_mtwtech");
         if (player.balance < amount) return res.status(400).json({ error: "Low platform balance" });
 
         const newBalance = player.balance - Number(amount);
-        await state.updateBalance(username, "demo_skin_default", newBalance);
+        await state.updateBalance(username, "demo_mtwtech", newBalance);
 
         res.json({ balance: newBalance });
     } catch (err) {
@@ -33,9 +33,9 @@ exports.debit = async (req, res) => {
 exports.credit = async (req, res) => {
     const { username, amount } = req.body;
     try {
-        const player = await state.getOrCreatePlayer(username, "demo_skin_default");
+        const player = await state.getOrCreatePlayer(username, "demo_mtwtech");
         const newBalance = player.balance + Number(amount);
-        await state.updateBalance(username, "demo_skin_default", newBalance);
+        await state.updateBalance(username, "demo_mtwtech", newBalance);
 
         res.json({ balance: newBalance });
     } catch (err) {
@@ -47,6 +47,6 @@ exports.credit = async (req, res) => {
 exports.getUserInfo = async (req, res) => {
     const { username } = req.query;
     if (!username) return res.status(400).json({ error: "Username required" });
-    const player = await state.getOrCreatePlayer(username, "demo_skin_default");
+    const player = await state.getOrCreatePlayer(username, "demo_mtwtech");
     res.json({ username: player.username, balance: player.balance });
 };

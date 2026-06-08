@@ -18,6 +18,9 @@
             --accent-red: #da3633;
             --accent-pink: #ff007f;
             --neon-green: #00f5d4;
+
+            --sidebar-width: 260px;
+            --bg-sidebar: #11141a; /* Твой дефолтный цвет */
         }
 
         body {
@@ -63,22 +66,216 @@
             display: none; /* Hidden by default until login */
             height: 100vh;
         }
+        /*.sidebar {*/
+            /*width: 260px;*/
+            /*background: var(--bg-sidebar);*/
+            /*border-right: 1px solid var(--border-color);*/
+            /*display: flex;*/
+            /*flex-direction: column;*/
+            /*padding: 20px 0;*/
+            /*box-sizing: border-box;*/
+        /*}*/
+        /*.sidebar-header {*/
+            /*padding: 0 20px 20px 20px;*/
+            /*border-bottom: 1px solid var(--border-color);*/
+            /*margin-bottom: 15px;*/
+        /*}*/
+        /*.sidebar-header h1 { font-size: 18px; color: #fff; margin: 0; }*/
+        /*.sidebar-header span { font-size: 11px; color: var(--text-muted); }*/
+        /*.sidebar-inner {*/
+            /*width: 260px;*/
+            /*background: var(--bg-sidebar);*/
+            /*border-right: 1px solid var(--border-color);*/
+            /*display: flex;*/
+            /*flex-direction: column;*/
+            /*padding: 0;*/
+            /*box-sizing: border-box;*/
+        /*}*/
+
+
         .sidebar {
-            width: 260px;
+            width: var(--sidebar-width);
             background: var(--bg-sidebar);
             border-right: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
             padding: 20px 0;
             box-sizing: border-box;
+            transition: width 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            position: relative;
+            z-index: 100;
         }
+
+        /* Шапка сайдбара (скрывается или сжимается) */
         .sidebar-header {
             padding: 0 20px 20px 20px;
             border-bottom: 1px solid var(--border-color);
             margin-bottom: 15px;
+            white-space: nowrap;
+            overflow: hidden;
+            transition: padding 0.3s;
         }
+
         .sidebar-header h1 { font-size: 18px; color: #fff; margin: 0; }
         .sidebar-header span { font-size: 11px; color: var(--text-muted); }
+
+        /* Внутренний контейнер меню */
+        .sidebar-inner {
+            width: 100%;
+            background: transparent;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            box-sizing: border-box;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        /* Превращаем заголовок раздела в кликабельную кнопку-спойлер */
+        .nav-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            transition: color 0.2s, background 0.2s;
+        }
+
+        .nav-title:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        /* Иконка стрелочки внутри заголовка */
+        .nav-title::after {
+            content: '▼';
+            font-size: 9px;
+            color: var(--text-muted);
+            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        /* Если раздел закрыт, разворачиваем стрелочку */
+        .nav-title.section-closed::after {
+            transform: rotate(-90deg);
+        }
+
+        /* Контейнер для группы кнопок внутри раздела */
+        .nav-section-content {
+            overflow: hidden;
+            max-height: 500px; /* Достаточная высота для раскрытого списка */
+            transition: max-height 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        /* Класс, который мгновенно схлопывает группу кнопок */
+        .nav-section-content.collapsed-content {
+            max-height: 0 !important;
+        }
+
+        /* Защита для общего режима сжатия сайдбара (который вы уже добавили):
+           если весь сайдбар сжат до 68px, стрелочки аккордеона внутри нам не нужны */
+        .sidebar.collapsed .nav-title::after {
+            display: none;
+        }
+
+
+        /* Универсальные кнопки навигации */
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            color: #a0a5b5;
+            text-align: left;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.03);
+            color: #fff;
+        }
+
+        .nav-btn.active {
+            background: rgba(255, 183, 3, 0.1); /* Твой желтый акцент */
+            color: #ffb703;
+            border-left: 3px solid #ffb703;
+            padding-left: 17px; /* Компенсация бордера */
+        }
+
+        /* 🔄 ТРИГГЕР КНОПКА СВЕРТЫВАНИЯ САЙДБАРA (Toggle Trigger) */
+        .sidebar-toggle-btn {
+            padding: 0px 6px;
+            position: absolute;
+            top: 71px;
+            right: -12px;
+            width: 30px;
+            height: 30px;
+            background: #ffb703;
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            color: #1a1d24;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            z-index: 110;
+            transition: transform 0.3s;
+        }
+
+        /* ========================================================================= */
+        /* 📉 СОСТОЯНИЕ СВЕРНУТОГО САЙДБАРА (.collapsed) */
+        /* ========================================================================= */
+        .sidebar.collapsed {
+            --sidebar-width: 68px; /* Сжимается до ширины иконок */
+        }
+
+        .sidebar.collapsed .sidebar-header {
+            padding: 0 0 20px;
+            text-align: center;
+        }
+        .sidebar.collapsed .logo span,
+        .sidebar.collapsed .sidebar-header span,
+        .sidebar.collapsed .nav-title,
+        .sidebar.collapsed .nav-btn-text {
+            display: none; /* Полностью скрываем текст, оставляя только эмодзи/иконки */
+        }
+
+        .sidebar.collapsed .sidebar-toggle-btn {
+            transform: rotate(180deg); /* Разворачиваем стрелочку кнопки */
+        }
+
+        .sidebar.collapsed .nav-btn {
+            justify-content: center;
+            padding: 12px 0;
+            font-size: 18px; /* Увеличиваем эмодзи, чтобы они смотрелись как иконки */
+        }
+
+        .sidebar.collapsed .nav-btn.active {
+            border-left: 3px solid #ffb703;
+            padding-left: 0;
+        }
+
+        /* Ограничение зоны основного контента админки (чтобы контент двигался за сайдбаром) */
+        .main-content-wrapper {
+            margin-left: 0;
+            flex: 1;
+            transition: padding-left 0.3s;
+        }
 
         .logo-area {
             display: flex;
@@ -225,35 +422,54 @@
 <div id="admin-layout" class="admin-layout">
 
     <!-- SIDEBAR MENU LEFT -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="adminSidebar">
+        <button class="sidebar-toggle-btn" onclick="toggleSidebar()">◀</button>
+
         <div class="sidebar-header">
             <h1> <a href="#" class="logo">MTW<span>TECH</span></a></h1>
-
             <span>Demo Management System</span>
         </div>
 
-        <div class="nav-btn nav-title">Financial</div>
-        <button class="nav-btn active" onclick="switchTab('tab-finance', this)">📊 Totals</button>
-        <button class="nav-btn" onclick="switchTab('tab-bets-registry', this)">🎰 Bets Registry</button>
-        <button class="nav-btn" onclick="switchTab('tab-transactions-ledger', this)">💳 Transactions</button>
+        <div class="sidebar-inner" id="accordionMenu">
+            <!-- РАЗДЕЛ 1: Financial -->
+            <div class="nav-title" onclick="toggleMenuSection('sec-financial', this)">Financial</div>
+            <div class="nav-section-content" id="sec-financial">
+                <button class="nav-btn active" onclick="switchTab('tab-finance', this)"><span>📊</span><span class="nav-btn-text">Totals</span></button>
+                <button class="nav-btn" onclick="switchTab('tab-bets-registry', this)"><span>🎰</span><span class="nav-btn-text">Bets Registry</span></button>
+                <button class="nav-btn" onclick="switchTab('tab-transactions-ledger', this)"><span>💳</span><span class="nav-btn-text">Transactions</span></button>
+            </div>
 
-        <div class="nav-btn nav-title">Players</div>
-        <button class="nav-btn" onclick="switchTab('tab-players', this)">👥 Players</button>
-        <button class="nav-btn" onclick="switchTab('tab-jackpot', this)">💰 Jackpot</button>
-        <button class="nav-btn" onclick="switchTab('tab-gamification', this)">🎮 Gamification</button>
-        <button class="nav-btn" onclick="switchTab('tab-cashback', this)">🎫 Promos & Cashback</button>
+            <!-- РАЗДЕЛ 2: Players -->
+            <div class="nav-title" onclick="toggleMenuSection('sec-players', this)">Players</div>
+            <div class="nav-section-content" id="sec-players">
+                <button class="nav-btn" onclick="switchTab('tab-players', this)"><span>👥</span><span class="nav-btn-text">Players</span></button>
+                <button class="nav-btn" onclick="switchTab('tab-jackpot', this)"><span>💰</span><span class="nav-btn-text">Jackpot</span></button>
+                <button class="nav-btn" onclick="switchTab('tab-gamification', this)"><span>🎮</span><span class="nav-btn-text">Gamification</span></button>
+                <button class="nav-btn" onclick="switchTab('tab-cashback', this)"><span>🎫</span><span class="nav-btn-text">Promos & Cashback</span></button>
+            </div>
 
-        <div class="nav-btn nav-title">Sportsbook</div>
-        <button class="nav-btn" onclick="switchTab('tab-sportsbook', this)">🏟️ Sportsbook</button>
+            <!-- РАЗДЕЛ 3: Sportsbook -->
+            <div class="nav-title" onclick="toggleMenuSection('sec-sportsbook', this)">Sportsbook</div>
+            <div class="nav-section-content" id="sec-sportsbook">
+                <button class="nav-btn" onclick="switchTab('tab-sportsbook', this)"><span>🏟️</span><span class="nav-btn-text">Sportsbook</span></button>
+            </div>
 
-        <div class="nav-btn nav-title">Casino</div>
-        <button class="nav-btn" onclick="switchTab('tab-config', this)">🎰 Engine</button>
-        <button class="nav-btn" onclick="switchTab('tab-collections', this)">📦 Collections</button>
-        <button class="nav-btn" onclick="switchTab('tab-providers', this)">🔌 Aggregators</button>
-        <button class="nav-btn" onclick="switchTab('tab-games', this)">🎮 Games</button>
+            <!-- РАЗДЕЛ 4: Casino -->
+            <div class="nav-title" onclick="toggleMenuSection('sec-casino', this)">Casino</div>
+            <div class="nav-section-content" id="sec-casino">
+                <button class="nav-btn" onclick="switchTab('tab-config', this)"><span>🎰</span><span class="nav-btn-text">Engine</span></button>
+                <button class="nav-btn" onclick="switchTab('tab-collections', this)"><span>📦</span><span class="nav-btn-text">Collections</span></button>
+                <button class="nav-btn" onclick="switchTab('tab-providers', this)"><span>🔌</span><span class="nav-btn-text">Aggregators</span></button>
+                <button class="nav-btn" onclick="switchTab('tab-games', this)"><span>🎮</span><span class="nav-btn-text">Games</span></button>
+            </div>
 
-        <div class="nav-btn nav-title">Builder</div>
-        <button class="nav-btn" onclick="switchTab('tab-slotsbuilder', this)">Slots Builder</button>
+            <!-- РАЗДЕЛ 5: Builder -->
+            <div class="nav-title" onclick="toggleMenuSection('sec-builder', this)">Builder</div>
+            <div class="nav-section-content" id="sec-builder">
+                <button class="nav-btn" onclick="switchTab('tab-slotsbuilder', this)"><span>🛠️</span><span class="nav-btn-text">Slots Builder</span></button>
+            </div>
+        </div>
+
 
         <button class="nav-btn" onclick="logoutDemo()" style="margin-top: auto; color: var(--accent-red);">🛑 Log Out</button>
     </aside>
@@ -696,8 +912,9 @@
         const pass = document.getElementById('login_pass').value;
 
         // Simplified authentication flow for investor presentation
-        if (user === 'admin' && pass === 'admin') {
+        if (user === 'demo_mtwtech' && pass === 'qwerty') {
             sessionStorage.setItem('demoAdminAuthenticated', 'true');
+            localStorage.setItem('partnerId', user);
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('admin-layout').style.display = 'flex';
             loadData();
@@ -710,6 +927,7 @@
 
     function logoutDemo() {
         sessionStorage.removeItem('demoAdminAuthenticated');
+        localStorage.removeItem('partnerId');
         location.reload();
     }
 
@@ -784,7 +1002,7 @@
     async function loadData() {
         try {
             // ИСПРАВЛЕНО ДЛЯ POSTGRES: Вытаскиваем partnerId из хранилища админки
-            const currentPartnerId = localStorage.getItem('partnerId') || 'demo_skin_default';
+            const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
 
             // Передаем partnerId в query-параметрах, чтобы бэкенд знал, чьи конфиги, джекпоты и игроков тянуть из Neon
             const res = await fetch(`${SERVER_URL}/api/admin/data?partnerId=${currentPartnerId}`, {
@@ -1158,7 +1376,7 @@
     async function loadAdminCollections() {
         const container = document.getElementById('adminCollectionsList');
         if (!container) return;
-        const currentPartnerId = localStorage.getItem('partnerId') || 'demo_skin_default';
+        const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
         try {
             const res = await fetch(`${SERVER_URL}/api/catalog/collections?partnerId=${currentPartnerId}`);
             const data = await res.json();
@@ -1219,7 +1437,7 @@
         const gameIds = Array.from(select.selectedOptions).map(opt => parseInt(opt.value));
 
         if (!name || !slug) return alert("Заполните все поля!");
-        const currentPartnerId = localStorage.getItem('partnerId') || 'demo_skin_default';
+        const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
 
         const url = editCollectionMode ? `${SERVER_URL}/api/admin/catalog/collection/${slug}` : `${SERVER_URL}/api/admin/catalog/collection`;
         const method = editCollectionMode ? 'PUT' : 'POST';
@@ -1235,7 +1453,7 @@
     // Удаление коллекции (Запрос 7)
     async function deleteCollectionRequest(slug) {
         if (!confirm('Удалить эту подборку из лобби?')) return;
-        const currentPartnerId = localStorage.getItem('partnerId') || 'demo_skin_default';
+        const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
 
         const res = await fetch(`${SERVER_URL}/api/admin/catalog/collection/${slug}`, { method: 'DELETE', body: JSON.stringify({ partnerId: currentPartnerId }) });
         if (res.ok) loadAdminCollections();
@@ -1245,7 +1463,7 @@
     async function loadAdminGamesConfig() {
         const tbody = document.getElementById('adminGamesTableBody');
         if (!tbody) return;
-        const currentPartnerId = localStorage.getItem('partnerId') || 'demo_skin_default';
+        const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
 
         try {
             // ИСПРАВЛЕНО: Строго CamelCase параметр 'partnerId' в строке запроса
@@ -1396,6 +1614,70 @@
             alert("Server error");
         }
     }
+
+    function toggleSidebar() {
+        const sidebar = document.getElementById('adminSidebar');
+        if (!sidebar) return;
+
+        // Переключаем класс сворачивания
+        sidebar.classList.toggle('collapsed');
+
+        // Запоминаем состояние, чтобы оно сохранялось при перезагрузке страниц
+        const isCollapsed = sidebar.classList.contains('collapsed');
+        localStorage.setItem('adminSidebarCollapsed', isCollapsed ? 'true' : 'false');
+    }
+
+    // Автоматически восстанавливаем состояние сайдбара при загрузке админки
+    window.addEventListener('DOMContentLoaded', () => {
+        const sidebar = document.getElementById('adminSidebar');
+        const savedState = localStorage.getItem('adminSidebarCollapsed');
+
+        if (sidebar && savedState === 'true') {
+            sidebar.classList.add('collapsed');
+        }
+    });
+
+    function toggleMenuSection(sectionId, titleElement) {
+        // Если весь сайдбар сейчас полностью свернут до 68px (твой прошлый режим),
+        // клики по заголовкам игнорируем, чтобы не ломать мини-интерфейс
+        const sidebar = document.getElementById('adminSidebar');
+        if (sidebar && sidebar.classList.contains('collapsed')) return;
+
+        const section = document.getElementById(sectionId);
+        if (!section) return;
+
+        // Переключаем класс сворачивания контента
+        section.classList.toggle('collapsed-content');
+
+        // Переключаем класс стрелочки у заголовка
+        if (titleElement) {
+            titleElement.classList.toggle('section-closed');
+        }
+
+        // Сохраняем состояние раскрытия раздела в localStorage
+        const isClosed = section.classList.contains('collapsed-content');
+        localStorage.setItem(`adv_sec_${sectionId}`, isClosed ? 'closed' : 'opened');
+    }
+
+    // Автоматическое восстановление состояния раздвижного меню при загрузке страницы
+    window.addEventListener('DOMContentLoaded', () => {
+        const sections = ['sec-financial', 'sec-players', 'sec-sportsbook', 'sec-casino', 'sec-builder'];
+
+        sections.forEach(secId => {
+            const section = document.getElementById(secId);
+            // Ищем предыдущий заголовок (элемент перед контейнером контента)
+            const titleEl = section ? section.previousElementSibling : null;
+            const savedState = localStorage.getItem(`adv_sec_${secId}`);
+
+            // Хелпер: если это твой первый вход и в базе пусто — по умолчанию
+            // открываем Financial и Casino, а остальные аккуратно поджимаем
+            if (savedState === 'closed' || (!savedState && ['sec-players', 'sec-sportsbook', 'sec-builder','sec-casino'].includes(secId))) {
+                if (section) section.classList.add('collapsed-content');
+                if (titleEl) titleEl.classList.add('section-closed');
+            }
+        });
+    });
+
 
 
     // Run auth validation sequence on page boot

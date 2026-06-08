@@ -210,7 +210,7 @@ socket.on('timer_update', (data) => {
 
 
 let globalSessionId = null;
-let globalPartnerId = 'demo_skin_default';
+let globalPartnerId = 'demo_mtwtech';
 
 // Функция парсинга параметров из ссылки (?game=mines&session_id=123)
 function getUrlParams() {

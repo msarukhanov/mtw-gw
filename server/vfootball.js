@@ -66,7 +66,7 @@ function getComboBonusFactor(itemsCount) {
 }
 
 // Генератор рынков и коэффициентов с маржой 6%
-function generateMarkets(home, away, currentMinute = 0, scoreHome = 0, scoreAway = 0, leagueName, partnerId = 'demo_skin_default') {
+function generateMarkets(home, away, currentMinute = 0, scoreHome = 0, scoreAway = 0, leagueName, partnerId = 'demo_mtwtech') {
     // ИСПРАВЛЕНО: Безопасное чтение спортивного конфига из глобального объекта с защитой от undefined
     const globalConfig = global.CONFIG || {};
     const partnerConfig = globalConfig[partnerId] || {};
@@ -454,7 +454,7 @@ module.exports = {
                         }
                     }
 
-                    const targetPartnerId = match.partner_id || 'demo_skin_default';
+                    const targetPartnerId = match.partner_id || 'demo_mtwtech';
 
                     // Пересчитываем рынки
                     const newMarkets = generateMarkets(teams._homeRaw, teams._awayRaw, newMinute, scoreHome, scoreAway, match.league, targetPartnerId);

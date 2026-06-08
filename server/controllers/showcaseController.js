@@ -12,7 +12,7 @@ exports.login = async (req, res) => {
     }
 
     const cleanName = username.trim();
-    const partnerId = "demo_skin_default";
+    const partnerId = "demo_mtwtech";
 
     try {
         // Убеждаемся, что игрок создан в game.db
@@ -49,7 +49,7 @@ exports.validate = async (req, res) => {
     }
 
     try {
-        const player = await state.getOrCreatePlayer(realUsername, "demo_skin_default");
+        const player = await state.getOrCreatePlayer(realUsername, "demo_mtwtech");
         res.json({ username: player.username, balance: player.balance });
     } catch (err) { res.status(500).json({ error: "Validation query failed" }); }
 };
@@ -58,7 +58,7 @@ exports.validate = async (req, res) => {
 exports.debit = async (req, res) => {
     const { token, amount } = req.body; // Игры шлют либо token, либо username
     const realUsername = activeShowcaseSessions[token] || req.body.username;
-    const partnerId = "demo_skin_default";
+    const partnerId = "demo_mtwtech";
 
     if (!realUsername) return res.status(401).json({ error: "Session authentication failed" });
 
@@ -83,7 +83,7 @@ exports.debit = async (req, res) => {
 exports.credit = async (req, res) => {
     const { token, amount } = req.body;
     const realUsername = activeShowcaseSessions[token] || req.body.username;
-    const partnerId = "demo_skin_default";
+    const partnerId = "demo_mtwtech";
 
     if (!realUsername) return res.status(401).json({ error: "Session authentication failed" });
 
@@ -107,6 +107,6 @@ exports.getUserInfo = async (req, res) => {
     const realUsername = activeShowcaseSessions[sessionId];
     if (!realUsername) return res.status(401).json({ error: "Session invalid" });
 
-    const player = await state.getOrCreatePlayer(realUsername, "demo_skin_default");
+    const player = await state.getOrCreatePlayer(realUsername, "demo_mtwtech");
     res.json({ username: player.username, balance: player.balance });
 };

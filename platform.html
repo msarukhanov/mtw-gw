@@ -1252,7 +1252,7 @@
             <a href="#" onclick="alert('B2B Tech Specifications: REST API / WebSocket integration layer.')">API
                 Reference</a>
             <a href="#" onclick="alert('Seamless Wallet Protocol v2.4 initialized securely.')">Seamless Protocol</a>
-            <a href="#" onclick="alert('Operator Core ID: demo_skin_default')">Licensing Rules</a>
+            <a href="#" onclick="alert('Operator Core ID: demo_mtwtech')">Licensing Rules</a>
         </div>
         <div>Powered by MTWTech Studio.</div>
         <div class="footer-cert">🔞 🛡️ 🎰 🔒</div>
@@ -1337,14 +1337,14 @@
             socket.on('connect', () => {
                 console.log('WS Connect', {
                     username: currentUsername,
-                    partnerId: 'demo_skin_default'
+                    partnerId: 'demo_mtwtech'
                 });
 
                 setTimeout(() => {
                     console.log('🚀 Sending handshake now...');
                     socket.emit('platform_join', {
                         username: currentUsername,
-                        partnerId: 'demo_skin_default'
+                        partnerId: 'demo_mtwtech'
                     });
                 }, 100);
             });
@@ -1380,7 +1380,7 @@
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
                         username: currentUsername,
-                        partnerId: 'demo_skin_default',
+                        partnerId: 'demo_mtwtech',
                         refCode: incomingRefCode
                     })
                 })
@@ -1420,7 +1420,7 @@
         const iframe = document.getElementById('gameIframe');
 
         // Generate seamless iframe packet routing link with B2B session configurations
-        const iframeUrl = `https://mtwtech.onrender.com/casino?sessionId=${currentSessionId}&partnerId=demo_skin_default`;
+        const iframeUrl = `https://mtwtech.onrender.com/casino?sessionId=${currentSessionId}&partnerId=demo_mtwtech`;
 
         iframe.src = iframeUrl;
         wrapper.style.display = 'block';
@@ -1435,7 +1435,7 @@
         const iframe = document.getElementById('gameIframe');
 
         // Generate seamless iframe packet routing link with B2B session configurations
-        const iframeUrl = `https://mtwtech.onrender.com/sport?sessionId=${currentSessionId}&partnerId=demo_skin_default`;
+        const iframeUrl = `https://mtwtech.onrender.com/sport?sessionId=${currentSessionId}&partnerId=demo_mtwtech`;
 
         iframe.src = iframeUrl;
         wrapper.style.display = 'block';
@@ -1555,7 +1555,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     username: user,
-                    partnerId: 'demo_skin_default' // Передаем обязательный partnerId
+                    partnerId: 'demo_mtwtech' // Передаем обязательный partnerId
                 })
             });
             const data = await response.json();
@@ -1589,7 +1589,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     username: user,
-                    partnerId: 'demo_skin_default'
+                    partnerId: 'demo_mtwtech'
                 })
             });
             const data = await response.json();
@@ -1606,7 +1606,7 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             username: user,
-                            partnerId: 'demo_skin_default',
+                            partnerId: 'demo_mtwtech',
                             refCode: refCode
                         })
                     });
@@ -1658,7 +1658,7 @@
             socket.on('connect', () => {
                 socket.emit('platform_join', {
                     username: currentUsername,
-                    partnerId: 'demo_skin_default'
+                    partnerId: 'demo_mtwtech'
                 });
             });
             socket.on('wallet_update', (wsData) => {
@@ -1696,7 +1696,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     username: currentUsername,
-                    partnerId: 'demo_skin_default'
+                    partnerId: 'demo_mtwtech'
                 })
             });
             const data = await res.json();
@@ -1778,7 +1778,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     username: currentUsername,
-                    partnerId: 'demo_skin_default',
+                    partnerId: 'demo_mtwtech',
                     newPassword: newPass
                 })
             });
@@ -1804,7 +1804,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     username: currentUsername,
-                    partnerId: 'demo_skin_default',
+                    partnerId: 'demo_mtwtech',
                     promoCode: code
                 })
             });
@@ -1831,7 +1831,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     username: currentUsername,
-                    partnerId: 'demo_skin_default',
+                    partnerId: 'demo_mtwtech',
                     amount: amount
                 })
             });
@@ -1857,7 +1857,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     username: currentUsername,
-                    partnerId: 'demo_skin_default',
+                    partnerId: 'demo_mtwtech',
                     amount: amount
                 })
             });

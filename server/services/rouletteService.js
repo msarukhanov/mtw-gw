@@ -65,7 +65,7 @@ async function runNextRoundLoop(io) {
 
     const partnerIds = Object.keys(state.getConfig() || {});
     // const config = state.getConfig(partnerId).roulette || { baseRtp: 95, betTime: 15000 };
-    if (partnerIds.length === 0 || partnerIds.includes('roulette')) partnerIds.push('demo_skin_default');
+    if (partnerIds.length === 0 || partnerIds.includes('roulette')) partnerIds.push('demo_mtwtech');
 
     for (const partnerId of partnerIds) {
         if (['lottery', 'slots', 'wheel', 'scratch', 'gamification'].includes(partnerId)) continue;

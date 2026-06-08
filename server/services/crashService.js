@@ -30,7 +30,7 @@ async function runNextRoundLoop(io) {
     // Для этого берем список всех активных партнеров из памяти CURRENT_CONFIG в state
     const partnerIds = Object.keys(state.getConfig() || {});
     // Если список пуст (первый запуск), добавим хотя бы дефолтный скин для демо
-    if (partnerIds.length === 0 || partnerIds.includes('lottery')) partnerIds.push('demo_skin_default');
+    if (partnerIds.length === 0 || partnerIds.includes('lottery')) partnerIds.push('demo_mtwtech');
 
     for (const partnerId of partnerIds) {
         if (partnerId === 'lottery' || partnerId === 'slots' || partnerId === 'wheel' || partnerId === 'scratch' || partnerId === 'gamification') continue;
@@ -52,7 +52,7 @@ async function runNextRoundLoop(io) {
     }
 
     // Берем базовый конфиг (время ожидания у всех одинаковое, например 5000мс)
-    const baseConfig = state.getConfig('demo_skin_default').crash || { betTime: 5000 };
+    const baseConfig = state.getConfig('demo_mtwtech').crash || { betTime: 5000 };
     let timer = baseConfig.betTime;
 
     const bettingInterval = setInterval(() => {

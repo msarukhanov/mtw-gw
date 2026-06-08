@@ -9,7 +9,7 @@ function initLotteryService(io) {
 
         // ИСПРАВЛЕНО: Рассылаем таймер и джекпот персонально в комнату каждого B2B-партнера
         const partnerIds = Object.keys(state.getConfig() || {});
-        if (partnerIds.length === 0 || partnerIds.includes('lottery')) partnerIds.push('demo_skin_default');
+        if (partnerIds.length === 0 || partnerIds.includes('lottery')) partnerIds.push('demo_mtwtech');
 
         for (const partnerId of partnerIds) {
             if (partnerId === 'lottery' || partnerId === 'slots' || partnerId === 'wheel' || partnerId === 'scratch' || partnerId === 'gamification') continue;
@@ -39,7 +39,7 @@ async function runGlobalDraw(io, partnerIds) {
     // Группируем игроков по их partnerId: { site_A: [player1, player2], site_B: [...] }
     const gamersByPartner = {};
     allActiveGamers.forEach(gamer => {
-        const pId = gamer.partnerId || 'demo_skin_default';
+        const pId = gamer.partnerId || 'demo_mtwtech';
         if (!gamersByPartner[pId]) gamersByPartner[pId] = [];
         gamersByPartner[pId].push(gamer);
     });

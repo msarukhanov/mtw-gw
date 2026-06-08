@@ -1,6 +1,6 @@
 // Глобальный стейт приложения для управления роутингом и лобби
 let currentSlideIdx = 0;
-let partnerId = 'demo_skin_default';
+let partnerId = 'demo_mtwtech';
 let sessionId = null;
 let currentMainTab = 'collections'; // collections, categories, providers
 let activeSubFilter = null; // Конкретный slug коллекции, категории или провайдера
@@ -16,7 +16,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
 
     // Забираем partnerId и sessionId. Если в URL пусто, ищем в localStorage
-    partnerId = urlParams.get('partnerId') || localStorage.getItem('partnerId') || 'demo_skin_default';
+    partnerId = urlParams.get('partnerId') || localStorage.getItem('partnerId') || 'demo_mtwtech';
     sessionId = urlParams.get('sessionId') || urlParams.get('token') || localStorage.getItem('sessionId');
 
     localStorage.setItem('partnerId', partnerId);

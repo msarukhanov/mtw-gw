@@ -1,6 +1,4 @@
 const crypto = require('crypto');
-// Импортируем наши таблицы Postgres из модуля DB
-const { GlobalConfig } = require('./DB');
 const seamless = require('./services/seamlessService');
 
 const pool = global.pool;
@@ -25,7 +23,7 @@ function getRandomInt(max) {
 const playerMethods = {
     // Проверьте, чтобы в вашем файле этот метод выглядел так:
     getOrCreatePlayer: async (username, partnerId, fetchPlatformBalance = null) => {
-        let res = await pool.query('SELECT * FROM players WHERE username = $1 AND partner_id = $2 LIMIT 1', [username, partnerId]);
+        let res = await global.pool.query('SELECT * FROM players WHERE username = $1 AND partner_id = $2 LIMIT 1', [username, partnerId]);
         let player = res.rowCount > 0 ? res.rows[0] : null;
 
         if (!player) {
@@ -41,7 +39,7 @@ const playerMethods = {
                 }
             }
 
-            const insertRes = await pool.query(
+            const insertRes = await global.pool.query(
                 `INSERT INTO players (username, partner_id, balance, daily_quests, used_promos, history, tournament_points) 
              VALUES ($1, $2, $3, '{"gamesPlayed": 0, "claimed": false}'::jsonb, '{}'::jsonb, '[]'::jsonb, 0) RETURNING *`,
                 [username, partnerId, initialBalance]
@@ -62,14 +60,14 @@ const playerMethods = {
         return player;
     },
     updateBalance: async (username, partnerId, newBalance) => {
-        await pool.query(
+        await global.pool.query(
             'UPDATE players SET balance = $1 WHERE username = $2 AND partner_id = $3',
             [Number(newBalance), username, partnerId]
         );
     },
     savePlayerActionHistory: async (username, partnerId, actionData) => {
         // 1. Извлекаем игрока из PostgreSQL
-        const playerRes = await pool.query(
+        const playerRes = await global.pool.query(
             'SELECT * FROM players WHERE username = $1 AND partner_id = $2 LIMIT 1',
             [username, partnerId]
         );
@@ -166,7 +164,7 @@ const playerMethods = {
             }
 
             // 3. Сохраняем все обновленные данные в PostgreSQL
-            await pool.query(
+            await global.pool.query(
                 `UPDATE players 
                  SET history = $1::jsonb, 
                      xp = $2, 
@@ -197,7 +195,7 @@ const playerMethods = {
         const pct = Number(gConfig.cashbackPercent) / 100;
 
         // Находим игроков строго текущего партнера из Postgres
-        const res = await pool.query('SELECT * FROM players WHERE partner_id = $1', [partnerId]);
+        const res = await global.pool.query('SELECT * FROM players WHERE partner_id = $1', [partnerId]);
         const allPlayers = res.rows;
         const cashbackReport = [];
 
@@ -256,7 +254,7 @@ const playerMethods = {
                         });
 
                         // Апдейтим историю и баланс игрока в PostgreSQL
-                        await pool.query(
+                        await global.pool.query(
                             'UPDATE players SET history = $1::jsonb, balance = $2 WHERE username = $3 AND partner_id = $4',
                             [JSON.stringify(history), freshBalance, player.username, partnerId]
                         );
@@ -273,7 +271,7 @@ const playerMethods = {
 
     // ИСПРАВЛЕНО: Быстрое чтение истории игрока из JSONB колонки Postgres
     getPlayerHistory: async (username, partnerId) => {
-        const res = await pool.query('SELECT history FROM players WHERE username = $1 AND partner_id = $2 LIMIT 1', [username, partnerId]);
+        const res = await global.pool.query('SELECT history FROM players WHERE username = $1 AND partner_id = $2 LIMIT 1', [username, partnerId]);
         if (res.rowCount === 0) return [];
 
         const history = res.rows[0].history;
@@ -282,15 +280,23 @@ const playerMethods = {
 
     // ИСПРАВЛЕНО: Получение списка всех игроков конкретного бренда из Postgres
     getAllPlayers: async (partnerId) => {
-        const res = await pool.query('SELECT * FROM players WHERE partner_id = $1', [partnerId]);
-        return res.rows.map(p => ({
-            ...p,
-            dailyQuests: typeof p.daily_quests === 'string' ? JSON.parse(p.daily_quests) : p.daily_quests,
-            history: typeof p.history === 'string' ? JSON.parse(p.history) : p.history,
-            usedPromos: typeof p.used_promos === 'string' ? JSON.parse(p.used_promos) : p.used_promos,
-            balance: Number(p.balance),
-            tournamentPoints: Number(p.tournament_points)
-        }));
+        try {
+            const res = await global.pool.query('SELECT * FROM players WHERE partner_id = $1', [partnerId]);
+            return res.rows.map(p => ({
+                ...p,
+                dailyQuests: typeof p.daily_quests === 'string' ? JSON.parse(p.daily_quests) : p.daily_quests,
+                history: typeof p.history === 'string' ? JSON.parse(p.history) : p.history,
+                usedPromos: typeof p.used_promos === 'string' ? JSON.parse(p.used_promos) : p.used_promos,
+                balance: Number(p.balance),
+                tournamentPoints: Number(p.tournament_points)
+            }));
+        }
+        catch (e) {
+            console.log('getAllPlayers', e);
+            return {
+                error: true,
+            }
+        }
     },
 
     getGamersWithTickets: async () => {
@@ -308,7 +314,7 @@ const playerMethods = {
 
                 try {
                     // Извлекаем игрока из Postgres
-                    const res = await pool.query(
+                    const res = await global.pool.query(
                         'SELECT * FROM players WHERE username = $1 AND partner_id = $2 LIMIT 1',
                         [username, partnerId]
                     );
@@ -370,7 +376,7 @@ const gamificationMethods = {
 
         try {
             // Сортировку и лимит доверяем самому Postgres — это не грузит RAM сервера
-            const res = await pool.query(
+            const res = await global.pool.query(
                 `SELECT username, level, balance, tournament_points 
                  FROM players 
                  WHERE partner_id = $1 
@@ -406,7 +412,7 @@ const gamificationMethods = {
         ];
 
         // Запрашиваем из Postgres только участников с очками > 0, отсортированных по убыванию
-        const res = await pool.query(
+        const res = await global.pool.query(
             'SELECT * FROM players WHERE partner_id = $1 AND tournament_points > 0 ORDER BY tournament_points DESC',
             [partnerId]
         );
@@ -462,7 +468,7 @@ const gamificationMethods = {
             if (currentHistory.length > 30) currentHistory.pop();
 
             // Сохраняем изменения напрямую через SQL-запрос UPDATE
-            await pool.query(
+            await global.pool.query(
                 `UPDATE players 
                  SET history = $1::jsonb, tournament_points = 0, balance = $2 
                  WHERE username = $3 AND partner_id = $4`,
@@ -481,7 +487,7 @@ const gamificationMethods = {
 
             for (const pId of partnersToReset) {
                 // Атомарный UPDATE одной командой на всю таблицу players для выбранного partner_id
-                await pool.query(
+                await global.pool.query(
                     `UPDATE players 
                      SET daily_quests = '{"gamesPlayed": 0, "claimed": false}'::jsonb 
                      WHERE partner_id = $1`,
@@ -514,7 +520,7 @@ const promoMethods = {
         try {
             // Атомарно сохраняем обновленный конфиг в таблицу b2b_configs.
             // Использование || (JSONB merge) защищает данные других партнеров от перезаписи.
-            await pool.query(
+            await global.pool.query(
                 `INSERT INTO b2b_configs (id, config_data) 
                  VALUES ($1, $2::jsonb)
                  ON CONFLICT (id) 
@@ -539,7 +545,7 @@ const promoMethods = {
         if (!promo) throw new Error("Invalid code");
 
         // Поиск игрока по составному B2B ключу на чистом SQL
-        const playerRes = await pool.query(
+        const playerRes = await global.pool.query(
             'SELECT * FROM players WHERE username = $1 AND partner_id = $2 LIMIT 1',
             [username, partnerId]
         );
@@ -576,7 +582,7 @@ const promoMethods = {
         currentPromos[cleanCode] = timesUsed + 1;
 
         // Фиксируем использование кода и пишем свежий баланс напрямую в Postgres таблицу players
-        await pool.query(
+        await global.pool.query(
             'UPDATE players SET used_promos = $1::jsonb, balance = $2 WHERE username = $3 AND partner_id = $4',
             [JSON.stringify(currentPromos), newBalance, username, partnerId]
         );
@@ -592,7 +598,7 @@ const affiliateMethods = {
         const cleanRef = refCode.trim();
 
         // Ищем, кому принадлежит этот реф-код (проверяем существование пригласителя)
-        const inviterRes = await pool.query(
+        const inviterRes = await global.pool.query(
             'SELECT username FROM players WHERE username = $1 AND partner_id = $2 LIMIT 1',
             [cleanRef, partnerId]
         );
@@ -600,7 +606,7 @@ const affiliateMethods = {
         if (inviterRes.rowCount === 0) return false;
 
         // Привязываем реферала к пригласителю
-        await pool.query(
+        await global.pool.query(
             'UPDATE players SET invited_by = $1 WHERE username = $2 AND partner_id = $3',
             [cleanRef, username, partnerId]
         );
@@ -609,7 +615,7 @@ const affiliateMethods = {
 
     trackAffiliatePayout: async (username, partnerId, lostAmount, seamlessCredit) => {
         // Находим игрока и его пригласителя
-        const playerRes = await pool.query(
+        const playerRes = await global.pool.query(
             'SELECT invited_by FROM players WHERE username = $1 AND partner_id = $2 LIMIT 1',
             [username, partnerId]
         );
@@ -640,7 +646,7 @@ const affiliateMethods = {
                 );
 
                 // Запрашиваем текущие данные пригласителя, чтобы корректно обновить его баланс локально
-                const inviterRes = await pool.query(
+                const inviterRes = await global.pool.query(
                     'SELECT balance FROM players WHERE username = $1 AND partner_id = $2 LIMIT 1',
                     [invitedBy, partnerId]
                 );
@@ -651,7 +657,7 @@ const affiliateMethods = {
                         : Number(inviterRes.rows[0].balance) + commission;
 
                     // Обновляем локальный баланс партнера в PostgreSQL
-                    await pool.query(
+                    await global.pool.query(
                         'UPDATE players SET balance = $1 WHERE username = $2 AND partner_id = $3',
                         [freshBalance, invitedBy, partnerId]
                     );
@@ -669,7 +675,7 @@ const financialMethods = {
 
     logFinancialTransaction: async (partnerId, username, type, amount, game) => {
         // Записываем лог в таблицу бухгалтерского учета accounting_logs
-        await pool.query(
+        await global.pool.query(
             `INSERT INTO accounting_logs (partner_id, username, type, amount, game, timestamp) 
              VALUES ($1, $2, $3, $4, $5, NOW())`,
             [partnerId, username, type, Number(amount), game || "Unknown Game"]
@@ -678,7 +684,7 @@ const financialMethods = {
 
     getFinancialReport: async (partnerId) => {
         // Вытаскиваем все логи транзакций партнера
-        const res = await pool.query(
+        const res = await global.pool.query(
             'SELECT type, amount, game, EXTRACT(EPOCH FROM timestamp) * 1000 as ts FROM accounting_logs WHERE partner_id = $1 ORDER BY timestamp DESC',
             [partnerId]
         );
@@ -905,7 +911,7 @@ const sportsMethods = {
     // 1. Отдаем линию матчей из таблицы matches в PostgreSQL
     getSportsLine: async () => {
         // Запрашиваем из Postgres все матчи, которые еще не завершились
-        const res = await pool.query('SELECT * FROM matches WHERE status != $1', ['FINISHED']);
+        const res = await global.pool.query('SELECT * FROM matches WHERE status != $1', ['FINISHED']);
 
         return res.rows.map(m => {
             // Десериализуем JSONB поля, если драйвер отдал их в виде строк (зависит от настроек pg)
@@ -930,7 +936,7 @@ const sportsMethods = {
 
         for (let item of betData.items) {
             // Ищем матч в Postgres
-            const matchRes = await pool.query('SELECT markets FROM matches WHERE match_id = $1 LIMIT 1', [item.matchId]);
+            const matchRes = await global.pool.query('SELECT markets FROM matches WHERE match_id = $1 LIMIT 1', [item.matchId]);
             let target = null;
             let handicapValue = null;
 
@@ -960,7 +966,7 @@ const sportsMethods = {
         const type = betData.items.length > 1 ? "MULTI" : "SINGLE";
 
         // INSERT купона ставки в таблицу sports_bets с сохранением массива в JSONB
-        const betRes = await pool.query(
+        const betRes = await global.pool.query(
             `INSERT INTO sports_bets (username, partner_id, type, items, total_odds, stake, status, timestamp) 
              VALUES ($1, $2, $3, $4, $5, $6, $7, NOW()) RETURNING id`,
             [username, partnerId, type, JSON.stringify(processedItems), Number(betData.totalOdds), Number(betData.stake), "PENDING"]
@@ -971,7 +977,7 @@ const sportsMethods = {
 
     // 3. Запрос нерассчитанных ставок для админки партнера из PostgreSQL
     getPendingBets: async (partnerId) => {
-        const res = await pool.query('SELECT * FROM sports_bets WHERE status = $1 AND partner_id = $2', ['PENDING', partnerId]);
+        const res = await global.pool.query('SELECT * FROM sports_bets WHERE status = $1 AND partner_id = $2', ['PENDING', partnerId]);
 
         return res.rows.map(b => ({
             _id: b.id,
@@ -987,7 +993,7 @@ const sportsMethods = {
 
     // 4. Расчет купона и отправка денег партнеру через Seamless Credit
     settleBet: async (betId, finalStatus, seamlessCredit = null) => {
-        const res = await pool.query('SELECT * FROM sports_bets WHERE id = $1 AND status = $2 LIMIT 1', [betId, 'PENDING']);
+        const res = await global.pool.query('SELECT * FROM sports_bets WHERE id = $1 AND status = $2 LIMIT 1', [betId, 'PENDING']);
         if (res.rowCount === 0) return null;
         const b = res.rows[0];
 
@@ -1005,7 +1011,7 @@ const sportsMethods = {
                     await creditMethod(b.username, b.partner_id, null, prize, gameName, sportsRoundId);
 
                     // Синхронизируем локальный кэш баланса победителя в Postgres
-                    await pool.query(
+                    await global.pool.query(
                         'UPDATE players SET balance = balance + $1 WHERE username = $2 AND partner_id = $3',
                         [prize, b.username, b.partner_id]
                     );
@@ -1019,7 +1025,7 @@ const sportsMethods = {
         }
 
         // Обновляем статус купона в PostgreSQL
-        await pool.query('UPDATE sports_bets SET status = $1, prize = $2 WHERE id = $3', [finalStatus, prize, betId]);
+        await global.pool.query('UPDATE sports_bets SET status = $1, prize = $2 WHERE id = $3', [finalStatus, prize, betId]);
         return { _id: b.id, username: b.username, status: finalStatus, prize };
     }
 };
@@ -1083,7 +1089,7 @@ const catalogMethods = {
         queryText += ` HAVING COALESCE(pg.is_active, true) = true AND COALESCE(pa.is_active, true) = true`;
         queryText += ' ORDER BY g.id DESC';
 
-        const result = await pool.query(queryText, queryParams);
+        const result = await global.pool.query(queryText, queryParams);
         return result.rows.map(row => ({
             ...row,
             categories: typeof row.categories === 'string' ? JSON.parse(row.categories) : row.categories
@@ -1092,7 +1098,7 @@ const catalogMethods = {
 
     // 2. Управление настройками агрегатора (Включить/Выключить Softswiss, Hacksaw и т.д.)
     updatePartnerAggregatorStatus: async (partnerId, aggregator, isActive) => {
-        await pool.query(
+        await global.pool.query(
             `INSERT INTO partner_aggregators (partner_id, aggregator, is_active, updated_at)
              VALUES ($1, $2, $3, NOW())
              ON CONFLICT (partner_id, aggregator)
@@ -1105,7 +1111,7 @@ const catalogMethods = {
     // 3. Сохранить или обновить кастомную настройку игры для партнера
     updatePartnerGameSettings: async (partnerId, gameId, settings = {}) => {
         const { isActive, customName, customSlug, customTheme, customRtp } = settings;
-        await pool.query(
+        await global.pool.query(
             `INSERT INTO partner_games (partner_id, game_id, is_active, custom_name, custom_slug, custom_theme, custom_rtp, updated_at)
              VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
              ON CONFLICT (partner_id, game_id)
@@ -1127,7 +1133,7 @@ const catalogMethods = {
 
     // Удалить коллекцию
     deletePartnerCollection: async (partnerId, collectionSlug) => {
-        const res = await pool.query(
+        const res = await global.pool.query(
             'DELETE FROM partner_collections WHERE partner_id = $1 AND slug = $2',
             [partnerId, collectionSlug]
         );
@@ -1136,7 +1142,7 @@ const catalogMethods = {
 
     // Создать новую коллекцию игр для партнера (Передаем массив чисел напрямую в Postgres INT[])
     createPartnerCollection: async (partnerId, name, slug, gameIds = []) => {
-        const res = await pool.query(
+        const res = await global.pool.query(
             `INSERT INTO partner_collections (partner_id, name, slug, game_ids)
              VALUES ($1, $2, $3, $4::int[]) RETURNING id`, // Кастуем к целочисленному массиву
             [partnerId, name, slug.toLowerCase().trim(), gameIds] // gameIds передается как обычный массив JS [1,2,3]
@@ -1147,7 +1153,7 @@ const catalogMethods = {
     // Отредактировать существующую коллекцию
     updatePartnerCollection: async (partnerId, collectionSlug, updatedData = {}) => {
         const { name, gameIds } = updatedData;
-        await pool.query(
+        await global.pool.query(
             `UPDATE partner_collections 
              SET name = COALESCE($1, name), 
                  game_ids = COALESCE($2::int[], game_ids), -- Исправлено под тип INT[]
@@ -1160,7 +1166,7 @@ const catalogMethods = {
 
     // Получить все коллекции партнера вместе с развернутыми объектами игр внутри них
     getPartnerCollections: async (partnerId) => {
-        const res = await pool.query(
+        const res = await global.pool.query(
             'SELECT * FROM partner_collections WHERE partner_id = $1 ORDER BY id ASC',
             [partnerId]
         );
@@ -1173,7 +1179,7 @@ const catalogMethods = {
             let gamesInCollection = [];
             if (gameIds.length > 0) {
                 // Теперь оператор ANY($1::int[]) отработает мгновенно без синтаксических ошибок
-                const gamesRes = await pool.query(
+                const gamesRes = await global.pool.query(
                     `SELECT id, name, slug, image, provider FROM games WHERE id = ANY($1::int[]) AND is_active = true`,
                     [gameIds]
                 );
@@ -1203,7 +1209,7 @@ const sessionMethods = {
         // Сессия автоматически сгорает через 24 часа
         const expiredAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-        await pool.query(
+        await global.pool.query(
             `INSERT INTO game_sessions (token, partner_id, username, game_slug, is_demo, theme, expired_at)
              VALUES ($1, $2, $3, $4, $5, $6, $7)`,
             [token, partnerId, isDemo ? null : username, gameSlug, !!isDemo, theme || 'default', expiredAt]
@@ -1214,7 +1220,7 @@ const sessionMethods = {
 
     // 2. Валидация сессии при загрузке самого iFrame игры
     validateGameSession: async (token) => {
-        const res = await pool.query(
+        const res = await global.pool.query(
             `SELECT * FROM game_sessions 
              WHERE token = $1 AND is_active = true AND expired_at > NOW() 
              LIMIT 1`,
@@ -1267,7 +1273,7 @@ module.exports = {
 
     getPartnerConfig: async (partnerId) => {
         // Читаем древо конфигурации конкретного партнера из таблицы b2b_configs
-        const res = await pool.query('SELECT config_data FROM b2b_configs WHERE id = $1 LIMIT 1', ['global_config']);
+        const res = await global.pool.query('SELECT config_data FROM b2b_configs WHERE id = $1 LIMIT 1', ['global_config']);
         if (res.rowCount === 0) return null;
 
         const configData = typeof res.rows[0].config_data === 'string'
@@ -1313,7 +1319,7 @@ module.exports = {
             try {
                 // Используем оператор слияния || (JSONB), чтобы обновить только ветку текущего партнера,
                 // не затирая при этом конфигурации и банки всех остальных брендов в базе данных
-                await pool.query(
+                await global.pool.query(
                     `INSERT INTO b2b_configs (id, config_data) 
                      VALUES ($1, $2::jsonb)
                      ON CONFLICT (id) 
@@ -1345,7 +1351,7 @@ module.exports = {
     saveDrawToHistory: async (drawData) => {
         try {
             // Сериализуем и записываем данные тиража лотереи в таблицу lottery_history
-            await pool.query(
+            await global.pool.query(
                 'INSERT INTO lottery_history (draw_data) VALUES ($1::jsonb)',
                 [JSON.stringify(drawData)]
             );
@@ -1357,7 +1363,7 @@ module.exports = {
     getLotteryHistory: async (limit = 20) => {
         try {
             // Запрашиваем последние N тиражей из таблицы PostgreSQL, сортируя по id по убыванию
-            const res = await pool.query(
+            const res = await global.pool.query(
                 'SELECT draw_data FROM lottery_history ORDER BY id DESC LIMIT $1',
                 [limit]
             );

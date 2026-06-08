@@ -47,7 +47,7 @@
 {"time":"02:29:59 PM","winNums":[3,20,35,38,43,47],"timestamp":1780568999088,"_id":"9e9NtbwzuOsP1WyP"}
 {"time":"10:59:59 PM","winNums":[1,19,26,31,37,39],"timestamp":1780426799905,"_id":"9mum0ZaoC0vy9jPI"}
 {"time":"03:34:59 PM","winNums":[3,4,15,19,21,24],"timestamp":1780486499146,"_id":"AER0re5CcNyhbnJ1"}
-{"partnerId":"demo_skin_default","time":"09:34:59 PM","winNums":[8,15,16,22,29,35],"timestamp":1780767299583,"_id":"AKbkHxQGW2SCCDFB"}
+{"partnerId":"demo_mtwtech","time":"09:34:59 PM","winNums":[8,15,16,22,29,35],"timestamp":1780767299583,"_id":"AKbkHxQGW2SCCDFB"}
 {"partnerId":"slots5x3","time":"09:34:59 PM","winNums":[8,21,25,39,40,43],"timestamp":1780767299581,"_id":"ALqoHXBzd8XIxf3C"}
 {"time":"11:09:59 PM","winNums":[5,27,39,41,43,49],"timestamp":1780513799668,"_id":"ApSt2Lg9VrFSxhsS"}
 {"time":"02:14:59 PM","winNums":[8,20,34,43,46,49],"timestamp":1780568099166,"_id":"B8Ox8aoxdmRoqLDw"}
@@ -61,7 +61,7 @@
 {"time":"06:29:59 PM","winNums":[16,18,21,27,28,40],"timestamp":1780583399305,"_id":"DZfaHTlzma796vPJ"}
 {"time":"05:19:59 PM","winNums":[17,26,28,42,43,47],"timestamp":1780579199860,"_id":"Dc6pEsur7VE7vgad"}
 {"time":"06:44:59 PM","winNums":[2,9,16,27,28,36],"timestamp":1780584299994,"_id":"E2TOawyot6bXDPwE"}
-{"partnerId":"demo_skin_default","time":"09:44:59 PM","winNums":[4,5,25,32,33,35],"timestamp":1780767899639,"_id":"E4Z6X5rSYIJd6KDu"}
+{"partnerId":"demo_mtwtech","time":"09:44:59 PM","winNums":[4,5,25,32,33,35],"timestamp":1780767899639,"_id":"E4Z6X5rSYIJd6KDu"}
 {"time":"07:04:59 PM","winNums":[5,10,13,21,28,45],"timestamp":1780412699992,"_id":"ENZT1VdwLyAn6WTd"}
 {"partnerId":"mines","time":"09:54:59 PM","winNums":[16,21,37,40,44,46],"timestamp":1780768499787,"_id":"EZJkxziamnsoabK8"}
 {"time":"02:34:59 PM","winNums":[13,19,22,24,41,47],"timestamp":1780569299256,"_id":"ElSm37uvIoILXgVK"}
@@ -99,7 +99,7 @@
 {"partnerId":"slots5x3","time":"09:44:59 PM","winNums":[2,4,13,15,24,43],"timestamp":1780767899638,"_id":"L8UTuHNigO13wcIs"}
 {"time":"02:24:59 PM","winNums":[13,14,20,32,35,39],"timestamp":1780568699176,"_id":"LaAfy4Nd6b4PZHwa"}
 {"partnerId":"dice","time":"10:24:59 PM","winNums":[8,22,33,43,47,49],"timestamp":1780770299947,"_id":"LbX32rhbMHJh5xbm"}
-{"partnerId":"demo_skin_default","time":"09:54:59 PM","winNums":[6,12,14,25,30,36],"timestamp":1780768499798,"_id":"LcXvjInBMWC5h3Tw"}
+{"partnerId":"demo_mtwtech","time":"09:54:59 PM","winNums":[6,12,14,25,30,36],"timestamp":1780768499798,"_id":"LcXvjInBMWC5h3Tw"}
 {"time":"06:59:59 PM","winNums":[9,13,27,30,32,39],"timestamp":1780412399906,"_id":"Lfr2jRRhS4Kwl6UK"}
 {"partnerId":"mines","time":"10:24:59 PM","winNums":[3,17,24,29,34,48],"timestamp":1780770299942,"_id":"LwbShlYThm9Wrn1p"}
 {"time":"08:34:59 PM","winNums":[6,16,17,23,31,35],"timestamp":1780504499810,"_id":"MC0nUTrVEiKTkZib"}
@@ -120,7 +120,7 @@
 {"partnerId":"promoCodes","time":"10:24:59 PM","winNums":[23,28,44,46,47,48],"timestamp":1780770299954,"_id":"P2ozMcullxsRCgIW"}
 {"time":"11:24:59 AM","winNums":[10,18,28,36,38,48],"timestamp":1780557899310,"_id":"P732BDIbk8VfgTLn"}
 {"partnerId":"dice","time":"10:09:59 PM","winNums":[14,20,31,35,36,43],"timestamp":1780769399893,"_id":"PEQFS2nQzLXNcaIK"}
-{"partnerId":"demo_skin_default","time":"03:29:59 PM","winNums":[5,9,11,24,27,42],"timestamp":1780831799287,"_id":"PabGaVmlbSoA5IGT"}
+{"partnerId":"demo_mtwtech","time":"03:29:59 PM","winNums":[5,9,11,24,27,42],"timestamp":1780831799287,"_id":"PabGaVmlbSoA5IGT"}
 {"partnerId":"crash","time":"10:24:59 PM","winNums":[14,18,37,41,42,45],"timestamp":1780770299947,"_id":"PntXSjCIxktvljDW"}
 {"partnerId":"holdem","time":"10:24:59 PM","winNums":[1,3,10,17,41,47],"timestamp":1780770299950,"_id":"PwtLH2CZbRqQzVX6"}
 {"time":"05:54:59 PM","winNums":[4,12,13,16,45,46],"timestamp":1780581299609,"_id":"Q3oB5iWXFJEvkVA6"}
@@ -143,7 +143,7 @@
 {"time":"10:44:59 PM","winNums":[1,2,6,8,18,30],"timestamp":1780512299042,"_id":"TEWIS6QFJKx47kEc"}
 {"time":"02:59:59 PM","winNums":[19,20,23,30,35,38],"timestamp":1780397999613,"_id":"TIiqAaiXxrKWhXWr"}
 {"time":"11:24:59 PM","winNums":[2,16,21,29,45,46],"timestamp":1780514699469,"_id":"TMmozX0Ui93OVo6h"}
-{"partnerId":"demo_skin_default","time":"10:24:59 PM","winNums":[10,20,21,23,37,41],"timestamp":1780770299955,"_id":"TRRoZcyXLOxZSLB3"}
+{"partnerId":"demo_mtwtech","time":"10:24:59 PM","winNums":[10,20,21,23,37,41],"timestamp":1780770299955,"_id":"TRRoZcyXLOxZSLB3"}
 {"time":"02:54:59 PM","winNums":[3,8,12,19,21,25],"timestamp":1780397699409,"_id":"TWToBYw7gR5nUa5t"}
 {"partnerId":"promoCodes","time":"09:34:59 PM","winNums":[2,4,11,20,33,34],"timestamp":1780767299582,"_id":"TcZeHxw8eeMIN6la"}
 {"time":"01:34:59 PM","winNums":[4,10,15,27,29,37],"timestamp":1780479299791,"_id":"UEBzf6eqWcs31Bvf"}
@@ -151,7 +151,7 @@
 {"partnerId":"sport","time":"09:39:59 PM","winNums":[6,7,32,38,42,47],"timestamp":1780767599345,"_id":"ULnCqdEEBzRi5RTN"}
 {"time":"01:04:59 PM","winNums":[5,25,28,36,38,49],"timestamp":1780477499060,"_id":"UVcsJ7VMzXCzdEsc"}
 {"time":"05:49:59 PM","winNums":[9,10,17,24,35,41],"timestamp":1780494599135,"_id":"UX5I0JRm7OT9KPxS"}
-{"partnerId":"demo_skin_default","time":"09:39:59 PM","winNums":[9,19,29,31,43,44],"timestamp":1780767599398,"_id":"UcsYlzJZTnJ2pcT3"}
+{"partnerId":"demo_mtwtech","time":"09:39:59 PM","winNums":[9,19,29,31,43,44],"timestamp":1780767599398,"_id":"UcsYlzJZTnJ2pcT3"}
 {"time":"01:49:59 PM","winNums":[9,11,22,23,31,47],"timestamp":1780480199766,"_id":"UucpKt8b20HxqbJw"}
 {"partnerId":"mines","time":"10:09:59 PM","winNums":[12,15,40,41,43,47],"timestamp":1780769399891,"_id":"V2tqFCYnA1qJKlZ6"}
 {"time":"10:59:59 PM","winNums":[6,13,22,35,37,45],"timestamp":1780513199865,"_id":"V6X4R4MZhtlnPZeL"}
@@ -162,7 +162,7 @@
 {"time":"08:29:59 PM","winNums":[10,21,26,40,42,49],"timestamp":1780417799269,"_id":"WITvQ5UBHis39pEh"}
 {"time":"06:14:59 AM","winNums":[3,12,16,18,23,44],"timestamp":1780452899125,"_id":"WR0MJ5z4QBiWUzrM"}
 {"partnerId":"roulette","time":"10:24:59 PM","winNums":[3,9,15,21,39,46],"timestamp":1780770299951,"_id":"Wh0e5ODbH53f5Pt1"}
-{"partnerId":"demo_skin_default","time":"03:49:59 PM","winNums":[8,19,20,21,31,39],"timestamp":1780832999845,"_id":"WrrDYjZJmENxEc52"}
+{"partnerId":"demo_mtwtech","time":"03:49:59 PM","winNums":[8,19,20,21,31,39],"timestamp":1780832999845,"_id":"WrrDYjZJmENxEc52"}
 {"time":"11:54:59 PM","winNums":[17,18,19,22,34,39],"timestamp":1780430099477,"_id":"WwjJoKAp0Thz9hny"}
 {"time":"04:49:59 PM","winNums":[1,19,21,26,27,43],"timestamp":1780490999355,"_id":"XeUB3fMoRAIF7QIv"}
 {"time":"11:09:59 PM","winNums":[4,9,13,27,31,49],"timestamp":1780427399367,"_id":"Xitq1YLUKjJ5YKj0"}
@@ -214,13 +214,13 @@
 {"partnerId":"slots5x3","time":"10:09:59 PM","winNums":[4,7,17,22,39,43],"timestamp":1780769399899,"_id":"kqqKSUanZgqSJvev"}
 {"time":"04:24:59 PM","winNums":[8,11,12,27,42,45],"timestamp":1780575899622,"_id":"l6Ys0pjrM5DuF4R0"}
 {"time":"05:49:59 PM","winNums":[5,13,16,20,26,47],"timestamp":1780580999117,"_id":"lIfhE0WrsE4jb8Md"}
-{"partnerId":"demo_skin_default","time":"03:34:59 PM","winNums":[6,15,22,38,40,48],"timestamp":1780832099497,"_id":"lS4HuUytxv6ETuOZ"}
+{"partnerId":"demo_mtwtech","time":"03:34:59 PM","winNums":[6,15,22,38,40,48],"timestamp":1780832099497,"_id":"lS4HuUytxv6ETuOZ"}
 {"time":"05:29:59 PM","winNums":[2,12,22,23,47,48],"timestamp":1780493399416,"_id":"lZjfvoywVFeG01Kt"}
 {"time":"11:39:59 PM","winNums":[15,24,30,31,35,36],"timestamp":1780515599829,"_id":"lmu1c0PhlCakJuPm"}
 {"time":"10:39:59 PM","winNums":[7,8,16,25,38,44],"timestamp":1780511999867,"_id":"lrkC3cxBB9RCxEy5"}
 {"time":"09:04:59 PM","winNums":[5,7,18,34,40,45],"timestamp":1780506299293,"_id":"mFq57O17zQHHnEIx"}
 {"time":"11:34:59 PM","winNums":[9,17,22,28,43,48],"timestamp":1780515299803,"_id":"mmr2XstCtFVPh8bX"}
-{"partnerId":"demo_skin_default","time":"10:09:59 PM","winNums":[17,19,23,31,33,43],"timestamp":1780769399900,"_id":"n62wjSfG1UMeZ0lq"}
+{"partnerId":"demo_mtwtech","time":"10:09:59 PM","winNums":[17,19,23,31,33,43],"timestamp":1780769399900,"_id":"n62wjSfG1UMeZ0lq"}
 {"time":"10:54:59 PM","winNums":[1,6,9,12,20,38],"timestamp":1780426499679,"_id":"nC7Uc8PWrLj8i8Yn"}
 {"time":"01:19:59 PM","winNums":[5,6,15,42,43,49],"timestamp":1780478399776,"_id":"nHqcbBQLzNT4dI8P"}
 {"partnerId":"sport","time":"09:34:59 PM","winNums":[1,15,19,26,33,37],"timestamp":1780767299527,"_id":"noXM98HVyFwiLvS7"}
@@ -230,7 +230,7 @@
 {"time":"02:44:59 PM","winNums":[1,13,26,33,37,46],"timestamp":1780569899772,"_id":"oU8iwcDmvIpRjz7G"}
 {"time":"05:19:59 PM","winNums":[10,19,28,31,33,34],"timestamp":1780492799517,"_id":"ooHJhBynDx7nR28N"}
 {"time":"02:59:59 AM","winNums":[3,12,16,29,30,33],"timestamp":1780527599982,"_id":"owZaRL0zy4B09DRk"}
-{"partnerId":"demo_skin_default","time":"10:19:59 PM","winNums":[10,14,29,30,42,48],"timestamp":1780769999692,"_id":"p5JMEvLQcGOUSXoF"}
+{"partnerId":"demo_mtwtech","time":"10:19:59 PM","winNums":[10,14,29,30,42,48],"timestamp":1780769999692,"_id":"p5JMEvLQcGOUSXoF"}
 {"time":"12:24:59 PM","winNums":[10,15,25,29,36,44],"timestamp":1780475099996,"_id":"pCXei8FENkoD2Flo"}
 {"partnerId":"slots5x3","time":"10:19:59 PM","winNums":[34,39,40,43,46,49],"timestamp":1780769999691,"_id":"prmcgsdixyqCRSOB"}
 {"time":"05:14:59 PM","winNums":[8,17,30,34,38,41],"timestamp":1780492499316,"_id":"pvyXN5KhnERW3lkm"}
@@ -253,9 +253,9 @@
 {"time":"05:39:59 PM","winNums":[11,12,23,32,35,41],"timestamp":1780493999125,"_id":"tpeNl8rODqcQaGoV"}
 {"time":"11:39:59 AM","winNums":[3,5,10,13,14,41],"timestamp":1780558799468,"_id":"uBUNn3FNJcUOoCuY"}
 {"time":"04:39:59 PM","winNums":[8,25,32,42,44,46],"timestamp":1780576799324,"_id":"uKpKLJ9WVejvWn4X"}
-{"partnerId":"demo_skin_default","time":"03:39:59 PM","winNums":[1,3,6,9,10,14],"timestamp":1780832399753,"_id":"ueEeYiRRCwm3WXXS"}
+{"partnerId":"demo_mtwtech","time":"03:39:59 PM","winNums":[1,3,6,9,10,14],"timestamp":1780832399753,"_id":"ueEeYiRRCwm3WXXS"}
 {"time":"05:09:59 PM","winNums":[1,7,18,34,42,48],"timestamp":1780492199133,"_id":"vKuJO6oiR8gtoOaI"}
-{"partnerId":"demo_skin_default","time":"10:14:59 PM","winNums":[2,4,14,15,31,39],"timestamp":1780769699273,"_id":"vi5kpLnnT4Gm3hOL"}
+{"partnerId":"demo_mtwtech","time":"10:14:59 PM","winNums":[2,4,14,15,31,39],"timestamp":1780769699273,"_id":"vi5kpLnnT4Gm3hOL"}
 {"time":"11:44:59 AM","winNums":[3,4,38,39,46,49],"timestamp":1780559099880,"_id":"vnwa3KT1iPb0B99e"}
 {"time":"02:14:59 PM","winNums":[2,6,13,24,29,37],"timestamp":1780481699097,"_id":"vo2o6d4FoLLCQMgG"}
 {"time":"08:29:59 PM","winNums":[2,8,17,18,26,29],"timestamp":1780504200015,"_id":"vtcyL8eHtVDqto2D"}
@@ -286,6 +286,6 @@
 {"partnerId":"crash","time":"09:34:59 PM","winNums":[12,13,25,37,42,47],"timestamp":1780767299579,"_id":"zHsiKEqML1PR3jez"}
 {"time":"04:59:59 PM","winNums":[7,8,22,30,41,42],"timestamp":1780577999841,"_id":"zO1FCSkMQKmIBuFY"}
 {"time":"11:29:59 PM","winNums":[3,16,37,38,43,46],"timestamp":1780428599502,"_id":"zsTz3MY9pKcjR5pg"}
-{"partnerId":"demo_skin_default","time":"03:54:59 PM","winNums":[10,17,22,26,33,39],"timestamp":1780833299313,"_id":"ExvOcfNSQ7AaXojU"}
-{"partnerId":"demo_skin_default","time":"03:59:59 PM","winNums":[1,5,18,19,33,49],"timestamp":1780833599670,"_id":"l7O3J04Lfurfwgb6"}
-{"partnerId":"demo_skin_default","time":"04:04:59 PM","winNums":[15,18,23,38,41,46],"timestamp":1780833899941,"_id":"BZASuNpfKQweauZZ"}
+{"partnerId":"demo_mtwtech","time":"03:54:59 PM","winNums":[10,17,22,26,33,39],"timestamp":1780833299313,"_id":"ExvOcfNSQ7AaXojU"}
+{"partnerId":"demo_mtwtech","time":"03:59:59 PM","winNums":[1,5,18,19,33,49],"timestamp":1780833599670,"_id":"l7O3J04Lfurfwgb6"}
+{"partnerId":"demo_mtwtech","time":"04:04:59 PM","winNums":[15,18,23,38,41,46],"timestamp":1780833899941,"_id":"BZASuNpfKQweauZZ"}

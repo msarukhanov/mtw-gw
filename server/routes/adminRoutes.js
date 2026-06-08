@@ -31,7 +31,7 @@ router.post('/admin/catalog/game-setup', gameController.adminUpdateGameSettings)
 // Эндпоинты для админки Спортсбука
 router.get('/admin/sports/pending', async (req, res) => {
     try {
-        const partnerId = req.partnerId || req.query.partnerId || "demo_skin_default";
+        const partnerId = req.partnerId || req.query.partnerId || "demo_mtwtech";
 
         // ИСПРАВЛЕНО: Запрашиваем нерассчитанные ставки строго для текущего partnerId
         const bets = await state.getPendingBets(partnerId);

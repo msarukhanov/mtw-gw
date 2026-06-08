@@ -9,7 +9,7 @@ module.exports = (req, res, next) => {
     // СЕКРЕТНЫЙ СУПЕР-АДМИН ДЛЯ ТЕБЯ (Доступ ко всем скинам для демонстрации, hint: admin / admin)
     if (username === 'admin' && password === 'admin') {
         // Если супер-админ заходит на конкретный скин, привязываем его, иначе ставим дефолтный
-        req.partnerId = partnerId || "demo_skin_default";
+        req.partnerId = partnerId || "demo_mtwtech";
         req.adminUser = 'superadmin';
         return next();
     }

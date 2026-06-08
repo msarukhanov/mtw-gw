@@ -101,7 +101,7 @@ router.post('/auth', async (req, res) => {
     if (!username || typeof username !== 'string' || username.trim().length < 2) {
         return res.status(400).json({ error: "Username is required (min 2 chars)" });
     }
-    const targetPartnerId = partnerId || "demo_skin_default";
+    const targetPartnerId = partnerId || "demo_mtwtech";
 
     try {
         // Инициализируем демо-игрока внутри нужного скина.

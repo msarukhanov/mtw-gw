@@ -5,7 +5,7 @@ const seamless = require('../services/seamlessService');
 exports.getAdminData = async (req, res) => {
     try {
         // ИСПРАВЛЕНО: Безопасный сбор partnerId из мидлвара, тела или query-строки запроса админки
-        const partnerId = req.partnerId || req.query.partnerId || "demo_skin_default";
+        const partnerId = req.partnerId || req.query.partnerId || "demo_mtwtech";
 
         const config = state.getConfig(partnerId);
         const jackpot = state.getJackpot(partnerId);
@@ -137,7 +137,7 @@ exports.runCashback = async (req, res) => {
 // 8. Сбор финансового отчета по GGR и NetProfit из таблицы accounting_logs в Postgres
 exports.getFinanceReport = async (req, res) => {
     try {
-        const partnerId = req.partnerId || "demo_skin_default";
+        const partnerId = req.partnerId || "demo_mtwtech";
         const report = await state.getFinancialReport(partnerId);
         res.json({ success: true, report });
     } catch (err) {

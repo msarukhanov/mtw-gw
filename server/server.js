@@ -209,14 +209,14 @@ async function initConfig() {
         // Если в базе ничего нет (первый запуск)
         if (res.rowCount === 0) {
             const firstB2BConfig = {
-                "demo_skin_default": {
+                "demo_mtwtech": {
                     ...DEFAULT_CONFIG,
                     integration: {
                         url: defaultPlatformUrl,
                         secret: 'demo_showcase_secure_token'
                     }
                 },
-                "banks_demo_skin_default": {
+                "banks_demo_mtwtech": {
                     globalJackpot: 1000,
                     mines: 5000,
                     crash: 5000,
@@ -235,10 +235,10 @@ async function initConfig() {
             // Загружаем данные в оперативную память бэкенда
             global.CONFIG = {};
             global.banks = {};
-            global.CONFIG["demo_skin_default"] = firstB2BConfig["demo_skin_default"];
-            global.banks["demo_skin_default"] = firstB2BConfig["banks_demo_skin_default"];
+            global.CONFIG["demo_mtwtech"] = firstB2BConfig["demo_mtwtech"];
+            global.banks["demo_mtwtech"] = firstB2BConfig["banks_demo_mtwtech"];
 
-            console.log("ℹ️ [Postgres B2B] Core initialized with default partner: demo_skin_default");
+            console.log("ℹ️ [Postgres B2B] Core initialized with default partner: demo_mtwtech");
         } else {
             // Если база уже заполнена, восстанавливаем CONFIG и banks в память из Postgres
             const cfg = res.rows[0].config_data;
@@ -274,17 +274,17 @@ async function initConfig222() {
     let cfg = await configDb.findOne({ _id: "global_config" });
 
     if (!cfg) {
-        // Создаем стартовую структуру, где "demo_skin_default" — это наш первый B2B-партнер
+        // Создаем стартовую структуру, где "demo_mtwtech" — это наш первый B2B-партнер
         const firstB2BConfig = {
             _id: "global_config",
-            "demo_skin_default": JSON.parse(JSON.stringify({
+            "demo_mtwtech": JSON.parse(JSON.stringify({
                 ...DEFAULT_CONFIG,
                 integration: {
                     url: defaultPlatformUrl,
                     secret: 'demo_showcase_secure_token'
                 }
             })),
-            "banks_demo_skin_default": {
+            "banks_demo_mtwtech": {
                 globalJackpot: 1000,
                 mines: 5000,
                 crash: 5000,
@@ -296,10 +296,10 @@ async function initConfig222() {
         await configDb.insert(firstB2BConfig);
 
         // Загружаем в оперативную память
-        CONFIG["demo_skin_default"] = firstB2BConfig["demo_skin_default"];
-        banks["demo_skin_default"] = firstB2BConfig["banks_demo_skin_default"];
+        CONFIG["demo_mtwtech"] = firstB2BConfig["demo_mtwtech"];
+        banks["demo_mtwtech"] = firstB2BConfig["banks_demo_mtwtech"];
 
-        console.log("ℹ️ B2B Core initialized with default partner: demo_skin_default");
+        console.log("ℹ️ B2B Core initialized with default partner: demo_mtwtech");
     } else {
         // ИСПРАВЛЕНО: Правильно восстанавливаем мультитенентную структуру CONFIG из базы NeDB, не забивая корень
         Object.keys(cfg).forEach(key => {
