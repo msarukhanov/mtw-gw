@@ -207,7 +207,7 @@ exports.launchGame = async (req, res) => {
         const launchToken = await state.createGameSession(partnerId, gameSlug, {
             username,
             isDemo: demoMode,
-            theme: gameCheck.theme || 'default'
+            theme: game.theme || 'default'
         });
 
         // 4. Собираем финальный iFrame URL
