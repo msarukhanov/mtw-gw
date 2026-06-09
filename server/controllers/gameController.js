@@ -202,8 +202,6 @@ exports.launchGame = async (req, res) => {
             // Синхронизируем локальный кэш игрока в Postgres
             await state.getOrCreatePlayer(username, partnerId, async () => externalUser);
         }
-
-        console.log(game);
         // 3. Создаем одноразовый токен запуска в Postgres game_sessions
         const launchToken = await state.createGameSession(partnerId, gameSlug, {
             username,
