@@ -483,9 +483,17 @@ const gamificationMethods = {
         return winnersInfo;
     },
 
+    resetDailyQuestsForAll: async () => {
+        // Очищаем прогресс игр, claimed ставим в false
+        await global.pool.query(
+            `UPDATE players 
+             SET daily_quests = '{"gamesPlayed": 0, "claimed": false}'::jsonb`
+        );
+        console.log("✅ Ежедневные квесты успешно сброшены в СУБД для всех игроков.");
+    },
 
     // 3. Массовый Крон-сброс квестов в Postgres одной строчкой (БЕЗ циклов, не нагружает базу данных)
-    resetDailyQuestsForAll: async (partnerId = null) => {
+    resetDailyQuestsForAll222: async (partnerId = null) => {
         try {
             const globalConfig = global.CONFIG || {};
             const partnersToReset = partnerId ? [partnerId] : Object.keys(globalConfig);
@@ -670,6 +678,34 @@ const promoMethods = {
             }
         }
         return payoutsCount;
+    },
+
+    runCronCashback: async (targetMode) => {
+        const crypto = require('crypto');
+        const walletService = seamless || require('./services/seamlessService');
+
+        console.log(`📡 [Cron] Запуск автоматического расчета кэшбэка для режима: ${targetMode}...`);
+
+        // Ищем всех партнеров, у которых в конфиге активирован нужный режим кэшбэка
+        const configsRes = await global.pool.query("SELECT id, config_data FROM b2b_configs WHERE id = 'global_config'");
+        if (configsRes.rowCount === 0) return;
+
+        const globalConfig = configsRes.rows[0].config_data;
+
+        // Перебираем всех партнеров в системе
+        for (const partnerId in globalConfig) {
+            const partnerConfig = globalConfig[partnerId] || {};
+            const cbConfig = partnerConfig.gamification?.cashback || { mode: 'manual', percent: 10 };
+
+            // Если режим совпадает (например, 'daily') и процент > 0 — запускаем начисления
+            if (cbConfig.mode === targetMode && Number(cbConfig.percent) > 0) {
+                console.log(`💰 Начисление ${cbConfig.percent}% [${targetMode}] кэшбэка для партнера: ${partnerId}`);
+
+                // Используем наш готовый метод массовой выплаты кэшбэка, который мы написали для админки!
+                // Он сам посчитает (ставки - выигрыши) в Postgres и начислит коины через seamless шлюз
+                await module.exports.runGlobalCashback(partnerId, cbConfig.percent);
+            }
+        }
     }
 };
 

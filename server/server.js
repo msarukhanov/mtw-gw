@@ -5,6 +5,7 @@ const cors = require('cors');
 const http = require('http');
 const path = require('path');
 const { Pool } = require('pg');
+const cron = require('node-cron');
 
 const { Server } = require('socket.io');
 
@@ -360,28 +361,63 @@ server.listen(PORT, () => {
 
 
 // Переменная, чтобы код сброса не выполнился несколько раз в течение одной минуты 00:00
-let lastResetDay = new Date().getDate();
+// let lastResetDay = new Date().getDate();
+//
+// setInterval(async () => {
+//     const now = new Date();
+//     const currentDay = now.getDate();
+//     const hours = now.getHours();
+//     const minutes = now.getMinutes();
+//
+//     // Проверяем: наступила ли полночь (00:00) и наступил ли новый день
+//     if (hours === 0 && minutes === 0 && currentDay !== lastResetDay) {
+//         lastResetDay = currentDay; // Фиксируем новый день
+//
+//         console.log("⏰ Наступила полночь. Запуск обнуления квестов...");
+//         try {
+//             await state.resetDailyQuestsForAll();
+//             await vfootball.generateDailySchedule();
+//         } catch (err) {
+//             console.error("Failed to reset daily quests:", err.message);
+//         }
+//     }
+// }, 60000);
 
-setInterval(async () => {
-    const now = new Date();
-    const currentDay = now.getDate();
-    const hours = now.getHours();
-    const minutes = now.getMinutes();
 
-    // Проверяем: наступила ли полночь (00:00) и наступил ли новый день
-    if (hours === 0 && minutes === 0 && currentDay !== lastResetDay) {
-        lastResetDay = currentDay; // Фиксируем новый день
 
-        console.log("⏰ Наступила полночь. Запуск обнуления квестов...");
-        try {
-            await state.resetDailyQuestsForAll();
+
+
+
+// 📅 1. ЕЖЕДНЕВНЫЙ КРОН: Запускается КАЖДУЮ ПОЛНОЧЬ ровно в 00:00
+cron.schedule('0 0 * * *', async () => {
+    console.log("⏰ [CRON] Наступила полночь 00:00. Запуск ежедневных процедур...");
+
+    try {
+        // Сброс ежедневных квестов в Postgres
+        await state.resetDailyQuestsForAll();
+
+        // Автоматическая выплата Ежедневного (Daily) кэшбэка тем партнерам, у кого он включен
+        await state.runCronCashback('daily');
+
+        // Твоя генерация расписания виртуального футбола
+        if (typeof vfootball?.generateDailySchedule === 'function') {
             await vfootball.generateDailySchedule();
-        } catch (err) {
-            console.error("Failed to reset daily quests:", err.message);
         }
+
+    } catch (err) {
+        console.error("❌ Критическая ошибка выполнения Ежедневного Крона:", err.message);
     }
-}, 60000);
+});
 
+// 📅 2. ЕЖЕНЕДЕЛЬНЫЙ КРОН: Запускается КАЖДЫЙ понедельник ровно в 00:00
+cron.schedule('0 0 * * 1', async () => {
+    console.log("⏰ [CRON] Воскресенье 00:00. Запуск еженедельных процедур...");
 
+    try {
+        // Автоматическая выплата Еженедельного (Weekly) кэшбэка
+        await state.runCronCashback('weekly');
 
-
+    } catch (err) {
+        console.error("❌ Критическая ошибка выполнения Еженедельного Крона:", err.message);
+    }
+});
