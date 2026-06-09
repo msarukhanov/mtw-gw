@@ -45,7 +45,7 @@ exports.placeBet = async (req, res) => {
     let debitResult;
     try {
         // 7. Списание баланса через HTTP-запрос к платформе вместо RAM
-        debitResult = await seamless.debit(username, partnerId, sessionId, betAmount, gameName, roundId);
+        debitResult = await seamless.debit(req.player, username, partnerId, sessionId, betAmount, gameName, roundId);
         if(debitResult.error) {
             return res.status(400).json(debitResult);
         }

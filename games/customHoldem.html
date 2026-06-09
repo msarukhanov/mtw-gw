@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTWTech Holdem</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDAgNTAwIj4KPHJlY3Qgd2lkdGg9IjUwMCIgaGVpZ2h0PSI1MDAiIGZpbGw9IiMxMjEyMTIiIHJ4PSI0MCIvPgo8dGV4dCB4PSI1MCUiIHk9IjQ1JSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IidKZXRCcmFpbnMgTW9ubycsICdGaXJhIENvZGUnLCAnTW9udHNlcnJhdCcsIHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSI5MDAiPgo8dHNwYW4geD0iNTAlIiBkeT0iMCIgZm9udC1zaXplPSIxMjUiIGZpbGw9IiNmZjVhNWYiIHRleHRMZW5ndGg9IjM2MCIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nQW5kR2x5cGhzIj5NVFc8L3RzcGFuPgo8dHNwYW4geD0iNTAlIiBkeT0iMTE1IiBmb250LXNpemU9IjExNSIgZmlsbD0iIzRlY2NhMyIgdGV4dExlbmd0aD0iMzYwIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiPlRFQ0g8L3RzcGFuPgo8L3RleHQ+Cjwvc3ZnPg==">
+
+    <link rel="stylesheet" href="../view/styles/gameBase.css">
+    <link rel="stylesheet" href="./customHoldem.css">
+
+    <script src="../view/scripts/socket.io.min.js" integrity="sha384-kzavj5fiMwLKzzD1f8S7TeoVIEi7uKHvbTA3ueZkrzYq75pNQUiUi6Dy98Q3fxb0" crossorigin="anonymous"></script>
+
+</head>
+<body>
+
+<div class="game-container">
+    <div class="auth-panel">
+        <div id="userInfo">Player: <span id="usernameLabel" style="color:#e94560">Guest</span></div>
+        <div>Balance: <span class="balance-value" id="balanceLabel">0</span> 🪙</div>
+        <button class="login-btn" id="authBtn" onclick="handleAuth()">Login</button>
+    </div>
+
+    <div class="jackpot-banner">💥 JACKPOT: <span id="jackpotLabel">1000</span> 🪙</div>
+</div>
+
+<div class="game-container" id="hlGame" style="padding: 0 5px; position: relative; overflow: hidden; background: #121212;">
+
+    <!-- Видеофон: строго muted и playsinline для обхода блокировок браузера -->
+    <video id="hlVideoBg" src="./customHoldem.mp4" muted playsinline preload="auto" style="position: absolute; top: 0; left: 0; width: 100%; object-fit: contain; z-index: 1; pointer-events: none; display: block;"></video>
+
+
+
+    <!-- Измененный слой интерфейса: теперь min-height убран, чтобы контейнер не растягивался насильно -->
+    <div class="game-content-overlay" style="">
+
+        <!-- Единый горизонтальный ряд для всех карт на столе -->
+        <div class="hl-table-row" style="display: flex; justify-content: space-between; align-items: flex-end; width: 100%; padding: 0 5px; box-sizing: border-box;">
+
+            <!-- Левое крыло: Дилер -->
+            <div class="hl-wrapper dealer-zone" style="width: 35%;">
+                <div class="hl-header">Dealer (<span id="hlDealerComboLabel">?</span>)</div>
+                <div class="hl-cards-row" id="hlDealerCards"></div>
+            </div>
+
+            <!-- Центр: Общие карты стола (Борд) -->
+            <div class="hl-wrapper board-zone" style="width: 25%; background: rgba(78, 204, 163, 0.05) !important; border: 1px dashed rgba(78, 204, 163, 0.3); border-radius: 8px;">
+            </div>
+
+            <!-- Правое крыло: Игрок -->
+            <div class="hl-wrapper player-zone" style="width: 35%;">
+                <div class="hl-header" style="color: #ff5a5f;">You (<span id="hlPlayerComboLabel">?</span>)</div>
+                <div class="hl-cards-row" id="hlPlayerCards"></div>
+            </div>
+
+        </div>
+        <div class="hl-table-row" style="display: flex; justify-content: space-between; align-items: flex-end; width: 100%; padding: 0 10px; box-sizing: border-box;">
+
+            <!-- Левое крыло: Дилер -->
+            <div class="hl-wrapper dealer-zone" style="width: 15%;">
+
+            </div>
+
+            <!-- Центр: Общие карты стола (Борд) -->
+            <div class="hl-wrapper board-zone" style="width: 65%; background: rgba(78, 204, 163, 0.05) !important; border: 1px dashed rgba(78, 204, 163, 0.3); border-radius: 8px;">
+                <div class="hl-header" style="color: #4ecca3;">Board</div>
+                <div class="hl-cards-row" id="hlBoardCards"></div>
+            </div>
+
+            <!-- Правое крыло: Игрок -->
+            <div class="hl-wrapper player-zone" style="width: 15%;">
+
+            </div>
+
+        </div>
+
+        <!-- Нижняя панель управления и инфо -->
+        <div style="background: rgba(18, 18, 18, 0.85); padding: 10px; border-radius: 12px; backdrop-filter: blur(5px);">
+
+            <button class="hl-btn" id="hlSpinBtn" onclick="hlSpin()">PLAY HAND <span>20 🪙</span></button>
+            <div class="msg-box" id="msgBoxHl" style="margin-top: 10px; text-align: center;">Beat the dealer's poker hand!</div>
+        </div>
+    </div>
+</div>
+
+
+
+<script src="../view/scripts/main.js"></script>
+
+<script src="./customHoldem.js"></script>
+
+</body>
+</html>

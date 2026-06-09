@@ -1,0 +1,135 @@
+/* Облегченные прозрачные контейнеры для зон стола */
+.hl-wrapper {
+    background: transparent !important; /* Убираем тяжелый синий фон, так как сзади видео */
+    padding: 4px 10px;
+    text-align: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.hl-header {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 4px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+/* Строки для карт */
+.hl-cards-row {
+    display: flex;
+    gap: 5px;
+    min-height: 62px; /* Уменьшили высоту под новые карты */
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+/* Уменьшенные карты для аккуратного наложения */
+.hl-card-unit {
+    width: 40px;
+    height: 58px;
+    background: #ffffff !important;
+    color: #000000 !important;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 3px 4px;
+    font-weight: bold;
+    font-size: 13px; /* Меньше шрифт */
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.5);
+    position: relative;
+    user-select: none;
+    box-sizing: border-box;
+}
+
+/* Красные масти */
+.hl-card-unit.hl-red {
+    color: #e94560 !important;
+}
+
+/* Рубашка карт */
+.hl-card-unit.hl-back {
+    background: linear-gradient(135deg, #1f1f45, #0f3460) !important;
+    border: 1px solid #4ecca3;
+    color: #4ecca3 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+/* Кнопка Холдема */
+.hl-btn {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #4ecca3, #2b9371);
+    border: none;
+    color: #12122c;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(78, 204, 163, 0.3);
+    transition: transform 0.1s;
+    box-sizing: border-box;
+}
+
+.hl-btn:active {
+    transform: scale(0.98);
+}
+
+.hl-btn:disabled {
+    background: #222233 !important;
+    color: #555 !important;
+    box-shadow: none;
+}
+
+.msg-box {
+    min-height: 20px;
+    font-size: 14px;
+    font-weight: bold;
+    color: #e94560;
+}
+
+#hlGame {
+    position: relative;
+    overflow: hidden;
+    background: #121212;
+    width: 100%;
+    /* Автоматически вычисляет идеальную высоту относительно ширины, чтобы видео не обрезалось */
+    aspect-ratio: 9 / 16; /* 👈 Если ваше видео более «квадратное» (4:3), замените на: aspect-ratio: 4 / 3; */
+}
+
+/* Делаем так, чтобы слой с картами занимал ровно ту же высоту, что и видео */
+.game-content-overlay {
+    height: 100%;
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 0 15px;
+    box-sizing: border-box;
+}
+
+/* Обновляем строку карт для плотной компоновки в один ряд */
+.hl-cards-row {
+    display: flex;
+    gap: 4px;
+    min-height: 62px;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    flex-wrap: nowrap; /* 👈 Карты строго в одну линию, без переносов */
+}
+
+/* Делаем заголовки зон чуть компактнее */
+.hl-header {
+    font-size: 10px;
+    margin-bottom: 2px;
+    text-align: center;
+}

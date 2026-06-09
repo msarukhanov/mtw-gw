@@ -17,7 +17,7 @@ exports.spin = async (req, res) => {
     let debitResult;
     try {
         // Списываем стоимость кручения через HTTP-запрос дебита к платформе вместо RAM
-        debitResult = await seamless.debit(username, partnerId, sessionId, config.cost, gameName, roundId);
+        debitResult = await seamless.debit(req.player, username, partnerId, sessionId, config.cost, gameName, roundId);
         if(debitResult.error) {
             return res.status(400).json(debitResult);
         }

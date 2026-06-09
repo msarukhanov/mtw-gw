@@ -150,6 +150,7 @@ exports.spinHoldem = async (req, res) => {
 
     const partnerConfig = state.getConfig(partnerId) || {};
     const config = partnerConfig.holdem || { cost: 20, rtp: 95 };
+    console.log(config);
 
     // Генерируем ID раунда для HTTP-запросов
     const roundId = 'holdem_' + crypto.randomBytes(8).toString('hex');
@@ -158,7 +159,7 @@ exports.spinHoldem = async (req, res) => {
     let debitResult;
     try {
         // Списываем ставку через HTTP-запрос дебита к платформе вместо RAM
-        debitResult = await seamless.debit(username, partnerId, sessionId, config.cost, gameName, roundId);
+        debitResult = await seamless.debit(req.player, username, partnerId, sessionId, config.cost, gameName, roundId);
         if(debitResult.error) {
             return res.status(400).json(debitResult);
         }

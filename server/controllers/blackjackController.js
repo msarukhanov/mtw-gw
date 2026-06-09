@@ -66,7 +66,7 @@ exports.deal = async (req, res) => {
     let debitResult;
     try {
         // Списываем ставку через HTTP-запрос к платформе
-        debitResult = await seamless.debit(username, partnerId, sessionId, config.cost, gameName, roundId);
+        debitResult = await seamless.debit(req.player, username, partnerId, sessionId, config.cost, gameName, roundId);
         if(debitResult.error) {
             return res.status(400).json(debitResult);
         }
