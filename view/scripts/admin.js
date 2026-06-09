@@ -205,23 +205,6 @@ async function loadData() {
 
         document.getElementById('g_affiliatePercent').value = data.config.gamification.affiliatePercent || 10;
 
-        document.getElementById('g_cashbackPercent').value = data.config.gamification.cashbackPercent || 10;
-
-        // Active Promocodes Render Loop
-        const promoTbody = document.getElementById('promoCodesTableBody');
-        if (data.config.promoCodes && data.config.promoCodes.length > 0) {
-            promoTbody.innerHTML = data.config.promoCodes.map(p => `
-                    <tr>
-                        <td><b>${p.code}</b></td>
-                        <td><b style="color:var(--neon-green);">${p.reward} 🪙</b></td>
-                        <td>${p.maxUses} times</td>
-                        <td><span style="color: ${p.active === 1 ? 'var(--accent-green)' : 'var(--accent-red)'}"><b>${p.active === 1 ? 'ACTIVE' : 'DISABLED'}</b></span></td>
-                    </tr>
-                `).join('');
-        } else {
-            promoTbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:10px;">Registry empty</td></tr>`;
-        }
-
 
         // 🔄 ОБНОВЛЕННАЯ СИНХРОНИЗАЦИЯ ФИНАНСОВ И ДВУХ НОВЫХ ВКЛАДОК ЖУРНАЛОВ
         loadAdminFinanceDashboard();
@@ -239,6 +222,9 @@ async function loadData() {
         loadAdminBetsRegistry();
 
         loadPlayers();
+
+        loadAdminPromos();
+        loadAdminCashbackConfig();
     }
     catch (err) {
         console.error(err);
@@ -337,71 +323,6 @@ document.getElementById('endTournamentBtn').addEventListener('click', async () =
             loadData();
         } else { alert('Tournament end error.'); }
     } catch (err) { alert('Server communication error.'); }
-});
-
-document.getElementById('promoForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const promoData = {
-        code: document.getElementById('p_code').value,
-        reward: document.getElementById('p_reward').value,
-        maxUses: document.getElementById('p_maxUses').value
-    };
-
-    const res = await fetch(`${SERVER_URL}/api/admin/add-promocode`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(promoData)
-    });
-
-    if (res.ok) {
-        alert('Promo voucher created and verified!');
-        document.getElementById('p_code').value = '';
-        document.getElementById('p_reward').value = '';
-        loadData();
-    } else {
-        const err = await res.json();
-        alert('Error: ' + err.error);
-    }
-});
-
-document.getElementById('runCashbackBtn').addEventListener('click', async () => {
-    if (!confirm('Are you sure you want to calculate and drop cashback balances for everyone?')) return;
-
-    try {
-        const res = await fetch(`${SERVER_URL}/api/admin/run-cashback`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-        });
-        const data = await res.json();
-
-        if (data.success) {
-            if (data.report.length === 0) {
-                alert('Calculation completed. No players with net loss discovered.');
-            } else {
-                let report = '💰 CASHBACK DISTRIBUTED SUCCESSFULLY:\n\n';
-                data.report.forEach(r => {
-                    report += `Player: ${r.username} | Net Loss: ${r.loss} 🪙 | Paid: +${r.paid} 🪙\n`;
-                });
-                alert(report);
-            }
-            loadData();
-        }
-    } catch (err) { alert('Operation execution failure on server.'); }
-});
-
-document.getElementById('cashbackConfigForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const cashbackData = {
-        gamification_cashbackPercent: document.getElementById('g_cashbackPercent').value
-    };
-
-    const res = await fetch(`${SERVER_URL}/api/admin/update-config`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(cashbackData)
-    });
-
-    if (res.ok) { alert('Cashback percentage successfully updated!'); loadData(); }
 });
 
 
@@ -1346,6 +1267,173 @@ function changePlayersPage(direction) {
     loadPlayers();
 }
 
+// 1. Загрузка списка промокодов с кнопками деактивации и выводом дат
+async function loadAdminPromos() {
+    try {
+        const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+        const res = await fetch(`${SERVER_URL}/api/admin/promos?partnerId=${currentPartnerId}`);
+        const data = await res.json();
+
+        const tbody = document.getElementById('promoCodesTableBody');
+        if (tbody && data.success && data.promoCodes) {
+            tbody.innerHTML = data.promoCodes.map(p => {
+                // Красиво форматируем дату окончания, если она есть
+                const expDate = p.expires_at
+                    ? new Date(p.expires_at).toLocaleDateString() + ' ' + new Date(p.expires_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+                    : '♾️ Forever';
+
+                const isActive = p.is_active === 1;
+
+                return `
+                    <tr>
+                        <td><b style="color: var(--accent-pink);">${p.code}</b></td>
+                        <td><b>${Number(p.reward).toFixed(2)} 🪙</b></td>
+                        <td><small style="color: var(--text-muted); font-weight:600;">${p.current_uses} / ${p.max_uses}</small></td>
+                        <td><small style="color: #8a99ad; font-family: monospace;">${expDate}</small></td>
+                        <td style="text-align: right;">
+                            <button onclick="togglePromoCodeState('${p.code}', ${p.is_active})" class="btn-bets-period" style="background: ${isActive ? 'transparent' : '#381b1b'}; border-color: ${isActive ? '#262c3a' : '#ff4d4d'}; color: ${isActive ? '#4ecca3' : '#ff4d4d'}; padding: 4px 10px; font-size: 11px;">
+                                ${isActive ? '🟢 ACTIVE' : '🛑 OFF'}
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    } catch (err) {
+        console.error('Failed to load voucher list:', err);
+    }
+}
+
+// 2. Создание нового промокода с учетом таймлайна жизни купона
+document.getElementById('promoForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    showLoader();
+
+    const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+    const code = document.getElementById('p_code').value;
+    const reward = document.getElementById('p_reward').value;
+    const maxUses = document.getElementById('p_maxUses').value;
+    const expiresAt = document.getElementById('p_expiresAt').value; // Забираем дату
+
+    try {
+        const res = await fetch(`${SERVER_URL}/api/admin/promos/create`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ partnerId: currentPartnerId, code, reward, maxUses, expiresAt })
+        });
+
+        if (res.ok) {
+            alert('Promo voucher registered!');
+            document.getElementById('promoForm').reset();
+            document.getElementById('p_maxUses').value = '1';
+            loadAdminPromos();
+        }
+    } catch (err) {
+        console.error(err);
+    } finally {
+        hideLoader();
+    }
+});
+
+// 3. Функция переключения активности купона кликом по кнопке в таблице [INDEX]
+async function togglePromoCodeState(code, currentStatus) {
+    const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+    showLoader();
+    try {
+        const res = await fetch(`${SERVER_URL}/api/admin/promos/toggle`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ partnerId: currentPartnerId, code, currentStatus })
+        });
+        if (res.ok) loadAdminPromos();
+    } catch (err) {
+        console.error(err);
+    } finally {
+        hideLoader();
+    }
+}
+
+
+// 1. Функция автоматической загрузки процента кэшбэка при открытии вкладки
+// 1. Загрузка конфигурации кэшбэка из PostgreSQL при открытии таба
+async function loadAdminCashbackConfig() {
+    try {
+        const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+        const res = await fetch(`${SERVER_URL}/api/admin/cashback/config?partnerId=${currentPartnerId}`);
+        const data = await res.json();
+
+        if (data.success && data.config) {
+            document.getElementById('g_cashbackPercent').value = data.config.percent;
+            document.getElementById('g_cashbackMode').value = data.config.mode;
+
+            // Если выбран авторежим или крон, кнопку ручной выплаты визуально делаем тусклой
+            const manualBtn = document.getElementById('runCashbackBtn');
+            if (data.config.mode !== 'manual') {
+                manualBtn.style.opacity = '0.4';
+                manualBtn.innerText = '💰 Manual payout disabled (Running in Auto/Cron mode)';
+            } else {
+                manualBtn.style.opacity = '1';
+                manualBtn.innerText = '💰 Calculate and pay manual cashback everyone';
+            }
+        }
+    } catch (err) {
+        console.error('Failed to load cashback config:', err);
+    }
+}
+
+// 2. Сохранение режима и процента в базу данных
+document.getElementById('cashbackConfigForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    showLoader();
+
+    const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+    const percent = document.getElementById('g_cashbackPercent').value;
+    const mode = document.getElementById('g_cashbackMode').value;
+
+    try {
+        const res = await fetch(`${SERVER_URL}/api/admin/cashback/config/save`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ partnerId: currentPartnerId, percent, mode })
+        });
+
+        if (res.ok) {
+            alert(`Cashback rule updated successfully to [${mode.toUpperCase()}] at ${percent}%!`);
+            loadAdminCashbackConfig(); // Перечитываем и обновляем состояние кнопки
+        }
+    } catch (err) {
+        console.error(err);
+    } finally {
+        hideLoader();
+    }
+});
+
+
+
+document.getElementById('runCashbackBtn').addEventListener('click', async () => {
+    const percent = document.getElementById('g_cashbackPercent').value || 10;
+    if (!confirm(`Confirm calculation and batch credit payout of ${percent}% cashback for all active players?`)) return;
+
+    showLoader();
+    const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+
+    try {
+        const res = await fetch(`${SERVER_URL}/api/admin/cashback/run`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ partnerId: currentPartnerId, percent })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert(data.message);
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Cashback payout batch failure');
+    } finally {
+        hideLoader();
+    }
+});
 
 
 // Run auth validation sequence on page boot

@@ -271,4 +271,81 @@ exports.updatePlayer = async (req, res) => {
     }
 };
 
+exports.getPromoCodes = async (req, res) => {
+    try {
+        const partnerId = req.query.partnerId || "demo_mtwtech";
+        const list = await state.getPromoCodesList(partnerId);
+        res.json({ success: true, promoCodes: list });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to load promos" });
+    }
+};
+
+exports.createPromoCode = async (req, res) => {
+    try {
+        const { partnerId, code, reward, maxUses } = req.body;
+        await state.addPromoCode(partnerId, { code, reward, maxUses });
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to create promo" });
+    }
+};
+
+exports.togglePromo = async (req, res) => {
+    try {
+        const { partnerId, code, currentStatus } = req.body;
+        const result = await state.togglePromoStatus(partnerId, code, Number(currentStatus));
+        res.json(result);
+    } catch (err) {
+        res.status(500).json({ error: "Failed to toggle promo state" });
+    }
+};
+
+
+exports.triggerCashback = async (req, res) => {
+    try {
+        const { partnerId, percent } = req.body;
+        const totalPaid = await state.runGlobalCashback(partnerId, percent);
+        res.json({ success: true, message: `Cashback paid successfully to ${totalPaid} players.` });
+    } catch (err) {
+        res.status(500).json({ error: "Cashback calculation failure" });
+    }
+};
+
+exports.getCashbackConfig = async (req, res) => {
+    try {
+        const partnerId = req.query.partnerId || "demo_mtwtech";
+        const partnerConfig = global.CONFIG?.[partnerId] || {};
+
+        // Возвращаем объект настроек по умолчанию, если в базе еще пусто
+        const config = partnerConfig.gamification?.cashback || { mode: 'manual', percent: 10 };
+        res.json({ success: true, config });
+    } catch (err) { res.status(500).json({ error: "Config error" }); }
+};
+
+exports.saveCashbackConfig = async (req, res) => {
+    try {
+        const { partnerId, percent, mode } = req.body;
+
+        if (!global.CONFIG) global.CONFIG = {};
+        if (!global.CONFIG[partnerId]) global.CONFIG[partnerId] = {};
+        if (!global.CONFIG[partnerId].gamification) global.CONFIG[partnerId].gamification = {};
+
+        // Перезаписываем объект структуры кэшбэка
+        global.CONFIG[partnerId].gamification.cashback = {
+            mode: mode || 'manual',
+            percent: Number(percent || 10)
+        };
+
+        await global.pool.query(
+            `INSERT INTO b2b_configs (id, config_data) VALUES ('global_config', $1::jsonb)
+             ON CONFLICT (id) DO UPDATE SET config_data = b2b_configs.config_data || EXCLUDED.config_data`,
+            [JSON.stringify({ [partnerId]: global.CONFIG[partnerId] })]
+        );
+
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: "Save error" }); }
+};
+
+
 

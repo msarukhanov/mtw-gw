@@ -27,6 +27,14 @@ router.get('/admin/bets/report', adminController.getBetReport);
 router.get('/admin/players', adminController.getPlayers)
 ;router.post('/admin/players/update', adminController.updatePlayer);
 
+router.get('/admin/promos', adminController.getPromoCodes);
+router.post('/admin/promos/create', adminController.createPromoCode);
+router.post('/admin/promos/toggle', adminController.togglePromo);
+
+router.get('/admin/cashback/config', adminController.getCashbackConfig);
+router.post('/admin/cashback/config/save', adminController.saveCashbackConfig);
+router.post('/admin/cashback/run', adminController.triggerCashback);
+
 
 router.post('/admin/catalog/collection', gameController.adminAddCollection);
 router.put('/admin/catalog/collection/:slug', gameController.adminEditCollection);

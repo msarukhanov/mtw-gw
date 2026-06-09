@@ -510,46 +510,85 @@
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
 
                 <!-- Cashback Configuration -->
+                <!-- TAB 5: VOUCHERS AND DROPS -> Configuration Block -->
                 <div class="card">
-                    <h2>🎫 Cashback Drops</h2>
+                    <h2>🎫 Cashback Drops Configuration</h2>
                     <div class="game-block">
-                        <form id="cashbackConfigForm" style="margin-bottom: 15px;">
-                            Current Percent:
-                            <input type="number" id="g_cashbackPercent" style="width: 60px;"> %
-                            <button type="submit" class="btn-primary" style="padding: 4px 10px; font-size: 12px; margin-left: 5px;">Change</button>
+                        <form class="promoForm" id="cashbackConfigForm">
+                            <label style="color: #8a99ad; font-size: 12px; font-weight: 600;">
+                                CASHBACK MODE:
+                                <select id="g_cashbackMode" style="background: var(--bg-main); border: 1px solid var(--border-color); color: #fff; padding: 8px; border-radius: 4px; width: 100%; margin-top: 5px;">
+                                    <option value="manual">Manual (Pay via button below)</option>
+                                    <option value="auto">Auto (Instant cashback on every debit bet)</option>
+                                    <option value="daily">Daily (Automated cron queue runner)</option>
+                                    <option value="weekly">Weekly (Automated weekend reload loyalty)</option>
+                                </select>
+                            </label>
+
+                            <label style="color: #8a99ad; font-size: 12px; font-weight: 600;">
+                                CASHBACK PERCENTAGE (%):
+                                <input type="number" id="g_cashbackPercent" value="10" style="background: var(--bg-main); border: 1px solid var(--border-color); color: #fff; padding: 8px; border-radius: 4px; width: 100%; margin-top: 5px; box-sizing: border-box;">
+                            </label>
+
+                            <button type="submit" class="btn-primary" style="padding: 10px; font-weight: bold; text-transform: uppercase;">💾 Save Configuration</button>
+                            <button type="button" class="btn-danger" id="runCashbackBtn" style="padding: 10px; margin-top: 5px; font-weight: bold;">
+                                💰 Calculate and pay manual cashback everyone
+                            </button>
                         </form>
-                        <button type="button" class="btn-danger" id="runCashbackBtn" style="width: 100%; padding: 12px;">💰 Calculate and pay cashback everyone</button>
+
+                        <!-- Кнопка ручного запуска -->
+
                     </div>
                 </div>
+
 
                 <!-- Promocode Management -->
                 <div class="card">
                     <h2>🎫 Promo Code Vouchers Engine</h2>
                     <div class="game-block">
                         <h3>Make new promo voucher</h3>
-                        <form id="promoForm">
-                            Code: <input type="text" id="p_code" placeholder="WELCOME" style="padding:5px; width:110px; text-transform:uppercase;"><br>
-                            Sum: <input type="number" id="p_reward" style="width:70px;"> 🪙<br>
-                            Limit per user: <input type="number" id="p_maxUses" value="1" style="width:50px;"><br><br>
-                            <button type="submit" class="btn-primary" style="width: 100%;">➕ Create Promo</button>
+                        <!-- Измененная форма создания купона -->
+                        <form  class="promoForm" id="promoForm">
+                            <label>
+                                Voucher Code:
+                                <input type="text" id="p_code" placeholder="WELCOME" style="text-transform:uppercase;">
+                            </label>
+
+                            <label>
+                                Reward Sum (🪙):
+                                <input type="number" id="p_reward" placeholder="0.00">
+                            </label>
+
+                            <label>
+                                Total Usage Limit:
+                                <input type="number" id="p_maxUses" value="1">
+                            </label>
+
+                            <label>
+                                Expiration Date (Optional):
+                                <input type="datetime-local" id="p_expiresAt">
+                            </label>
+
+                            <button type="submit" class="btn-primary">➕ Create Promo Voucher</button>
                         </form>
+
                     </div>
 
                     <div class="game-block" style="margin-top: 15px;">
                         <h3>Vouchers Registry List</h3>
                         <div style="overflow-x: auto;">
-                            <table>
+                            <!-- Измененная таблица реестра ваучеров -->
+                            <table style="width: 100%; border-collapse: collapse;">
                                 <thead>
                                 <tr>
                                     <th>Code</th>
                                     <th>Reward</th>
-                                    <th>Limit</th>
-                                    <th>Status</th>
+                                    <th>Usage Limit</th>
+                                    <th>Expiration Date</th>
+                                    <th style="text-align: right;">Action</th>
                                 </tr>
                                 </thead>
-                                <tbody id="promoCodesTableBody">
-                                <!-- Loaded dynamically -->
-                                </tbody>
+                                <tbody id="promoCodesTableBody"></tbody>
                             </table>
                         </div>
                     </div>

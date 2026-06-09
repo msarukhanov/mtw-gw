@@ -7,7 +7,8 @@
     --text-muted: #8b949e;
     --accent-blue: #58a6ff;
     --accent-green: #238636;
-    --accent-red: #da3633;
+    /*--accent-red: #da3633;*/
+    --accent-red: #e94560;
     --accent-pink: #ff007f;
     --neon-green: #00f5d4;
 
@@ -665,3 +666,79 @@ th {
     border: 1px solid #1a1e26 !important;
 }
 
+/* Контейнер формы */
+.promoForm {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 15px;
+}
+
+/* Обертка для каждой строки формы, чтобы текст и инпут стояли ровно */
+.promoForm label {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    color: #8a99ad;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Единый стиль для всех инпутов формы */
+.promoForm input[type="text"],
+.promoForm input[type="number"],
+.promoForm input[type="datetime-local"] {
+    background: #0d1017 !important;
+    border: 1px solid #262c3a !important;
+    color: #fff !important;
+    padding: 8px 12px !important;
+    border-radius: 5px !important;
+    font-size: 13px !important;
+    width: 100% !important; /* Делаем все инпуты одинаковой ширины */
+    box-sizing: border-box !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
+/* Неоновый эффект при фокусе (клике на поле) */
+.promoForm input:focus {
+    outline: none !important;
+    border-color: var(--accent-pink) !important;
+    box-shadow: 0 0 10px rgba(233, 69, 96, 0.25) !important;
+    background: #111520 !important;
+}
+
+/* Стилизация иконки календаря в инпуте даты */
+.promoForm input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.6) sepia(1) saturate(5) hue-rotate(320deg); /* Красим иконку календаря в розовый неон */
+    cursor: pointer;
+}
+
+/* Красивая кнопка создания */
+.promoForm .btn-primary {
+    background: var(--neon-green) !important;
+    border: none !important;
+    color: #fff !important;
+    padding: 10px !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-radius: 5px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    margin-top: 5px;
+    box-shadow: 0 0 12px rgba(233, 69, 96, 0.2);
+}
+
+.promoForm .btn-primary:hover {
+    background: #ff5274 !important;
+    box-shadow: 0 0 18px rgba(233, 69, 96, 0.45) !important;
+    transform: translateY(-1px);
+}
+
+.promoForm .btn-primary:active {
+    transform: translateY(1px);
+}

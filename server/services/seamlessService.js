@@ -16,71 +16,6 @@ const financialMethods = {
         );
     },
 
-    getFinancialReport: async (partnerId) => {
-        // Вытаскиваем все логи транзакций партнера
-        const res = await global.pool.query(
-            'SELECT type, amount, game, EXTRACT(EPOCH FROM timestamp) * 1000 as ts FROM accounting_logs WHERE partner_id = $1 ORDER BY timestamp DESC',
-            [partnerId]
-        );
-        const txs = res.rows;
-
-        let totalBets = 0;
-        let totalWins = 0;
-        let totalAffiliate = 0;
-
-        txs.forEach(tx => {
-            const amt = Number(tx.amount);
-            if (tx.type === "DEBIT") totalBets += amt;
-            if (tx.type === "CREDIT") totalWins += amt;
-            if (tx.type === "AFFILIATE") totalAffiliate += amt;
-        });
-
-        const ggr = totalBets - totalWins;
-        const netProfit = ggr - totalAffiliate;
-
-        // Форматируем под структуру объектов, которую ожидала админка из NeDB
-        const formattedTxs = txs.map(tx => ({
-            partnerId,
-            username: tx.username,
-            type: tx.type,
-            amount: Number(tx.amount),
-            game: tx.game,
-            timestamp: Number(tx.ts)
-        }));
-
-        // 🎰 ЛОГ СТАВОК: Исключаем промокоды, кэшбэки и бонусы
-        const latestBets = formattedTxs.filter(tx => {
-            const gameName = tx.game || "";
-            return (tx.type === "DEBIT" || tx.type === "CREDIT") &&
-                !gameName.includes("Promo") &&
-                !gameName.includes("Cashback") &&
-                !gameName.includes("Quest") &&
-                !gameName.includes("VIP");
-        }).slice(0, 50);
-
-        // 💳 ЛОГ КАССЫ: Чистый Cashflow
-        const latestTransactions = formattedTxs.filter(tx => {
-            const gameName = tx.game || "";
-            return tx.type === "AFFILIATE" ||
-                gameName.includes("Promo") ||
-                gameName.includes("Cashback") ||
-                gameName.includes("Quest") ||
-                gameName.includes("VIP") ||
-                gameName.includes("Deposit") ||
-                gameName.includes("Withdraw");
-        }).slice(0, 50);
-
-        return {
-            totalBets,
-            totalWins,
-            totalAffiliate,
-            ggr,
-            netProfit,
-            transactionsCount: txs.length,
-            latestTransactions,
-            latestBets
-        };
-    }
 };
 
 module.exports = {
@@ -158,6 +93,48 @@ module.exports = {
                 secret: integration.secret
             });
             await financialMethods.logFinancialTransaction(partnerId, username, "DEBIT", amount, gameName);
+
+            let finalBalance = Number(response.data.balance);
+
+            // 3. 🎰 ИНТЕГРАЦИЯ INSTANT AUTO-CASHBACK (Строго после успешного дебита!)
+            const cbConfig = partnerConfig.gamification?.cashback || { mode: 'manual', percent: 10 };
+
+            if (cbConfig.mode === 'auto' && Number(cbConfig.percent) > 0) {
+                const cashbackAmount = Math.floor(betAmount * (Number(cbConfig.percent) / 100));
+
+                if (cashbackAmount > 0) {
+                    try {
+                        const crypto = require('crypto');
+                        const cbRoundId = `autocb_${crypto.randomBytes(6).toString('hex')}`;
+
+                        // Вызываем метод CREDIT, чтобы зачислить кэшбэк на внешнюю платформу
+                        // Передаем баланс игрока, чтобы обновить сессию
+                        const creditResult = await module.exports.credit(
+                            username,
+                            partnerId,
+                            sessionId,
+                            cashbackAmount,
+                            `Instant Auto-Cashback ${cbConfig.percent}%`,
+                            cbRoundId
+                        );
+
+                        // Если платформа успешно приняла кэшбэк, обновляем итоговый баланс для игры
+                        if (creditResult && creditResult.balance !== undefined) {
+                            finalBalance = Number(creditResult.balance);
+                        }
+
+                        // Пишем лог авто-кэшбэка в нашу реляционную историю player_history в Postgres
+                        await global.pool.query(
+                            `INSERT INTO player_history (username, partner_id, category, action_type, description, amount_change)
+                         VALUES ($1, $2, 'system', 'cashback', $3, $4)`,
+                            [username, partnerId, `Instant ${cbConfig.percent}% auto-cashback for bet in ${gameName}`, cashbackAmount]
+                        );
+
+                    } catch (cbErr) {
+                        console.error(`❌ [Auto-Cashback Payout Failed] for ${username}:`, cbErr.message);
+                    }
+                }
+            }
 
             return response.data; // { balance: NewBalance }
         } catch (err) {

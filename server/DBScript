@@ -12,10 +12,10 @@ CREATE TABLE IF NOT EXISTS players (
     history JSONB DEFAULT '[]'::jsonb,
     tournament_points INT DEFAULT 0,
     is_banned BOOLEAN DEFAULT false;
-    casino_min_limit NUMERIC(15, 2) DEFAULT NULL;
-    casino_max_limit NUMERIC(15, 2) DEFAULT NULL;
-    sport_min_limit NUMERIC(15, 2) DEFAULT NULL;
-    sport_max_limit NUMERIC(15, 2) DEFAULT NULL;
+    casino_min_limit NUMERIC(15, 2) DEFAULT NULL,
+    casino_max_limit NUMERIC(15, 2) DEFAULT NULL,
+    sport_min_limit NUMERIC(15, 2) DEFAULT NULL,
+    sport_max_limit NUMERIC(15, 2) DEFAULT NULL,
     UNIQUE(username, partner_id)
 );
 
@@ -240,5 +240,31 @@ ON CONFLICT (slug) DO UPDATE SET
     updated_at = NOW();
 
 
+-- 1. Таблица самих промокодов
+CREATE TABLE IF NOT EXISTS promo_codes (
+    id SERIAL PRIMARY KEY,
+    partner_id VARCHAR(50) NOT NULL,
+    code VARCHAR(50) NOT NULL,
+    reward NUMERIC(15, 2) NOT NULL,
+    max_uses INT DEFAULT 1,
+    current_uses INT DEFAULT 0, -- Счетчик реальных активаций
+    is_active INT DEFAULT 1,
+    timestamp TIMESTAMP DEFAULT NOW(),
+    expires_at TIMESTAMP DEFAULT NULL,
+    UNIQUE(partner_id, code) -- Защита от дублей кода внутри одного партнера
+);
+
+-- 2. Таблица логов активаций (для аналитики админки и защиты от повторных использований)
+CREATE TABLE IF NOT EXISTS promo_activations (
+    id SERIAL PRIMARY KEY,
+    partner_id VARCHAR(50) NOT NULL,
+    username VARCHAR(50) NOT NULL,
+    code VARCHAR(50) NOT NULL,
+    timestamp TIMESTAMP DEFAULT NOW(),
+    UNIQUE(partner_id, username, code) -- Игрок может активировать конкретный код строго 1 раз
+);
+
+-- Индексы для мгновенной проверки кодов
+CREATE INDEX IF NOT EXISTS idx_promo_search ON promo_codes(partner_id, code);
 
 
