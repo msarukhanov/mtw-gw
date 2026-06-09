@@ -68,11 +68,62 @@ router.get('/lottery/history', lottery.history);
 // Эндпоинт получения единой истории всех игр для игрока
 router.post('/player/history', auth.checkPlayer, async (req, res) => {
     try {
-        const history = await state.getPlayerHistory(req.username);
-        res.json({ history });
+        const username = req.username; // Берем из middleware авторизации
+        const partnerId = req.partnerId || "demo_mtwtech";
+
+        if (!username) {
+            return res.status(401).json({ success: false, error: "Unauthorized" });
+        }
+
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 15;
+
+        const category = req.query.category || null; // 'casino', 'sport', 'system'
+        const type = req.query.type || null;         // 'win' (выигрыши/награды), 'lose' (ставки)
+
+        let fromDate = req.query.fromDate || null;   // "YYYY-MM-DD"
+        let toDate = req.query.toDate || null;
+
+        // --- БЫСТРЫЕ ПРЕСЕТЫ ВРЕМЕНИ ДЛЯ ИГРОКА ---
+        const period = req.query.period; // 'day', 'week'
+        if (period) {
+            const now = new Date();
+            if (period === 'day') {
+                fromDate = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+                toDate = now.toISOString();
+            } else if (period === 'week') {
+                fromDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+                toDate = now.toISOString();
+            }
+        }
+
+        // Форматируем даты для корректного поиска внутри дня
+        if (fromDate && !fromDate.includes('T')) fromDate += ' 00:00:00';
+        if (toDate && !toDate.includes('T')) toDate += ' 23:59:59';
+
+        // Запрашиваем историю
+        const historyData = await state.getPlayerUnifiedHistory({
+            username,
+            partnerId,
+            category,
+            type,
+            fromDate,
+            toDate,
+            limit,
+            page
+        });
+
+        res.json({
+            success: true,
+            history: historyData.items,
+            pagination: historyData.pagination
+        });
+
     } catch (err) {
-        res.status(500).json({ error: "Failed to load general history" });
+        console.error(`❌ [Player API] Error fetching history for ${req.user?.username}:`, err.message);
+        res.status(500).json({ error: "Failed to load activity history" });
     }
 });
+
 
 module.exports = router;

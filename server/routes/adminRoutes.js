@@ -20,6 +20,9 @@ router.post('/admin/add-promocode', adminController.addPromoCode);
 router.post('/admin/run-cashback', adminController.runCashback);
 
 router.get('/admin/finance/report', adminController.getFinanceReport);
+router.get('/admin/finance/chart', adminController.getAdminChart);
+router.get('/admin/bets/report', adminController.getBetReport);
+
 
 router.post('/admin/catalog/collection', gameController.adminAddCollection);
 router.put('/admin/catalog/collection/:slug', gameController.adminEditCollection);

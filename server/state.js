@@ -18,6 +18,8 @@ function getRandomInt(max) {
     return crypto.randomBytes(4).readUInt32BE(0) % max;
 }
 
+const getTimeString = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
 // =========================================================================
 // ПЕРЕПИСАННЫЕ МЕТОДЫ ЯДРА ПОД POSTGRESQL (Sequelize ORM)
 // =========================================================================
@@ -33,27 +35,27 @@ const playerMethods = {
             if (typeof fetchPlatformBalance === 'function') {
                 try {
                     const platformData = await fetchPlatformBalance(username, partnerId);
-                    if (platformData && platformData.balance !== undefined) {
-                        initialBalance = Number(platformData.balance);
-                    }
+                    if (platformData && platformData.balance !== undefined) initialBalance = Number(platformData.balance);
                 } catch (err) {
                     console.error(`[Postgres B2B] Failed platform balance sync:`, err.message);
                 }
             }
 
+            // Больше не вставляем пустой массив в поле history, оно нам не нужно
             const insertRes = await global.pool.query(
-                `INSERT INTO players (username, partner_id, balance, daily_quests, used_promos, history, tournament_points) 
-             VALUES ($1, $2, $3, '{"gamesPlayed": 0, "claimed": false}'::jsonb, '{}'::jsonb, '[]'::jsonb, 0) RETURNING *`,
+                `INSERT INTO players (username, partner_id, balance, daily_quests, used_promos, tournament_points) 
+                 VALUES ($1, $2, $3, '{"gamesPlayed": 0, "claimed": false}'::jsonb, '{}'::jsonb, 0) RETURNING *`,
                 [username, partnerId, initialBalance]
             );
             player = insertRes.rows[0];
         }
 
-        // Десериализация JSONB (если драйвер вернул их строками)
         player.dailyQuests = typeof player.daily_quests === 'string' ? JSON.parse(player.daily_quests) : player.daily_quests;
-        player.history = typeof player.history === 'string' ? JSON.parse(player.history) : player.history;
         player.usedPromos = typeof player.used_promos === 'string' ? JSON.parse(player.used_promos) : player.used_promos;
         player.tournamentPoints = Number(player.tournament_points);
+
+        // Заглушка для совместимости: если где-то на фронте жестко ожидается player.history
+        player.history = [];
 
         const memKey = `${partnerId}_${username}`;
         if (!activeTickets[memKey]) activeTickets[memKey] = [];
@@ -61,6 +63,7 @@ const playerMethods = {
 
         return player;
     },
+
     updateBalance: async (username, partnerId, newBalance) => {
         if (global.io) {
             global.io.to(`${partnerId}_${username}`).emit('wallet_update', { balance: newBalance });
@@ -70,127 +73,143 @@ const playerMethods = {
             [Number(newBalance), username, partnerId]
         );
     },
+
+    // Вспомогательный метод для форматирования времени (как было у тебя, если нужно для описания)
     savePlayerActionHistory: async (username, partnerId, actionData) => {
-        // 1. Извлекаем игрока из PostgreSQL
+        // 1. Извлекаем игрока (убрали из выборки обработку истории внутри JS)
         const playerRes = await global.pool.query(
             'SELECT * FROM players WHERE username = $1 AND partner_id = $2 LIMIT 1',
             [username, partnerId]
         );
+        if (playerRes.rowCount === 0) return;
 
-        if (playerRes.rowCount > 0) {
-            const player = playerRes.rows[0];
+        const player = playerRes.rows[0];
+        let dailyQuests = typeof player.daily_quests === 'string' ? JSON.parse(player.daily_quests) : (player.daily_quests || { gamesPlayed: 0, claimed: false });
+        let xp = Number(player.xp || 0);
+        let level = Number(player.level || 1);
+        let tournamentPoints = Number(player.tournament_points || 0);
+        let currentBalance = Number(player.balance || 0);
 
-            // Десериализуем JSONB поля для работы внутри JS
-            let history = typeof player.history === 'string' ? JSON.parse(player.history) : (player.history || []);
-            let dailyQuests = typeof player.daily_quests === 'string' ? JSON.parse(player.daily_quests) : (player.daily_quests || { gamesPlayed: 0, claimed: false });
-            let xp = Number(player.xp || 0);
-            let level = Number(player.level || 1);
-            let tournamentPoints = Number(player.tournament_points || 0);
-            let currentBalance = Number(player.balance || 0);
+        // --- ПАРСИНГ И ЗАПИСЬ СТАВКИ ---
+        const category = actionData.category || 'casino'; // 'casino' или 'sport'
+        let referenceId = null;
+        let amountChange = 0;
+        let description = actionData.details || `Game action in ${actionData.game || 'Casino'}`;
 
-            // Запись истории действий
-            const timeString = new Date().toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            });
-            history.unshift({ time: timeString, ...actionData });
-            if (history.length > 30) history.pop();
-
-            // 2. БЕЗОПАСНАЯ B2B ГЕЙМИФИКАЦИЯ
-            const globalConfig = global.CONFIG || {};
-            const partnerConfig = globalConfig[partnerId] || {};
-            const gConfig = partnerConfig.gamification || {
-                xpPerGame: 10,
-                xpMultiplier: 1000,
-                levelUpBonus: 100,
-                questTargetGames: 30,
-                questReward: 50,
-                tournamentActive: 0
-            };
-
-            const walletService = seamless || require('./services/seamlessService');
-
-            // --- Начисляем XP и Уровни ---
-            xp += Number(gConfig.xpPerGame);
-            const nextLevelXp = level * Number(gConfig.xpMultiplier);
-
-            if (xp >= nextLevelXp) {
-                level += 1;
-                try {
-                    const lvlRoundId = `lvlup_${crypto.randomBytes(6).toString('hex')}`;
-                    const creditResult = await walletService.credit(
-                        username,
-                        partnerId,
-                        actionData.sessionId || null,
-                        Number(gConfig.levelUpBonus),
-                        "VIP Level Up Reward",
-                        lvlRoundId
-                    );
-                    // Синхронизируем баланс из ответа шлюза
-                    if (creditResult && creditResult.balance !== undefined) {
-                        currentBalance = Number(creditResult.balance);
-                    }
-                } catch (err) {
-                    console.error(`❌ Ошибка выплаты за уровень игроку ${username}:`, err.message);
-                }
+        if (category === 'sport') {
+            // Если ставка спортивная — данные уже должны быть в sports_bets, берем её ID или создаем запись здесь, если это логгер ставок
+            // Для примера: если actionData передает готовую ставку, регистрируем в sports_bets
+            if (actionData.isNewBet) {
+                const sbRes = await global.pool.query(
+                    `INSERT INTO sports_bets (username, partner_id, type, items, total_odds, stake, status, prize)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+                    [username, partnerId, actionData.type || 'single', JSON.stringify(actionData.items || []), actionData.total_odds || 1.0, actionData.stake || 0, actionData.status || 'PENDING', actionData.prize || 0]
+                );
+                referenceId = sbRes.rows[0].id;
+                amountChange = actionData.win ? Number(actionData.prize) : -Number(actionData.stake);
             }
+        } else {
+            // Дефолтная логика — Казино ставка
+            const stake = Number(actionData.stake || 0);
+            const prize = Number(actionData.prize || 0);
+            const status = actionData.win ? 'WIN' : 'LOSE';
+            amountChange = actionData.win ? prize : -stake;
+            description = `Ставка в игре ${actionData.game || 'Казино'}. Изменение: ${amountChange} 🪙`;
 
-            // --- Считаем прогресс Ежедневного Квеста ---
-            if (dailyQuests.gamesPlayed < Number(gConfig.questTargetGames)) {
-                dailyQuests.gamesPlayed += 1;
-
-                if (dailyQuests.gamesPlayed === Number(gConfig.questTargetGames) && !dailyQuests.claimed) {
-                    dailyQuests.claimed = true;
-                    try {
-                        const questRoundId = `q_daily_${crypto.randomBytes(6).toString('hex')}`;
-                        const creditResult = await walletService.credit(
-                            username,
-                            partnerId,
-                            actionData.sessionId || null,
-                            Number(gConfig.questReward),
-                            "Daily Quest Reward",
-                            questRoundId
-                        );
-                        // Синхронизируем баланс из ответа шлюза
-                        if (creditResult && creditResult.balance !== undefined) {
-                            currentBalance = Number(creditResult.balance);
-                        }
-                    } catch (err) {
-                        console.error(`❌ Ошибка выплаты за квест игроку ${username}:`, err.message);
-                        dailyQuests.claimed = false; // Откатываем статус при сбое сети
-                    }
-                }
-            }
-
-            // --- Начисляем Очки Турнира (Лидерборд) ---
-            if (Number(gConfig.tournamentActive) === 1) {
-                tournamentPoints += actionData.win ? 5 : 1;
-            }
-
-            // 3. Сохраняем все обновленные данные в PostgreSQL
-            await global.pool.query(
-                `UPDATE players 
-                 SET history = $1::jsonb, 
-                     xp = $2, 
-                     level = $3, 
-                     daily_quests = $4::jsonb, 
-                     tournament_points = $5,
-                     balance = $6
-                 WHERE username = $7 AND partner_id = $8`,
-                [
-                    JSON.stringify(history),
-                    xp,
-                    level,
-                    JSON.stringify(dailyQuests),
-                    tournamentPoints,
-                    currentBalance,
-                    username,
-                    partnerId
-                ]
+            const cbRes = await global.pool.query(
+                `INSERT INTO casino_bets (username, partner_id, game_id, provider, session_id, stake, prize, status)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+                [username, partnerId, actionData.game || 'unknown', actionData.provider || 'unknown', actionData.sessionId || null, stake, prize, status]
             );
+            referenceId = cbRes.rows[0].id;
         }
+
+        // Записываем это действие в единую ленту истории player_history
+        await global.pool.query(
+            `INSERT INTO player_history (username, partner_id, category, action_type, description, amount_change, reference_id)
+             VALUES ($1, $2, $3, 'bet', $4, $5, $6)`,
+            [username, partnerId, category, description, amountChange, referenceId]
+        );
+
+
+        // 2. БЕЗОПАСНАЯ B2B ГЕЙМИФИКАЦИЯ (Твоя логика без изменений)
+        const globalConfig = global.CONFIG || {};
+        const partnerConfig = globalConfig[partnerId] || {};
+        const gConfig = partnerConfig.gamification || {
+            xpPerGame: 10,
+            xpMultiplier: 1000,
+            levelUpBonus: 100,
+            questTargetGames: 30,
+            questReward: 50,
+            tournamentActive: 0
+        };
+
+        const walletService = seamless || require('./services/seamlessService');
+
+        // --- Начисляем XP и Уровни ---
+        xp += Number(gConfig.xpPerGame);
+        const nextLevelXp = level * Number(gConfig.xpMultiplier);
+
+        if (xp >= nextLevelXp) {
+            level += 1;
+            try {
+                const lvlRoundId = `lvlup_${crypto.randomBytes(6).toString('hex')}`;
+                const creditResult = await walletService.credit(username, partnerId, actionData.sessionId || null, Number(gConfig.levelUpBonus), "VIP Level Up Reward", lvlRoundId);
+                if (creditResult && creditResult.balance !== undefined) currentBalance = Number(creditResult.balance);
+
+                // Системный лог уровня в историю
+                await global.pool.query(
+                    `INSERT INTO player_history (username, partner_id, category, action_type, description, amount_change)
+                     VALUES ($1, $2, 'system', 'level_up', $3, $4)`,
+                    [username, partnerId, `Получен новый уровень: ${level}! 🎉`, Number(gConfig.levelUpBonus)]
+                );
+            } catch (err) {
+                console.error(`❌ Ошибка выплаты за уровень игроку ${username}:`, err.message);
+            }
+        }
+
+        // --- Считаем прогресс Ежедневного Квеста ---
+        if (dailyQuests.gamesPlayed < Number(gConfig.questTargetGames)) {
+            dailyQuests.gamesPlayed += 1;
+
+            if (dailyQuests.gamesPlayed === Number(gConfig.questTargetGames) && !dailyQuests.claimed) {
+                dailyQuests.claimed = true;
+                try {
+                    const questRoundId = `q_daily_${crypto.randomBytes(6).toString('hex')}`;
+                    const creditResult = await walletService.credit(username, partnerId, actionData.sessionId || null, Number(gConfig.questReward), "Daily Quest Reward", questRoundId);
+                    if (creditResult && creditResult.balance !== undefined) currentBalance = Number(creditResult.balance);
+
+                    // Системный лог квеста в историю
+                    await global.pool.query(
+                        `INSERT INTO player_history (username, partner_id, category, action_type, description, amount_change)
+                         VALUES ($1, $2, 'system', 'quest', $3, $4)`,
+                        [username, partnerId, `Выполнен ежедневный квест! 📅`, Number(gConfig.questReward)]
+                    );
+                } catch (err) {
+                    console.error(`❌ Ошибка выплаты за квест игроку ${username}:`, err.message);
+                    dailyQuests.claimed = false;
+                }
+            }
+        }
+
+        // --- Начисляем Очки Турнира ---
+        if (Number(gConfig.tournamentActive) === 1) {
+            tournamentPoints += actionData.win ? 5 : 1;
+        }
+
+        // 3. Сохраняем обновленные данные игрока (без поля history!)
+        await global.pool.query(
+            `UPDATE players 
+             SET xp = $1, 
+                 level = $2, 
+                 daily_quests = $3::jsonb, 
+                 tournament_points = $4,
+                 balance = $5
+             WHERE username = $6 AND partner_id = $7`,
+            [xp, level, JSON.stringify(dailyQuests), tournamentPoints, currentBalance, username, partnerId]
+        );
     },
+
     // ИСПРАВЛЕНО: Расчет и выплата кэшбэка переведены на Postgres и завязаны на global.CONFIG
     calculateAndPayCashback: async (partnerId, seamlessCredit) => {
         const globalConfig = global.CONFIG || {};
@@ -413,10 +432,9 @@ const gamificationMethods = {
         const prizes = [
             Math.floor(totalPrize * 0.50), // 1 место
             Math.floor(totalPrize * 0.30), // 2 место
-            Math.floor(totalPrize * 0.20)  // 3 место
+            Math.floor(totalPrize * 0.20),  // 3 место
         ];
 
-        // Запрашиваем из Postgres только участников с очками > 0, отсортированных по убыванию
         const res = await global.pool.query(
             'SELECT * FROM players WHERE partner_id = $1 AND tournament_points > 0 ORDER BY tournament_points DESC',
             [partnerId]
@@ -431,58 +449,39 @@ const gamificationMethods = {
 
             if (i < 3) {
                 prizeWon = prizes[i];
-
                 try {
                     const tournamentRoundId = `trn_win_${crypto.randomBytes(6).toString('hex')}`;
-                    const creditResult = await walletService.credit(
-                        player.username,
-                        partnerId,
-                        null,
-                        prizeWon,
-                        `Tournament Place ${i + 1}`,
-                        tournamentRoundId
-                    );
+                    const creditResult = await walletService.credit(player.username, partnerId, null, prizeWon, `Tournament Place ${i + 1}`, tournamentRoundId);
 
-                    // Обновляем баланс на основе ответа шлюза
                     player.balance = creditResult && creditResult.balance !== undefined
                         ? Number(creditResult.balance)
                         : Number(player.balance) + prizeWon;
 
-                    winnersInfo.push({
-                        username: player.username,
-                        place: i + 1,
-                        points: Number(player.tournament_points),
-                        prize: prizeWon
-                    });
+                    winnersInfo.push({ username: player.username, place: i + 1, points: Number(player.tournament_points), prize: prizeWon });
                 } catch (err) {
                     console.error(`❌ Tournament payout failed for ${player.username}:`, err.message);
                 }
             }
 
-            // Корректно парсим и обновляем историю действий внутри JSONB поля Postgres
-            let currentHistory = typeof player.history === 'string' ? JSON.parse(player.history) : (player.history || []);
-            const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const description = `Турнир завершен. Очки: ${player.tournament_points}. Место: ${i + 1}. Награда: ${prizeWon > 0 ? `+${prizeWon} 🪙` : '0 🪙'}`;
 
-            currentHistory.unshift({
-                time: timeString,
-                game: "🏆 Tournament End",
-                details: `Tournament finished. Points: ${player.tournament_points}. Place: ${i + 1}`,
-                change: prizeWon > 0 ? `+${prizeWon} 🪙` : `0 🪙`,
-                win: prizeWon > 0
-            });
-            if (currentHistory.length > 30) currentHistory.pop();
-
-            // Сохраняем изменения напрямую через SQL-запрос UPDATE
+            // Пишем системное событие окончания турнира в новую таблицу истории
             await global.pool.query(
-                `UPDATE players 
-                 SET history = $1::jsonb, tournament_points = 0, balance = $2 
-                 WHERE username = $3 AND partner_id = $4`,
-                [JSON.stringify(currentHistory), Number(player.balance), player.username, partnerId]
+                `INSERT INTO player_history (username, partner_id, category, action_type, description, amount_change)
+                 VALUES ($1, $2, 'system', 'tournament_end', $3, $4)`,
+                [player.username, partnerId, description, prizeWon]
+            );
+
+            // Сбрасываем очки турнира игроку
+            await global.pool.query(
+                `UPDATE players SET tournament_points = 0, balance = $1 WHERE username = $2 AND partner_id = $3`,
+                [Number(player.balance), player.username, partnerId]
             );
         }
 
         return winnersInfo;
     },
+
 
     // 3. Массовый Крон-сброс квестов в Postgres одной строчкой (БЕЗ циклов, не нагружает базу данных)
     resetDailyQuestsForAll: async (partnerId = null) => {
@@ -596,7 +595,6 @@ const promoMethods = {
     }
 };
 
-
 const affiliateMethods = {
 
     linkReferral: async (username, partnerId, refCode) => {
@@ -676,6 +674,309 @@ const affiliateMethods = {
     }
 };
 
+const backOfficeMethods = {
+    getBetHistory: async (filters = {}) => {
+        const { username, partnerId, category, status, fromDate, toDate, limit = 20, page = 1 } = filters;
+        const offset = (page - 1) * limit;
+
+        const tableName = category === 'sport' ? 'sports_bets' : 'casino_bets';
+
+        let queryText = `SELECT *, '${category}' as category FROM ${tableName} WHERE 1=1`;
+        let countQuery = `SELECT COUNT(*)::int as count, SUM(stake)::numeric as total_stake, SUM(prize)::numeric as total_prize FROM ${tableName} WHERE 1=1`;
+
+        let queryParams = [];
+        let paramIndex = 1;
+
+        // --- ДИНАМИЧЕСКИЕ ФИЛЬТРЫ (Подходят для обоих запросов) ---
+        let filterConditions = '';
+
+        if (username) {
+            filterConditions += ` AND username = $${paramIndex}`;
+            queryParams.push(username);
+            paramIndex++;
+        }
+        if (partnerId) {
+            filterConditions += ` AND partner_id = $${paramIndex}`;
+            queryParams.push(partnerId);
+            paramIndex++;
+        }
+        if (status) {
+            filterConditions += ` AND status = $${paramIndex}`;
+            queryParams.push(status);
+            paramIndex++;
+        }
+        if (fromDate) {
+            filterConditions += ` AND timestamp >= $${paramIndex}`;
+            queryParams.push(fromDate);
+            paramIndex++;
+        }
+        if (toDate) {
+            filterConditions += ` AND timestamp <= $${paramIndex}`;
+            queryParams.push(toDate);
+            paramIndex++;
+        }
+
+        // 1. Сначала считаем общие финансовые метрики по фильтрам (до лимитов пагинации)
+        const metricsRes = await global.pool.query(countQuery + filterConditions, queryParams);
+        const metricsRow = metricsRes.rows[0] || {};
+
+        const totalItems = parseInt(metricsRow.count || 0, 10);
+        const totalStake = Number(metricsRow.total_stake || 0);
+        const totalPrize = Number(metricsRow.total_prize || 0);
+        const ggr = totalStake - totalPrize;
+
+        // 2. Добавляем сортировку и лимиты к основному запросу получения строк
+        queryText += filterConditions + ` ORDER BY timestamp DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+        queryParams.push(limit, offset);
+
+        const res = await global.pool.query(queryText, queryParams);
+
+        return {
+            items: res.rows,
+            metrics: {
+                totalStake,
+                totalPrize,
+                ggr,
+                marginPercentage: totalStake > 0 ? ((ggr / totalStake) * 100).toFixed(2) + '%' : '0%'
+            },
+            pagination: {
+                page,
+                limit,
+                totalItems,
+                totalPages: Math.ceil(totalItems / limit)
+            }
+        };
+    },
+
+
+    getPlayerUnifiedHistory: async (filters = {}) => {
+        const { username, partnerId, category, type, fromDate, toDate, limit = 15, page = 1 } = filters;
+        const offset = (page - 1) * limit;
+
+        let queryText = `SELECT id, category, action_type, description, amount_change, timestamp 
+                         FROM player_history 
+                         WHERE username = $1 AND partner_id = $2`;
+
+        let countQuery = `SELECT COUNT(*)::int as count FROM player_history WHERE username = $1 AND partner_id = $2`;
+
+        let queryParams = [username, partnerId];
+        let paramIndex = 3;
+
+        // --- ДОПОЛНИТЕЛЬНЫЕ ФИЛЬТРЫ ---
+
+        // 1. Фильтр по категории ('casino', 'sport', 'system')
+        if (category) {
+            const cond = ` AND category = $${paramIndex}`;
+            queryText += cond; countQuery += cond;
+            queryParams.push(category);
+            paramIndex++;
+        }
+
+        // 2. Фильтр по типу исхода ('win' - только плюсовые, 'lose' - только минусовые)
+        if (type) {
+            let cond = '';
+            if (type === 'win') {
+                cond = ` AND amount_change > 0`;
+            } else if (type === 'lose') {
+                cond = ` AND amount_change < 0`;
+            }
+            queryText += cond;
+            countQuery += cond;
+        }
+
+        // 3. Фильтр по начальной дате
+        if (fromDate) {
+            const cond = ` AND timestamp >= $${paramIndex}`;
+            queryText += cond; countQuery += cond;
+            queryParams.push(fromDate);
+            paramIndex++;
+        }
+
+        // 4. Фильтр по конечной дате
+        if (toDate) {
+            const cond = ` AND timestamp <= $${paramIndex}`;
+            queryText += cond; countQuery += cond;
+            queryParams.push(toDate);
+            paramIndex++;
+        }
+
+        // Сначала считаем общее количество с учетом ВСЕХ фильтров
+        const countRes = await global.pool.query(countQuery, queryParams);
+        const totalItems = countRes.rows[0]?.count || 0;
+
+        // Добавляем сортировку и пагинацию к основному запросу
+        queryText += ` ORDER BY timestamp DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+        queryParams.push(limit, offset);
+
+        const res = await global.pool.query(queryText, queryParams);
+
+        return {
+            items: res.rows,
+            pagination: {
+                page,
+                limit,
+                totalItems,
+                totalPages: Math.ceil(totalItems / limit)
+            }
+        };
+    },
+
+    getFinancialReport: async (partnerId, filters = {}) => {
+        let { fromDate, toDate } = filters;
+
+        // Базовые условия для фильтрации по партнеру
+        let queryConditions = ` WHERE partner_id = $1`;
+        let queryParams = [partnerId];
+        let paramIndex = 2;
+
+        // Добавляем фильтр по датам, если они переданы
+        if (fromDate) {
+            if (!fromDate.includes('T')) fromDate += ' 00:00:00';
+            queryConditions += ` AND timestamp >= $${paramIndex}`;
+            queryParams.push(fromDate);
+            paramIndex++;
+        }
+        if (toDate) {
+            if (!toDate.includes('T')) toDate += ' 23:59:59';
+            queryConditions += ` AND timestamp <= $${paramIndex}`;
+            queryParams.push(toDate);
+            paramIndex++;
+        }
+
+        // 1. 📊 ПОДСЧЕТ МЕТРИК НА СТОРОНЕ PostgreSQL (Отработает мгновенно)
+        const metricsQuery = `
+            SELECT 
+                COUNT(*)::int as tx_count,
+                COALESCE(SUM(CASE WHEN type = 'DEBIT' THEN amount ELSE 0 END), 0)::numeric as total_bets,
+                COALESCE(SUM(CASE WHEN type = 'CREDIT' THEN amount ELSE 0 END), 0)::numeric as total_wins,
+                COALESCE(SUM(CASE WHEN type = 'AFFILIATE' THEN amount ELSE 0 END), 0)::numeric as total_affiliate
+            FROM accounting_logs
+            ${queryConditions}
+        `;
+
+        const metricsRes = await global.pool.query(metricsQuery, queryParams);
+        const metrics = metricsRes.rows[0];
+
+        const totalBets = Number(metrics.total_bets);
+        const totalWins = Number(metrics.total_wins);
+        const totalAffiliate = Number(metrics.total_affiliate);
+        const ggr = totalBets - totalWins;
+        const netProfit = ggr - totalAffiliate;
+
+        // Список исключений для ставок (используем POSIX регулярное выражение в Postgres вместо JS .includes)
+        const systemKeywords = 'Promo|Cashback|Quest|VIP|Deposit|Withdraw';
+
+        // 2. 🎰 ЛОГ СТАВОК (Берем строго последние 50 штук из БД)
+        const betsQuery = `
+            SELECT username, type, amount::numeric, game, EXTRACT(EPOCH FROM timestamp) * 1000 as ts
+            FROM accounting_logs
+            ${queryConditions} 
+              AND type IN ('DEBIT', 'CREDIT')
+              AND (game IS NULL OR game NOT SIMILAR TO '%(${systemKeywords})%')
+            ORDER BY timestamp DESC
+            LIMIT 50
+        `;
+        const betsRes = await global.pool.query(betsQuery, queryParams);
+        const latestBets = betsRes.rows.map(tx => ({
+            partnerId,
+            username: tx.username,
+            type: tx.type,
+            amount: Number(tx.amount),
+            game: tx.game,
+            timestamp: Number(tx.ts)
+        }));
+
+        // 3. 💳 ЛОГ КАССЫ / СИСТЕМНЫХ ТРАНЗАКЦИЙ (Берем строго последние 50 штук)
+        const txType = filters.txType || 'all'; // 'all', 'affiliate', 'deposits', 'bonuses'
+        let txTypeCondition = '';
+
+        if (txType === 'affiliate') {
+            txTypeCondition = ` AND type = 'AFFILIATE'`;
+        } else if (txType === 'deposits') {
+            txTypeCondition = ` AND (game SIMILAR TO '%(Deposit|Withdraw)%')`;
+        } else if (txType === 'bonuses') {
+            txTypeCondition = ` AND (game SIMILAR TO '%(Promo|Cashback|Quest|VIP)%')`;
+        } else {
+            // 'all' — старая дефолтная логика (все системные и кассовые транзакции)
+            txTypeCondition = ` AND (type = 'AFFILIATE' OR game SIMILAR TO '%(${systemKeywords})%')`;
+        }
+
+        const txsQuery = `
+            SELECT username, type, amount::numeric, game, EXTRACT(EPOCH FROM timestamp) * 1000 as ts
+            FROM accounting_logs
+            ${queryConditions}
+            ${txTypeCondition}
+            ORDER BY timestamp DESC
+            LIMIT 50
+        `;
+
+        // Передаем queryParams как и раньше
+        const txsRes = await global.pool.query(txsQuery, queryParams);
+        const latestTransactions = txsRes.rows.map(tx => ({
+            partnerId,
+            username: tx.username,
+            type: tx.type,
+            amount: Number(tx.amount),
+            game: tx.game,
+            timestamp: Number(tx.ts)
+        }));
+
+        // [ДОБАВИТЬ В getFinancialReport] 📈 Запрос для графиков: группировка GGR и Net Profit по дням
+        const chartQuery = `
+            SELECT 
+                TO_CHAR(timestamp, 'YYYY-MM-DD') as date_label,
+                COALESCE(SUM(CASE WHEN type = 'DEBIT' THEN amount ELSE 0 END), 0)::numeric as day_bets,
+                COALESCE(SUM(CASE WHEN type = 'CREDIT' THEN amount ELSE 0 END), 0)::numeric as day_wins,
+                COALESCE(SUM(CASE WHEN type = 'AFFILIATE' THEN amount ELSE 0 END), 0)::numeric as day_affiliate
+            FROM accounting_logs
+            ${queryConditions}
+            GROUP BY DATE(timestamp), TO_CHAR(timestamp, 'YYYY-MM-DD')
+            ORDER BY DATE(timestamp) ASC
+        `;
+        const chartRes = await global.pool.query(chartQuery, queryParams);
+
+        // Добавь 'chartTimeline' в финальный возвращаемый объект:
+        return {
+            totalBets,
+            totalWins,
+            totalAffiliate,
+            ggr,
+            netProfit,
+            transactionsCount: metrics.tx_count,
+            latestTransactions,
+            latestBets
+        };
+    },
+
+    getChartAnalytics: async (partnerId) => {
+        const chartQuery = `
+            SELECT 
+                TO_CHAR(series_date, 'YYYY-MM-DD') as date_label,
+                COALESCE(SUM(CASE WHEN al.type = 'DEBIT' THEN al.amount ELSE 0 END), 0)::numeric as day_bets,
+                COALESCE(SUM(CASE WHEN al.type = 'CREDIT' THEN al.amount ELSE 0 END), 0)::numeric as day_wins,
+                COALESCE(SUM(CASE WHEN al.type = 'AFFILIATE' THEN al.amount ELSE 0 END), 0)::numeric as day_affiliate,
+                COUNT(CASE WHEN al.type IN ('DEBIT', 'CREDIT') THEN al.id END)::int as bets_count -- Считаем количество ставок
+            FROM GENERATE_SERIES(CURRENT_DATE - INTERVAL '6 days', CURRENT_DATE, '1 day'::interval) as series_date
+            LEFT JOIN accounting_logs al ON al.partner_id = $1 AND DATE(al.timestamp) = DATE(series_date)
+            GROUP BY series_date
+            ORDER BY series_date ASC
+        `;
+
+        const res = await global.pool.query(chartQuery, [partnerId]);
+
+        return res.rows.map(row => {
+            const ggr = Number(row.day_bets) - Number(row.day_wins);
+            return {
+                date: row.date_label,
+                ggr: ggr,
+                netProfit: ggr - Number(row.day_affiliate),
+                betsCount: row.bets_count // Передаем количество ставок на фронтенд
+            };
+        });
+    }
+
+};
+
 const financialMethods = {
 
     logFinancialTransaction: async (partnerId, username, type, amount, game) => {
@@ -687,71 +988,7 @@ const financialMethods = {
         );
     },
 
-    getFinancialReport: async (partnerId) => {
-        // Вытаскиваем все логи транзакций партнера
-        const res = await global.pool.query(
-            'SELECT type, amount, game, username, EXTRACT(EPOCH FROM timestamp) * 1000 as ts FROM accounting_logs WHERE partner_id = $1 ORDER BY timestamp DESC',
-            [partnerId]
-        );
-        const txs = res.rows;
 
-        let totalBets = 0;
-        let totalWins = 0;
-        let totalAffiliate = 0;
-
-        txs.forEach(tx => {
-            const amt = Number(tx.amount);
-            if (tx.type === "DEBIT") totalBets += amt;
-            if (tx.type === "CREDIT") totalWins += amt;
-            if (tx.type === "AFFILIATE") totalAffiliate += amt;
-        });
-
-        const ggr = totalBets - totalWins;
-        const netProfit = ggr - totalAffiliate;
-
-        // Форматируем под структуру объектов, которую ожидала админка из NeDB
-        const formattedTxs = txs.map(tx => ({
-            partnerId,
-            username: tx.username,
-            type: tx.type,
-            amount: Number(tx.amount),
-            game: tx.game,
-            timestamp: Number(tx.ts)
-        }));
-
-        // 🎰 ЛОГ СТАВОК: Исключаем промокоды, кэшбэки и бонусы
-        const latestBets = formattedTxs.filter(tx => {
-            const gameName = tx.game || "";
-            return (tx.type === "DEBIT" || tx.type === "CREDIT") &&
-                !gameName.includes("Promo") &&
-                !gameName.includes("Cashback") &&
-                !gameName.includes("Quest") &&
-                !gameName.includes("VIP");
-        }).slice(0, 50);
-
-        // 💳 ЛОГ КАССЫ: Чистый Cashflow
-        const latestTransactions = formattedTxs.filter(tx => {
-            const gameName = tx.game || "";
-            return tx.type === "AFFILIATE" ||
-                gameName.includes("Promo") ||
-                gameName.includes("Cashback") ||
-                gameName.includes("Quest") ||
-                gameName.includes("VIP") ||
-                gameName.includes("Deposit") ||
-                gameName.includes("Withdraw");
-        }).slice(0, 50);
-
-        return {
-            totalBets,
-            totalWins,
-            totalAffiliate,
-            ggr,
-            netProfit,
-            transactionsCount: txs.length,
-            latestTransactions,
-            latestBets
-        };
-    }
 };
 
 const minesMethods = {
@@ -1259,6 +1496,7 @@ module.exports = {
     ...promoMethods,
     ...affiliateMethods,
     ...financialMethods,
+    ...backOfficeMethods,
 
     ...minesMethods,
     ...crashMethods,

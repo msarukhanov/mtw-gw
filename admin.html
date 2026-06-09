@@ -5,403 +5,10 @@
     <title>MTWTech BackOffice</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDAgNTAwIj4KPHJlY3Qgd2lkdGg9IjUwMCIgaGVpZ2h0PSI1MDAiIGZpbGw9IiMxMjEyMTIiIHJ4PSI0MCIvPgo8dGV4dCB4PSI1MCUiIHk9IjQ1JSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IidKZXRCcmFpbnMgTW9ubycsICdGaXJhIENvZGUnLCAnTW9udHNlcnJhdCcsIHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSI5MDAiPgo8dHNwYW4geD0iNTAlIiBkeT0iMCIgZm9udC1zaXplPSIxMjUiIGZpbGw9IiNmZjVhNWYiIHRleHRMZW5ndGg9IjM2MCIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nQW5kR2x5cGhzIj5NVFc8L3RzcGFuPgo8dHNwYW4geD0iNTAlIiBkeT0iMTE1IiBmb250LXNpemU9IjExNSIgZmlsbD0iIzRlY2NhMyIgdGV4dExlbmd0aD0iMzYwIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiPlRFQ0g8L3RzcGFuPgo8L3RleHQ+Cjwvc3ZnPg==">
-    <style>
-        :root {
-            --bg-main: #0d1117;
-            --bg-sidebar: #161b22;
-            --bg-card: #21262d;
-            --border-color: #30363d;
-            --text-main: #c9d1d9;
-            --text-muted: #8b949e;
-            --accent-blue: #58a6ff;
-            --accent-green: #238636;
-            --accent-red: #da3633;
-            --accent-pink: #ff007f;
-            --neon-green: #00f5d4;
 
-            --sidebar-width: 260px;
-            --bg-sidebar: #11141a; /* Твой дефолтный цвет */
-        }
+    <link rel="stylesheet" href="./view/styles/admin.css">
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            margin: 0;
-            padding: 0;
-            background: var(--bg-main);
-            color: var(--text-main);
-        }
-
-        /* 🔐 STYLE: DEMO LOGIN SCREEN */
-        .login-screen {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background: var(--bg-main);
-        }
-        .login-box {
-            background: var(--bg-sidebar);
-            padding: 30px;
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            width: 100%;
-            max-width: 360px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-            text-align: center;
-        }
-        .login-box h2 { color: #fff; margin-bottom: 20px; }
-        .login-box input {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            background: var(--bg-main);
-            border: 1px solid var(--border-color);
-            color: #fff;
-            border-radius: 6px;
-            box-sizing: border-box;
-        }
-
-        /* 🎛 STYLE: MAIN LAYOUT & SIDEBAR */
-        .admin-layout {
-            display: none; /* Hidden by default until login */
-            height: 100vh;
-        }
-        /*.sidebar {*/
-            /*width: 260px;*/
-            /*background: var(--bg-sidebar);*/
-            /*border-right: 1px solid var(--border-color);*/
-            /*display: flex;*/
-            /*flex-direction: column;*/
-            /*padding: 20px 0;*/
-            /*box-sizing: border-box;*/
-        /*}*/
-        /*.sidebar-header {*/
-            /*padding: 0 20px 20px 20px;*/
-            /*border-bottom: 1px solid var(--border-color);*/
-            /*margin-bottom: 15px;*/
-        /*}*/
-        /*.sidebar-header h1 { font-size: 18px; color: #fff; margin: 0; }*/
-        /*.sidebar-header span { font-size: 11px; color: var(--text-muted); }*/
-        /*.sidebar-inner {*/
-            /*width: 260px;*/
-            /*background: var(--bg-sidebar);*/
-            /*border-right: 1px solid var(--border-color);*/
-            /*display: flex;*/
-            /*flex-direction: column;*/
-            /*padding: 0;*/
-            /*box-sizing: border-box;*/
-        /*}*/
-
-
-        .sidebar {
-            width: var(--sidebar-width);
-            background: var(--bg-sidebar);
-            border-right: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            padding: 20px 0;
-            box-sizing: border-box;
-            transition: width 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-            position: relative;
-            z-index: 100;
-        }
-
-        /* Шапка сайдбара (скрывается или сжимается) */
-        .sidebar-header {
-            padding: 0 20px 20px 20px;
-            border-bottom: 1px solid var(--border-color);
-            margin-bottom: 15px;
-            white-space: nowrap;
-            overflow: hidden;
-            transition: padding 0.3s;
-        }
-
-        .sidebar-header h1 { font-size: 18px; color: #fff; margin: 0; }
-        .sidebar-header span { font-size: 11px; color: var(--text-muted); }
-
-        /* Внутренний контейнер меню */
-        .sidebar-inner {
-            width: 100%;
-            background: transparent;
-            display: flex;
-            flex-direction: column;
-            padding: 0;
-            box-sizing: border-box;
-            overflow-y: auto;
-            overflow-x: hidden;
-        }
-
-        /* Превращаем заголовок раздела в кликабельную кнопку-спойлер */
-        .nav-title {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 20px;
-            font-size: 16px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-muted);
-            font-weight: bold;
-            cursor: pointer;
-            user-select: none;
-            transition: color 0.2s, background 0.2s;
-        }
-
-        .nav-title:hover {
-            color: #fff;
-            background: rgba(255, 255, 255, 0.02);
-        }
-
-        /* Иконка стрелочки внутри заголовка */
-        .nav-title::after {
-            content: '▼';
-            font-size: 9px;
-            color: var(--text-muted);
-            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-        }
-
-        /* Если раздел закрыт, разворачиваем стрелочку */
-        .nav-title.section-closed::after {
-            transform: rotate(-90deg);
-        }
-
-        /* Контейнер для группы кнопок внутри раздела */
-        .nav-section-content {
-            overflow: hidden;
-            max-height: 500px; /* Достаточная высота для раскрытого списка */
-            transition: max-height 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-        }
-
-        /* Класс, который мгновенно схлопывает группу кнопок */
-        .nav-section-content.collapsed-content {
-            max-height: 0 !important;
-        }
-
-        /* Защита для общего режима сжатия сайдбара (который вы уже добавили):
-           если весь сайдбар сжат до 68px, стрелочки аккордеона внутри нам не нужны */
-        .sidebar.collapsed .nav-title::after {
-            display: none;
-        }
-
-
-        /* Универсальные кнопки навигации */
-        .nav-btn {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            width: 100%;
-            padding: 12px 20px;
-            background: transparent;
-            border: none;
-            color: #a0a5b5;
-            text-align: left;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            white-space: nowrap;
-            transition: all 0.2s ease;
-        }
-
-        .nav-btn:hover {
-            background: rgba(255, 255, 255, 0.03);
-            color: #fff;
-        }
-
-        .nav-btn.active {
-            background: rgba(255, 183, 3, 0.1); /* Твой желтый акцент */
-            color: #ffb703;
-            border-left: 3px solid #ffb703;
-            padding-left: 17px; /* Компенсация бордера */
-        }
-
-        /* 🔄 ТРИГГЕР КНОПКА СВЕРТЫВАНИЯ САЙДБАРA (Toggle Trigger) */
-        .sidebar-toggle-btn {
-            padding: 0px 6px;
-            position: absolute;
-            top: 71px;
-            right: -12px;
-            width: 30px;
-            height: 30px;
-            background: #ffb703;
-            border: 1px solid var(--border-color);
-            border-radius: 50%;
-            color: #1a1d24;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 12px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            z-index: 110;
-            transition: transform 0.3s;
-        }
-
-        /* ========================================================================= */
-        /* 📉 СОСТОЯНИЕ СВЕРНУТОГО САЙДБАРА (.collapsed) */
-        /* ========================================================================= */
-        .sidebar.collapsed {
-            --sidebar-width: 68px; /* Сжимается до ширины иконок */
-        }
-
-        .sidebar.collapsed .sidebar-header {
-            padding: 0 0 20px;
-            text-align: center;
-        }
-        .sidebar.collapsed .logo span,
-        .sidebar.collapsed .sidebar-header span,
-        .sidebar.collapsed .nav-title,
-        .sidebar.collapsed .nav-btn-text {
-            display: none; /* Полностью скрываем текст, оставляя только эмодзи/иконки */
-        }
-
-        .sidebar.collapsed .sidebar-toggle-btn {
-            transform: rotate(180deg); /* Разворачиваем стрелочку кнопки */
-        }
-
-        .sidebar.collapsed .nav-btn {
-            justify-content: center;
-            padding: 12px 0;
-            font-size: 18px; /* Увеличиваем эмодзи, чтобы они смотрелись как иконки */
-        }
-
-        .sidebar.collapsed .nav-btn.active {
-            border-left: 3px solid #ffb703;
-            padding-left: 0;
-        }
-
-        /* Ограничение зоны основного контента админки (чтобы контент двигался за сайдбаром) */
-        .main-content-wrapper {
-            margin-left: 0;
-            flex: 1;
-            transition: padding-left 0.3s;
-        }
-
-        .logo-area {
-            display: flex;
-            align-items: center;
-            gap: 25px;
-        }
-
-        .logo {
-            font-size: 24px;
-            font-weight: 900;
-            color: #4ecca3;
-            text-shadow: 0 0 10px rgba(78, 204, 163, 0.3);
-            letter-spacing: 1px;
-            text-decoration: none;
-        }
-
-        .logo span {
-            color: #e94560;
-            font-size: 24px;
-        }
-        /* TAB BUTTONS */
-        .nav-btn {
-            background: transparent;
-            border: 0;
-            color: var(--text-main);
-            padding: 12px 20px;
-            text-align: left;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transition: background 0.2s;
-        }
-        .nav-btn:hover { background: rgba(255,255,255,0.05); }
-        .nav-btn.active {
-            background: rgba(88, 166, 255, 0.1);
-            color: var(--accent-blue);
-            border-left: 4px solid var(--accent-blue);
-        }
-        .nav-btn.nav-title {
-            font-size: 18px;
-            font-weight: bold;
-            padding-left: 37px;
-            color: var(--neon-green);
-        }
-
-        /* MAIN CONTENT AREA */
-        .main-content {
-            flex: 1;
-            padding: 30px;
-            overflow-y: auto;
-            background: var(--bg-main);
-        }
-        .tab-content {
-            display: none; /* Hidden until activated */
-        }
-        .tab-content.active {
-            display: block;
-        }
-
-        .tab-content iframe {
-            width: 100%;
-            height: calc(100vh - 60px);
-            border: 1px solid var(--neon-green);
-            border-radius: 4px;
-        }
-
-        /* CARDS & ENGINE TABLES */
-        .card {
-            background: var(--bg-sidebar);
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            margin-bottom: 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-        .card h2 { margin-top: 0; font-size: 18px; color: #fff; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
-
-        .game-block {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            padding: 12px 16px;
-            border-radius: 6px;
-            margin-bottom: 12px;
-        }
-        .game-block h3 { margin: 0 0 8px 0; font-size: 14px; color: var(--accent-blue); text-transform: uppercase; }
-
-        .flex-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-
-        input[type="number"], input[type="text"], select {
-            background: var(--bg-main);
-            color: #fff;
-            border: 1px solid var(--border-color);
-            padding: 6px 10px;
-            border-radius: 4px;
-            outline: none;
-        }
-
-        button {
-            padding: 8px 14px;
-            border-radius: 4px;
-            font-weight: bold;
-            cursor: pointer;
-            border: 0;
-            transition: opacity 0.2s;
-        }
-        button:hover { opacity: 0.9; }
-        .btn-primary { background: var(--accent-blue); color: #fff; }
-        .btn-danger { background: var(--accent-red); color: #fff; }
-
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
-        th, td { padding: 12px; border-bottom: 1px solid var(--border-color); text-align: left; }
-        th { background: var(--bg-card); color: #fff; }
-
-        .jackpot-val { font-size: 32px; color: var(--accent-pink); font-weight: bold; margin: 15px 0; text-shadow: 0 0 10px rgba(255,0,127,0.2); }
-        .badge { background: var(--accent-blue); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold;
-            display: flex;
-            text-align: center;
-            justify-content: center;
-            align-items: center;
-        }
-        .bet-item-row { border-bottom: 1px solid rgba(255,255,255,0.05); padding: 4px 0; }
-        .bet-item-row:last-child { border-bottom: none; }
-    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -415,6 +22,13 @@
             <input type="password" id="login_pass" placeholder="Password (admin)" required>
             <button type="submit" class="btn-primary" style="width: 100%; padding: 10px;">Sign In</button>
         </form>
+    </div>
+</div>
+
+<div id="global-mtw-loader" class="mtw-loader-overlay" style="display: none;">
+    <div class="mtw-loader-container">
+        <div class="mtw-loader-spinner"></div>
+        <div class="mtw-loader-text">MTWTech</div>
     </div>
 </div>
 
@@ -432,7 +46,7 @@
 
         <div class="sidebar-inner" id="accordionMenu">
             <!-- РАЗДЕЛ 1: Financial -->
-            <div class="nav-title" onclick="toggleMenuSection('sec-financial', this)">Financial</div>
+            <div class="nav-title" onclick="toggleMenuSection('sec-financial', this)">Reports</div>
             <div class="nav-section-content" id="sec-financial">
                 <button class="nav-btn active" onclick="switchTab('tab-finance', this)"><span>📊</span><span class="nav-btn-text">Totals</span></button>
                 <button class="nav-btn" onclick="switchTab('tab-bets-registry', this)"><span>🎰</span><span class="nav-btn-text">Bets Registry</span></button>
@@ -513,15 +127,76 @@
                         • Total Accounting Logs Tracked: <span id="fin_logs" style="color: var(--accent-blue); font-weight: bold;">0</span> records.
                     </small>
                 </div>
+
+                <!-- БЛОК ГРАФИКОВ: ДВЕ КОЛОНКИ -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; margin-top: 25px;">
+
+                    <!-- Левый график: Финансы (GGR / NGR) -->
+                    <div class="game-block" style="background: #0b0d13; border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; margin-top: 0;">
+                        <h4 style="margin-top: 0; margin-bottom: 15px; color: #8a99ad; letter-spacing: 0.5px;">📈 FINANCIAL PERFORMANCE TIMELINE</h4>
+                        <div style="width: 100%; height: 300px; position: relative;">
+                            <canvas id="mtwFinanceChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Правый график: Количество ставок (Игровая активность) -->
+                    <div class="game-block" style="background: #0b0d13; border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; margin-top: 0;">
+                        <h4 style="margin-top: 0; margin-bottom: 15px; color: #8a99ad; letter-spacing: 0.5px;">🎮 TOTAL BETS VOLUME (ACTIVITY)</h4>
+                        <div style="width: 100%; height: 300px; position: relative;">
+                            <canvas id="mtwActivityChart"></canvas>
+                        </div>
+                    </div>
+
+                </div>
+
             </div>
         </div>
 
         <!-- TAB 8: DETAILED BETS REGISTRY -->
+        <!-- TAB 8: DETAILED BETS REGISTRY -->
         <div id="tab-bets-registry" class="tab-content">
+            <!-- Расширенные фильтры строго для ставок -->
             <div class="card">
+                <!-- Сама таблица (без изменений) -->
                 <h2>🎰 Player Bets History Log</h2>
                 <div style="margin-bottom: 15px; color: var(--text-muted); font-size: 13px;">
-                    This module tracks every spin, flip, and crash event. Real-time auditing for all connected B2B game servers.
+                    This module tracks every spin, flip, and crash event from database.
+                </div>
+                <div class="card" style="margin-bottom: 0px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; padding: 15px;">
+                    <div style="display: flex; gap: 8px;">
+                        <select id="bets_filter_category" onchange="loadAdminBetsRegistry()" style="background: var(--bg-main); border: 1px solid var(--border-color); color: #fff; padding: 6px; border-radius: 4px;">
+                            <option value="casino">🎰 Casino</option>
+                            <option value="sport">⚽ Sport</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <input type="text" id="bets_filter_username" placeholder="Search by Username" oninput="loadAdminBetsRegistry()" style="background: var(--bg-main); border: 1px solid var(--border-color); color: #fff; padding: 6px; border-radius: 4px; width: 160px;">
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <span style="font-size: 13px; color: var(--text-muted);">Limit:</span>
+                        <select id="bets_filter_limit" onchange="currentBetsPage = 1; loadAdminBetsRegistry()" style="background: var(--bg-main); border: 1px solid var(--border-color); color: #fff; padding: 6px; border-radius: 4px;">
+                            <option value="10">10</option>
+                            <option value="20" selected>20</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="card" style="margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; padding: 15px;">
+
+                    <div style="display: flex; gap: 5px;">
+                        <button onclick="setBetsPeriod('')" class="btn-bets-period active" id="btn_bets_all">All</button>
+                        <button onclick="setBetsPeriod('day')" class="btn-bets-period" id="btn_bets_day">Day</button>
+                        <button onclick="setBetsPeriod('week')" class="btn-bets-period" id="btn_bets_week">Week</button>
+                    </div>
+
+                    <!-- НОВЫЙ БЛОК: Выбор точных дат для ставок -->
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 13px; color: var(--text-muted);">From:</span>
+                        <input type="date" id="bets_filter_from" onchange="triggerBetsDateChange()" style="background: var(--bg-main); border: 1px solid var(--border-color); color: #fff; padding: 5px; border-radius: 4px;">
+                        <span style="font-size: 13px; color: var(--text-muted);">To:</span>
+                        <input type="date" id="bets_filter_to" onchange="triggerBetsDateChange()" style="background: var(--bg-main); border: 1px solid var(--border-color); color: #fff; padding: 5px; border-radius: 4px;">
+                    </div>
                 </div>
                 <div style="max-height: 650px; overflow-y: auto;">
                     <table>
@@ -535,19 +210,60 @@
                         </tr>
                         </thead>
                         <tbody id="bets_registry_tbody">
-                        <!-- Data will be loaded via JS -->
+                        <!-- Loaded via loadAdminBetsRegistry() -->
                         </tbody>
                     </table>
+                    <div id="bets_pagination_container" style="margin-top: 15px; display: flex; justify-content: center; gap: 10px; align-items: center;">
+                        <button id="btn_bets_prev" onclick="changeBetsPage(-1)" class="btn-period" style="padding: 5px 12px;">◀</button>
+                        <span id="lbl_bets_page" style="font-size: 13px; color: #fff; font-weight: 600;">Page 1</span>
+                        <button id="btn_bets_next" onclick="changeBetsPage(1)" class="btn-period" style="padding: 5px 12px;">▶</button>
+                    </div>
                 </div>
             </div>
         </div>
 
+
         <!-- TAB 9: DETAILED TRANSACTIONS LEDGER -->
         <div id="tab-transactions-ledger" class="tab-content">
+            <!-- Фильтры строго для финансов -->
+
+
             <div class="card">
                 <h2>💳 Financial Transactions Cashflow Ledger</h2>
                 <div style="margin-bottom: 15px; color: var(--text-muted); font-size: 13px;">
-                    Comprehensive ledger tracking platform turnover. Captures all system DEBIT, CREDIT, deposit and RevShare payouts.
+                    Comprehensive ledger tracking platform turnover. Captures cashflows, deposits, and promos.
+                </div>
+                <div class="card" style="margin-bottom: 0px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; padding: 15px;">
+                    <div style="display: flex; gap: 8px;">
+                        <select id="fin_filter_type" onchange="loadAdminFinanceReport()" style="background: var(--bg-main); border: 1px solid var(--border-color); color: #fff; padding: 6px; border-radius: 4px;">
+                            <option value="all">💼 All</option>
+                            <option value="deposits">💳 Deposit / Withdraw</option>
+                            <option value="affiliate">📈 Affiliate</option>
+                            <option value="bonuses">🎁 Bonus / Quest / Promo</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <span style="font-size: 13px; color: var(--text-muted);">Limit:</span>
+                        <select id="fin_filter_limit" onchange="currentTxPage = 1; loadAdminFinanceReport()" style="background: var(--bg-main); border: 1px solid var(--border-color); color: #fff; padding: 6px; border-radius: 4px;">
+                            <option value="10">10</option>
+                            <option value="20" selected>20</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="card" style="margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; padding: 15px;">
+                    <div style="display: flex; gap: 5px;">
+                        <button onclick="setFinancePeriod('')" class="btn-fin-period active" id="btn_fin_all">All time</button>
+                        <button onclick="setFinancePeriod('day')" class="btn-fin-period" id="btn_fin_day">Day</button>
+                        <button onclick="setFinancePeriod('week')" class="btn-fin-period" id="btn_fin_week">Weel</button>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 13px; color: var(--text-muted);">From:</span>
+                        <input type="date" id="fin_filter_from" onchange="triggerFinDateChange()" style="background: var(--bg-main); border: 1px solid var(--border-color); color: #fff; padding: 5px; border-radius: 4px;">
+                        <span style="font-size: 13px; color: var(--text-muted);">To:</span>
+                        <input type="date" id="fin_filter_to" onchange="triggerFinDateChange()" style="background: var(--bg-main); border: 1px solid var(--border-color); color: #fff; padding: 5px; border-radius: 4px;">
+                    </div>
                 </div>
                 <div style="max-height: 650px; overflow-y: auto;">
                     <table>
@@ -555,18 +271,25 @@
                         <tr>
                             <th>Timestamp</th>
                             <th>Account Holder</th>
-                            <th>Gateway Gateway / Promo Code</th>
+                            <th>Gateway / Promo Code</th>
                             <th>Accounting Status</th>
                             <th>Amount Added</th>
                         </tr>
                         </thead>
                         <tbody id="tx_ledger_tbody">
-                        <!-- Loaded via JS -->
+                        <!-- Loaded via loadAdminFinanceReport() -->
                         </tbody>
                     </table>
+                    <div id="tx_pagination_container" style="margin-top: 15px; display: flex; justify-content: center; gap: 10px; align-items: center;">
+                        <button id="btn_tx_prev" onclick="changeTxPage(-1)" class="btn-period" style="padding: 5px 12px;">◀</button>
+                        <span id="lbl_tx_page" style="font-size: 13px; color: #fff; font-weight: 600;">Page 1</span>
+                        <button id="btn_tx_next" onclick="changeTxPage(1)" class="btn-period" style="padding: 5px 12px;">▶</button>
+                    </div>
                 </div>
+
             </div>
         </div>
+
 
         <!-- TAB 1: GAME ENGINE CONFIGURATION -->
         <div id="tab-config" class="tab-content">
@@ -889,800 +612,7 @@
     </main>
 </div>
 
-<script>
-    // URL CONFIGURATION (Detects local machine or active Render proxy link)
-    const baseUrl = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-        ? 'http://localhost:3000'
-        : 'https://mtw-gw.onrender.com';
-    const baseUrlApi = baseUrl + '/api';
-    const SERVER_URL = baseUrl;
-
-    // 🔐 LOGIC: DEMO LOGIN SYSTEM
-    function checkDemoAuth() {
-        if (sessionStorage.getItem('demoAdminAuthenticated') === 'true') {
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('admin-layout').style.display = 'flex';
-            loadData();
-        }
-    }
-
-    document.getElementById('loginForm').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const user = document.getElementById('login_user').value;
-        const pass = document.getElementById('login_pass').value;
-
-        // Simplified authentication flow for investor presentation
-        if (user === 'demo_mtwtech' && pass === 'qwerty') {
-            sessionStorage.setItem('demoAdminAuthenticated', 'true');
-            localStorage.setItem('partnerId', user);
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('admin-layout').style.display = 'flex';
-            loadData();
-        } else {
-            const errBox = document.getElementById('login-error');
-            errBox.innerText = 'Invalid credentials. Hint: admin / admin';
-            errBox.style.display = 'block';
-        }
-    });
-
-    function logoutDemo() {
-        sessionStorage.removeItem('demoAdminAuthenticated');
-        localStorage.removeItem('partnerId');
-        location.reload();
-    }
-
-    // 🗂 LOGIC: VERTICAL SIDEBAR TAB SYSTEM
-    function switchTab(tabId, element) {
-        // Hide all inactive segments
-        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-        // Clear buttons selection state
-        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-        // Expose target content block & button state
-        document.getElementById(tabId).classList.add('active');
-        element.classList.add('active');
-    }
-
-    // 🏟 LOGIC: SPORTSBOOK TICKETS MANAGEMENT
-    async function loadPendingSportsBets() {
-        try {
-            const res = await fetch(`${baseUrlApi}/admin/sports/pending`);
-            const data = await res.json();
-
-            const tbody = document.getElementById('sportsBetsTableBody');
-            if (data.bets && data.bets.length > 0) {
-                tbody.innerHTML = data.bets.map(b => {
-                    const matchesList = b.items.map(item => `
-                        <div class="bet-item-row">
-                            • <b>${item.teams}</b><br>
-                            <small style="color: var(--text-muted);">${item.market.toUpperCase()} ➔ <b style="color:#fff;">${item.selectedOutcome.toUpperCase()}</b> (${item.odds})</small>
-                        </div>
-                    `).join('');
-
-                    return `
-                        <tr>
-                            <td><b>${b.username}</b></td>
-                            <td>${matchesList}</td>
-                            <td><span class="badge">${b.type}</span></td>
-                            <td><b style="color:var(--neon-green);">${b.stake} 🪙</b><br><small style="color:var(--text-muted);">Total Odds: ${b.totalOdds}</small></td>
-                            <td>
-                                <button onclick="settleBet('${b._id}', 'WON')" style="background:var(--accent-green); margin-right:4px;">WIN</button>
-                                <button onclick="settleBet('${b._id}', 'LOST')" style="background:var(--accent-red);">LOSE</button>
-                            </td>
-                        </tr>
-                    `;
-                }).join('');
-            } else {
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:25px;">No active pending slips in queue</td></tr>`;
-            }
-        } catch (err) { console.error('Error loading sports bets:', err); }
-    }
-
-    async function settleBet(betId, status) {
-        if (!confirm(`Are you sure you want to settle this bet as a ${status === 'WON' ? 'WIN' : 'LOSS'}?`)) {
-            return;
-        }
-
-        try {
-            const res = await fetch(`${baseUrlApi}/admin/sports/settle`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ betId, status })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert('Bet settled successfully. Player balances synchronized!');
-                loadData();
-            } else {
-                alert('Settlement failed: ' + (data.error || 'Unknown error'));
-            }
-        } catch (err) { alert('Network error while sending settlement request'); }
-    }
-
-    // 🔄 CORE RE-FETCH THREAD
-    async function loadData() {
-        try {
-            // ИСПРАВЛЕНО ДЛЯ POSTGRES: Вытаскиваем partnerId из хранилища админки
-            const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
-
-            // Передаем partnerId в query-параметрах, чтобы бэкенд знал, чьи конфиги, джекпоты и игроков тянуть из Neon
-            const res = await fetch(`${SERVER_URL}/api/admin/data?partnerId=${currentPartnerId}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    // Если у тебя используется токен админа, пробрасываем его сюда:
-                    'Authorization': `Bearer ${localStorage.getItem('adminToken') || ''}`
-                }
-            });
-
-            if (res.status === 401) return alert('No access');
-            const data = await res.json();
-
-            // Mapped games inputs verification
-            if (data.config.slots3x3) {
-                document.getElementById('slots3x3_cost').value = data.config.slots3x3.cost;
-                document.getElementById('slots3x3_rtp').value = data.config.slots3x3.rtp;
-            }
-            if (data.config.slots5x3) {
-                document.getElementById('slots5x3_cost').value = data.config.slots5x3.cost;
-                document.getElementById('slots5x3_rtp').value = data.config.slots5x3.rtp;
-            }
-            document.getElementById('wheel_cost').value = data.config.wheel.cost;
-            document.getElementById('wheel_rtp').value = data.config.wheel.rtp;
-            document.getElementById('scratch_cost').value = data.config.scratch.cost;
-            document.getElementById('scratch_rtp').value = data.config.scratch.rtp;
-            document.getElementById('lottery_ticketPrice').value = data.config.lottery.ticketPrice;
-            document.getElementById('lottery_rtp').value = data.config.lottery.rtp;
-
-            document.getElementById('mines_rtpPercent').value = data.config.mines.rtpPercent;
-            document.getElementById('crash_betTime').value = data.config.crash.betTime;
-            document.getElementById('crash_baseRtp').value = data.config.crash.baseRtp;
-            document.getElementById('dice_houseEdge').value = data.config.dice.houseEdge;
-            document.getElementById('hilo_houseEdge').value = data.config.hilo.houseEdge;
-
-            // Optional structural mapping for operational banks
-            if (data.banks) {
-                if (data.banks.mines && document.getElementById('mines_bank')) document.getElementById('mines_bank').value = data.banks.mines;
-                if (data.banks.crash && document.getElementById('crash_bank')) document.getElementById('crash_bank').value = data.banks.crash;
-                if (data.banks.dice && document.getElementById('dice_bank')) document.getElementById('dice_bank').value = data.banks.dice;
-                if (data.banks.hilo && document.getElementById('hilo_bank')) document.getElementById('hilo_bank').value = data.banks.hilo;
-            }
-
-            // Jackpot Update
-            document.getElementById('jackpotDisplay').innerText = data.jackpot + ' 🪙';
-            document.getElementById('jackpotInput').value = data.jackpot;
-
-            // Users Table Render Loop
-            const tbody = document.getElementById('playersTableBody');
-            if (tbody) {
-                tbody.innerHTML = data.players.map(p => `
-                    <tr>
-                        <td><b>${p.username}</b><br><small style="color:var(--text-muted);">Level: ${p.level || 1} (${p.xp || 0} XP)</small></td>
-                        <td>
-                            <b style="color:var(--neon-green);">💵 Balance: ${p.balance} 🪙</b><br>
-                            <small style="color:var(--text-muted);">🏆 Tournament points: ${p.tournamentPoints || 0}</small>
-                        </td>
-                        <td>
-                            <div class="flex-row">
-                                <input type="number" id="bal_${p.username}" value="${p.balance}" style="width:90px; margin:0;">
-                                <button onclick="updateBalance('${p.username}')" style="background:var(--accent-green); padding:6px 12px;">Update</button>
-                            </div>
-                        </td>
-                    </tr>
-                `).join('');
-            }
-
-            // Retention Modules Parameters Sync
-            document.getElementById('g_xpPerGame').value = data.config.gamification.xpPerGame;
-            document.getElementById('g_xpMultiplier').value = data.config.gamification.xpMultiplier;
-            document.getElementById('g_levelUpBonus').value = data.config.gamification.levelUpBonus;
-            document.getElementById('g_questTargetGames').value = data.config.gamification.questTargetGames;
-            document.getElementById('g_questReward').value = data.config.gamification.questReward;
-            document.getElementById('g_tournamentActive').value = data.config.gamification.tournamentActive;
-            document.getElementById('g_tournamentPrize').value = data.config.gamification.tournamentPrize;
-
-            document.getElementById('g_affiliatePercent').value = data.config.gamification.affiliatePercent || 10;
-
-            document.getElementById('g_cashbackPercent').value = data.config.gamification.cashbackPercent || 10;
-
-            // Active Promocodes Render Loop
-            const promoTbody = document.getElementById('promoCodesTableBody');
-            if (data.config.promoCodes && data.config.promoCodes.length > 0) {
-                promoTbody.innerHTML = data.config.promoCodes.map(p => `
-                    <tr>
-                        <td><b>${p.code}</b></td>
-                        <td><b style="color:var(--neon-green);">${p.reward} 🪙</b></td>
-                        <td>${p.maxUses} times</td>
-                        <td><span style="color: ${p.active === 1 ? 'var(--accent-green)' : 'var(--accent-red)'}"><b>${p.active === 1 ? 'ACTIVE' : 'DISABLED'}</b></span></td>
-                    </tr>
-                `).join('');
-            } else {
-                promoTbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:10px;">Registry empty</td></tr>`;
-            }
-
-            // Допиши в конец функции loadData() внутри admin.html
-            // Обновленный кусок подгрузки финансовой аналитики и таблиц в admin.html
-            try {
-                const finRes = await fetch(`${baseUrlApi}/admin/finance/report`);
-                const finData = await finRes.json();
-                if (finData.success) {
-                    // 1. Обновляем виджеты KPI
-                    document.getElementById('fin_bets').innerText = finData.report.totalBets + ' 🪙';
-                    document.getElementById('fin_wins').innerText = finData.report.totalWins + ' 🪙';
-                    document.getElementById('fin_ggr').innerText = finData.report.ggr + ' 🪙';
-                    document.getElementById('fin_net').innerText = finData.report.netProfit + ' 🪙';
-                    document.getElementById('fin_logs').innerText = finData.report.transactionsCount;
-                }
-            } catch (fErr) { console.error('Finance analytics pull crash:', fErr); }
-
-            // 🔄 ОБНОВЛЕННАЯ СИНХРОНИЗАЦИЯ ФИНАНСОВ И ДВУХ НОВЫХ ВКЛАДОК ЖУРНАЛОВ
-            try {
-                const finRes = await fetch(`${baseUrlApi}/admin/finance/report`);
-                const finData = await finRes.json();
-
-                if (finData.success) {
-                    // 1. Наполняем вкладку "Financial Reports" (KPI виджеты)
-                    document.getElementById('fin_bets').innerText = finData.report.totalBets + ' 🪙';
-                    document.getElementById('fin_wins').innerText = finData.report.totalWins + ' 🪙';
-                    document.getElementById('fin_ggr').innerText = finData.report.ggr + ' 🪙';
-                    document.getElementById('fin_net').innerText = finData.report.netProfit + ' 🪙';
-                    document.getElementById('fin_logs').innerText = finData.report.transactionsCount;
-
-                    // Helper для форматирования времени
-                    const formatTime = (ts) => {
-                        return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                    };
-
-                    // 2. Наполняем СОВЕРШЕННО НОВУЮ ВКЛАДКУ "🎰 Bets Registry"
-                    const betsRegistryTbody = document.getElementById('bets_registry_tbody');
-                    if (finData.report.latestBets && finData.report.latestBets.length > 0) {
-                        betsRegistryTbody.innerHTML = finData.report.latestBets.map(b => `
-                        <tr>
-                            <td><small style="color: var(--text-muted);">${formatTime(b.timestamp)}</small></td>
-                            <td><b>${b.username}</b></td>
-                            <td><span class="badge" style="background: var(--bg-main); border: 1px solid var(--border-color); color: #fff; padding: 4px 8px;">${b.game}</span></td>
-                            <td><b style="color: ${b.type === 'DEBIT' ? 'var(--text-muted)' : 'var(--neon-green)'}">${b.type === 'DEBIT' ? '🔴 STAKE / OUT' : '🟢 WIN / IN'}</b></td>
-                            <td><span style="color: ${b.type === 'DEBIT' ? '#fff' : 'var(--neon-green)'}; font-size: 15px;"><b>${b.amount} 🪙</b></span></td>
-                        </tr>
-                    `).join('');
-                    } else {
-                        betsRegistryTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:30px;">No bets registered in engine</td></tr>`;
-                    }
-
-                    // 3. Наполняем СОВЕРШЕННО НОВУЮ ВКЛАДКУ "💳 Transactions"
-                    // 3. Наполняем СОВЕРШЕННО ЧИСТУЮ ВКЛАДКУ "💳 Transactions (Deposits/Promos)"
-                    const txLedgerTbody = document.getElementById('tx_ledger_tbody');
-                    if (finData.report.latestTransactions && finData.report.latestTransactions.length > 0) {
-                        txLedgerTbody.innerHTML = finData.report.latestTransactions.map(t => {
-                            let badgeStyle = 'background: var(--accent-blue);';
-                            let flowText = `<b style="color: var(--neon-green);">+${t.amount} 🪙</b>`;
-
-                            if (t.type === 'AFFILIATE') {
-                                badgeStyle = 'background: #381b2c; border: 1px solid var(--accent-pink);';
-                                flowText = `<b style="color: var(--accent-pink);">+${t.amount} 🪙</b>`;
-                            } else if (t.type === 'BONUS_CASH') {
-                                badgeStyle = 'background: #1b382c; border: 1px solid var(--neon-green);';
-                                flowText = `<b style="color: var(--neon-green);">+${t.amount} 🪙</b>`;
-                            }
-
-                            return `
-                            <tr>
-                                <td><small style="color: var(--text-muted);">${formatTime(t.timestamp)}</small></td>
-                                <td><b>${t.username}</b></td>
-                                <td><small style="color: #fff; font-weight: 600;">${t.game}</small></td>
-                                <td><span class="badge" style="${badgeStyle} color: #fff; padding: 4px 10px;">${t.type === 'AFFILIATE' ? 'AFFILIATE SHARE' : 'BALANCE INJECT'}</span></td>
-                                <td style="font-size: 15px;">${flowText}</td>
-                            </tr>
-                        `;
-                        }).join('');
-                    } else {
-                        txLedgerTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:30px;">No platform balance injections found</td></tr>`;
-                    }
-
-                }
-            } catch (fErr) {
-                console.error('Finance and logs reporting sync failure:', fErr);
-            }
-
-            // Запуск рендеринга спортивных купонов
-            loadPendingSportsBets();
-
-            loadAdminCollections();
-            loadAdminGamesConfig();
-            loadAdminProvidersConfig();
-
-        } catch (err) {
-            console.error(err);
-            alert('Server core data synchronization error.');
-        }
-
-        loadAdminBackgroundServices();
-    }
-
-    // 📬 AJAX FORMS INTERCEPTORS & API REQUESTS
-    document.getElementById('configForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const configData = {
-            slots3x3_cost: Number(document.getElementById('slots3x3_cost').value),
-            slots3x3_rtp: Number(document.getElementById('slots3x3_rtp').value),
-            slots5x3_cost: Number(document.getElementById('slots5x3_cost').value),
-            slots5x3_rtp: Number(document.getElementById('slots5x3_rtp').value),
-            wheel_cost: Number(document.getElementById('wheel_cost').value),
-            wheel_rtp: Number(document.getElementById('wheel_rtp').value),
-            scratch_cost: Number(document.getElementById('scratch_cost').value),
-            scratch_rtp: Number(document.getElementById('scratch_rtp').value),
-            lottery_ticketPrice: Number(document.getElementById('lottery_ticketPrice').value),
-            lottery_rtp: Number(document.getElementById('lottery_rtp').value),
-            mines_rtpPercent: Number(document.getElementById('mines_rtpPercent').value),
-            crash_betTime: Number(document.getElementById('crash_betTime').value),
-            crash_baseRtp: Number(document.getElementById('crash_baseRtp').value),
-            dice_houseEdge: Number(document.getElementById('dice_houseEdge').value),
-            hilo_houseEdge: Number(document.getElementById('hilo_houseEdge').value)
-        };
-
-        const res = await fetch(`${SERVER_URL}/api/admin/update-config`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(configData)
-        });
-        if (res.ok) { alert('Config changed successfully!'); loadData(); }
-    });
-
-    document.getElementById('jackpotForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const val = document.getElementById('jackpotInput').value;
-        const res = await fetch(`${SERVER_URL}/api/admin/update-jackpot`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ jackpot: val })
-        });
-        if (res.ok) { alert('Jackpot changed!'); loadData(); }
-    });
-
-    async function updateBalance(username) {
-        const bal = document.getElementById('bal_' + username).value;
-        const res = await fetch(`${SERVER_URL}/api/admin/update-balance`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, balance: bal })
-        });
-        if (res.ok) { alert(`Player ${username} balance changed!`); loadData(); }
-    }
-
-    document.getElementById('gamificationForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const gData = {
-            gamification_xpPerGame: document.getElementById('g_xpPerGame').value,
-            gamification_xpMultiplier: document.getElementById('g_xpMultiplier').value,
-            gamification_levelUpBonus: document.getElementById('g_levelUpBonus').value,
-            gamification_questTargetGames: document.getElementById('g_questTargetGames').value,
-            gamification_questReward: document.getElementById('g_questReward').value,
-            gamification_tournamentActive: document.getElementById('g_tournamentActive').value,
-            gamification_tournamentPrize: document.getElementById('g_tournamentPrize').value,
-            gamification_affiliatePercent: document.getElementById('g_affiliatePercent').value
-        };
-
-        const res = await fetch(`${SERVER_URL}/api/admin/update-config`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(gData)
-        });
-        if (res.ok) { alert('Gamification params updated!'); loadData(); }
-    });
-
-    document.getElementById('endTournamentBtn').addEventListener('click', async () => {
-        if (!confirm('Are you sure you want to end the current tournament?')) return;
-
-        try {
-            const res = await fetch(`${SERVER_URL}/api/admin/end-tournament`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-            });
-            const data = await res.json();
-
-            if (data.success) {
-                if (data.winners.length === 0) {
-                    alert('Tournament is over! No active players.');
-                } else {
-                    let report = '🏆 Tournament is over! Winners:\n\n';
-                    data.winners.forEach(w => {
-                        report += `${w.place} place: ${w.username} (${w.points} points) — Winning: +${w.prize} 🪙\n`;
-                    });
-                    alert(report);
-                }
-                loadData();
-            } else { alert('Tournament end error.'); }
-        } catch (err) { alert('Server communication error.'); }
-    });
-
-    document.getElementById('promoForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const promoData = {
-            code: document.getElementById('p_code').value,
-            reward: document.getElementById('p_reward').value,
-            maxUses: document.getElementById('p_maxUses').value
-        };
-
-        const res = await fetch(`${SERVER_URL}/api/admin/add-promocode`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(promoData)
-        });
-
-        if (res.ok) {
-            alert('Promo voucher created and verified!');
-            document.getElementById('p_code').value = '';
-            document.getElementById('p_reward').value = '';
-            loadData();
-        } else {
-            const err = await res.json();
-            alert('Error: ' + err.error);
-        }
-    });
-
-    document.getElementById('runCashbackBtn').addEventListener('click', async () => {
-        if (!confirm('Are you sure you want to calculate and drop cashback balances for everyone?')) return;
-
-        try {
-            const res = await fetch(`${SERVER_URL}/api/admin/run-cashback`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-            });
-            const data = await res.json();
-
-            if (data.success) {
-                if (data.report.length === 0) {
-                    alert('Calculation completed. No players with net loss discovered.');
-                } else {
-                    let report = '💰 CASHBACK DISTRIBUTED SUCCESSFULLY:\n\n';
-                    data.report.forEach(r => {
-                        report += `Player: ${r.username} | Net Loss: ${r.loss} 🪙 | Paid: +${r.paid} 🪙\n`;
-                    });
-                    alert(report);
-                }
-                loadData();
-            }
-        } catch (err) { alert('Operation execution failure on server.'); }
-    });
-
-    document.getElementById('cashbackConfigForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const cashbackData = {
-            gamification_cashbackPercent: document.getElementById('g_cashbackPercent').value
-        };
-
-        const res = await fetch(`${SERVER_URL}/api/admin/update-config`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(cashbackData)
-        });
-
-        if (res.ok) { alert('Cashback percentage successfully updated!'); loadData(); }
-    });
-
-    let allSystemGames = [];
-    let editCollectionMode = false;
-    let currentEditingSlug = null;
-
-    // Хелпер переключения табов (чтобы работал наряду с твоей текущей системой вкладок)
-    function openAdminCatalogTab(tabId, element) {
-        document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-
-        document.getElementById(`tab-${tabId}`).style.display = 'block';
-        element.classList.add('active');
-    }
-
-    // Загрузка списков коллекций для админки (Запросы 1, 5, 6, 7)
-    async function loadAdminCollections() {
-        const container = document.getElementById('adminCollectionsList');
-        if (!container) return;
-        const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
-        try {
-            const res = await fetch(`${SERVER_URL}/api/catalog/collections?partnerId=${currentPartnerId}`);
-            const data = await res.json();
-
-            if (!data.success || data.collections.length === 0) {
-                container.innerHTML = '<p style="color:var(--text-muted); padding:10px;">No collections</p>';
-                return;
-            }
-
-            container.innerHTML = data.collections.map(col => `
-            <div class="game-block" style="text-align: left; margin: 0; padding:15px; border:1px solid var(--border-color); border-radius:8px;">
-                <h4 style="color:#ffb703; font-size:15px; margin-bottom:5px;">📦 ${col.name}</h4>
-                <small style="color:var(--text-muted); display:block;">Slug: <b>${col.slug}</b></small>
-                <small style="color:var(--neon-green); display:block; margin-bottom:10px;">Games: <b>${col.games.length}</b></small>
-                <div style="display:flex; gap:6px;">
-                    <button class="btn-primary" style="padding:4px 8px; font-size:12px; width:auto; background:var(--bg-panel);" onclick="openCollectionModal('${col.slug}', '${col.name}', ${JSON.stringify(col.games.map(g => g.id))})">✏️ Change</button>
-                    <button class="btn-danger" style="padding:4px 8px; font-size:12px; width:auto; margin:0;" onclick="deleteCollectionRequest('${col.slug}')">🗑️ Delete</button>
-                </div>
-            </div>
-        `).join('');
-        } catch (e) { console.error(e); }
-    }
-
-    // Открытие конструктора коллекций
-    function openCollectionModal(slug = '', name = '', attachedGameIds = []) {
-        editCollectionMode = !!slug;
-        currentEditingSlug = slug;
-
-        document.getElementById('modalCollName').value = name;
-        document.getElementById('modalCollSlug').value = slug;
-        document.getElementById('modalCollSlug').disabled = editCollectionMode;
-        document.getElementById('modalTitle').innerText = editCollectionMode ? '✏️ Изменить состав коллекции' : '📦 Создать новую коллекцию';
-
-        // Собираем уникальный список всех 13 игр, которые бэкенд отдал в loadData
-        if (allSystemGames.length === 0) {
-            // Если массив еще пуст, лениво собираем его из инпутов твоей формы configForm
-            const gamesList = ['slots3x3', 'slots5x3', 'wheel', 'scratch', 'lottery', 'mines', 'crash', 'dice', 'hilo', 'roulette', 'blackjack', 'holdem', 'scratch-cards'];
-            allSystemGames = gamesList.map((g, idx) => ({ id: idx + 1, name: g.toUpperCase(), provider: 'MTWTech' }));
-        }
-
-        const select = document.getElementById('modalCollGamesSelect');
-        select.innerHTML = allSystemGames.map(g => `
-        <option value="${g.id}" ${attachedGameIds.includes(g.id) ? 'selected' : ''}>${g.name}</option>
-    `).join('');
-
-        document.getElementById('collectionModal').style.display = 'flex';
-    }
-
-    function closeCollectionModal() {
-        document.getElementById('collectionModal').style.display = 'none';
-    }
-
-    // Запись коллекции в Postgres (Запросы 5, 6)
-    async function saveCollectionData() {
-        const name = document.getElementById('modalCollName').value.trim();
-        const slug = document.getElementById('modalCollSlug').value.trim().toLowerCase();
-        const select = document.getElementById('modalCollGamesSelect');
-        const gameIds = Array.from(select.selectedOptions).map(opt => parseInt(opt.value));
-
-        if (!name || !slug) return alert("Заполните все поля!");
-        const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
-
-        const url = editCollectionMode ? `${SERVER_URL}/api/admin/catalog/collection/${slug}` : `${SERVER_URL}/api/admin/catalog/collection`;
-        const method = editCollectionMode ? 'PUT' : 'POST';
-
-        const res = await fetch(url, {
-            method: method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, slug, gameIds, partnerId: currentPartnerId })
-        });
-        if (res.ok) { closeCollectionModal(); loadAdminCollections(); }
-    }
-
-    // Удаление коллекции (Запрос 7)
-    async function deleteCollectionRequest(slug) {
-        if (!confirm('Удалить эту подборку из лобби?')) return;
-        const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
-
-        const res = await fetch(`${SERVER_URL}/api/admin/catalog/collection/${slug}`, { method: 'DELETE', body: JSON.stringify({ partnerId: currentPartnerId }) });
-        if (res.ok) loadAdminCollections();
-    }
-
-    // Таблица кастомного тюнинга RTP и Игр (Запрос 9)
-    async function loadAdminGamesConfig() {
-        const tbody = document.getElementById('adminGamesTableBody');
-        if (!tbody) return;
-        const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
-
-        try {
-            // ИСПРАВЛЕНО: Строго CamelCase параметр 'partnerId' в строке запроса
-            const res = await fetch(`${SERVER_URL}/api/catalog/collections?partnerId=${currentPartnerId}`);
-            const data = await res.json();
-
-            const gameMap = new Map();
-            data.collections.forEach(c => c.games.forEach(g => gameMap.set(g.id, g)));
-            allSystemGames = Array.from(gameMap.values()); // Синхронизируем точный реестр 13 игр
-
-            tbody.innerHTML = investorsGamesFix(allSystemGames).map(g => `
-            <tr>
-                <td>#${g.id}</td>
-                <td><b style="color:var(--neon-green);">${g.provider}</b></td>
-                <td><b>${g.name}</b></td>
-                <td><input type="text" id="cust-name-${g.id}" value="${g.name}" style="width:130px; margin:0; padding:4px;"></td>
-                <td><input type="number" id="cust-rtp-${g.id}" value="${g.rtp || 95}" style="width:65px; margin:0; padding:4px;"></td>
-                <td>
-                    <select id="cust-active-${g.id}" style="background:#2a2f3a; color:#fff; border:1px solid #3a4150; padding:4px; border-radius:4px; outline:none;">
-                        <option value="true" ${g.is_game_active !== false ? 'selected' : ''}>On</option>
-                        <option value="false" ${g.is_game_active === false ? 'selected' : ''}>Off</option>
-                    </select>
-                </td>
-                <td style="text-align: right; padding-right:15px;">
-                    <button class="btn-primary" style="width:auto; padding:4px 10px; font-size:12px;" onclick="saveSingleGameSettings(${g.id})">Save</button>
-                </td>
-            </tr>
-        `).join('');
-        } catch (e) { console.error(e); }
-    }
-
-    function investorsGamesFix(arr) {
-        // Вспомогательный фильтр, гарантирующий уникальность вывода строк в админ-таблицу
-        const seen = new Set();
-        return arr.filter(el => { const duplicate = seen.has(el.id); seen.add(el.id); return !duplicate; });
-    }
-
-    async function saveSingleGameSettings(gameId) {
-        const customName = document.getElementById(`cust-name-${gameId}`).value.trim();
-        const customRtp = parseFloat(document.getElementById(`cust-rtp-${gameId}`).value);
-        const isActive = document.getElementById(`cust-active-${gameId}`).value === 'true';
-
-        const res = await fetch(`${SERVER_URL}/api/admin/catalog/game-setup`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ gameId, isActive, customName, customRtp })
-        });
-        if (res.ok) { alert('Параметры игры сохранены в Postgres!'); loadAdminGamesConfig(); }
-    }
-
-    // Сетка провайдеров / агрегаторов (Запрос 8)
-    function loadAdminProvidersConfig() {
-        const grid = document.getElementById('adminProvidersGrid');
-        if (!grid) return;
-        const aggregators = Array.from(new Set(allSystemGames.map(g => g.aggregator || 'INTERNAL')));
-
-        grid.innerHTML = aggregators.map(agg => `
-        <div class="game-block" style="text-align: left; margin: 0; padding:15px; border:1px solid var(--border-color); border-radius:8px;">
-            <h4>🔌 Provider: ${agg}</h4>
-            <div style="display:flex; gap:6px; margin-top:10px;">
-                <button class="btn-primary" style="font-size:12px; padding:6px; background:var(--accent-green);" onclick="setAggregatorStatus('${agg}', true)">Enable</button>
-                <button class="btn-danger" style="font-size:12px; padding:6px;" onclick="setAggregatorStatus('${agg}', false)">Disable</button>
-            </div>
-        </div>
-    `).join('');
-    }
-
-    async function setAggregatorStatus(aggregator, isActive) {
-        const res = await fetch(`${SERVER_URL}/api/admin/catalog/aggregator`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ aggregator, isActive })
-        });
-        if (res.ok) alert(`Статус шлюза провайдера '${aggregator}' успешно изменен!`);
-    }
-
-    // Загрузить текущий статус фоновых сервисов с бэкенда при загрузке страницы
-    async function loadAdminBackgroundServices() {
-        const grid = document.getElementById('adminBackgroundServicesGrid');
-        if (!grid) return;
-
-        try {
-            const res = await fetch(`${SERVER_URL}/api/admin/bgs`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken') || ''}` }
-            });
-            const data = await res.json();
-
-            if (data.success && data.BGS) {
-                const services = [
-                    { key: 'sport', name: '🎰 Sport Live Engine', desc: 'Sport live engine' },
-                    { key: 'lottery', name: '🎰 5-Min Lottery Engine', desc: 'Lottery 6/49' },
-                    { key: 'crash', name: '🚀 Crash Aviator Engine', desc: 'Crash' },
-                    { key: 'roulette', name: '🎡 Casino Roulette Engine', desc: 'Roulette LIVE' }
-                ];
-
-                grid.innerHTML = services.map(srv => {
-                    const isActive = data.BGS[srv.key];
-                    // Меняем цвет индикатора и текста в зависимости от статуса базы
-                    const badgeColor = isActive ? 'var(--accent-green)' : 'var(--accent-red)';
-                    const badgeText = isActive ? 'RUNNING' : 'PAUSED';
-
-                    return `
-                    <div class="game-block" style="text-align: left; margin: 0; padding:15px; border:1px solid var(--border-color); border-radius:8px; display:flex; flex-direction:column; justify-content:space-between;">
-                        <div>
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                                <h4 style="font-size:14px; color:#fff;">${srv.name}</h4>
-                                <span style="font-size:10px; font-weight:bold; color:${badgeColor}; border:1px solid ${badgeColor}; padding:2px 6px; border-radius:4px;">${badgeText}</span>
-                            </div>
-                            <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px; line-height:1.3;">${srv.desc}</p>
-                        </div>
-                        <div style="display:flex; gap:6px;">
-
-                             ${isActive ? `
-                                <button class="btn-danger" style="font-size:13px; padding:8px 12px; margin:0; width:100%; font-weight:bold; letter-spacing:0.5px;" onclick="toggleServiceRequest('${srv.key}', false)">🛑 Stop</button>
-                            ` : `
-                                <button class="btn-primary" style="font-size:13px; padding:8px 12px; margin:0; background:var(--accent-green); border-color:var(--accent-green); color:#1a1d24; width:100%; font-weight:bold; letter-spacing:0.5px;" onclick="toggleServiceRequest('${srv.key}', true)">▶️ Start</button>
-                            `}
-                        </div>
-                    </div>
-                `;
-                }).join('');
-            }
-        } catch (err) {
-            console.error("Failed to sync background services panel:", err);
-        }
-    }
-
-    // Отправить POST запрос на переключение статуса крона (Лотерея/Краш/Рулетка)
-    async function toggleServiceRequest(engineName, statusValue) {
-        try {
-            const res = await fetch(`${SERVER_URL}/api/admin/bgs`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('adminToken') || ''}`
-                },
-                body: JSON.stringify({ service: engineName, status: statusValue })
-            });
-
-            const result = await res.json();
-            if (result.success) {
-                // Перерисовываем виджеты, чтобы кнопка обновила свое состояние On/Off
-                loadAdminBackgroundServices();
-            } else {
-                alert("Server error");
-            }
-        } catch (err) {
-            alert("Server error");
-        }
-    }
-
-    function toggleSidebar() {
-        const sidebar = document.getElementById('adminSidebar');
-        if (!sidebar) return;
-
-        // Переключаем класс сворачивания
-        sidebar.classList.toggle('collapsed');
-
-        // Запоминаем состояние, чтобы оно сохранялось при перезагрузке страниц
-        const isCollapsed = sidebar.classList.contains('collapsed');
-        localStorage.setItem('adminSidebarCollapsed', isCollapsed ? 'true' : 'false');
-    }
-
-    // Автоматически восстанавливаем состояние сайдбара при загрузке админки
-    window.addEventListener('DOMContentLoaded', () => {
-        const sidebar = document.getElementById('adminSidebar');
-        const savedState = localStorage.getItem('adminSidebarCollapsed');
-
-        if (sidebar && savedState === 'true') {
-            sidebar.classList.add('collapsed');
-        }
-    });
-
-    function toggleMenuSection(sectionId, titleElement) {
-        // Если весь сайдбар сейчас полностью свернут до 68px (твой прошлый режим),
-        // клики по заголовкам игнорируем, чтобы не ломать мини-интерфейс
-        const sidebar = document.getElementById('adminSidebar');
-        if (sidebar && sidebar.classList.contains('collapsed')) return;
-
-        const section = document.getElementById(sectionId);
-        if (!section) return;
-
-        // Переключаем класс сворачивания контента
-        section.classList.toggle('collapsed-content');
-
-        // Переключаем класс стрелочки у заголовка
-        if (titleElement) {
-            titleElement.classList.toggle('section-closed');
-        }
-
-        // Сохраняем состояние раскрытия раздела в localStorage
-        const isClosed = section.classList.contains('collapsed-content');
-        localStorage.setItem(`adv_sec_${sectionId}`, isClosed ? 'closed' : 'opened');
-    }
-
-    // Автоматическое восстановление состояния раздвижного меню при загрузке страницы
-    window.addEventListener('DOMContentLoaded', () => {
-        const sections = ['sec-financial', 'sec-players', 'sec-sportsbook', 'sec-casino', 'sec-builder'];
-
-        sections.forEach(secId => {
-            const section = document.getElementById(secId);
-            // Ищем предыдущий заголовок (элемент перед контейнером контента)
-            const titleEl = section ? section.previousElementSibling : null;
-            const savedState = localStorage.getItem(`adv_sec_${secId}`);
-
-            // Хелпер: если это твой первый вход и в базе пусто — по умолчанию
-            // открываем Financial и Casino, а остальные аккуратно поджимаем
-            if (savedState === 'closed' || (!savedState && ['sec-players', 'sec-sportsbook', 'sec-builder','sec-casino'].includes(secId))) {
-                if (section) section.classList.add('collapsed-content');
-                if (titleEl) titleEl.classList.add('section-closed');
-            }
-        });
-    });
-
-
-
-    // Run auth validation sequence on page boot
-    checkDemoAuth();
-</script>
+<script src="./view/scripts/admin.js"></script>
 
 </body>
 </html>

@@ -25,6 +25,9 @@ CREATE TABLE IF NOT EXISTS accounting_logs (
     timestamp TIMESTAMP DEFAULT NOW()
 );
 
+CREATE INDEX IF NOT EXISTS idx_accounting_logs_report
+ON accounting_logs (partner_id, type, timestamp DESC);
+
 -- 3. Спортивные ставки
 CREATE TABLE IF NOT EXISTS sports_bets (
     id SERIAL PRIMARY KEY,
@@ -38,6 +41,48 @@ CREATE TABLE IF NOT EXISTS sports_bets (
     prize NUMERIC(15, 2) DEFAULT 0.00,
     timestamp TIMESTAMP DEFAULT NOW()
 );
+
+-- 1. Таблица для ставок в казино (дефолт)
+CREATE TABLE IF NOT EXISTS casino_bets (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    partner_id VARCHAR(50) NOT NULL,
+    game_id VARCHAR(50) NOT NULL,
+    provider VARCHAR(50) NOT NULL,
+    session_id VARCHAR(100),
+    stake NUMERIC(15, 2) NOT NULL,          -- Сумма ставки
+    prize NUMERIC(15, 2) DEFAULT 0.00,      -- Выигрыш (0 если проигрыш)
+    status VARCHAR(20) NOT NULL,            -- 'WIN', 'LOSE', 'REFUND'
+    timestamp TIMESTAMP DEFAULT NOW()
+);
+
+-- 2. Единая таблица истории для вывода игроку (включает системные события и линки на ставки)
+CREATE TABLE IF NOT EXISTS player_history (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    partner_id VARCHAR(50) NOT NULL,
+    category VARCHAR(20) NOT NULL,          -- 'casino', 'sport', 'system'
+    action_type VARCHAR(50) NOT NULL,       -- 'bet', 'tournament_end', 'level_up', 'quest'
+    description TEXT NOT NULL,              -- Текстовое описание для фронтенда
+    amount_change NUMERIC(15, 2) DEFAULT 0, -- Изменение баланса (например, +100 или -10)
+    reference_id INT,                       -- ID из таблицы sports_bets или casino_bets (если применимо)
+    timestamp TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_casino_bets_user_partner ON casino_bets(partner_id, username);
+CREATE INDEX IF NOT EXISTS idx_sports_bets_user_partner ON sports_bets(partner_id, username);
+CREATE INDEX IF NOT EXISTS idx_player_history_user_partner ON player_history(partner_id, username, timestamp DESC);
+
+CREATE INDEX IF NOT EXISTS idx_casino_bets_timestamp
+ON casino_bets (partner_id, timestamp DESC);
+
+-- Индекс для быстрого поиска по датам в спортивных ставках
+CREATE INDEX IF NOT EXISTS idx_sports_bets_timestamp
+ON sports_bets (partner_id, timestamp DESC);
+
+-- Индекс для истории, если админы или игроки захотят фильтровать логи по датам
+CREATE INDEX IF NOT EXISTS idx_player_history_timestamp
+ON player_history (partner_id, timestamp DESC);
 
 -- 4. Матчи виртуального футбола
 CREATE TABLE IF NOT EXISTS matches (

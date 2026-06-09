@@ -1,0 +1,667 @@
+:root {
+    --bg-main: #0d1117;
+    --bg-sidebar: #161b22;
+    --bg-card: #21262d;
+    --border-color: #30363d;
+    --text-main: #c9d1d9;
+    --text-muted: #8b949e;
+    --accent-blue: #58a6ff;
+    --accent-green: #238636;
+    --accent-red: #da3633;
+    --accent-pink: #ff007f;
+    --neon-green: #00f5d4;
+
+    --sidebar-width: 260px;
+    --bg-sidebar: #11141a; /* Твой дефолтный цвет */
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: var(--bg-main);
+    color: var(--text-main);
+}
+
+/* Фоновая подложка лоадера */
+.mtw-loader-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(10, 12, 16, 0.85);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+}
+
+/* Контейнер элементов */
+.mtw-loader-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Крутящийся неоновый спиннер */
+.mtw-loader-spinner {
+    width: 60px;
+    height: 60px;
+    border: 4px solid transparent;
+    border-top: 4px solid #4ecca3;
+    border-right: 4px solid #e94560;
+    border-radius: 50%;
+    animation: spinMtw 1s linear infinite;
+    filter: drop-shadow(0 0 12px rgba(78, 204, 163, 0.5)) drop-shadow(0 0 12px rgba(233, 69, 96, 0.5));
+}
+
+/* Анимация вращения */
+@keyframes spinMtw {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Текст MTWTech с эффектом неонового дыхания */
+.mtw-loader-text {
+    font-family: 'Montserrat', 'Segoe UI', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    background: linear-gradient(45deg, #4ecca3, #e94560);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: pulseTextMtw 1.5s ease-in-out infinite alternate;
+}
+
+/* Эффект пульсации для текста */
+@keyframes pulseTextMtw {
+    0% { filter: drop-shadow(0 0 2px rgba(78, 204, 163, 0.3)); transform: scale(0.98); }
+    100% { filter: drop-shadow(0 0 15px rgba(233, 69, 96, 0.7)); transform: scale(1.02); }
+}
+
+
+/* 🔐 STYLE: DEMO LOGIN SCREEN */
+.login-screen {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: var(--bg-main);
+}
+
+.login-box {
+    background: var(--bg-sidebar);
+    padding: 30px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    width: 100%;
+    max-width: 360px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    text-align: center;
+}
+
+.login-box h2 {
+    color: #fff;
+    margin-bottom: 20px;
+}
+
+.login-box input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    background: var(--bg-main);
+    border: 1px solid var(--border-color);
+    color: #fff;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+
+/* 🎛 STYLE: MAIN LAYOUT & SIDEBAR */
+.admin-layout {
+    display: none; /* Hidden by default until login */
+    height: 100vh;
+}
+
+/*.sidebar {*/
+/*width: 260px;*/
+/*background: var(--bg-sidebar);*/
+/*border-right: 1px solid var(--border-color);*/
+/*display: flex;*/
+/*flex-direction: column;*/
+/*padding: 20px 0;*/
+/*box-sizing: border-box;*/
+/*}*/
+/*.sidebar-header {*/
+/*padding: 0 20px 20px 20px;*/
+/*border-bottom: 1px solid var(--border-color);*/
+/*margin-bottom: 15px;*/
+/*}*/
+/*.sidebar-header h1 { font-size: 18px; color: #fff; margin: 0; }*/
+/*.sidebar-header span { font-size: 11px; color: var(--text-muted); }*/
+/*.sidebar-inner {*/
+/*width: 260px;*/
+/*background: var(--bg-sidebar);*/
+/*border-right: 1px solid var(--border-color);*/
+/*display: flex;*/
+/*flex-direction: column;*/
+/*padding: 0;*/
+/*box-sizing: border-box;*/
+/*}*/
+
+.sidebar {
+    width: var(--sidebar-width);
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    padding: 20px 0;
+    box-sizing: border-box;
+    transition: width 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    position: relative;
+    z-index: 100;
+}
+
+/* Шапка сайдбара (скрывается или сжимается) */
+.sidebar-header {
+    padding: 0 20px 20px 20px;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 15px;
+    white-space: nowrap;
+    overflow: hidden;
+    transition: padding 0.3s;
+}
+
+.sidebar-header h1 {
+    font-size: 18px;
+    color: #fff;
+    margin: 0;
+}
+
+.sidebar-header span {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+/* Внутренний контейнер меню */
+.sidebar-inner {
+    width: 100%;
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    box-sizing: border-box;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Превращаем заголовок раздела в кликабельную кнопку-спойлер */
+.nav-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    font-size: 16px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    font-weight: bold;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.2s, background 0.2s;
+}
+
+.nav-title:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+/* Иконка стрелочки внутри заголовка */
+.nav-title::after {
+    content: '▼';
+    font-size: 9px;
+    color: var(--text-muted);
+    transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* Если раздел закрыт, разворачиваем стрелочку */
+.nav-title.section-closed::after {
+    transform: rotate(-90deg);
+}
+
+/* Контейнер для группы кнопок внутри раздела */
+.nav-section-content {
+    overflow: hidden;
+    max-height: 500px; /* Достаточная высота для раскрытого списка */
+    transition: max-height 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* Класс, который мгновенно схлопывает группу кнопок */
+.nav-section-content.collapsed-content {
+    max-height: 0 !important;
+}
+
+/* Защита для общего режима сжатия сайдбара (который вы уже добавили):
+   если весь сайдбар сжат до 68px, стрелочки аккордеона внутри нам не нужны */
+.sidebar.collapsed .nav-title::after {
+    display: none;
+}
+
+/* Универсальные кнопки навигации */
+.nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 20px;
+    background: transparent;
+    border: none;
+    color: #a0a5b5;
+    text-align: left;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.nav-btn:hover {
+    background: rgba(255, 255, 255, 0.03);
+    color: #fff;
+}
+
+.nav-btn.active {
+    background: rgba(255, 183, 3, 0.1); /* Твой желтый акцент */
+    color: #ffb703;
+    border-left: 3px solid #ffb703;
+    padding-left: 17px; /* Компенсация бордера */
+}
+
+/* 🔄 ТРИГГЕР КНОПКА СВЕРТЫВАНИЯ САЙДБАРA (Toggle Trigger) */
+.sidebar-toggle-btn {
+    padding: 0px 6px;
+    position: absolute;
+    top: 71px;
+    right: -12px;
+    width: 30px;
+    height: 30px;
+    background: #ffb703;
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    color: #1a1d24;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    z-index: 110;
+    transition: transform 0.3s;
+}
+
+/* ========================================================================= */
+/* 📉 СОСТОЯНИЕ СВЕРНУТОГО САЙДБАРА (.collapsed) */
+/* ========================================================================= */
+.sidebar.collapsed {
+    --sidebar-width: 68px; /* Сжимается до ширины иконок */
+}
+
+.sidebar.collapsed .sidebar-header {
+    padding: 0 0 20px;
+    text-align: center;
+}
+
+.sidebar.collapsed .logo span,
+.sidebar.collapsed .sidebar-header span,
+.sidebar.collapsed .nav-title,
+.sidebar.collapsed .nav-btn-text {
+    display: none; /* Полностью скрываем текст, оставляя только эмодзи/иконки */
+}
+
+.sidebar.collapsed .sidebar-toggle-btn {
+    transform: rotate(180deg); /* Разворачиваем стрелочку кнопки */
+}
+
+.sidebar.collapsed .nav-btn {
+    justify-content: center;
+    padding: 12px 0;
+    font-size: 18px; /* Увеличиваем эмодзи, чтобы они смотрелись как иконки */
+}
+
+.sidebar.collapsed .nav-btn.active {
+    border-left: 3px solid #ffb703;
+    padding-left: 0;
+}
+
+/* Ограничение зоны основного контента админки (чтобы контент двигался за сайдбаром) */
+.main-content-wrapper {
+    margin-left: 0;
+    flex: 1;
+    transition: padding-left 0.3s;
+}
+
+.logo-area {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+}
+
+.logo {
+    font-size: 24px;
+    font-weight: 900;
+    color: #4ecca3;
+    text-shadow: 0 0 10px rgba(78, 204, 163, 0.3);
+    letter-spacing: 1px;
+    text-decoration: none;
+}
+
+.logo span {
+    color: #e94560;
+    font-size: 24px;
+}
+
+/* TAB BUTTONS */
+.nav-btn {
+    background: transparent;
+    border: 0;
+    color: var(--text-main);
+    padding: 12px 20px;
+    text-align: left;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background 0.2s;
+}
+
+.nav-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.nav-btn.active {
+    background: rgba(88, 166, 255, 0.1);
+    color: var(--accent-blue);
+    border-left: 4px solid var(--accent-blue);
+}
+
+.nav-btn.nav-title {
+    font-size: 18px;
+    font-weight: bold;
+    padding-left: 37px;
+    color: var(--neon-green);
+}
+
+/* MAIN CONTENT AREA */
+.main-content {
+    flex: 1;
+    padding: 30px;
+    overflow-y: auto;
+    background: var(--bg-main);
+}
+
+.tab-content {
+    display: none; /* Hidden until activated */
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.tab-content iframe {
+    width: 100%;
+    height: calc(100vh - 60px);
+    border: 1px solid var(--neon-green);
+    border-radius: 4px;
+}
+
+/* CARDS & ENGINE TABLES */
+.card {
+    background: var(--bg-sidebar);
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.card h2 {
+    margin-top: 0;
+    font-size: 18px;
+    color: #fff;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.game-block {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    padding: 12px 16px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+}
+
+.game-block h3 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    color: var(--accent-blue);
+    text-transform: uppercase;
+}
+
+.flex-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+input[type="number"], input[type="text"], select {
+    background: var(--bg-main);
+    color: #fff;
+    border: 1px solid var(--border-color);
+    padding: 6px 10px;
+    border-radius: 4px;
+    outline: none;
+}
+
+button {
+    padding: 8px 14px;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    border: 0;
+    transition: opacity 0.2s;
+}
+
+button:hover {
+    opacity: 0.9;
+}
+
+.btn-primary {
+    background: var(--accent-blue);
+    color: #fff;
+}
+
+.btn-danger {
+    background: var(--accent-red);
+    color: #fff;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 14px;
+}
+
+th, td {
+    padding: 12px;
+    border-bottom: 1px solid var(--border-color);
+    text-align: left;
+}
+
+th {
+    background: var(--bg-card);
+    color: #fff;
+}
+
+.jackpot-val {
+    font-size: 32px;
+    color: var(--accent-pink);
+    font-weight: bold;
+    margin: 15px 0;
+    text-shadow: 0 0 10px rgba(255, 0, 127, 0.2);
+}
+
+.badge {
+    background: var(--accent-blue);
+    color: #fff;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    display: flex;
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+}
+
+.bet-item-row {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 4px 0;
+}
+
+.bet-item-row:last-child {
+    border-bottom: none;
+}
+
+.btn-fin-period, .btn-bets-period {
+    background: var(--bg-main);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    padding: 6px 15px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.btn-fin-period.active, .btn-bets-period.active {
+    background: var(--accent-blue);
+    border-color: var(--accent-blue);
+    color: #fff;
+}
+
+.btn-fin-period, .btn-bets-period {
+    background: #11141a;
+    border: 1px solid #262c3a;
+    color: #8a99ad;
+    padding: 6px 16px;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+}
+
+/* Ховер-эффект (плавное подсвечивание границ) */
+.btn-fin-period:not(:disabled):hover, .btn-bets-period:not(:disabled):hover {
+    border-color: #00a8ff;
+    color: #fff;
+    background: #161b26;
+}
+
+/* Активное состояние (неоновое свечение активного периода) */
+.btn-fin-period.active, .btn-bets-period.active {
+    background: #00a8ff;
+    border-color: #00a8ff;
+    color: #fff;
+    box-shadow: 0 0 14px rgba(0, 168, 255, 0.45);
+}
+
+/* Кнопки "Назад" / "Вперед", когда они заблокированы (конец списка страниц) */
+.btn-fin-period:disabled, .btn-bets-period:disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
+    background: #0d0f13;
+    border-color: #1a1e26;
+    color: #4e5768;
+    box-shadow: none !important;
+}
+
+/* Эффект клика (слегка утапливается кнопка) */
+.btn-fin-period:not(:disabled):active, .btn-bets-period:not(:disabled):active {
+    transform: scale(0.96);
+}
+
+/* Контейнер пагинации (добавим красивую рамку и отступ) */
+#bets_pagination_container, #tx_pagination_container {
+    background: #0d1017;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: 1px solid #1a1e26;
+    margin-top: 20px;
+}
+
+/* Принудительный стиль для кнопок НАЗАД и ВПЕРЕД */
+#btn_bets_prev, #btn_bets_next,
+#btn_tx_prev, #btn_tx_next {
+    background: #11141a !important;
+    border: 1px solid #262c3a !important;
+    color: #00a8ff !important; /* Делаем текст стрелочек сразу неоново-синим */
+    padding: 8px 18px !important;
+    cursor: pointer !important;
+    border-radius: 6px !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    transition: all 0.2s ease !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    user-select: none !important;
+}
+
+/* Ховер для кнопок страниц */
+#btn_bets_prev:not(:disabled):hover, #btn_bets_next:not(:disabled):hover,
+#btn_tx_prev:not(:disabled):hover, #btn_tx_next:not(:disabled):hover {
+    border-color: #00a8ff !important;
+    background: #161b26 !important;
+    box-shadow: 0 0 10px rgba(0, 168, 255, 0.3) !important;
+}
+
+/* Когда страницы кончились и кнопки ЗАБЛОКИРОВАНЫ (становятся тусклыми) */
+#btn_bets_prev:disabled, #btn_bets_next:disabled,
+#btn_tx_prev:disabled, #btn_tx_next:disabled {
+    opacity: 0.15 !important;
+    cursor: not-allowed !important;
+    background: #0d0f13 !important;
+    border-color: #1a1e26 !important;
+    color: #4e5768 !important;
+    box-shadow: none !important;
+}
+
+/* Клик по стрелочкам */
+#btn_bets_prev:not(:disabled):active, #btn_bets_next:not(:disabled):active,
+#btn_tx_prev:not(:disabled):active, #btn_tx_next:not(:disabled):active {
+    transform: scale(0.95) !important;
+}
+
+/* Красивое оформление текста "Страница X из Y" между кнопками */
+#lbl_bets_page, #lbl_tx_page {
+    color: #8a99ad !important;
+    font-size: 13px !important;
+    font-family: monospace !important;
+    background: #090b0e !important;
+    padding: 6px 12px !important;
+    border-radius: 4px !important;
+    border: 1px solid #1a1e26 !important;
+}
+

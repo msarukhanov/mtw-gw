@@ -138,10 +138,105 @@ exports.runCashback = async (req, res) => {
 exports.getFinanceReport = async (req, res) => {
     try {
         const partnerId = req.partnerId || "demo_mtwtech";
-        const report = await state.getFinancialReport(partnerId);
+
+        // Получаем параметры дат из query-запроса
+        let fromDate = req.query.fromDate || null; // Ожидается "YYYY-MM-DD"
+        let toDate = req.query.toDate || null;
+        const period = req.query.period;           // Пресеты: 'day' или 'week'
+
+        // --- АВТОМАТИЧЕСКИЕ ПРЕСЕТЫ ВРЕМЕНИ ---
+        if (period) {
+            const now = new Date();
+            if (period === 'day') {
+                fromDate = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+                toDate = now.toISOString();
+            } else if (period === 'week') {
+                fromDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+                toDate = now.toISOString();
+            }
+        }
+
+        const txType = req.query.txType || 'all';
+        const report = await state.getFinancialReport(partnerId, { fromDate, toDate, txType });
+
         res.json({ success: true, report });
     } catch (err) {
         console.error("❌ [Admin API] Failed to compile financial metrics:", err.message);
         res.status(500).json({ error: "Failed to compile financial metrics" });
     }
 };
+
+exports.getBetReport = async (req, res) => {
+    try {
+        const partnerId = req.partnerId || "demo_mtwtech";
+
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 20;
+        const category = req.query.category || 'casino';
+        const username = req.query.username || null;
+        const status = req.query.status || null;
+
+        // Переменные под даты
+        let fromDate = req.query.fromDate || null; // Ожидается формат YYYY-MM-DD
+        let toDate = req.query.toDate || null;
+
+        // --- ОБРАБОТКА БЫСТРЫХ ПРЕСЕТОВ ДАТ ---
+        const period = req.query.period; // 'day', 'week'
+        if (period) {
+            const now = new Date();
+            if (period === 'day') {
+                // Последние 24 часа
+                fromDate = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+                toDate = now.toISOString();
+            } else if (period === 'week') {
+                // Последние 7 дней
+                fromDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+                toDate = now.toISOString();
+            }
+        }
+
+        // Если даты переданы строкой (например, "2026-06-01"), для точности СУБД
+        // лучше добавить время начала дня для fromDate и конца дня для toDate
+        if (fromDate && !fromDate.includes('T')) fromDate += ' 00:00:00';
+        if (toDate && !toDate.includes('T')) toDate += ' 23:59:59';
+
+        // Получаем данные из модели
+        const reportData = await state.getBetHistory({
+            partnerId,
+            category,
+            username,
+            status,
+            fromDate,
+            toDate,
+            limit,
+            page
+        });
+
+        // Возвращаем отчет, метрики и пагинацию
+        res.json({
+            success: true,
+            category,
+            metrics: reportData.metrics, // Финансовые показатели за выбранный период
+            report: reportData.items,     // Список ставок с пагинацией
+            pagination: reportData.pagination
+        });
+
+    } catch (err) {
+        console.error("❌ [Admin API] Failed to compile financial metrics:", err.message);
+        res.status(500).json({ error: "Failed to compile financial metrics" });
+    }
+};
+
+exports.getAdminChart = async (req, res) => {
+    try {
+        const partnerId = req.partnerId || "demo_mtwtech";
+        const timeline = await state.getChartAnalytics(partnerId);
+        res.json({ success: true, timeline });
+    } catch (err) {
+        console.error("❌ [Admin API] Chart compilation failed:", err.message);
+        res.status(500).json({ error: "Failed to compile chart data" });
+    }
+};
+
+
+
