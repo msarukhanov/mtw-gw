@@ -638,7 +638,7 @@ async function checkUrlParametersAndLoad() {
     // 3. Автоматическая подгрузка JSON файла темы, если указан параметр theme
     if (themeName) {
         // Формируем путь до локального файла конфигурации темы
-        const themeUrl = `./${themeName}.json`;
+        const themeUrl = `../assets/casino/themes/${themeName}.json`;
 
         try {
             const response = await fetch(themeUrl);

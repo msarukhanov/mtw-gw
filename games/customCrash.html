@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTWTech Blackjack</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDAgNTAwIj4KPHJlY3Qgd2lkdGg9IjUwMCIgaGVpZ2h0PSI1MDAiIGZpbGw9IiMxMjEyMTIiIHJ4PSI0MCIvPgo8dGV4dCB4PSI1MCUiIHk9IjQ1JSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IidKZXRCcmFpbnMgTW9ubycsICdGaXJhIENvZGUnLCAnTW9udHNlcnJhdCcsIHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSI5MDAiPgo8dHNwYW4geD0iNTAlIiBkeT0iMCIgZm9udC1zaXplPSIxMjUiIGZpbGw9IiNmZjVhNWYiIHRleHRMZW5ndGg9IjM2MCIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nQW5kR2x5cGhzIj5NVFc8L3RzcGFuPgo8dHNwYW4geD0iNTAlIiBkeT0iMTE1IiBmb250LXNpemU9IjExNSIgZmlsbD0iIzRlY2NhMyIgdGV4dExlbmd0aD0iMzYwIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiPlRFQ0g8L3RzcGFuPgo8L3RleHQ+Cjwvc3ZnPg==">
+
+    <link rel="stylesheet" href="../view/styles/gameBase.css">
+    <link rel="stylesheet" href="./customCrash.css">
+
+    <script src="../view/scripts/socket.io.min.js" integrity="sha384-kzavj5fiMwLKzzD1f8S7TeoVIEi7uKHvbTA3ueZkrzYq75pNQUiUi6Dy98Q3fxb0" crossorigin="anonymous"></script>
+
+</head>
+<body>
+
+<!-- Кнопка вызова админки (включится через ?edit=true) -->
+<button id="adminConfigBtn" onclick="toggleConfigPanel()">⚙ Customise Crash</button>
+
+<!-- Панель кастомизации Краша -->
+<div id="configPanel">
+    <h3 style="color: #e94560; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; margin-top: 0;">
+        <span>Crash Customization</span>
+        <button onclick="toggleConfigPanel()" style="background: none; border: none; color: #fff; cursor: pointer; font-size: 20px;">✕</button>
+    </h3>
+
+    <!-- Импорт / Экспорт файла -->
+    <div style="margin-bottom: 20px; background: #16213e; padding: 10px; border-radius: 8px; border: 1px dashed #e94560;">
+        <h4 style="color: #ff9f1c; margin-bottom: 8px; font-size: 14px; margin-top: 0;">💾 Files</h4>
+        <button onclick="exportConfigToFile()" style="width: 100%; padding: 6px; margin-bottom: 8px; background: #2b9371; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;">Export Theme</button>
+        <input type="file" id="importFileOpts" accept=".json" onchange="importConfigFromFile()" style="display: none;">
+        <button onclick="document.getElementById('importFileOpts').click()" style="width: 100%; padding: 6px; background: #0f3460; color: white; border: 1px solid #e94560; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;">Import Theme</button>
+    </div>
+
+    <!-- Визуал и Спрайты -->
+    <div style="margin-bottom: 20px;">
+        <h4 style="color: #4ecca3; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; margin-top: 0;">1. Graphics & Visuals</h4>
+
+        <!-- Летящий объект (Персонаж) -->
+        <label style="display:block; font-size:11px; color:#8a8ab0; margin-bottom: 3px;">Flight Object Image:</label>
+        <input type="file" accept="image/*" id="crashSpriteInput" onchange="handleSpriteLoad()" style="font-size: 11px; color: #8a8ab0; width: 100%; margin-bottom: 6px;">
+        <div id="previewCrashSprite" style="width: 40px; height: 40px; border: 1px dashed #444; margin-bottom: 10px; display:flex; align-items:center; justify-content:center; font-size:10px; background-size: contain; background-repeat: no-repeat; background-position: center; color: #8a8ab0;">Default</div>
+
+        <label style="display:block; font-size:11px; color:#8a8ab0; margin-bottom: 3px;">Flight Object Size: <span id="sizeValLabel">30</span>px</label>
+        <input type="range" id="cfg_sprite_size" min="15" max="60" value="30" oninput="document.getElementById('sizeValLabel').innerText = this.value" style="width: 100%; accent-color: #4ecca3; margin-bottom: 10px;">
+
+        <!-- Фон для игрового поля Canvas -->
+        <label style="display:block; font-size:11px; color:#8a8ab0; margin-bottom: 3px; margin-top: 10px;">Canvas Background:</label>
+        <input type="file" accept="image/*" id="crashCanvasBgInput" onchange="handleCanvasBgLoad()" style="font-size: 11px; color: #8a8ab0; width: 100%; margin-bottom: 6px;">
+        <div id="previewCrashCanvasBg" style="width: 60px; height: 35px; border: 1px dashed #444; margin-bottom: 10px; display:flex; align-items:center; justify-content:center; font-size:10px; background-size: cover; background-position: center; color: #8a8ab0;">Default</div>
+
+        <!-- Статичный фон игрового контейнера -->
+        <label style="display:block; font-size:11px; color:#8a8ab0; margin-bottom: 3px;">Main Page Background:</label>
+        <input type="file" accept="image/*" id="crashBgInput" onchange="handleBgLoad()" style="font-size: 11px; color: #8a8ab0; width: 100%; margin-bottom: 10px;">
+
+        <!-- Цвет неонового графика -->
+        <label style="display:block; font-size:11px; color:#8a8ab0; margin-bottom: 3px;">Neon Line Color:</label>
+        <input type="color" id="cfg_line_color" value="#e94560" style="width: 100%; height: 30px; border: 1px solid #333; border-radius: 4px; background: none; cursor: pointer;">
+
+
+
+        <label style="display:block; font-size:11px; color:#8a8ab0; margin-bottom: 3px;">Overlay Alert Background (Фон окна уведомлений):</label>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="color" id="cfg_overlay_bg" value="#070714" style="width: 50px; height: 30px; border: 1px solid #333; border-radius: 4px; background: none; cursor: pointer;">
+            <label style="font-size: 11px; color: #8a8ab0;">Opacity (Прозрачность):</label>
+            <input type="range" id="cfg_overlay_opacity" min="0" max="100" value="85" style="flex: 1; accent-color: #e94560;">
+        </div>
+    </div>
+
+    <!-- Изменение текстов -->
+    <div style="margin-bottom: 20px;">
+        <h4 style="color: #4ecca3; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; margin-top: 0;">2. Change Texts</h4>
+
+        <label style="display:block; font-size:12px; color:#8a8ab0; margin-top:8px;">Bet Button Text:</label>
+        <input type="text" id="cfg_txt_btn" style="width:100%; padding:6px; background:#222; border:1px solid #444; color:#fff; border-radius:4px; box-sizing: border-box;">
+
+        <label style="display:block; font-size:12px; color:#8a8ab0; margin-top:8px;">Live Bets Header:</label>
+        <input type="text" id="cfg_txt_live" style="width:100%; padding:6px; background:#222; border:1px solid #444; color:#fff; border-radius:4px; box-sizing: border-box;">
+
+        <label style="display:block; font-size:12px; color:#8a8ab0; margin-bottom: 3px;">Next Flight Prefix:</label>
+        <input type="text" id="cfg_txt_next_flight" value="NEXT FLIGHT IN" style="width:100%; padding:6px; background:#222; border:1px solid #444; color:#fff; border-radius:4px; box-sizing: border-box; margin-bottom: 10px;">
+    </div>
+
+    <button onclick="saveAndApplyConfig()" style="width: 100%; padding: 12px; background: #4ecca3; color: #111; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; margin-bottom: 15px;">Save and Apply</button>
+</div>
+
+<div class="game-container">
+    <div class="auth-panel">
+        <div id="userInfo">Player: <span id="usernameLabel" style="color:#e94560">Guest</span></div>
+        <div>Balance: <span class="balance-value" id="balanceLabel">0</span> 🪙</div>
+        <button class="login-btn" id="authBtn" onclick="handleAuth()">Login</button>
+    </div>
+
+    <div class="jackpot-banner">💥 JACKPOT: <span id="jackpotLabel">1000</span> 🪙</div>
+</div>
+
+<div class="game-container" id="crash">
+    <div class="crash-wrapper" style="display: flex; flex-direction: column; gap: 15px; width: 100%;">
+
+        <!-- Экран полета -->
+        <div class="crash-display" style="position: relative; width: 100%; height: 220px; background: #070714; border-radius: 18px; border: 2px solid #25254d; overflow: hidden;">
+            <canvas id="crashCanvas" width="500" height="220"></canvas>
+            <div id="crashLiveMult" class="crash-multiplier-live" style="display: none;">1.00x</div>
+            <div id="crashOverlay" class="crash-overlay-msg">Waiting for next round...</div>
+        </div>
+
+        <!-- Панель ставки -->
+        <div class="crash-panel" style="display: flex; width: 100%; gap: 12px;">
+            <div class="crash-input-box" style="flex: 1;">
+                <label>Bet Amount</label>
+                <input type="number" id="crashBetInput" class="crash-input" value="10" min="1">
+            </div>
+        </div>
+
+        <button id="crashActionBtn" class="crash-btn">PLACE BET</button>
+        <div id="crashMsg" class="crash-msg"></div>
+
+        <!-- КЛЮЧЕВОЕ ДОБАВЛЕНИЕ: ТАБЛИЦА LIVE-СТАВОК ОНЛАЙН -->
+        <div style="width: 100%; background: #101026; border-radius: 14px; border: 1px solid #25254d; padding: 15px; text-align: left;">
+            <div style="font-size: 13px; font-weight: bold; color: #4ecca3; margin-bottom: 10px; letter-spacing: 0.5px;">LIVE BETS (ALL PLAYERS)</div>
+            <div id="crashLiveBetsBox" style="max-height: 180px; overflow-y: auto; font-size: 12px; color: #8a8ab0; display: flex; flex-direction: column; gap: 6px;">
+                <!-- Сюда сокеты будут динамически вбрасывать строки игроков -->
+                <div style="text-align: center; color: #555; padding: 10px;">Waiting for bets...</div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script src="../view/scripts/main.js"></script>
+<script src="./customCrash.js"></script>
+
+</body>
+</html>

@@ -279,7 +279,9 @@ async function initConfig() {
             console.log("✅ [Postgres B2B] Multi-tenant config successfully loaded from Neon");
         }
 
-
+        const { initCrashService } = require('./services/crashService');
+        state.BGS.crash = true;
+        initCrashService(io);
 
     } catch (err) {
         console.error("❌ Critical error during Postgres B2B initConfig:", err.message);

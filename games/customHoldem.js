@@ -373,7 +373,7 @@ async function checkUrlParametersAndLoad() {
     }
 
     if (themeName) {
-        const themeUrl = `./${themeName}.json`;
+        const themeUrl = `../assets/casino/themes/${themeName}.json`;
         try {
             const response = await fetch(themeUrl);
             if (!response.ok) throw new Error(`Тема ${themeName}.json не найдена на сервере.`);
