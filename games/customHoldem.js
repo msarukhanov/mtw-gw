@@ -3,7 +3,17 @@ let isHlPlaying = false;
 // Вспомогательный объект для значков мастей
 const HL_SUIT_SYMBOLS = { 'H': '♥', 'D': '♦', 'C': '♣', 'S': '♠' };
 
-const delay = ms => new Promise(res => setTimeout(res, ms));
+// --- ГЛОБАЛЬНЫЕ НАСТРОЙКИ КАСТОМИЗАЦИИ ХОЛДЕМА ---
+let customCardBack = ""; // Рубашка карт в Base64
+let customVideoSrc = ""; // Видео в Base64 или локальный URL
+
+const HOLDEM_THEME_CONFIG = {
+    texts: {
+        title: "🃏 CASINO HOLDEM",
+        playBtn: "PLAY HAND",
+        welcome: "Beat the dealer's poker hand!"
+    }
+};
 
 // Функция ждет, пока видео доиграет до указанной секунды (например, 2.5 секунды)
 function waitVideoPercentage(videoElement, percentage) {
@@ -182,6 +192,203 @@ async function hlSpin() {
         document.getElementById('hlSpinBtn').disabled = false;
     }
 }
+
+
+
+// Применение текстов и стилей темы на страницу
+function applyHoldemTheme() {
+    const cfg = HOLDEM_THEME_CONFIG;
+
+    const titleEl = document.querySelector('#hlGame h1');
+    if (titleEl) titleEl.innerText = cfg.texts.title;
+
+    const btnEl = document.getElementById('hlSpinBtn');
+    if (btnEl && !isHlPlaying) btnEl.innerText = cfg.texts.playBtn;
+
+    const msgBox = document.getElementById('msgBoxHl');
+    if (msgBox && !isHlPlaying) msgBox.innerText = cfg.texts.welcome;
+
+    // Накатываем рубашку карт, если она загружена
+    const root = document.documentElement;
+    if (customCardBack) {
+        root.style.setProperty('--card-back', `url(${customCardBack})`);
+    } else {
+        root.style.removeProperty('--card-back');
+    }
+}
+
+// Модифицируем универсальный рендерер карт, чтобы он учитывал кастомную рубашку
+const originalRenderHlCards = renderHlCards;
+renderHlCards = function(containerId, cardsArray) {
+    originalRenderHlCards(containerId, cardsArray);
+
+    // Если есть кастомная рубашка, добавляем класс-флаг, отключающий стандартный значок клевера
+    if (customCardBack) {
+        const containers = document.getElementById(containerId);
+        if (containers) {
+            containers.querySelectorAll('.hl-back').forEach(card => card.classList.add('custom-active'));
+        }
+    }
+};
+
+// --- ЛОГИКА ИНТЕРФЕЙСА ПАНЕЛИ НАСТРОЕК ---
+function toggleConfigPanel() {
+    const panel = document.getElementById('configPanel');
+    if (!panel) return;
+    if (panel.style.display === 'none') {
+        panel.style.display = 'block';
+        fillConfigInputs();
+    } else {
+        panel.style.display = 'none';
+    }
+}
+
+function fillConfigInputs() {
+    const cfg = HOLDEM_THEME_CONFIG.texts;
+    document.getElementById('cfg_txt_title').value = cfg.title;
+    document.getElementById('cfg_txt_btn').value = cfg.playBtn;
+    document.getElementById('cfg_txt_welcome').value = cfg.welcome;
+
+    const preview = document.getElementById('previewCardBack');
+    if (preview && customCardBack) {
+        preview.innerText = "";
+        preview.style.backgroundImage = `url(${customCardBack})`;
+    }
+}
+
+// Обработка загрузки файла рубашки карт
+function handleCardBackLoad() {
+    const fileInput = document.getElementById('cardBackInput');
+    const preview = document.getElementById('previewCardBack');
+
+    if (fileInput.files && fileInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            customCardBack = e.target.result;
+            preview.innerText = "";
+            preview.style.backgroundImage = `url(${e.target.result})`;
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+    }
+}
+
+// Обработка загрузки тяжелого видеофайла стола
+function handleVideoLoad() {
+    const fileInput = document.getElementById('videoBgInput');
+    const videoElement = document.getElementById('hlVideoBg');
+
+    if (fileInput.files && fileInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            customVideoSrc = e.target.result;
+            if (videoElement) {
+                videoElement.src = e.target.result;
+                videoElement.currentTime = 0;
+            }
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+    }
+}
+
+// Применение настроек из меню на живой экран
+function saveAndApplyConfig() {
+    const cfg = HOLDEM_THEME_CONFIG.texts;
+    cfg.title = document.getElementById('cfg_txt_title').value;
+    cfg.playBtn = document.getElementById('cfg_txt_btn').value;
+    cfg.welcome = document.getElementById('cfg_txt_welcome').value;
+
+    applyHoldemTheme();
+    toggleConfigPanel();
+}
+
+// --- ЭКСПОРТ КОНФИГУРАЦИИ В JSON ---
+function exportConfigToFile() {
+    const exportData = {
+        themeTitle: HOLDEM_THEME_CONFIG.texts.title,
+        texts: HOLDEM_THEME_CONFIG.texts,
+        cardBackBlob: customCardBack,
+        videoBlob: customVideoSrc
+    };
+
+    const jsonString = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([jsonString], { type: "application/json" });
+    const link = document.createElement("a");
+    const fileName = HOLDEM_THEME_CONFIG.texts.title.toLowerCase().replace(/[^a-z0-9]/g, "_") + "_holdem_theme.json";
+
+    link.href = URL.createObjectURL(blob);
+    link.download = fileName;
+    link.click();
+    URL.revokeObjectURL(link.href);
+}
+
+// --- ИМПОРТ ИЗ JSON С КОМПЬЮТЕРА ---
+function importConfigFromFile() {
+    const fileOpts = document.getElementById('importFileOpts');
+    if (!fileOpts || !fileOpts.files || !fileOpts.files[0]) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const importedData = JSON.parse(e.target.result);
+            applyImportedThemeData(importedData);
+            alert(`🎉 Holdem theme "${importedData.themeTitle || 'Import'}" loaded!`);
+        } catch (err) {
+            console.error(err);
+            alert("JSON syntax error.");
+        }
+    };
+    reader.readAsText(fileOpts.files[0]);
+}
+
+// --- УНИВЕРСАЛЬНЫЙ НАКАТ СТРУКТУРЫ ДАННЫХ ---
+function applyImportedThemeData(importedData) {
+    if (importedData.texts) {
+        Object.assign(HOLDEM_THEME_CONFIG.texts, importedData.texts);
+    }
+    if (importedData.cardBackBlob) {
+        customCardBack = importedData.cardBackBlob;
+    }
+    if (importedData.videoBlob) {
+        customVideoSrc = importedData.videoBlob;
+        const videoElement = document.getElementById('hlVideoBg');
+        if (videoElement) {
+            videoElement.src = importedData.videoBlob;
+            videoElement.currentTime = 0;
+        }
+    }
+
+    applyHoldemTheme();
+    fillConfigInputs();
+}
+
+// --- СЧИТЫВАНИЕ URL ПАРАМЕТРОВ (?edit=true&theme=имя) ---
+async function checkUrlParametersAndLoad() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const isEditMode = urlParams.get('edit') === 'true';
+    const themeName = urlParams.get('theme');
+
+    const configBtn = document.getElementById('adminConfigBtn');
+    if (configBtn) {
+        configBtn.style.display = isEditMode ? 'block' : 'none';
+    }
+
+    if (themeName) {
+        const themeUrl = `./${themeName}.json`;
+        try {
+            const response = await fetch(themeUrl);
+            if (!response.ok) throw new Error(`Тема ${themeName}.json не найдена на сервере.`);
+            const importedData = await response.json();
+            applyImportedThemeData(importedData);
+            console.log(`[Holdem Engine] Тема "${themeName}" успешно загружена.`);
+        } catch (error) {
+            console.error("[Holdem Engine] Ошибка автозагрузки пресета:", error);
+        }
+    }
+}
+
+// Автоматический пуск при сборке скрипта
+checkUrlParametersAndLoad();
+
 
 
 

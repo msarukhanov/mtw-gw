@@ -133,3 +133,17 @@
     margin-bottom: 2px;
     text-align: center;
 }
+
+.hl-card-unit.hl-back {
+    background: var(--card-back, linear-gradient(135deg, #1f1f45, #0f3460)) !important;
+    background-size: cover !important;
+    background-position: center !important;
+    border: 1px solid #4ecca3;
+    color: transparent !important; /* Скрываем текст, когда лежит рубашкой */
+    box-shadow: 0 0 12px rgba(78, 204, 163, 0.5);
+}
+
+/* Отключаем псевдоэлемент с клевером, если загружена кастомная рубашка */
+.hl-card-unit.hl-back.custom-active::before {
+    display: none !important;
+}

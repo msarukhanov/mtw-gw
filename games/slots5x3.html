@@ -15,11 +15,11 @@
 <body>
 
 <!-- Кнопка скрыта по умолчанию через display:none, управление идет из JS -->
-<button id="adminConfigBtn" onclick="toggleConfigPanel()" style="display: none; position: fixed; top: 10px; left: 10px; z-index: 1000; padding: 8px 12px; background: #e94560; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">⚙ Customise slot</button>
+<button id="adminConfigBtn" onclick="toggleConfigPanel()" >⚙ Customise slot</button>
 
 
 <!-- Сама панель управления -->
-<div id="configPanel" style="display: none; position: fixed; top: 0; left: 0; width: 340px; height: 100vh; background: #111122; border-right: 2px solid #e94560; z-index: 999; padding: 20px; overflow-y: auto; box-shadow: 5px 0 15px rgba(0,0,0,0.7); font-family: Arial, sans-serif;">
+<div id="configPanel">
     <h3 style="color: #e94560; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
         <span>Customization</span>
         <button onclick="toggleConfigPanel()" style="background: none; border: none; color: #fff; cursor: pointer; font-size: 20px;">✕</button>

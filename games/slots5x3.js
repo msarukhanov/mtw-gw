@@ -430,17 +430,6 @@ function getSymbolVisual(serverSymbol) {
     return SLOT_THEME_CONFIG.symbols[serverSymbol] || serverSymbol;
 }
 
-
-
-// Первичная инициализация панели при загрузке скрипта
-
-
-// --- ТРЕХУРОВНЕВАЯ СИСТЕМА ФОНОВ И КАСТОМИЗАЦИЯ ---
-
-// Объект для хранения трех разных фонов в Base64
-
-
-// Функция-загрузчик для трех типов фонов
 function handleBgLoad(type) {
     let inputId = "";
     let previewId = "";

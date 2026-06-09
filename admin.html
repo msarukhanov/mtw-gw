@@ -79,9 +79,10 @@
             </div>
 
             <!-- РАЗДЕЛ 5: Builder -->
-            <div class="nav-title" onclick="toggleMenuSection('sec-builder', this)">Builder</div>
+            <div class="nav-title" onclick="toggleMenuSection('sec-builder', this)">Builders</div>
             <div class="nav-section-content" id="sec-builder">
-                <button class="nav-btn" onclick="switchTab('tab-slotsbuilder', this)"><span>🛠️</span><span class="nav-btn-text">Slots Builder</span></button>
+                <button class="nav-btn" onclick="switchTab('tab-slotsbuilder', this)"><span>🛠️</span><span class="nav-btn-text">Slots 5x3</span></button>
+                <button class="nav-btn" onclick="switchTab('tab-holdembuilder', this)"><span>🛠️</span><span class="nav-btn-text">Casino Holdem</span></button>
             </div>
         </div>
 
@@ -698,6 +699,10 @@
 
         <div id="tab-slotsbuilder" class="tab-content">
             <iframe src="https://mtwtech.onrender.com/games/slots5x3?edit=true"></iframe>
+        </div>
+
+        <div id="tab-holdembuilder" class="tab-content">
+            <iframe src="https://mtwtech.onrender.com/games/customHoldem?edit=true"></iframe>
         </div>
 
     </main>
