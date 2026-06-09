@@ -821,7 +821,99 @@ const backOfficeMethods = {
         };
     },
 
+    getFinanceDashboardMetrics: async (partnerId, filters = {}) => {
+        let { fromDate, toDate } = filters;
+        let queryConditions = ` WHERE partner_id = $1`;
+        let queryParams = [partnerId];
+        let paramIndex = 2;
+
+        if (fromDate) {
+            queryConditions += ` AND timestamp >= $${paramIndex}`;
+            queryParams.push(fromDate);
+            paramIndex++;
+        }
+        if (toDate) {
+            queryConditions += ` AND timestamp <= $${paramIndex}`;
+            queryParams.push(toDate);
+            paramIndex++;
+        }
+
+        const metricsQuery = `
+        SELECT 
+            COUNT(*)::int as tx_count,
+            COALESCE(SUM(CASE WHEN type = 'DEBIT' AND game NOT SIMILAR TO '%(Deposit|Withdraw|Promo|Cashback|Quest|VIP)%' THEN amount ELSE 0 END), 0)::numeric as total_bets,
+            COALESCE(SUM(CASE WHEN type = 'CREDIT' AND game NOT SIMILAR TO '%(Deposit|Withdraw|Promo|Cashback|Quest|VIP)%' THEN amount ELSE 0 END), 0)::numeric as total_wins,
+            COALESCE(SUM(CASE WHEN type = 'AFFILIATE' THEN amount ELSE 0 END), 0)::numeric as total_affiliate,
+            COALESCE(SUM(CASE WHEN game LIKE '%Deposit%' THEN amount ELSE 0 END), 0)::numeric as total_deposits,
+            COALESCE(SUM(CASE WHEN game LIKE '%Withdraw%' THEN amount ELSE 0 END), 0)::numeric as total_withdraws
+        FROM accounting_logs
+        ${queryConditions}
+    `;
+
+        const metricsRes = await global.pool.query(metricsQuery, queryParams);
+        const metrics = metricsRes.rows[0] || {};
+
+        const totalBets = Number(metrics.total_bets || 0);
+        const totalWins = Number(metrics.total_wins || 0);
+        const totalAffiliate = Number(metrics.total_affiliate || 0);
+        const totalDeposits = Number(metrics.total_deposits || 0);
+        const totalWithdraws = Number(metrics.total_withdraws || 0);
+
+        const ggr = totalBets - totalWins;
+
+        return {
+            totalBets,
+            totalWins,
+            totalAffiliate,
+            totalDeposits,
+            totalWithdraws,
+            ggr,
+            netProfit: ggr - totalAffiliate,
+            transactionsCount: metrics.tx_count || 0
+        };
+    },
+
     getFinancialReport: async (partnerId, filters = {}) => {
+        let { fromDate, toDate, txType, limit = 20, page = 1 } = filters;
+        const offset = (page - 1) * limit;
+
+        let queryConditions = ` WHERE partner_id = $1`;
+        let queryParams = [partnerId];
+        let paramIndex = 2;
+
+        if (fromDate) { queryConditions += ` AND timestamp >= $${paramIndex}`; queryParams.push(fromDate); paramIndex++; }
+        if (toDate) { queryConditions += ` AND timestamp <= $${paramIndex}`; queryParams.push(toDate); paramIndex++; }
+
+        let txTypeCondition = '';
+        const systemKeywords = 'Promo|Cashback|Quest|VIP|Deposit|Withdraw';
+        if (txType === 'affiliate') txTypeCondition = ` AND type = 'AFFILIATE'`;
+        else if (txType === 'deposits') txTypeCondition = ` AND (game SIMILAR TO '%(Deposit|Withdraw)%')`;
+        else if (txType === 'bonuses') txTypeCondition = ` AND (game SIMILAR TO '%(Promo|Cashback|Quest|VIP)%')`;
+        else txTypeCondition = ` AND (type = 'AFFILIATE' OR game SIMILAR TO '%(${systemKeywords})%')`;
+
+        // Запрос количества страниц
+        const countQuery = `SELECT COUNT(*)::int as count FROM accounting_logs ${queryConditions} ${txTypeCondition}`;
+        const countRes = await global.pool.query(countQuery, queryParams);
+        const totalItems = countRes.rows[0]?.count || 0;
+
+        // Основной запрос строк таблицы
+        const txsQuery = `
+            SELECT username, type, amount::numeric, game, EXTRACT(EPOCH FROM timestamp) * 1000 as ts
+            FROM accounting_logs
+            ${queryConditions} ${txTypeCondition}
+            ORDER BY timestamp DESC
+            LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+        `;
+        queryParams.push(limit, offset);
+        const txsRes = await global.pool.query(txsQuery, queryParams);
+
+        return {
+            items: txsRes.rows,
+            pagination: { page, limit, totalItems, totalPages: Math.ceil(totalItems / limit) }
+        };
+    },
+
+    getFinancialReport222: async (partnerId, filters = {}) => {
         let { fromDate, toDate } = filters;
 
         // Базовые условия для фильтрации по партнеру
@@ -844,24 +936,34 @@ const backOfficeMethods = {
         }
 
         // 1. 📊 ПОДСЧЕТ МЕТРИК НА СТОРОНЕ PostgreSQL (Отработает мгновенно)
+        // 1. 📊 ПОДСЧЕТ ВСЕХ МЕТРИК НА СТОРОНЕ PostgreSQL (Добавлен Cashflow)
         const metricsQuery = `
             SELECT 
                 COUNT(*)::int as tx_count,
-                COALESCE(SUM(CASE WHEN type = 'DEBIT' THEN amount ELSE 0 END), 0)::numeric as total_bets,
-                COALESCE(SUM(CASE WHEN type = 'CREDIT' THEN amount ELSE 0 END), 0)::numeric as total_wins,
-                COALESCE(SUM(CASE WHEN type = 'AFFILIATE' THEN amount ELSE 0 END), 0)::numeric as total_affiliate
+                COALESCE(SUM(CASE WHEN type = 'DEBIT' AND game NOT SIMILAR TO '%(Deposit|Withdraw|Promo|Cashback|Quest|VIP)%' THEN amount ELSE 0 END), 0)::numeric as total_bets,
+                COALESCE(SUM(CASE WHEN type = 'CREDIT' AND game NOT SIMILAR TO '%(Deposit|Withdraw|Promo|Cashback|Quest|VIP)%' THEN amount ELSE 0 END), 0)::numeric as total_wins,
+                COALESCE(SUM(CASE WHEN type = 'AFFILIATE' THEN amount ELSE 0 END), 0)::numeric as total_affiliate,
+                COALESCE(SUM(CASE WHEN game LIKE '%Deposit%' THEN amount ELSE 0 END), 0)::numeric as total_deposits,
+                COALESCE(SUM(CASE WHEN game LIKE '%Withdraw%' THEN amount ELSE 0 END), 0)::numeric as total_withdraws
             FROM accounting_logs
             ${queryConditions}
         `;
 
         const metricsRes = await global.pool.query(metricsQuery, queryParams);
-        const metrics = metricsRes.rows[0];
+        const metrics = metricsRes.rows[0] || {}; // Берем первую строку результата
 
-        const totalBets = Number(metrics.total_bets);
-        const totalWins = Number(metrics.total_wins);
-        const totalAffiliate = Number(metrics.total_affiliate);
+        const totalBets = Number(metrics.total_bets || 0);
+        const totalWins = Number(metrics.total_wins || 0);
+        const totalAffiliate = Number(metrics.total_affiliate || 0);
+        const totalDeposits = Number(metrics.total_deposits || 0);
+        const totalWithdraws = Number(metrics.total_withdraws || 0);
+
         const ggr = totalBets - totalWins;
         const netProfit = ggr - totalAffiliate;
+
+        // Добавь 'totalDeposits' и 'totalWithdraws' в итоговый возвращаемый объект:
+
+
 
         // Список исключений для ставок (используем POSIX регулярное выражение в Postgres вместо JS .includes)
         const systemKeywords = 'Promo|Cashback|Quest|VIP|Deposit|Withdraw';
@@ -935,27 +1037,40 @@ const backOfficeMethods = {
         `;
         const chartRes = await global.pool.query(chartQuery, queryParams);
 
-        // Добавь 'chartTimeline' в финальный возвращаемый объект:
         return {
             totalBets,
             totalWins,
             totalAffiliate,
+            totalDeposits,
+            totalWithdraws,
             ggr,
             netProfit,
-            transactionsCount: metrics.tx_count,
+            transactionsCount: metrics.tx_count || 0,
             latestTransactions,
             latestBets
         };
+        // return {
+        //     totalBets,
+        //     totalWins,
+        //     totalAffiliate,
+        //     ggr,
+        //     netProfit,
+        //     transactionsCount: metrics.tx_count,
+        //     latestTransactions,
+        //     latestBets
+        // };
     },
 
     getChartAnalytics: async (partnerId) => {
         const chartQuery = `
             SELECT 
                 TO_CHAR(series_date, 'YYYY-MM-DD') as date_label,
-                COALESCE(SUM(CASE WHEN al.type = 'DEBIT' THEN al.amount ELSE 0 END), 0)::numeric as day_bets,
-                COALESCE(SUM(CASE WHEN al.type = 'CREDIT' THEN al.amount ELSE 0 END), 0)::numeric as day_wins,
+                COALESCE(SUM(CASE WHEN al.type = 'DEBIT' AND al.game NOT SIMILAR TO '%(Deposit|Withdraw|Promo|Cashback|Quest|VIP)%' THEN al.amount ELSE 0 END), 0)::numeric as day_bets,
+                COALESCE(SUM(CASE WHEN al.type = 'CREDIT' AND al.game NOT SIMILAR TO '%(Deposit|Withdraw|Promo|Cashback|Quest|VIP)%' THEN al.amount ELSE 0 END), 0)::numeric as day_wins,
                 COALESCE(SUM(CASE WHEN al.type = 'AFFILIATE' THEN al.amount ELSE 0 END), 0)::numeric as day_affiliate,
-                COUNT(CASE WHEN al.type IN ('DEBIT', 'CREDIT') THEN al.id END)::int as bets_count -- Считаем количество ставок
+                COALESCE(SUM(CASE WHEN al.game LIKE '%Deposit%' THEN al.amount ELSE 0 END), 0)::numeric as day_deposits,
+                COALESCE(SUM(CASE WHEN al.game LIKE '%Withdraw%' THEN al.amount ELSE 0 END), 0)::numeric as day_withdraws,
+                COUNT(CASE WHEN al.type IN ('DEBIT', 'CREDIT') AND al.game NOT SIMILAR TO '%(Deposit|Withdraw|Promo|Cashback|Quest|VIP)%' THEN al.id END)::int as bets_count
             FROM GENERATE_SERIES(CURRENT_DATE - INTERVAL '6 days', CURRENT_DATE, '1 day'::interval) as series_date
             LEFT JOIN accounting_logs al ON al.partner_id = $1 AND DATE(al.timestamp) = DATE(series_date)
             GROUP BY series_date
@@ -970,10 +1085,13 @@ const backOfficeMethods = {
                 date: row.date_label,
                 ggr: ggr,
                 netProfit: ggr - Number(row.day_affiliate),
-                betsCount: row.bets_count // Передаем количество ставок на фронтенд
+                deposits: Number(row.day_deposits),
+                withdraws: Number(row.day_withdraws),
+                betsCount: row.bets_count
             };
         });
     }
+
 
 };
 

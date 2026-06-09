@@ -8,7 +8,8 @@
 
     <link rel="stylesheet" href="./view/styles/admin.css">
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!--<script src="./view/scripts/chart.min.js"></script>-->
+    <script src="./view/scripts/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -94,7 +95,9 @@
         <!-- TAB 7: FINANCIAL REPORTS & ANALYTICS -->
         <div id="tab-finance" class="tab-content active">
             <div class="card">
-                <h2>📊 Platform Financial Analytics (Real-Time GGR)</h2>
+                <h2>
+                    📊Platform Financial Analytics (Real-Time GGR)
+                </h2>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px;">
 
                     <div class="game-block" style="border-left: 4px solid var(--accent-blue);">
@@ -117,6 +120,17 @@
                         <div style="font-size: 24px; font-weight: bold; color: var(--neon-green); margin-top: 5px;" id="fin_net">0 🪙</div>
                     </div>
 
+                    <div class="game-block" style="border-left: 4px solid #8c7ae6; padding: 12px;">
+                        <h3 style="font-size: 13px; color: var(--text-muted); margin: 0;">Total Deposits</h3>
+                        <div style="font-size: 22px; font-weight: bold; color: #8c7ae6; margin-top: 5px;" id="fin_deposits">0 🪙</div>
+                    </div>
+
+                    <!-- НОВАЯ КАРТОЧКА: ВЫВОДЫ -->
+                    <div class="game-block" style="border-left: 4px solid #e1b12c; padding: 12px;">
+                        <h3 style="font-size: 13px; color: var(--text-muted); margin: 0;">Total Withdraws</h3>
+                        <div style="font-size: 22px; font-weight: bold; color: #e1b12c; margin-top: 5px;" id="fin_withdraws">0 🪙</div>
+                    </div>
+
                 </div>
 
 
@@ -129,25 +143,35 @@
                 </div>
 
                 <!-- БЛОК ГРАФИКОВ: ДВЕ КОЛОНКИ -->
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; margin-top: 25px;">
+                <!-- СЕТКА ГРАФИКОВ: ТРИ БЛОКА -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px; margin-top: 25px;">
 
-                    <!-- Левый график: Финансы (GGR / NGR) -->
+                    <!-- 1. Финансы (GGR / NGR) -->
                     <div class="game-block" style="background: #0b0d13; border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; margin-top: 0;">
-                        <h4 style="margin-top: 0; margin-bottom: 15px; color: #8a99ad; letter-spacing: 0.5px;">📈 FINANCIAL PERFORMANCE TIMELINE</h4>
-                        <div style="width: 100%; height: 300px; position: relative;">
+                        <h4 style="margin-top: 0; margin-bottom: 15px; color: #8a99ad; letter-spacing: 0.5px;">📈 FINANCIAL PERFORMANCE (GGR)</h4>
+                        <div style="width: 100%; height: 260px; position: relative;">
                             <canvas id="mtwFinanceChart"></canvas>
                         </div>
                     </div>
 
-                    <!-- Правый график: Количество ставок (Игровая активность) -->
+                    <!-- 2. НОВЫЙ: Касса (Депозиты / Выводы) -->
                     <div class="game-block" style="background: #0b0d13; border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; margin-top: 0;">
-                        <h4 style="margin-top: 0; margin-bottom: 15px; color: #8a99ad; letter-spacing: 0.5px;">🎮 TOTAL BETS VOLUME (ACTIVITY)</h4>
-                        <div style="width: 100%; height: 300px; position: relative;">
+                        <h4 style="margin-top: 0; margin-bottom: 15px; color: #8a99ad; letter-spacing: 0.5px;">💳 CASHFLOW (DEPOSITS / WITHDRAWS)</h4>
+                        <div style="width: 100%; height: 260px; position: relative;">
+                            <canvas id="mtwCashflowChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- 3. Количество ставок -->
+                    <div class="game-block" style="background: #0b0d13; border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; margin-top: 0;">
+                        <h4 style="margin-top: 0; margin-bottom: 15px; color: #8a99ad; letter-spacing: 0.5px;">🎮 TOTAL BETS VOLUME</h4>
+                        <div style="width: 100%; height: 260px; position: relative;">
                             <canvas id="mtwActivityChart"></canvas>
                         </div>
                     </div>
 
                 </div>
+
 
             </div>
         </div>
@@ -226,8 +250,6 @@
         <!-- TAB 9: DETAILED TRANSACTIONS LEDGER -->
         <div id="tab-transactions-ledger" class="tab-content">
             <!-- Фильтры строго для финансов -->
-
-
             <div class="card">
                 <h2>💳 Financial Transactions Cashflow Ledger</h2>
                 <div style="margin-bottom: 15px; color: var(--text-muted); font-size: 13px;">
@@ -251,6 +273,9 @@
                             <option value="100">100</option>
                         </select>
                     </div>
+                    <button onclick="exportLedgerToCSV()" style="background: transparent; border: 1px solid var(--neon-green); color: var(--neon-green); padding: 6px 15px; cursor: pointer; border-radius: 4px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; margin-left: auto;">
+                        📥 Export CSV
+                    </button>
                 </div>
                 <div class="card" style="margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; padding: 15px;">
                     <div style="display: flex; gap: 5px;">

@@ -19,6 +19,7 @@ router.post('/admin/end-tournament', adminController.endTournament);
 router.post('/admin/add-promocode', adminController.addPromoCode);
 router.post('/admin/run-cashback', adminController.runCashback);
 
+router.get('/admin/finance/dashboard', adminController.getFinanceDashboard);
 router.get('/admin/finance/report', adminController.getFinanceReport);
 router.get('/admin/finance/chart', adminController.getAdminChart);
 router.get('/admin/bets/report', adminController.getBetReport);

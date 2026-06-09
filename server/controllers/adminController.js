@@ -138,33 +138,40 @@ exports.runCashback = async (req, res) => {
 exports.getFinanceReport = async (req, res) => {
     try {
         const partnerId = req.partnerId || "demo_mtwtech";
-
-        // Получаем параметры дат из query-запроса
-        let fromDate = req.query.fromDate || null; // Ожидается "YYYY-MM-DD"
-        let toDate = req.query.toDate || null;
-        const period = req.query.period;           // Пресеты: 'day' или 'week'
-
-        // --- АВТОМАТИЧЕСКИЕ ПРЕСЕТЫ ВРЕМЕНИ ---
-        if (period) {
-            const now = new Date();
-            if (period === 'day') {
-                fromDate = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
-                toDate = now.toISOString();
-            } else if (period === 'week') {
-                fromDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
-                toDate = now.toISOString();
-            }
-        }
-
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 20;
         const txType = req.query.txType || 'all';
-        const report = await state.getFinancialReport(partnerId, { fromDate, toDate, txType });
+        let fromDate = req.query.fromDate || null;
+        let toDate = req.query.toDate || null;
 
-        res.json({ success: true, report });
+        const ledger = await state.getFinanceDashboardMetrics(partnerId, { fromDate, toDate, txType, limit, page });
+        res.json({ success: true, ledger });
     } catch (err) {
-        console.error("❌ [Admin API] Failed to compile financial metrics:", err.message);
-        res.status(500).json({ error: "Failed to compile financial metrics" });
+        res.status(500).json({ error: "Failed to load ledger table" });
     }
 };
+
+exports.getFinanceDashboard = async (req, res) => {
+    try {
+        const partnerId = req.partnerId || "demo_mtwtech";
+        let fromDate = req.query.fromDate || null;
+        let toDate = req.query.toDate || null;
+        const period = req.query.period;
+
+        if (period) {
+            const now = new Date();
+            if (period === 'day') fromDate = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+            else if (period === 'week') fromDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+            toDate = now.toISOString();
+        }
+
+        const metrics = await state.getFinanceDashboardMetrics(partnerId, { fromDate, toDate });
+        res.json({ success: true, metrics });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to load dashboard metrics" });
+    }
+};
+
 
 exports.getBetReport = async (req, res) => {
     try {

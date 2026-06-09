@@ -17,6 +17,7 @@ let currentEditingSlug = null;
 
 let mtwChartInstance = null; // Хранилище объекта графика
 let mtwActivityChartInstance = null; // Инстанс для второго графика
+let mtwCashflowChartInstance = null;
 
 function showLoader() {
     document.getElementById('global-mtw-loader').style.display = 'flex';
@@ -240,6 +241,7 @@ async function loadData() {
 
 
         // 🔄 ОБНОВЛЕННАЯ СИНХРОНИЗАЦИЯ ФИНАНСОВ И ДВУХ НОВЫХ ВКЛАДОК ЖУРНАЛОВ
+        loadAdminFinanceDashboard();
 
         loadAdminFinanceChart();
 
@@ -840,6 +842,32 @@ function changeBetsPage(direction) {
     loadAdminBetsRegistry();
 }
 
+async function loadAdminFinanceDashboard() {
+    showLoader();
+    try {
+        let queryParams = new URLSearchParams();
+        if (currentFinancePeriod) queryParams.append('period', currentFinancePeriod);
+
+        const res = await fetch(`${baseUrlApi}/admin/finance/dashboard?${queryParams.toString()}`);
+        const data = await res.json();
+
+        if (data.success && data.metrics) {
+            const m = data.metrics;
+            document.getElementById('fin_bets').innerText = m.totalBets.toFixed(2) + ' 🪙';
+            document.getElementById('fin_wins').innerText = m.totalWins.toFixed(2) + ' 🪙';
+            document.getElementById('fin_ggr').innerText = m.ggr.toFixed(2) + ' 🪙';
+            document.getElementById('fin_net').innerText = m.netProfit.toFixed(2) + ' 🪙';
+            if(document.getElementById('fin_deposits')) document.getElementById('fin_deposits').innerText = m.totalDeposits.toFixed(2) + ' 🪙';
+            if(document.getElementById('fin_withdraws')) document.getElementById('fin_withdraws').innerText = m.totalWithdraws.toFixed(2) + ' 🪙';
+            document.getElementById('fin_logs').innerText = m.transactionsCount;
+        }
+    } catch (err) {
+        console.error(err);
+    } finally {
+        hideLoader();
+    }
+}
+
 async function loadAdminFinanceReport() {
     showLoader();
     try {
@@ -852,27 +880,16 @@ async function loadAdminFinanceReport() {
         queryParams.append('txType', txTypeVal);
         queryParams.append('page', currentTxPage);
         queryParams.append('limit', limitVal);
+        if (fromDateVal) queryParams.append('fromDate', fromDateVal);
+        if (toDateVal) queryParams.append('toDate', toDateVal);
 
-        if (currentFinancePeriod) {
-            queryParams.append('period', currentFinancePeriod);
-        } else {
-            if (fromDateVal) queryParams.append('fromDate', fromDateVal);
-            if (toDateVal) queryParams.append('toDate', toDateVal);
-        }
-
-        const finRes = await fetch(`${baseUrlApi}/admin/finance/report?${queryParams.toString()}`);
-        const finData = await finRes.json();
+        const res = await fetch(`${baseUrlApi}/admin/finance/report?${queryParams.toString()}`);
+        const data = await res.json();
         const txLedgerTbody = document.getElementById('tx_ledger_tbody');
 
-        if (finData.success) {
-            if(document.getElementById('fin_bets')) document.getElementById('fin_bets').innerText = finData.report.totalBets.toFixed(2) + ' 🪙';
-            if(document.getElementById('fin_wins')) document.getElementById('fin_wins').innerText = finData.report.totalWins.toFixed(2) + ' 🪙';
-            if(document.getElementById('fin_ggr')) document.getElementById('fin_ggr').innerText = finData.report.ggr.toFixed(2) + ' 🪙';
-            if(document.getElementById('fin_net')) document.getElementById('fin_net').innerText = finData.report.netProfit.toFixed(2) + ' 🪙';
-            if(document.getElementById('fin_logs')) document.getElementById('fin_logs').innerText = finData.report.transactionsCount;
-
-            if (finData.report.latestTransactions && finData.report.latestTransactions.length > 0) {
-                txLedgerTbody.innerHTML = finData.report.latestTransactions.map(t => {
+        if (data.success && data.ledger) {
+            if (data.ledger.items && data.ledger.items.length > 0) {
+                txLedgerTbody.innerHTML = data.ledger.items.map(t => {
                     let badgeStyle = 'background: var(--accent-blue);';
                     let badgeText = 'BALANCE INJECT';
                     let flowText = `<b style="color: var(--neon-green);">+${t.amount} 🪙</b>`;
@@ -895,7 +912,7 @@ async function loadAdminFinanceReport() {
 
                     return `
                         <tr>
-                            <td><small style="color: var(--text-muted);">${new Date(t.timestamp).toLocaleString()}</small></td>
+                            <td><small style="color: var(--text-muted);">${new Date(t.ts).toLocaleString()}</small></td>
                             <td><b>${t.username}</b></td>
                             <td><small style="color: #fff; font-weight: 600;">${t.game || 'System'}</small></td>
                             <td><span class="badge" style="${badgeStyle} color: #fff; padding: 4px 10px; font-size: 11px; border-radius:4px;">${badgeText}</span></td>
@@ -904,25 +921,24 @@ async function loadAdminFinanceReport() {
                     `;
                 }).join('');
 
-                // ВАЖНО: Если бэкенд возвращает пагинацию кассы в объекте report (например, finData.report.pagination)
-                if (finData.report.pagination) {
-                    document.getElementById('lbl_tx_page').innerText = `Page ${finData.report.pagination.page} of ${finData.report.pagination.totalPages || 1}`;
-                    document.getElementById('btn_tx_prev').disabled = finData.report.pagination.page <= 1;
-                    document.getElementById('btn_tx_next').disabled = finData.report.pagination.page >= finData.report.pagination.totalPages;
-                }
+                const pag = data.ledger.pagination;
+                document.getElementById('lbl_tx_page').innerText = `Страница ${pag.page} из ${pag.totalPages || 1}`;
+                document.getElementById('btn_tx_prev').disabled = pag.page <= 1;
+                document.getElementById('btn_tx_next').disabled = pag.page >= pag.totalPages;
             } else {
-                txLedgerTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:30px;">No transactions found for selected filters</td></tr>`;
-                document.getElementById('lbl_tx_page').innerText = 'Page 1 of 1';
+                txLedgerTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:30px;">No transactions found</td></tr>`;
+                document.getElementById('lbl_tx_page').innerText = 'Страница 1 из 1';
                 document.getElementById('btn_tx_prev').disabled = true;
                 document.getElementById('btn_tx_next').disabled = true;
             }
         }
     } catch (fErr) {
-        console.error('Finance report sync failure:', fErr);
+        console.error(fErr);
     } finally {
         hideLoader();
     }
 }
+
 
 function setFinancePeriod(period) {
     currentFinancePeriod = period;
@@ -958,11 +974,9 @@ async function loadAdminFinanceChart() {
         const data = await res.json();
 
         if (data.success && data.timeline) {
-            // 1. Рисуем первый график (Финансы)
             renderNeonChart(data.timeline);
-
-            // 2. Рисуем второй график (Количество ставок)
             renderActivityChart(data.timeline);
+            renderCashflowChart(data.timeline); // <-- Запуск нового графика
         }
     } catch (err) {
         console.error('Failed to load chart analytics:', err);
@@ -1109,6 +1123,122 @@ function renderNeonChart(timelineData) {
             }
         }
     });
+}
+ // Инстанс для нового графика кассы
+
+// Расширяем главную функцию загрузки графиков
+
+
+// Функция инициализации графика Депозитов и Выводов
+function renderCashflowChart(timelineData) {
+    const ctx = document.getElementById('mtwCashflowChart').getContext('2d');
+
+    if (mtwCashflowChartInstance) {
+        mtwCashflowChartInstance.destroy();
+    }
+
+    const labels = timelineData.map(d => {
+        const dateObj = new Date(d.date);
+        return dateObj.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    });
+
+    const depositData = timelineData.map(d => d.deposits);
+    const withdrawData = timelineData.map(d => d.withdraws);
+
+    mtwCashflowChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Deposit',
+                    data: depositData,
+                    borderColor: '#8c7ae6', // Фиолетовый неон под цвет карточки
+                    backgroundColor: 'rgba(140, 122, 230, 0.02)',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#8c7ae6',
+                    pointHoverRadius: 6,
+                    tension: 0.3
+                },
+                {
+                    label: 'Withdraw',
+                    data: withdrawData,
+                    borderColor: '#e1b12c', // Оранжевый золото под цвет карточки
+                    backgroundColor: 'rgba(225, 177, 44, 0.02)',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#e1b12c',
+                    pointHoverRadius: 6,
+                    tension: 0.3
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top', labels: { color: '#8a99ad', font: { weight: '600' } } }
+            },
+            scales: {
+                x: { grid: { color: '#1a1e26', drawBorder: false }, ticks: { color: '#65758c' } },
+                y: { grid: { color: '#1a1e26', drawBorder: false }, ticks: { color: '#65758c' } }
+            }
+        }
+    });
+}
+
+// 📥 ФУНКЦИЯ ЭКСПОРТА ТАБЛИЦЫ КАССЫ В CSV ФАЙЛ
+async function exportLedgerToCSV() {
+    showLoader();
+    try {
+        const fromDateVal = document.getElementById('fin_filter_from').value;
+        const toDateVal = document.getElementById('fin_filter_to').value;
+        const txTypeVal = document.getElementById('fin_filter_type').value;
+
+        let queryParams = new URLSearchParams();
+        queryParams.append('txType', txTypeVal);
+        queryParams.append('page', 1);
+        queryParams.append('limit', 5000); // Выгружаем максимум строк за выбранный период
+        if (fromDateVal) queryParams.append('fromDate', fromDateVal);
+        if (toDateVal) queryParams.append('toDate', toDateVal);
+
+        const res = await fetch(`${baseUrlApi}/admin/finance/ledger?${queryParams.toString()}`);
+        const data = await res.json();
+
+        if (!data.success || !data.ledger.items || data.ledger.items.length === 0) {
+            alert('Нет данных для выгрузки за выбранный период');
+            return;
+        }
+
+        // Строим заголовки столбцов CSV
+        let csvContent = "\uFEFF"; // BOM для корректного чтения кириллицы (например, имени "Марк") Excel-ем
+        csvContent += "Дата;Пользователь;Описание/Игра;Тип;Сумма\n";
+
+        // Заполняем строками
+        data.ledger.items.forEach(t => {
+            const date = new Date(t.ts).toLocaleString();
+            const username = t.username;
+            const game = t.game || 'System';
+            const type = t.type;
+            const amount = t.game?.includes('Withdraw') ? `-${t.amount}` : `${t.amount}`;
+
+            csvContent += `"${date}";"${username}";"${game}";"${type}";"${amount}"\n`;
+        });
+
+        // Создаем виртуальную ссылку для скачивания файла на стороне браузера
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `financial_report_${txTypeVal}_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(link);
+
+        link.click(); // Инициируем скачивание
+        document.body.removeChild(link);
+    } catch (err) {
+        console.error('Ошибка экспорта CSV:', err);
+    } finally {
+        hideLoader();
+    }
 }
 
 
