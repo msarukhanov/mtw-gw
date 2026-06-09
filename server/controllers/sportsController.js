@@ -59,7 +59,10 @@ exports.placeBet = async (req, res) => {
 
         // 1. Списание одной общей транзакции через Seamless Wallet с проверкой средств
         // Ошибки (например недостаточный баланс) автоматически улетят в блок catch
-        const debitResult = await seamless.debit(username, partnerId, sessionId, Number(stake), gameName, roundId);
+        const debitResult = await seamless.debit(req.player, username, partnerId, sessionId, Number(stake), gameName, roundId);
+        if(debitResult.error) {
+            return res.status(400).json(debitResult);
+        }
 
         // Берем актуальный авторизованный баланс строго из ответа платформы
         const currentBalance = debitResult.balance;

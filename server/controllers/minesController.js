@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const state = require('../state');
-const seamlessService = require('../services/seamlessService'); // Подключите ваш сервис
+const seamless = require('../services/seamlessService'); // Подключите ваш сервис
 
 // 1. СТАРТ ИГРЫ (Игрок делает ставку и выбирает количество мин)
 exports.start = async (req, res) => {
@@ -32,7 +32,10 @@ exports.start = async (req, res) => {
     let debitResult;
     try {
         // Списываем баланс через HTTP-запрос дебита к платформе вместо RAM
-        debitResult = await seamlessService.debit(username, partnerId, sessionId, bet, gameName, roundId);
+        debitResult = await seamless.debit(username, partnerId, sessionId, bet, gameName, roundId);
+        if(debitResult.error) {
+            return res.status(400).json(debitResult);
+        }
     } catch (err) {
         return res.status(400).json({ error: err.message || "Insufficient funds or platform error" });
     }
@@ -145,7 +148,7 @@ exports.openCell = async (req, res) => {
     if (game.openedCells.length === maxCleanCells) {
 
         // Начисляем финальный выигрыш через HTTP-запрос кредита к платформе
-        const creditResult = await seamlessService.credit(username, partnerId, game.sessionId, potentialWin, gameName, game.roundId);
+        const creditResult = await seamless.credit(username, partnerId, game.sessionId, potentialWin, gameName, game.roundId);
         const currentBalance = creditResult.balance;
 
         // Апдейтим локальный банк
@@ -197,7 +200,7 @@ exports.cashout = async (req, res) => {
     const gameName = "Mines";
 
     // Начисляем выигрыш через HTTP-запрос кредита к платформе
-    const creditResult = await seamlessService.credit(username, partnerId, game.sessionId, totalWin, gameName, game.roundId);
+    const creditResult = await seamless.credit(username, partnerId, game.sessionId, totalWin, gameName, game.roundId);
     const currentBalance = creditResult.balance;
 
     // Вычитаем выигрыш из изолированной копилки бренда

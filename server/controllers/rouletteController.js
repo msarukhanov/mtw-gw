@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const state = require('../state');
 const rouletteService = require('../services/rouletteService');
-const seamlessService = require('../services/seamlessService'); // Подключите ваш сервис
+const seamless = require('../services/seamlessService'); // Подключите ваш сервис
 
 exports.placeBet = async (req, res) => {
     const { betAmount, betType, betValue } = req.body;
@@ -45,7 +45,10 @@ exports.placeBet = async (req, res) => {
     let debitResult;
     try {
         // 7. Списание баланса через HTTP-запрос к платформе вместо RAM
-        debitResult = await seamlessService.debit(username, partnerId, sessionId, betAmount, gameName, roundId);
+        debitResult = await seamless.debit(username, partnerId, sessionId, betAmount, gameName, roundId);
+        if(debitResult.error) {
+            return res.status(400).json(debitResult);
+        }
     } catch (err) {
         return res.status(400).json({ error: err.message || "Insufficient funds or platform error" });
     }

@@ -50,7 +50,10 @@ exports.spin = async (req, res) => {
     }
 
     if(req.player.sessionId) {
-        await seamless.debit(username, req.player.sessionId, config.cost, 'Slots', state.getRandomInt(10000000) + 1)
+        const debitResult = await seamless.debit(username, req.player.sessionId, config.cost, 'Slots', state.getRandomInt(10000000) + 1);
+        if(debitResult.error) {
+            return res.status(400).json(debitResult);
+        }
     }
 
     // Списываем ставку сразу

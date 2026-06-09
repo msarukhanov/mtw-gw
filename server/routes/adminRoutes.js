@@ -24,6 +24,9 @@ router.get('/admin/finance/report', adminController.getFinanceReport);
 router.get('/admin/finance/chart', adminController.getAdminChart);
 router.get('/admin/bets/report', adminController.getBetReport);
 
+router.get('/admin/players', adminController.getPlayers)
+;router.post('/admin/players/update', adminController.updatePlayer);
+
 
 router.post('/admin/catalog/collection', gameController.adminAddCollection);
 router.put('/admin/catalog/collection/:slug', gameController.adminEditCollection);

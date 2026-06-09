@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const state = require('../state');
-const seamlessService = require('../services/seamlessService'); // Подключите ваш сервис
+const seamless = require('../services/seamlessService'); // Подключите ваш сервис
 
 exports.turn = async (req, res) => {
     const { choice, bet } = req.body;
@@ -38,7 +38,10 @@ exports.turn = async (req, res) => {
     let debitResult;
     try {
         // Списываем баланс через HTTP-запрос дебита к платформе вместо RAM
-        debitResult = await seamlessService.debit(username, partnerId, sessionId, bet, gameName, roundId);
+        debitResult = await seamless.debit(username, partnerId, sessionId, bet, gameName, roundId);
+        if(debitResult.error) {
+            return res.status(400).json(debitResult);
+        }
     } catch (err) {
         return res.status(400).json({ error: err.message || "Insufficient funds or platform error" });
     }
@@ -86,7 +89,7 @@ exports.turn = async (req, res) => {
         state.reduceHiloBank(partnerId, prize);
 
         // Начисляем выигрыш через HTTP-запрос кредита к платформе
-        const creditResult = await seamlessService.credit(username, partnerId, sessionId, prize, gameName, roundId);
+        const creditResult = await seamless.credit(username, partnerId, sessionId, prize, gameName, roundId);
         currentBalance = creditResult.balance;
     }
 

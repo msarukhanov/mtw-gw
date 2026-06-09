@@ -401,25 +401,52 @@
         </div>
 
         <!-- TAB 2: PLAYER MANAGEMENT -->
+        <!-- TAB: PLAYERS REGISTRY & MANAGEMENT -->
         <div id="tab-players" class="tab-content">
+            <!-- Панель управления над таблицей -->
+            <!-- Сама таблица -->
             <div class="card">
                 <h2>👥 Player Registry & Management</h2>
+                <div class="card" style="margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; padding: 15px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <input type="text" id="player_search_input" placeholder="Search player..." oninput="currentPlayersPage = 1; loadPlayers()" style="background: var(--bg-main); border: 1px solid var(--border-color); color: #fff; padding: 6px; border-radius: 4px; width: 220px;">
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 5px; margin-left: auto;">
+                        <span style="font-size: 13px; color: var(--text-muted);">Limit:</span>
+                        <select id="player_filter_limit" onchange="currentPlayersPage = 1; loadPlayers()" style="background: var(--bg-main); border: 1px solid var(--border-color); color: #fff; padding: 6px; border-radius: 4px;">
+                            <option value="10">10</option>
+                            <option value="20" selected>20</option>
+                            <option value="50">50</option>
+                        </select>
+                    </div>
+                </div>
                 <div style="overflow-x: auto;">
-                    <table>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
                         <thead>
                         <tr>
                             <th>Username & Tier</th>
                             <th>Current Balance & Stats</th>
-                            <th>Action (Change balance)</th>
+                            <th>🎰 Casino Limits (Min / Max)</th>
+                            <th>⚽ Sport Limits (Min / Max)</th>
+                            <th style="text-align: center;">Status / Block</th>
+                            <th style="text-align: right;">Balance / Action</th>
                         </tr>
                         </thead>
-                        <tbody id="playersTableBody">
-                        <!-- Loaded dynamically via JS -->
-                        </tbody>
+                        </thead>
+                        <tbody id="playersTableBody"></tbody>
                     </table>
+                </div>
+
+                <!-- Пагинация игроков -->
+                <div style="margin-top: 15px; display: flex; justify-content: center; gap: 10px; align-items: center;">
+                    <button id="btn_players_prev" onclick="changePlayersPage(-1)" class="btn-bets-period" style="padding: 5px 12px;">◀</button>
+                    <span id="lbl_players_page" style="font-size: 13px; color: #fff; font-weight: 600;">Page 1</span>
+                    <button id="btn_players_next" onclick="changePlayersPage(1)" class="btn-bets-period" style="padding: 5px 12px;">▶</button>
                 </div>
             </div>
         </div>
+
         <!-- TAB 3: GLOBAL JACKPOT Pool -->
         <div id="tab-jackpot" class="tab-content">
             <div class="card" style="max-width: 450px;">

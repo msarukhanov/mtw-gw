@@ -9,7 +9,6 @@ const showcase = require('../controllers/showcaseController');
 // ПОСРЕДНИК АВТОРИЗАЦИИ (Изолирует игрока на основе пары username + partnerId)
 router.checkPlayer = async (req, res, next) => {
     const { username, sessionId } = req.body;
-    // Поддерживаем извлечение токена/партнера из любых типов входящих запросов
     const partnerId = req.body.partnerId || req.headers['x-partner-id'] || req.query.partnerId;
 
     if (!partnerId) {
@@ -20,20 +19,16 @@ router.checkPlayer = async (req, res, next) => {
         return res.status(401).json({ error: "Unauthorized seamless session" });
     }
 
-    // ВАЛИДАЦИЯ: Проверяем длину имени
     if (!username || typeof username !== 'string' || username.trim().length < 2 || username.length > 20) {
         return res.status(400).json({ error: "Invalid username. Must be 2-20 characters." });
     }
 
-    // Защита от запрещенных символов
     const validUsernameRegex = /^[a-zA-Z0-9_]+$/;
     if (!validUsernameRegex.test(username)) {
         return res.status(400).json({ error: "Username can only contain letters, numbers and underscores." });
     }
 
     try {
-        // ИСПРАВЛЕНО: Передаем функцию валидации сессии шлюза третьим аргументом.
-        // Теперь стейт при авторизации сам заберет баланс с Render платформы!
         const player = await state.getOrCreatePlayer(username.trim(), partnerId, async () => {
             if (sessionId) {
                 return await seamless.validateSession(sessionId, partnerId);
@@ -41,10 +36,24 @@ router.checkPlayer = async (req, res, next) => {
             return null;
         });
 
+        if (player.is_banned) {
+            return res.status(403).json({
+                error: "ACCESS_DENIED",
+                message: "Your account has been suspended by administration."
+            });
+        }
+
+        // Пробрасываем данные в объект запроса для использования в контроллерах игр
         req.player = player;
         req.username = player.username;
         req.partnerId = partnerId;
-        req.sessionId = sessionId || (req.headers['x-session-id'] || null); // Пробрасываем сессию в req для игр
+        req.sessionId = sessionId || (req.headers['x-session-id'] || null);
+
+        // Индивидуальные лимиты игрока (теперь доступны в req.player.limits)
+        req.player.limits = {
+            casino: { min: player.casino_min_limit, max: player.casino_max_limit },
+            sport: { min: player.sport_min_limit, max: player.sport_max_limit }
+        };
 
         if (sessionId) {
             player.sessionId = sessionId;

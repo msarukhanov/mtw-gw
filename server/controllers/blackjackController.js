@@ -67,6 +67,9 @@ exports.deal = async (req, res) => {
     try {
         // Списываем ставку через HTTP-запрос к платформе
         debitResult = await seamless.debit(username, partnerId, sessionId, config.cost, gameName, roundId);
+        if(debitResult.error) {
+            return res.status(400).json(debitResult);
+        }
     } catch (err) {
         // Если на платформе не хватило денег или упала сеть, сервис выбросит ошибку
         return res.status(400).json({ error: err.message || "Insufficient funds or platform error" });

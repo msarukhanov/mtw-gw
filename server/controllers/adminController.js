@@ -245,5 +245,30 @@ exports.getAdminChart = async (req, res) => {
     }
 };
 
+exports.getPlayers = async (req, res) => {
+    try {
+        const partnerId = req.query.partnerId || "demo_mtwtech";
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 15;
+        const search = req.query.search || '';
+
+        const data = await state.getAdminPlayersList(partnerId, { search, page, limit });
+        res.json({ success: true, players: data.items, pagination: data.pagination });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to fetch players" });
+    }
+};
+
+exports.updatePlayer = async (req, res) => {
+    try {
+        const partnerId = req.body.partnerId || "demo_mtwtech";
+        const { username, isBanned, casinoMin, casinoMax, sportMin, sportMax, balance } = req.body;
+
+        await state.updatePlayerStatus(partnerId, username, { isBanned, casinoMin, casinoMax, sportMin, sportMax, balance });
+        res.json({ success: true, message: "Player settings updated successfully" });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to update player settings" });
+    }
+};
 
 

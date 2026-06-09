@@ -28,6 +28,7 @@ const playerMethods = {
     // Проверьте, чтобы в вашем файле этот метод выглядел так:
     getOrCreatePlayer: async (username, partnerId, fetchPlatformBalance = null) => {
         let res = await global.pool.query('SELECT * FROM players WHERE username = $1 AND partner_id = $2 LIMIT 1', [username, partnerId]);
+
         let player = res.rowCount > 0 ? res.rows[0] : null;
 
         if (!player) {
@@ -1090,7 +1091,56 @@ const backOfficeMethods = {
                 betsCount: row.bets_count
             };
         });
+    },
+
+    getAdminPlayersList: async (partnerId, filters = {}) => {
+        const { search = '', limit = 15, page = 1 } = filters;
+        const offset = (page - 1) * limit;
+
+        let queryText = `SELECT id, username, balance, xp, level, tournament_points, is_banned, 
+                            casino_min_limit, casino_max_limit, sport_min_limit, sport_max_limit 
+                     FROM players WHERE partner_id = $1`;
+        let countQuery = `SELECT COUNT(*)::int as count FROM players WHERE partner_id = $1`;
+        let queryParams = [partnerId];
+
+        if (search) {
+            queryText += ` AND username ILIKE $2`;
+            countQuery += ` AND username ILIKE $2`;
+            queryParams.push(`%${search}%`);
+        }
+
+        const countRes = await global.pool.query(countQuery, queryParams);
+        const totalItems = countRes.rows[0]?.count || 0;
+
+        queryText += ` ORDER BY id DESC LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}`;
+        queryParams.push(limit, offset);
+
+        const res = await global.pool.query(queryText, queryParams);
+
+        return {
+            items: res.rows,
+            pagination: { page, limit, totalItems, totalPages: Math.ceil(totalItems / limit) }
+        };
+    },
+
+
+    // Метод переключения бана и обновления лимитов
+    updatePlayerStatus: async (partnerId, username, data = {}) => {
+        const { isBanned, casinoMin, casinoMax, sportMin, sportMax, balance } = data;
+
+        await global.pool.query(
+            `UPDATE players 
+         SET is_banned = COALESCE($1, is_banned),
+             casino_min_limit = CASE WHEN $2 = -1 THEN NULL ELSE COALESCE($2, casino_min_limit) END,
+             casino_max_limit = CASE WHEN $3 = -1 THEN NULL ELSE COALESCE($3, casino_max_limit) END,
+             sport_min_limit = CASE WHEN $4 = -1 THEN NULL ELSE COALESCE($4, sport_min_limit) END,
+             sport_max_limit = CASE WHEN $5 = -1 THEN NULL ELSE COALESCE($5, sport_max_limit) END,
+             balance = COALESCE($6, balance)
+         WHERE partner_id = $7 AND username = $8`,
+            [isBanned, casinoMin, casinoMax, sportMin, sportMax, balance, partnerId, username]
+        );
     }
+
 
 
 };

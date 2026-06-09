@@ -11,8 +11,15 @@ CREATE TABLE IF NOT EXISTS players (
     used_promos JSONB DEFAULT '{}'::jsonb,
     history JSONB DEFAULT '[]'::jsonb,
     tournament_points INT DEFAULT 0,
+    is_banned BOOLEAN DEFAULT false;
+    casino_min_limit NUMERIC(15, 2) DEFAULT NULL;
+    casino_max_limit NUMERIC(15, 2) DEFAULT NULL;
+    sport_min_limit NUMERIC(15, 2) DEFAULT NULL;
+    sport_max_limit NUMERIC(15, 2) DEFAULT NULL;
     UNIQUE(username, partner_id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_players_partner_search ON players (partner_id, username);
 
 -- 2. Логи транзакций
 CREATE TABLE IF NOT EXISTS accounting_logs (

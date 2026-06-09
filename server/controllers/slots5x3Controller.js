@@ -40,7 +40,10 @@ exports.buyBonus = async (req, res) => {
     try {
         // 1. Списываем повышенную ставку через Seamless с маршрутизацией по partnerId
         // Если на платформе нет денег или сеть упадет, выполнение сразу перейдет в блок catch
-        await seamless.debit(username, partnerId, sessionId, bonusCost, gameName, roundId);
+        const debitResult = await seamless.debit(username, partnerId, sessionId, bonusCost, gameName, roundId);
+        if(debitResult.error) {
+            return res.status(400).json(debitResult);
+        }
 
         // 2. 5% от покупки идет в изолированный джекпот конкретного партнера
         state.addJackpot(partnerId, Math.floor(bonusCost * 0.05));
@@ -102,7 +105,7 @@ exports.spin = async (req, res) => {
 
             // Если шлюз вернул ошибку в самом JSON-ответе (например { error: "..." })
             if (debitResult && debitResult.error) {
-                return res.status(400).json({ error: debitResult.error });
+                return res.status(400).json({ error: debitResult });
             }
 
             currentBalance = debitResult.balance;

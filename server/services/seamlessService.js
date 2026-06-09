@@ -109,7 +109,34 @@ module.exports = {
         }
     },
 
-    debit: async (username, partnerId, sessionId, amount, gameName, roundId) => {
+    debit: async (player, username, partnerId, sessionId, amount, gameName, roundId) => {
+
+        const betAmount = Number(amount);
+        const isSport = gameName === "Sportsbook";
+
+        // 1. 🛑 ВАЛИДАЦИЯ ПЕРСОНАЛЬНЫХ ЛИМИТОВ ИГРОКА
+        if (isSport) {
+            const sMin = player.sport_min_limit !== null ? Number(player.sport_min_limit) : null;
+            const sMax = player.sport_max_limit !== null ? Number(player.sport_max_limit) : null;
+
+            if (sMin !== null && betAmount < sMin) {
+                return { success: false, error: "LIMIT_MIN_BREACHED", message: `Bet is below the minimum sportsbook limit of ${sMin} 🪙` };
+            }
+            if (sMax !== null && betAmount > sMax) {
+                return { success: false, error: "LIMIT_MAX_BREACHED", message: `Bet exceeds the maximum sportsbook limit of ${sMax} 🪙` };
+            }
+        } else {
+            const cMin = player.casino_min_limit !== null ? Number(player.casino_min_limit) : null;
+            const cMax = player.casino_max_limit !== null ? Number(player.casino_max_limit) : null;
+
+            if (cMin !== null && betAmount < cMin) {
+                return { success: false, error: "LIMIT_MIN_BREACHED", message: `Bet is below the minimum casino limit of ${cMin} 🪙` };
+            }
+            if (cMax !== null && betAmount > cMax) {
+                return { success: false, error: "LIMIT_MAX_BREACHED", message: `Bet exceeds the maximum casino limit of ${cMax} 🪙` };
+            }
+        }
+
         try {
             const partnerConfig = global.CONFIG[partnerId];
             // const integration = partnerConfig.integration || {
