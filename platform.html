@@ -247,10 +247,12 @@
                             <!-- НОВЫЙ ВЫБОР ПЛАТЕЖКИ -->
                             <label style="margin-top:12px;">Select Payment Method</label>
                             <select id="depositGateway" style="background: var(--bg-main); border: 1px solid var(--border-color); color: #fff; padding: 12px; border-radius: 6px; width: 100%; font-size:14px; margin-top:6px;">
-                                <option value="cryptomus">🪙 Cryptomus (Global Crypto Gateway)</option>
-                                <option value="aaio">💳 Bank Cards / СБП (CIS Region Visa/Mir)</option>
-                                <option value="pix">🇧🇷 PIX Instant Payment (Latin America / Brazil)</option>
-                                <option value="payeer">🌍 Payeer Wallet (Global & Asia / LATAM)</option>
+                                <option value="cryptomus">🪙 Cryptomus (Crypto Payout)</option>
+                                <option value="aaio">💳 Bank Cards / СБП (CIS Region)</option>
+                                <option value="pix">🇧🇷 PIX Instant (Brazil / LATAM)</option>
+                                <option value="payeer">🌍 Payeer E-Wallet</option>
+                                <option value="flutterwave">🌍 Flutterwave Mobile Money (Africa)</option>
+                                <option value="vodafone">🕌 Vodafone Cash (Egypt / MENA Region)</option>
                             </select>
 
                             <button class="slide-content button" style="width:100%;margin-top:15px;padding:12px !important;font-size:14px !important;border: none;background: var(--neon-green); font-weight:bold; cursor:pointer;" onclick="apiDeposit()">Proceed to Payment</button>

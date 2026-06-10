@@ -17,6 +17,7 @@ const PIX_MERCHANT_ID = process.env.PIX_MERCHANT_ID || 'your_pix_merchant_id';
 const PIX_SECRET_KEY = process.env.PIX_SECRET_KEY || 'your_pix_secret_key';
 
 const FLUTTERWAVE_SECRET_KEY = process.env.FLUTTERWAVE_SECRET_KEY || 'FLWSECK_your_test_key';
+
 const VODAFONE_MERCHANT_ID = process.env.VODAFONE_MERCHANT_ID || 'your_vodafone_id';
 const VODAFONE_SECRET_KEY = process.env.VODAFONE_SECRET_KEY || 'your_vodafone_secret';
 
