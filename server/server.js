@@ -68,15 +68,16 @@ const authRoutes = require('./routes/authRoutes');
 const gameRoutes = require('./routes/gameRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const sportRoutes = require('./routes/sportRoutes');
+const playerRoutes = require('./routes/playerRoutes');
 const seamlessRoutes = require('./routes/seamlessRoutes');
 const websiteRoutes = require('./routes/websiteRoutes');
 // Подключаем разделенные роуты
 app.use('/api/seamless/', seamlessRoutes);
+app.use('/api/player/', playerRoutes);
 app.use('/api', authRoutes);
 app.use('/api', adminRoutes);
 app.use('/api', gameRoutes);
 app.use('/api', sportRoutes);
-
 app.use('/api', websiteRoutes);
 
 DEFAULT_CONFIG = {

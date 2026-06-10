@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS players (
     casino_max_limit NUMERIC(15, 2) DEFAULT NULL,
     sport_min_limit NUMERIC(15, 2) DEFAULT NULL,
     sport_max_limit NUMERIC(15, 2) DEFAULT NULL,
+    password_hash TEXT DEFAULT NULL,
     UNIQUE(username, partner_id)
 );
 
@@ -267,4 +268,97 @@ CREATE TABLE IF NOT EXISTS promo_activations (
 -- Индексы для мгновенной проверки кодов
 CREATE INDEX IF NOT EXISTS idx_promo_search ON promo_codes(partner_id, code);
 
+-- 1. Таблица шаблонов квестов (создает админ)
+CREATE TABLE IF NOT EXISTS b2b_quests (
+    id SERIAL PRIMARY KEY,
+    partner_id VARCHAR(50) NOT NULL,
+    quest_type VARCHAR(30) NOT NULL,    -- 'GAMES_COUNT', 'TURNOVER_BET', 'WIN_COUNT'
+    target_value NUMERIC(15, 2) NOT NULL, -- Цель (например: 30 игр или 500 коинов оборота)
+    reward_amount NUMERIC(15, 2) NOT NULL, -- Награда за выполнение
+    description TEXT NOT NULL,
+    is_active INT DEFAULT 1,
+    UNIQUE(partner_id, quest_type) -- Один активный тип квеста на партнера в день
+);
+
+-- 2. Таблица прогресса игроков (чтобы очистить players от поля daily_quests)
+CREATE TABLE IF NOT EXISTS player_quest_progress (
+    partner_id VARCHAR(50) NOT NULL,
+    username VARCHAR(50) NOT NULL,
+    quest_id INT NOT NULL REFERENCES b2b_quests(id) ON DELETE CASCADE,
+    current_value NUMERIC(15, 2) DEFAULT 0.00, -- Текущий прогресс игрока
+    is_claimed BOOLEAN DEFAULT false,          -- Забрал ли награду
+    updated_at TIMESTAMP DEFAULT NOW(),
+    PRIMARY KEY (partner_id, username, quest_id)
+);
+
+-- 1. Шаблоны и параметры текущих/будущих турниров
+CREATE TABLE IF NOT EXISTS b2b_tournaments (
+    id SERIAL PRIMARY KEY,
+    partner_id VARCHAR(50) NOT NULL,
+    title VARCHAR(100) NOT NULL,
+    prize_pool NUMERIC(15, 2) NOT NULL,
+    min_bet_to_earn NUMERIC(15, 2) DEFAULT 0.00, -- Минимальная ставка для начисления очков
+    start_at TIMESTAMP NOT NULL,
+    end_at TIMESTAMP NOT NULL,
+    is_active INT DEFAULT 1,
+    UNIQUE(partner_id, is_active) -- Только 1 активный турнир у партнера одновременно
+);
+
+-- 2. Изолированная таблица очков участников (Лидерборд)
+CREATE TABLE IF NOT EXISTS tournament_leaderboard (
+    tournament_id INT REFERENCES b2b_tournaments(id) ON DELETE CASCADE,
+    partner_id VARCHAR(50) NOT NULL,
+    username VARCHAR(50) NOT NULL,
+    points INT DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT NOW(),
+    PRIMARY KEY (tournament_id, username)
+);
+
+-- 3. История завершенных чемпионатов и их победителей
+CREATE TABLE IF NOT EXISTS tournament_history (
+    id SERIAL PRIMARY KEY,
+    tournament_id INT NOT NULL,
+    partner_id VARCHAR(50) NOT NULL,
+    title VARCHAR(100) NOT NULL,
+    winner_username VARCHAR(50) NOT NULL,
+    place INT NOT NULL, -- 1, 2, 3 место
+    points_earned INT NOT NULL,
+    prize_paid NUMERIC(15, 2) NOT NULL,
+    ended_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Индекс для мгновенной сборки лидерборда ТОП-10
+CREATE INDEX IF NOT EXISTS idx_tournament_leaderboard_score
+ON tournament_leaderboard (tournament_id, points DESC);
+
+
+-- 1. Таблица сайтов (Брендов/Доменов)
+CREATE TABLE IF NOT EXISTS b2b_websites (
+    id SERIAL PRIMARY KEY,
+    partner_id VARCHAR(50) NOT NULL,
+    domain_name VARCHAR(100) NOT NULL, -- например, 'mtwcasino.com'
+    title VARCHAR(100) NOT NULL,       -- Понятное название для админки
+    is_active INT DEFAULT 1,
+    timestamp TIMESTAMP DEFAULT NOW(),
+    UNIQUE(partner_id, domain_name)    -- Защита от дублей доменов у одного партнера
+);
+
+-- 2. Таблица баннеров
+CREATE TABLE IF NOT EXISTS b2b_banners (
+    id SERIAL PRIMARY KEY,
+    partner_id VARCHAR(50) NOT NULL,
+    website_id INT NOT NULL REFERENCES b2b_websites(id) ON DELETE CASCADE,
+    banner_type VARCHAR(20) NOT NULL,  -- 'home', 'casino', 'sport'
+    image_url TEXT NOT NULL,           -- Ссылка на картинку
+    click_url TEXT DEFAULT '',         -- Куда ведет баннер при клике (кнопка)
+    sort_order INT DEFAULT 0,          -- Очередность вывода (сортировка)
+    is_active INT DEFAULT 1,
+    settings JSONB DEFAULT '{}'::jsonb,
+    meta     JSONB DEFAULT '{}'::jsonb,
+    styles   JSONB DEFAULT '{}'::jsonb,
+    timestamp TIMESTAMP DEFAULT NOW()
+);
+
+-- Индексы для мгновенной сборки слайдеров на фронтенде игроков
+CREATE INDEX IF NOT EXISTS idx_banners_render ON b2b_banners (website_id, banner_type, is_active, sort_order ASC);
 

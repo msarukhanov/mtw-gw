@@ -195,13 +195,13 @@ async function loadData() {
 
 
         // Retention Modules Parameters Sync
-        document.getElementById('g_xpPerGame').value = data.config.gamification.xpPerGame;
-        document.getElementById('g_xpMultiplier').value = data.config.gamification.xpMultiplier;
-        document.getElementById('g_levelUpBonus').value = data.config.gamification.levelUpBonus;
-        document.getElementById('g_questTargetGames').value = data.config.gamification.questTargetGames;
-        document.getElementById('g_questReward').value = data.config.gamification.questReward;
-        document.getElementById('g_tournamentActive').value = data.config.gamification.tournamentActive;
-        document.getElementById('g_tournamentPrize').value = data.config.gamification.tournamentPrize;
+        // document.getElementById('g_xpPerGame').value = data.config.gamification.xpPerGame;
+        // document.getElementById('g_xpMultiplier').value = data.config.gamification.xpMultiplier;
+        // document.getElementById('g_levelUpBonus').value = data.config.gamification.levelUpBonus;
+        // document.getElementById('g_questTargetGames').value = data.config.gamification.questTargetGames;
+        // document.getElementById('g_questReward').value = data.config.gamification.questReward;
+        // document.getElementById('g_tournamentActive').value = data.config.gamification.tournamentActive;
+        // document.getElementById('g_tournamentPrize').value = data.config.gamification.tournamentPrize;
 
         document.getElementById('g_affiliatePercent').value = data.config.gamification.affiliatePercent || 10;
 
@@ -225,6 +225,13 @@ async function loadData() {
 
         loadAdminPromos();
         loadAdminCashbackConfig();
+
+
+        loadAdminGamificationConfig();
+        loadAdminQuestsMatrix();
+        loadAdminTournamentsMatrix();
+
+        loadAdminWebsites();
     }
     catch (err) {
         console.error(err);
@@ -278,52 +285,6 @@ document.getElementById('jackpotForm').addEventListener('submit', async (e) => {
 });
 
 
-
-document.getElementById('gamificationForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const gData = {
-        gamification_xpPerGame: document.getElementById('g_xpPerGame').value,
-        gamification_xpMultiplier: document.getElementById('g_xpMultiplier').value,
-        gamification_levelUpBonus: document.getElementById('g_levelUpBonus').value,
-        gamification_questTargetGames: document.getElementById('g_questTargetGames').value,
-        gamification_questReward: document.getElementById('g_questReward').value,
-        gamification_tournamentActive: document.getElementById('g_tournamentActive').value,
-        gamification_tournamentPrize: document.getElementById('g_tournamentPrize').value,
-        gamification_affiliatePercent: document.getElementById('g_affiliatePercent').value
-    };
-
-    const res = await fetch(`${SERVER_URL}/api/admin/update-config`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(gData)
-    });
-    if (res.ok) { alert('Gamification params updated!'); loadData(); }
-});
-
-document.getElementById('endTournamentBtn').addEventListener('click', async () => {
-    if (!confirm('Are you sure you want to end the current tournament?')) return;
-
-    try {
-        const res = await fetch(`${SERVER_URL}/api/admin/end-tournament`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-        });
-        const data = await res.json();
-
-        if (data.success) {
-            if (data.winners.length === 0) {
-                alert('Tournament is over! No active players.');
-            } else {
-                let report = '🏆 Tournament is over! Winners:\n\n';
-                data.winners.forEach(w => {
-                    report += `${w.place} place: ${w.username} (${w.points} points) — Winning: +${w.prize} 🪙\n`;
-                });
-                alert(report);
-            }
-            loadData();
-        } else { alert('Tournament end error.'); }
-    } catch (err) { alert('Server communication error.'); }
-});
 
 
 
@@ -1432,6 +1393,627 @@ document.getElementById('runCashbackBtn').addEventListener('click', async () => 
         alert('Cashback payout batch failure');
     } finally {
         hideLoader();
+    }
+});
+
+
+// 1. Загрузка параметров геймификации из PostgreSQL при открытии вкладки
+async function loadAdminGamificationConfig() {
+    try {
+        const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+        const res = await fetch(`${SERVER_URL}/api/admin/gamification/config?partnerId=${currentPartnerId}`);
+        const data = await res.json();
+
+        if (data.success && data.config) {
+            const cfg = data.config;
+            document.getElementById('g_xpPerGame').value = cfg.xpPerGame;
+            document.getElementById('g_xpMultiplier').value = cfg.xpMultiplier;
+            document.getElementById('g_levelUpBonus').value = cfg.levelUpBonus;
+            document.getElementById('g_questTargetGames').value = cfg.questTargetGames;
+            document.getElementById('g_questReward').value = cfg.questReward;
+            document.getElementById('g_tournamentActive').value = cfg.tournamentActive;
+            document.getElementById('g_tournamentPrize').value = cfg.tournamentPrize;
+            // Выводим процент партнерской комиссии (RevShare)
+            document.getElementById('g_affiliatePercent').value = cfg.affiliatePercent || 0;
+        }
+    } catch (err) {
+        console.error('Failed to load gamification config:', err);
+    }
+}
+
+// 2. Обработчик отправки формы (Сохранение в базу данных)
+document.getElementById('gamificationForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    showLoader();
+
+    const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+    const payload = {
+        partnerId: currentPartnerId,
+        xpPerGame: document.getElementById('g_xpPerGame').value,
+        xpMultiplier: document.getElementById('g_xpMultiplier').value,
+        levelUpBonus: document.getElementById('g_levelUpBonus').value,
+        tournamentActive: document.getElementById('g_tournamentActive').value,
+        tournamentPrize: document.getElementById('g_tournamentPrize').value,
+        affiliatePercent: document.getElementById('g_affiliatePercent').value
+    };
+
+    try {
+        const res = await fetch(`${SERVER_URL}/api/admin/gamification/config/save`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            alert('Gamification and retention parameters successfully saved to PostgreSQL!');
+            loadAdminGamificationConfig();
+        }
+    } catch (err) {
+        console.error(err);
+    } finally {
+        hideLoader();
+    }
+});
+
+// 3. Обработчик завершения турнира и выплаты призов игрокам в Postgres
+document.getElementById('endTournamentBtn').addEventListener('click', async () => {
+    if (!confirm('Are you sure you want to end the current network tournament? This will calculate top-3 leaders, execute balance payouts via seamless gateway and reset leaderboard points to 0.')) return;
+
+    showLoader();
+    const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+
+    try {
+        const res = await fetch(`${SERVER_URL}/api/admin/tournament/end`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ partnerId: currentPartnerId })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            if (data.winners && data.winners.length > 0) {
+                const winnersList = data.winners.map(w => `Place ${w.place}: ${w.username} (${w.points} pts) -> +${w.prize} 🪙`).join('\n');
+                alert(`🏆 Tournament finalized successfully!\n\nWinners Payout Log:\n${winnersList}`);
+            } else {
+                alert('Tournament finished. No active participants with points > 0 found.');
+            }
+            loadAdminGamificationConfig();
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Failed to finalize current tournament sequence');
+    } finally {
+        hideLoader();
+    }
+});
+
+// 1. Загрузка списка квестов партнера в таблицу
+async function loadAdminQuestsMatrix() {
+    try {
+        const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+        const res = await fetch(`${SERVER_URL}/api/admin/quests?partnerId=${currentPartnerId}`);
+        const data = await res.json();
+
+        const tbody = document.getElementById('adminQuestsTableBody');
+        if (tbody && data.success && data.quests) {
+            if (data.quests.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:15px; color:var(--text-muted);">No active quest types configured</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = data.quests.map(q => `
+                <tr style="border-bottom: 1px solid #141822;">
+                    <td style="padding: 8px 0;"><b style="color: var(--neon-green);">${q.quest_type}</b></td>
+                    <td><b>${Number(q.target_value)}</b></td>
+                    <td><b style="color: #fff;">${Number(q.reward_amount)} 🪙</b></td>
+                    <td><span style="color: var(--text-muted); font-size:11px;">${q.description}</span></td>
+                    <td style="text-align: right;">
+                        <button type="button" onclick="deleteAdminQuestNode(${q.id})" style="background: transparent; border: 1px solid #ff4d4d; color: #ff4d4d; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    } catch (err) {
+        console.error('Failed to load quest matrix:', err);
+    }
+}
+
+// 2. Добавление или обновление типа квеста
+async function createAdminQuestNode() {
+    const target = document.getElementById('q_target').value;
+    const reward = document.getElementById('q_reward').value;
+    const desc = document.getElementById('q_desc').value;
+
+    if (!target || !reward || !desc) return alert('Please fill all quest configuration fields');
+
+    showLoader();
+    const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+    const payload = {
+        partnerId: currentPartnerId,
+        questType: document.getElementById('q_type').value,
+        targetValue: target,
+        rewardAmount: reward,
+        description: desc
+    };
+
+    try {
+        const res = await fetch(`${SERVER_URL}/api/admin/quests/create`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+            document.getElementById('q_target').value = '';
+            document.getElementById('q_reward').value = '';
+            document.getElementById('q_desc').value = '';
+            loadAdminQuestsMatrix(); // Перерисовываем таблицу матриц квестов
+        }
+    } catch (err) {
+        console.error(err);
+    } finally {
+        hideLoader();
+    }
+}
+
+// 3. Удаление типа квеста
+async function deleteAdminQuestNode(questId) {
+    if (!confirm('Delete this quest type? Progress for all players on this quest will be lost.')) return;
+
+    showLoader();
+    const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+
+    try {
+        const res = await fetch(`${SERVER_URL}/api/admin/quests/delete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ partnerId: currentPartnerId, questId })
+        });
+        if (res.ok) loadAdminQuestsMatrix();
+    } catch (err) {
+        console.error(err);
+    } finally {
+        hideLoader();
+    }
+}
+
+
+// 1. Загрузка параметров активного турнира и архива из СУБД
+async function loadAdminTournamentsMatrix() {
+    try {
+        const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+        const res = await fetch(`${SERVER_URL}/api/admin/tournaments?partnerId=${currentPartnerId}`);
+        const data = await res.json();
+
+        // Рендерим плашку текущего статуса
+        const statusBlock = document.getElementById('active_tournament_card_details');
+        const endBtn = document.getElementById('endTournamentBtn');
+
+        if (data.success && data.activeTournament) {
+            const t = data.activeTournament;
+            statusBlock.innerHTML = `
+                📌 <b>Title:</b> <span style="color:var(--accent-pink); font-weight:700;">${t.title}</span><br>
+                💰 <b>Prize Pool:</b> ${Number(t.prize_pool).toFixed(2)} 🪙<br>
+                ⚡ <b>Min Bet Qualification:</b> ${Number(t.min_bet_to_earn)} 🪙<br>
+                📅 <b>Timeline:</b> <span style="font-family:monospace; font-size:11px;">${new Date(t.start_at).toLocaleDateString()} - ${new Date(t.end_at).toLocaleDateString()}</span>
+            `;
+            endBtn.disabled = false;
+            endBtn.style.opacity = '1';
+        } else {
+            statusBlock.innerHTML = `<span style="color:var(--text-muted);">No active championships deployed at the moment. Use creation wizard to deploy nodes.</span>`;
+            endBtn.disabled = true;
+            endBtn.style.opacity = '0.3';
+        }
+
+        // Рендерим таблицу архива
+        const tbody = document.getElementById('adminTournamentHistoryTbody');
+        if (tbody && data.success && data.archive) {
+            if (data.archive.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:15px; color:var(--text-muted);">History logs archive is completely clean</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = data.archive.map(h => `
+                <tr style="border-bottom: 1px solid #141822;">
+                    <td style="padding: 8px 0; color:#fff;">${h.title}</td>
+                    <td><b>${h.winner_username}</b></td>
+                    <td><span class="badge" style="padding:2px 6px; font-size:11px; background:${h.place === 1 ? '#e1b12c' : h.place === 2 ? '#95a5a6' : '#d35400'}; color:#000; font-weight:bold;">Top ${h.place}</span></td>
+                    <td><small style="font-family:monospace;">${h.points_earned} pts</small></td>
+                    <td style="text-align: right; color:var(--neon-green); font-weight:bold;">+${Number(h.prize_paid).toFixed(2)} 🪙</td>
+                </tr>
+            `).join('');
+        }
+    } catch (err) {
+        console.error('Failed to load tournament grid:', err);
+    }
+}
+
+// 2. Деплой (создание) нового турнирного ивента
+async function createAdminTournamentNode() {
+    const title = document.getElementById('t_title').value;
+    const prize = document.getElementById('t_prize').value;
+    const minbet = document.getElementById('t_minbet').value;
+    const start = document.getElementById('t_start').value;
+    const end = document.getElementById('t_end').value;
+
+    if (!title || !prize || !start || !end) return alert('Please input title, prize pool and calendar matrix timeline data');
+
+    showLoader();
+    const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+
+    try {
+        const res = await fetch(`${SERVER_URL}/api/admin/tournaments/create`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ partnerId: currentPartnerId, title, prizePool: prize, minBet: minbet, startAt: start, endAt: end })
+        });
+
+        if (res.ok) {
+            alert('Championship node deployed successfully!');
+            document.getElementById('t_title').value = '';
+            document.getElementById('t_prize').value = '';
+            document.getElementById('t_minbet').value = '';
+            document.getElementById('t_start').value = '';
+            document.getElementById('t_end').value = '';
+            loadAdminTournamentsMatrix();
+        }
+    } catch (err) {
+        console.error(err);
+    } finally {
+        hideLoader();
+    }
+}
+
+
+
+// 1. Загрузка списка сайтов
+let editingWebsiteId = null; // Хранит ID редактируемого сайта (null = создание)
+let cachedWebsites = [];     // Локальный кэш сайтов для быстрой подстановки при клике
+
+// 1. Загрузка сайтов с поддержкой клика на строку и кнопки удаления
+async function loadAdminWebsites() {
+    try {
+        const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+        const res = await fetch(`${SERVER_URL}/api/admin/websites?partnerId=${currentPartnerId}`);
+        const data = await res.json();
+
+        const tbody = document.getElementById('adminWebsitesTableBody');
+        const bTargetSelect = document.getElementById('b_target_site');
+        const bFilterSelect = document.getElementById('b_filter_site');
+
+        if (data.success && data.websites) {
+            cachedWebsites = data.websites; // Сохраняем в кэш
+
+            if (tbody) {
+                if (data.websites.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:15px; color:var(--text-muted);">No websites registered</td></tr>`;
+                } else {
+                    tbody.innerHTML = data.websites.map(w => {
+                        const set = typeof w.settings === 'string' ? JSON.parse(w.settings) : (w.settings || {});
+                        const stl = typeof w.styles === 'string' ? JSON.parse(w.styles) : (w.styles || {});
+                        const isMaint = set.maintenance ? '🛠️ ТЕХ' : '🟢 ON';
+                        const badgeColor = set.maintenance ? '#381b1b' : '#1b382c';
+                        const accentColor = stl.primaryColor || '#00a8ff';
+
+                        // Подсвечиваем строку, если она выбрана для редактирования
+                        const isSelectedRow = editingWebsiteId === w.id ? 'background: rgba(0, 168, 255, 0.08); border-left: 2px solid var(--accent-blue);' : '';
+
+                        return `
+                            <tr style="border-bottom: 1px solid #141822; cursor:pointer; ${isSelectedRow}" onclick="editWebsiteNode(${w.id})">
+                                <td style="padding:10px 0;">
+                                    <b>${w.title}</b><br>
+                                    <small style="color:var(--text-muted); font-size:11px;">${stl.bgTheme === 'dark' ? '🌌 Dark' : '☀️ Light'}</small>
+                                </td>
+                                <td style="font-family:monospace; vertical-align: middle;">
+                                    <span style="color:${accentColor};">●</span> ${w.domain_name}
+                                </td>
+                                <td style="text-align:right; vertical-align: middle; display:flex; gap:8px; justify-content:flex-end; padding-top:14px;" onclick="event.stopPropagation();">
+                                    <span class="badge" style="background:${badgeColor}; color: #fff; font-size:10px; padding:3px 6px; border-radius:4px; font-weight:600; height:fit-content;">
+                                        ${isMaint}
+                                    </span>
+                                    <button type="button" onclick="deleteWebsiteNode(${w.id})" style="background:transparent; border:none; color:#ff4d4d; cursor:pointer; font-size:14px; padding:0 5px;" title="Удалить сайт">×</button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            }
+
+            const optionsHtml = data.websites.map(w => `<option value="${w.id}">${w.title} (${w.domain_name})</option>`).join('');
+            if (bTargetSelect) bTargetSelect.innerHTML = optionsHtml;
+            if (bFilterSelect) bFilterSelect.innerHTML = `<option value="">🌍 Все подключенные сайты</option>` + optionsHtml;
+        }
+    } catch (err) { console.error(err); }
+}
+
+// 2. Клик по строке таблицы: перенос данных в форму
+function editWebsiteNode(websiteId) {
+    const site = cachedWebsites.find(w => w.id === websiteId);
+    if (!site) return;
+
+    editingWebsiteId = websiteId;
+
+    // Распаковываем JSONB параметры
+    const set = typeof site.settings === 'string' ? JSON.parse(site.settings) : (site.settings || {});
+    const meta = typeof site.meta === 'string' ? JSON.parse(site.meta) : (site.meta || {});
+    const stl = typeof site.styles === 'string' ? JSON.parse(site.styles) : (site.styles || {});
+
+    // Заполняем форму данными выбранного сайта
+    document.getElementById('w_domain').value = site.domain_name;
+    document.getElementById('w_title').value = site.title;
+    document.getElementById('w_reg_open').checked = set.registrationOpen !== false;
+    document.getElementById('w_maintenance').checked = !!set.maintenance;
+    document.getElementById('w_meta_title').value = meta.title || '';
+    document.getElementById('w_meta_desc').value = meta.description || '';
+    document.getElementById('w_theme_mode').value = stl.bgTheme || 'dark';
+    document.getElementById('w_color_hex').value = stl.primaryColor || '#e94560';
+    document.getElementById('w_color_picker').value = stl.primaryColor || '#e94560';
+
+    // Меняем внешний вид кнопок управления формы
+    document.getElementById('w_submit_btn').innerText = '🔄 Update Brand Configurations';
+    document.getElementById('w_submit_btn').style.background = 'var(--accent-pink)';
+    document.getElementById('w_cancel_btn').style.display = 'inline-block';
+
+    // Перерисовываем таблицу, чтобы подсветить активную строку
+    loadAdminWebsites();
+}
+
+// 3. Сброс формы в режим создания нового сайта
+function resetWebsiteForm() {
+    editingWebsiteId = null;
+    document.getElementById('websiteForm').reset();
+
+    // Возвращаем дефолты чекбоксов и пикеров
+    document.getElementById('w_reg_open').checked = true;
+    document.getElementById('w_maintenance').checked = false;
+    document.getElementById('w_color_picker').value = '#e94560';
+    document.getElementById('w_color_hex').value = '#e94560';
+
+    document.getElementById('w_submit_btn').innerText = '💾 Save Brand Domain & Layout';
+    document.getElementById('w_submit_btn').style.background = 'var(--accent-blue)';
+    document.getElementById('w_cancel_btn').style.display = 'none';
+
+    loadAdminWebsites();
+}
+
+// 4. Обработчик формы: создание или апдейт в зависимости от переменной editingWebsiteId
+document.getElementById('websiteForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    let domainInput = document.getElementById('w_domain').value.trim();
+    const domain = domainInput
+        .replace(/^(https?:\/\/)?(www\.)?/, '') // убирает протоколы и www
+        .split('/')[0]                          // отсекает пути (всё, что после /)
+        .split(':')[0];                         // отсекает порты (всё, что после :)
+
+    const title = document.getElementById('w_title').value.trim();
+    if (!domain || !title) return alert('Domain Name and Brand Title are required.');
+
+    const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+
+    // Собираем чистый объект конфигурации
+    const payload = {
+        partnerId: currentPartnerId,
+        domain: domain,
+        title: title,
+        settings: {
+            registrationOpen: document.getElementById('w_reg_open').checked,
+            maintenance: document.getElementById('w_maintenance').checked
+        },
+        meta: {
+            title: document.getElementById('w_meta_title').value.trim() || title,
+            description: document.getElementById('w_meta_desc').value.trim()
+        },
+        styles: {
+            bgTheme: document.getElementById('w_theme_mode').value,
+            primaryColor: document.getElementById('w_color_hex').value
+        }
+    };
+
+    // ОПРЕДЕЛЯЕМ ЭНДПОИНТ: Если редактируем — переключаем роут и добавляем id в payload
+    let targetUrl = `${SERVER_URL}/api/admin/websites/create`;
+
+    if (editingWebsiteId) {
+        targetUrl = `${SERVER_URL}/api/admin/websites/update`;
+        payload.id = editingWebsiteId; // Добавляем ID строки для WHERE запроса в SQL
+    }
+
+    showLoader();
+    try {
+        const res = await fetch(targetUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+            alert(editingWebsiteId ? 'Website configurations updated successfully!' : 'New website brand registered!');
+            resetWebsiteForm(); // Сбрасывает форму и очищает переменную editingWebsiteId
+            loadAdminBannersMatrix();
+        } else {
+            alert(`Error: ${data.error || 'Failed to execute database command'}`);
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Network connection error during layout deployment');
+    } finally {
+        hideLoader();
+    }
+});
+
+
+// 5. Функция удаления сайта
+async function deleteWebsiteNode(websiteId) {
+    if (!confirm('ВНИМАНИЕ! Удаление сайта полностью удалит его домен, настройки, метатеги и ВСЕ привязанные к нему баннеры слайдеров. Продолжить?')) return;
+
+    showLoader();
+    const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+    try {
+        const res = await fetch(`${SERVER_URL}/api/admin/websites/delete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ partnerId: currentPartnerId, websiteId })
+        });
+        if (res.ok) {
+            if (editingWebsiteId === websiteId) resetWebsiteForm();
+            await loadAdminWebsites();
+            loadAdminBannersMatrix();
+        }
+    } catch (err) { console.error(err); }
+    finally { hideLoader(); }
+}
+
+
+
+
+let editingBannerId = null; // null = создание, число = редактирование
+let cachedBanners = [];     // Кэш для подстановки данных в форму
+
+// 1. Загрузка баннеров с подсветкой активной строки при редактировании
+async function loadAdminBannersMatrix() {
+    try {
+        const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+        const filterSiteId = document.getElementById('b_filter_site').value;
+
+        let url = `${SERVER_URL}/api/admin/banners?partnerId=${currentPartnerId}`;
+        if (filterSiteId) url += `&websiteId=${filterSiteId}`;
+
+        const res = await fetch(url);
+        const data = await res.json();
+        const tbody = document.getElementById('adminBannersTableBody');
+
+        if (tbody && data.success && data.banners) {
+            cachedBanners = data.banners; // Сохраняем в кэш
+
+            if (data.banners.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:15px; color:var(--text-muted);">No active banners found</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = data.banners.map(b => {
+                const isSelectedRow = editingBannerId === b.id ? 'background: rgba(233, 69, 96, 0.08); border-left: 2px solid var(--accent-pink);' : '';
+
+                return `
+                    <tr style="border-bottom: 1px solid #141822; cursor:pointer; ${isSelectedRow}" onclick="editBannerNode(${b.id})">
+                        <td style="padding:8px 0;"><b>${b.website_title}</b></td>
+                        <td><span class="badge" style="background:#161920; border:1px solid var(--border-color); padding:2px 6px; border-radius:4px;">${b.banner_type.toUpperCase()}</span></td>
+                        <td onclick="event.stopPropagation();">
+                            <a href="${b.image_url}" target="_blank">
+                                <img src="${b.image_url}" style="width:80px; height:40px; object-fit:cover; border-radius:4px; border:1px solid #262c3a; background:#000;" onerror="this.src='https://placehold.co'">
+                            </a>
+                        </td>
+                        <td style="font-family:monospace; color:var(--text-muted);">${b.click_url || '—'}</td>
+                        <td style="text-align:right; vertical-align: middle;" onclick="event.stopPropagation();">
+                            <button type="button" onclick="deleteAdminBannerNode(${b.id})" style="background:transparent; border:none; color:#ff4d4d; cursor:pointer; font-size:16px; padding:0 10px;">×</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    } catch (err) { console.error(err); }
+}
+
+// 2. Клик на строку таблицы: перенос данных баннера в инпуты
+function editBannerNode(bannerId) {
+    const banner = cachedBanners.find(b => b.id === bannerId);
+    if (!banner) return;
+
+    editingBannerId = bannerId;
+
+    // Заполняем форму
+    document.getElementById('b_target_site').value = banner.website_id;
+    document.getElementById('b_type').value = banner.banner_type;
+    document.getElementById('b_img').value = banner.image_url;
+    document.getElementById('b_click').value = banner.click_url;
+    document.getElementById('b_order').value = banner.sort_order;
+
+    // Меняем кнопки
+    document.getElementById('b_submit_btn').innerText = '🔄 UPDATE SLIDER BANNER';
+    document.getElementById('b_cancel_btn').style.display = 'inline-block';
+
+    loadAdminBannersMatrix(); // Обновляем подсветку строк
+}
+
+// 3. Сброс формы баннеров
+function resetBannerForm() {
+    editingBannerId = null;
+    document.getElementById('b_img').value = '';
+    document.getElementById('b_click').value = '';
+    document.getElementById('b_order').value = '0';
+
+    document.getElementById('b_submit_btn').innerText = '🖼️ INJECT SLIDER BANNER';
+    document.getElementById('b_cancel_btn').style.display = 'none';
+
+    loadAdminBannersMatrix();
+}
+
+// 4. Объединенная функция Создания / Обновления баннера
+async function createAdminBannerNode() {
+    const websiteId = document.getElementById('b_target_site').value;
+    const bannerType = document.getElementById('b_type').value;
+    const imageUrl = document.getElementById('b_img').value.trim();
+    const clickUrl = document.getElementById('b_click').value.trim();
+    const sortOrder = document.getElementById('b_order').value;
+
+    if (!websiteId || !imageUrl) return alert('Target website and Image URL are required fields');
+
+    let targetUrl = `${SERVER_URL}/api/admin/banners/create`;
+    const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+
+    const payload = {
+        partnerId: currentPartnerId,
+        websiteId,
+        bannerType,
+        imageUrl,
+        clickUrl,
+        sortOrder
+    };
+
+    // Если редактируем — переключаем роут на update и добавляем id
+    if (editingBannerId) {
+        targetUrl = `${SERVER_URL}/api/admin/banners/update`;
+        payload.id = editingBannerId;
+    }
+
+    showLoader();
+    try {
+        const res = await fetch(targetUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            alert(editingBannerId ? 'Banner campaign updated!' : 'New banner campaign node injected!');
+            resetBannerForm(); // Очистит форму и сбросит ID
+        }
+    } catch (err) { console.error(err); }
+    finally { hideLoader(); }
+}
+
+// 5. Удаление баннера
+async function deleteAdminBannerNode(bannerId) {
+    if (!confirm('Are you sure you want to delete this banner campaign node?')) return;
+    showLoader();
+    const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+    try {
+        const res = await fetch(`${SERVER_URL}/api/admin/banners/delete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ partnerId: currentPartnerId, bannerId })
+        });
+        if (res.ok) loadAdminBannersMatrix();
+    } catch (err) { console.error(err); }
+    finally { hideLoader(); }
+}
+
+document.getElementById('w_color_picker').addEventListener('input', (e) => {
+    document.getElementById('w_color_hex').value = e.target.value;
+});
+document.getElementById('w_color_hex').addEventListener('input', (e) => {
+    if (e.target.value.startsWith('#') && e.target.value.length === 7) {
+        document.getElementById('w_color_picker').value = e.target.value;
     }
 });
 

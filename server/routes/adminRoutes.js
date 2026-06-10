@@ -35,6 +35,27 @@ router.get('/admin/cashback/config', adminController.getCashbackConfig);
 router.post('/admin/cashback/config/save', adminController.saveCashbackConfig);
 router.post('/admin/cashback/run', adminController.triggerCashback);
 
+router.get('/admin/gamification/config', adminController.getGamificationConfig);
+router.post('/admin/gamification/config/save', adminController.saveGamificationConfig);
+
+
+router.get('/admin/quests', adminController.getAdminQuests);
+router.post('/admin/quests/create', adminController.createAdminQuest);
+router.post('/admin/quests/delete', adminController.deleteAdminQuest);
+
+router.get('/admin/tournaments', adminController.getAdminTournamentsOverview);
+router.post('/admin/tournaments/create', adminController.createAdminTournament);
+router.post('/admin/tournament/end', adminController.triggerEndTournament);
+
+router.get('/admin/websites', adminController.getWebsites);
+router.post('/admin/websites/create', adminController.createWebsite);
+router.post('/admin/websites/update', adminController.updateWebsite);
+router.post('/admin/websites/delete', adminController.deleteWebsite);
+
+router.get('/admin/banners', adminController.getBanners);
+router.post('/admin/banners/create', adminController.createBanner);
+router.post('/admin/banners/update', adminController.updateBanner);
+router.post('/admin/banners/delete', adminController.deleteBanner);
 
 router.post('/admin/catalog/collection', gameController.adminAddCollection);
 router.put('/admin/catalog/collection/:slug', gameController.adminEditCollection);

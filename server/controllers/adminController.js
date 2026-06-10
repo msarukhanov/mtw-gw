@@ -348,4 +348,336 @@ exports.saveCashbackConfig = async (req, res) => {
 };
 
 
+exports.getGamificationConfig = async (req, res) => {
+    try {
+        const partnerId = req.query.partnerId || "demo_mtwtech";
+        const partnerConfig = global.CONFIG?.[partnerId] || {};
+
+        // Отдаем сохраненные настройки или дефолты, если в базе пусто
+        const config = partnerConfig.gamification || {
+            xpPerGame: 10,
+            xpMultiplier: 1000,
+            levelUpBonus: 100,
+            questTargetGames: 30,
+            questReward: 50,
+            tournamentActive: 0,
+            tournamentPrize: 5000,
+            affiliatePercent: 10
+        };
+
+        res.json({ success: true, config });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to load gamification config" });
+    }
+};
+
+exports.saveGamificationConfig = async (req, res) => {
+    try {
+        const {
+            partnerId, xpPerGame, xpMultiplier, levelUpBonus,
+            questTargetGames, questReward, tournamentActive, tournamentPrize, affiliatePercent
+        } = req.body;
+
+        if (!global.CONFIG) global.CONFIG = {};
+        if (!global.CONFIG[partnerId]) global.CONFIG[partnerId] = {};
+
+        // Сохраняем структуру, не затирая блок cashback, созданный ранее
+        const currentCashback = global.CONFIG[partnerId].gamification?.cashback || { mode: 'manual', percent: 10 };
+
+        global.CONFIG[partnerId].gamification = {
+            cashback: currentCashback,
+            xpPerGame: Number(xpPerGame),
+            xpMultiplier: Number(xpMultiplier),
+            levelUpBonus: Number(levelUpBonus),
+            questTargetGames: Number(questTargetGames),
+            questReward: Number(questReward),
+            tournamentActive: Number(tournamentActive),
+            tournamentPrize: Number(tournamentPrize),
+            affiliatePercent: Number(affiliatePercent || 0)
+        };
+
+        // Пишем атомарно в Postgres b2b_configs
+        await global.pool.query(
+            `INSERT INTO b2b_configs (id, config_data) VALUES ('global_config', $1::jsonb)
+             ON CONFLICT (id) DO UPDATE SET config_data = b2b_configs.config_data || EXCLUDED.config_data`,
+            [JSON.stringify({ [partnerId]: global.CONFIG[partnerId] })]
+        );
+
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to save gamification config" });
+    }
+};
+
+exports.triggerEndTournament = async (req, res) => {
+    try {
+        const partnerId = req.body.partnerId || "demo_mtwtech";
+        // Вызываем переписанный метод из самого первого шага (он начислит призы топ-3 и обнулит очки в Postgres)
+        const winners = await state.endCurrentTournament(partnerId);
+        res.json({ success: true, winners });
+    } catch (err) {
+        res.status(500).json({ error: "Tournament finalization failed" });
+    }
+};
+
+exports.getAdminQuests = async (req, res) => {
+    try {
+        const partnerId = req.query.partnerId || "demo_mtwtech";
+        const result = await global.pool.query(
+            `SELECT id, quest_type, target_value::numeric, reward_amount::numeric, description, is_active 
+             FROM b2b_quests WHERE partner_id = $1 ORDER BY id DESC`,
+            [partnerId]
+        );
+        res.json({ success: true, quests: result.rows });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to fetch quests list" });
+    }
+};
+
+exports.createAdminQuest = async (req, res) => {
+    try {
+        const { partnerId, questType, targetValue, rewardAmount, description } = req.body;
+
+        // Вставляем новый квест. Если такой тип у партнера уже есть — обновляем параметры
+        await global.pool.query(
+            `INSERT INTO b2b_quests (partner_id, quest_type, target_value, reward_amount, description, is_active)
+             VALUES ($1, $2, $3, $4, $5, 1)
+             ON CONFLICT (partner_id, quest_type) 
+             DO UPDATE SET target_value = EXCLUDED.target_value, reward_amount = EXCLUDED.reward_amount, description = EXCLUDED.description, is_active = 1`,
+            [partnerId, questType, Number(targetValue), Number(rewardAmount), description]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to save quest template" });
+    }
+};
+
+exports.deleteAdminQuest = async (req, res) => {
+    try {
+        const { partnerId, questId } = req.body;
+        await global.pool.query(
+            'DELETE FROM b2b_quests WHERE partner_id = $1 AND id = $2',
+            [partnerId, Number(questId)]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to delete quest" });
+    }
+};
+
+exports.getAdminTournamentsOverview = async (req, res) => {
+    try {
+        const partnerId = req.query.partnerId || "demo_mtwtech";
+
+        // Получаем текущий активный турнир
+        const activeRes = await global.pool.query(
+            "SELECT id, title, prize_pool::numeric, min_bet_to_earn::numeric, start_at, end_at FROM b2b_tournaments WHERE partner_id = $1 AND is_active = 1 LIMIT 1",
+            [partnerId]
+        );
+
+        // Получаем архив последних 10 завершенных турниров
+        const archiveRes = await global.pool.query(
+            `SELECT title, winner_username, place, points_earned, prize_paid::numeric, ended_at 
+             FROM tournament_history WHERE partner_id = $1 ORDER BY id DESC LIMIT 20`,
+            [partnerId]
+        );
+
+        res.json({
+            success: true,
+            activeTournament: activeRes.rows[0] || null,
+            archive: archiveRes.rows
+        });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to fetch tournament matrix" });
+    }
+};
+
+exports.createAdminTournament = async (req, res) => {
+    try {
+        const { partnerId, title, prizePool, minBet, startAt, endAt } = req.body;
+
+        // Принудительно гасим предыдущий активный турнир, если он был, перед созданием нового
+        await global.pool.query("UPDATE b2b_tournaments SET is_active = 0 WHERE partner_id = $1 AND is_active = 1", [partnerId]);
+
+        await global.pool.query(
+            `INSERT INTO b2b_tournaments (partner_id, title, prize_pool, min_bet_to_earn, start_at, end_at)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [partnerId, title, Number(prizePool), Number(minBet || 0), startAt, endAt]
+        );
+
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to deploy tournament template" });
+    }
+};
+
+
+// --- КОНТРОЛЛЕРЫ РАЗДЕЛА WEBSITES ---
+exports.getWebsites = async (req, res) => {
+    try {
+        const partnerId = req.query.partnerId || "demo_mtwtech";
+        const result = await global.pool.query(
+            'SELECT id, domain_name, title, is_active FROM b2b_websites WHERE partner_id = $1 ORDER BY id DESC',
+            [partnerId]
+        );
+        res.json({ success: true, websites: result.rows });
+    } catch (err) { res.status(500).json({ error: "Failed to load websites" }); }
+};
+
+// 1. ТОЛЬКО СОЗДАНИЕ (Принимает уникальный домен)
+exports.createWebsite = async (req, res) => {
+    try {
+        const { partnerId, domain, title, settings, meta, styles } = req.body;
+
+        await global.pool.query(
+            `INSERT INTO b2b_websites (partner_id, domain_name, title, settings, meta, styles) 
+             VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6::jsonb)`,
+            [
+                partnerId,
+                domain.trim().toLowerCase(),
+                title.trim(),
+                JSON.stringify(settings || {}),
+                JSON.stringify(meta || {}),
+                JSON.stringify(styles || {})
+            ]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        if (err.code === '23505') { // Код ошибки уникальности в PostgreSQL
+            return res.status(400).json({ error: "Domain already exists for this partner" });
+        }
+        console.error("❌ Website create error:", err.message);
+        res.status(500).json({ error: "Failed to create website" });
+    }
+};
+
+// 2. ТОЛЬКО ОБНОВЛЕНИЕ (Привязывается строго к id строки)
+exports.updateWebsite = async (req, res) => {
+    try {
+        const { id, partnerId, domain, title, settings, meta, styles } = req.body;
+
+        if (!id) return res.status(400).json({ error: "Missing website ID for update sequence" });
+
+        const result = await global.pool.query(
+            `UPDATE b2b_websites 
+             SET domain_name = $1, 
+                 title = $2, 
+                 settings = $3::jsonb, 
+                 meta = $4::jsonb, 
+                 styles = $5::jsonb
+             WHERE id = $6 AND partner_id = $7`,
+            [
+                domain.trim().toLowerCase(),
+                title.trim(),
+                JSON.stringify(settings || {}),
+                JSON.stringify(meta || {}),
+                JSON.stringify(styles || {}),
+                Number(id),
+                partnerId
+            ]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: "Website not found or partner access denied" });
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        if (err.code === '23505') {
+            return res.status(400).json({ error: "This domain name is already taken by another brand" });
+        }
+        console.error("❌ Website update error:", err.message);
+        res.status(500).json({ error: "Failed to update website configurations" });
+    }
+};
+
+
+exports.deleteWebsite = async (req, res) => {
+    try {
+        const { partnerId, websiteId } = req.body;
+        await global.pool.query(
+            'DELETE FROM b2b_websites WHERE partner_id = $1 AND id = $2',
+            [partnerId, Number(websiteId)]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to delete website" });
+    }
+};
+
+
+// --- КОНТРОЛЛЕРЫ РАЗДЕЛА BANNERS ---
+exports.getBanners = async (req, res) => {
+    try {
+        const partnerId = req.query.partnerId || "demo_mtwtech";
+        const websiteId = req.query.websiteId || null;
+
+        let query = `SELECT b.*, w.title as website_title 
+                     FROM b2b_banners b 
+                     JOIN b2b_websites w ON b.website_id = w.id 
+                     WHERE b.partner_id = $1`;
+        let params = [partnerId];
+
+        if (websiteId) {
+            query += ` AND b.website_id = $2`;
+            params.push(Number(websiteId));
+        }
+        query += ` ORDER BY b.website_id, b.banner_type, b.sort_order ASC`;
+
+        const result = await global.pool.query(query, params);
+        res.json({ success: true, banners: result.rows });
+    } catch (err) { res.status(500).json({ error: "Failed to load banners" }); }
+};
+
+// 1. ТОЛЬКО СОЗДАНИЕ БАННЕРА
+exports.createBanner = async (req, res) => {
+    try {
+        const { partnerId, websiteId, bannerType, imageUrl, clickUrl, sortOrder } = req.body;
+        await global.pool.query(
+            `INSERT INTO b2b_banners (partner_id, website_id, banner_type, image_url, click_url, sort_order) 
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [partnerId, Number(websiteId), bannerType, imageUrl.trim(), clickUrl.trim(), Number(sortOrder || 0)]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to create banner" });
+    }
+};
+
+// 2. ТОЛЬКО ОБНОВЛЕНИЕ БАННЕРА (По первичному ключу ID)
+exports.updateBanner = async (req, res) => {
+    try {
+        const { id, partnerId, websiteId, bannerType, imageUrl, clickUrl, sortOrder } = req.body;
+
+        if (!id) return res.status(400).json({ error: "Missing banner ID" });
+
+        const result = await global.pool.query(
+            `UPDATE b2b_banners 
+             SET website_id = $1, 
+                 banner_type = $2, 
+                 image_url = $3, 
+                 click_url = $4, 
+                 sort_order = $5
+             WHERE id = $6 AND partner_id = $7`,
+            [Number(websiteId), bannerType, imageUrl.trim(), clickUrl.trim(), Number(sortOrder || 0), Number(id), partnerId]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: "Banner not found" });
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to update banner" });
+    }
+};
+
+exports.deleteBanner = async (req, res) => {
+    try {
+        const { partnerId, bannerId } = req.body;
+        await global.pool.query('DELETE FROM b2b_banners WHERE partner_id = $1 AND id = $2', [partnerId, Number(bannerId)]);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: "Failed to delete banner" }); }
+};
+
 

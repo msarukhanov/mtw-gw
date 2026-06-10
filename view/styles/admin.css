@@ -742,3 +742,32 @@ th {
 .promoForm .btn-primary:active {
     transform: translateY(1px);
 }
+
+.gamification-label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: #8a99ad;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+#gamificationForm input[type="number"], #tournamentForm input[type="number"] {
+    background: #0d1017 !important;
+    border: 1px solid #262c3a !important;
+    color: #fff !important;
+    padding: 8px 12px !important;
+    border-radius: 5px !important;
+    font-size: 13px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    transition: all 0.2s ease !important;
+}
+#gamificationForm input[type="number"]:focus,
+#gamificationForm select:focus,
+#tournamentForm input[type="number"]:focus,
+#tournamentForm select:focus {
+    outline: none !important;
+    border-color: var(--accent-blue) !important;
+    box-shadow: 0 0 10px rgba(0, 168, 255, 0.25) !important;
+}

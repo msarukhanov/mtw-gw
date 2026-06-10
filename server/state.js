@@ -115,7 +115,7 @@ const playerMethods = {
             const prize = Number(actionData.prize || 0);
             const status = actionData.win ? 'WIN' : 'LOSE';
             amountChange = actionData.win ? prize : -stake;
-            description = `Ставка в игре ${actionData.game || 'Казино'}. Изменение: ${amountChange} 🪙`;
+            description = `Bet in game ${actionData.game || 'Casino'}. Change: ${amountChange} 🪙`;
 
             const cbRes = await global.pool.query(
                 `INSERT INTO casino_bets (username, partner_id, game_id, provider, session_id, stake, prize, status)
@@ -169,33 +169,135 @@ const playerMethods = {
             }
         }
 
-        // --- Считаем прогресс Ежедневного Квеста ---
-        if (dailyQuests.gamesPlayed < Number(gConfig.questTargetGames)) {
-            dailyQuests.gamesPlayed += 1;
+        // // --- Считаем прогресс Ежедневного Квеста ---
+        // if (dailyQuests.gamesPlayed < Number(gConfig.questTargetGames)) {
+        //     dailyQuests.gamesPlayed += 1;
+        //
+        //     if (dailyQuests.gamesPlayed === Number(gConfig.questTargetGames) && !dailyQuests.claimed) {
+        //         dailyQuests.claimed = true;
+        //         try {
+        //             const questRoundId = `q_daily_${crypto.randomBytes(6).toString('hex')}`;
+        //             const creditResult = await walletService.credit(username, partnerId, actionData.sessionId || null, Number(gConfig.questReward), "Daily Quest Reward", questRoundId);
+        //             if (creditResult && creditResult.balance !== undefined) currentBalance = Number(creditResult.balance);
+        //
+        //             // Системный лог квеста в историю
+        //             await global.pool.query(
+        //                 `INSERT INTO player_history (username, partner_id, category, action_type, description, amount_change)
+        //                  VALUES ($1, $2, 'system', 'quest', $3, $4)`,
+        //                 [username, partnerId, `Выполнен ежедневный квест! 📅`, Number(gConfig.questReward)]
+        //             );
+        //         } catch (err) {
+        //             console.error(`❌ Ошибка выплаты за квест игроку ${username}:`, err.message);
+        //             dailyQuests.claimed = false;
+        //         }
+        //     }
+        // }
+        //
+        // // --- Считаем прогресс Ежедневных Квестов на основе их ТИПОВ ---
+        // const activeQuestsRes = await global.pool.query(
+        //     'SELECT * FROM b2b_quests WHERE partner_id = $1 AND is_active = 1',
+        //     [partnerId]
+        // );
 
-            if (dailyQuests.gamesPlayed === Number(gConfig.questTargetGames) && !dailyQuests.claimed) {
-                dailyQuests.claimed = true;
-                try {
-                    const questRoundId = `q_daily_${crypto.randomBytes(6).toString('hex')}`;
-                    const creditResult = await walletService.credit(username, partnerId, actionData.sessionId || null, Number(gConfig.questReward), "Daily Quest Reward", questRoundId);
-                    if (creditResult && creditResult.balance !== undefined) currentBalance = Number(creditResult.balance);
+        const activeQuestsRes = await global.pool.query(
+            'SELECT * FROM b2b_quests WHERE partner_id = $1 AND is_active = 1',
+            [partnerId]
+        );
+        // Если у партнера есть настроенные квесты в Postgres
+        for (const quest of activeQuestsRes.rows) {
+            let incrementValue = 0;
 
-                    // Системный лог квеста в историю
+            // Проверяем тип квеста и вычисляем, на сколько увеличить прогресс
+            if (quest.quest_type === 'GAMES_COUNT') {
+                incrementValue = 1; // +1 сыгранная игра
+            }
+            else if (quest.quest_type === 'TURNOVER_BET') {
+                incrementValue = Number(actionData.stake || 0); // +сумма ставки в оборот
+            }
+            else if (quest.quest_type === 'WIN_COUNT') {
+                incrementValue = actionData.win ? 1 : 0; // +1 только если выиграл
+            }
+
+            if (incrementValue > 0) {
+                // Атомарно обновляем прогресс игрока в базе данных
+                await global.pool.query(`
+                        INSERT INTO player_quest_progress (partner_id, username, quest_id, current_value)
+                        VALUES ($1, $2, $3, $4)
+                        ON CONFLICT (partner_id, username, quest_id)
+                        DO UPDATE SET 
+                            current_value = CASE 
+                                WHEN player_quest_progress.is_claimed = false THEN player_quest_progress.current_value + EXCLUDED.current_value
+                                ELSE player_quest_progress.current_value
+                            END,
+                            updated_at = NOW()
+                    `, [partnerId, username, quest.id, incrementValue]);
+
+                // --- Автовыплата при достижении цели (как было в твоем коде) ---
+                // Проверяем, выполнился ли квест прямо сейчас
+                const checkProgress = await global.pool.query(
+                    'SELECT * FROM player_quest_progress WHERE partner_id = $1 AND username = $2 AND quest_id = $3 FOR UPDATE',
+                    [partnerId, username, quest.id]
+                );
+
+                const progress = checkProgress.rows[0];
+                if (Number(progress.current_value) >= Number(quest.target_value) && !progress.is_claimed) {
+                    // Помечаем как выплаченный в СУБД, защищая от повторных начислений (Race Conditions)
                     await global.pool.query(
-                        `INSERT INTO player_history (username, partner_id, category, action_type, description, amount_change)
-                         VALUES ($1, $2, 'system', 'quest', $3, $4)`,
-                        [username, partnerId, `Выполнен ежедневный квест! 📅`, Number(gConfig.questReward)]
+                        'UPDATE player_quest_progress SET is_claimed = true WHERE partner_id = $1 AND username = $2 AND quest_id = $3',
+                        [partnerId, username, quest.id]
                     );
-                } catch (err) {
-                    console.error(`❌ Ошибка выплаты за квест игроку ${username}:`, err.message);
-                    dailyQuests.claimed = false;
+
+                    try {
+                        const questRoundId = `q_auto_${crypto.randomBytes(6).toString('hex')}`;
+                        const creditResult = await walletService.credit(
+                            username, partnerId, actionData.sessionId || null,
+                            Number(quest.reward_amount), `Daily Quest Completed: ${quest.quest_type}`, questRoundId
+                        );
+                        if (creditResult && creditResult.balance !== undefined) {
+                            currentBalance = Number(creditResult.balance);
+                        }
+
+                        // Записываем системный лог в общую историю
+                        await global.pool.query(
+                            `INSERT INTO player_history (username, partner_id, category, action_type, description, amount_change)
+                                 VALUES ($1, $2, 'system', 'quest', $3, $4)`,
+                            [username, partnerId, `Completed quest [${quest.quest_type}]! 📅`, Number(quest.reward_amount)]
+                        );
+                    } catch (err) {
+                        console.error(`❌ Ошибка автовыплаты за квест:`, err.message);
+                        // В случае падения сети шлюза откатываем статус claimed, чтобы игрок мог забрать награду вручную через кнопку
+                        await global.pool.query(
+                            'UPDATE player_quest_progress SET is_claimed = false WHERE partner_id = $1 AND username = $2 AND quest_id = $3',
+                            [partnerId, username, quest.id]
+                        );
+                    }
                 }
             }
         }
 
-        // --- Начисляем Очки Турнира ---
-        if (Number(gConfig.tournamentActive) === 1) {
-            tournamentPoints += actionData.win ? 5 : 1;
+
+        const activeTournamentRes = await global.pool.query(
+            `SELECT id, min_bet_to_earn FROM b2b_tournaments 
+                 WHERE partner_id = $1 AND is_active = 1 AND NOW() BETWEEN start_at AND end_at LIMIT 1`,
+            [partnerId]
+        );
+
+        if (activeTournamentRes.rowCount > 0) {
+            const tournament = activeTournamentRes.rows[0];
+
+            // Проверяем, проходит ли ставка игрока по минимальному лимиту турнира
+            if (currentBetAmount >= Number(tournament.min_bet_to_earn)) {
+                // Рассчитываем очки: например, 5 за победу, 1 за проигрыш
+                const pointsToEarn = actionData.win ? 5 : 1;
+
+                // Атомарно добавляем очки в таблицу лидерборда текущего турнира
+                await global.pool.query(`
+                        INSERT INTO tournament_leaderboard (tournament_id, partner_id, username, points)
+                        VALUES ($1, $2, $3, $4)
+                        ON CONFLICT (tournament_id, username)
+                        DO UPDATE SET points = tournament_leaderboard.points + EXCLUDED.points, updated_at = NOW()
+                    `, [tournament.id, partnerId, username, pointsToEarn]);
+            }
         }
 
         // 3. Сохраняем обновленные данные игрока (без поля history!)
@@ -425,71 +527,197 @@ const gamificationMethods = {
 
     // 2. Завершение турнира на чистом SQL с защитой транзакций
     endCurrentTournament: async (partnerId) => {
-        const globalConfig = global.CONFIG || {};
-        const partnerConfig = globalConfig[partnerId] || {};
-        const gConfig = partnerConfig.gamification || { tournamentPrize: 5000 };
-        const totalPrize = Number(gConfig.tournamentPrize);
+        const walletService = seamless || require('./services/seamlessService');
+        const crypto = require('crypto');
 
+        // 1. Ищем текущий активный турнир партнера
+        const tRes = await global.pool.query(
+            "SELECT id, title, prize_pool FROM b2b_tournaments WHERE partner_id = $1 AND is_active = 1 LIMIT 1",
+            [partnerId]
+        );
+        if (tRes.rowCount === 0) return [];
+
+        const tournament = tRes.rows[0];
+        const totalPrize = Number(tournament.prize_pool);
         const prizes = [
             Math.floor(totalPrize * 0.50), // 1 место
             Math.floor(totalPrize * 0.30), // 2 место
-            Math.floor(totalPrize * 0.20),  // 3 место
+            Math.floor(totalPrize * 0.20)  // 3 место
         ];
 
-        const res = await global.pool.query(
-            'SELECT * FROM players WHERE partner_id = $1 AND tournament_points > 0 ORDER BY tournament_points DESC',
-            [partnerId]
+        // 2. Вытягиваем лидеров этого конкретного турнира из таблицы лидерборда
+        const leadersRes = await global.pool.query(
+            "SELECT username, points FROM tournament_leaderboard WHERE tournament_id = $1 AND points > 0 ORDER BY points DESC",
+            [tournament.id]
         );
-        const participants = res.rows;
+        const participants = leadersRes.rows;
         const winnersInfo = [];
-        const walletService = seamless || require('./services/seamlessService');
 
         for (let i = 0; i < participants.length; i++) {
             const player = participants[i];
             let prizeWon = 0;
 
+            // Топ-3 получают выплаты на внешнюю витрину
             if (i < 3) {
                 prizeWon = prizes[i];
                 try {
-                    const tournamentRoundId = `trn_win_${crypto.randomBytes(6).toString('hex')}`;
-                    const creditResult = await walletService.credit(player.username, partnerId, null, prizeWon, `Tournament Place ${i + 1}`, tournamentRoundId);
+                    const trnRoundId = `trn_win_${crypto.randomBytes(6).toString('hex')}`;
+                    await walletService.credit(player.username, partnerId, null, prizeWon, `Tournament [${tournament.title}] Place ${i + 1}`, trnRoundId);
 
-                    player.balance = creditResult && creditResult.balance !== undefined
-                        ? Number(creditResult.balance)
-                        : Number(player.balance) + prizeWon;
-
-                    winnersInfo.push({ username: player.username, place: i + 1, points: Number(player.tournament_points), prize: prizeWon });
+                    // Пишем лог в общую историю активности игрока
+                    await global.pool.query(
+                        `INSERT INTO player_history (username, partner_id, category, action_type, description, amount_change)
+                         VALUES ($1, $2, 'system', 'tournament_win', $3, $4)`,
+                        [player.username, partnerId, `🏆 Took ${i + 1} place in tournament "${tournament.title}"!`, prizeWon]
+                    );
                 } catch (err) {
-                    console.error(`❌ Tournament payout failed for ${player.username}:`, err.message);
+                    console.error(`❌ Payout failed for ${player.username}:`, err.message);
                 }
             }
 
-            const description = `Турнир завершен. Очки: ${player.tournament_points}. Место: ${i + 1}. Награда: ${prizeWon > 0 ? `+${prizeWon} 🪙` : '0 🪙'}`;
-
-            // Пишем системное событие окончания турнира в новую таблицу истории
+            // 3. Записываем результат каждого участника в глобальный исторический архив
             await global.pool.query(
-                `INSERT INTO player_history (username, partner_id, category, action_type, description, amount_change)
-                 VALUES ($1, $2, 'system', 'tournament_end', $3, $4)`,
-                [player.username, partnerId, description, prizeWon]
+                `INSERT INTO tournament_history (tournament_id, partner_id, title, winner_username, place, points_earned, prize_paid)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                [tournament.id, partnerId, tournament.title, player.username, i + 1, player.points, prizeWon]
             );
 
-            // Сбрасываем очки турнира игроку
-            await global.pool.query(
-                `UPDATE players SET tournament_points = 0, balance = $1 WHERE username = $2 AND partner_id = $3`,
-                [Number(player.balance), player.username, partnerId]
-            );
+            if (i < 3) {
+                winnersInfo.push({ username: player.username, place: i + 1, points: player.points, prize: prizeWon });
+            }
         }
+
+        // 4. Деактивируем турнир (ставим is_active = 0)
+        await global.pool.query("UPDATE b2b_tournaments SET is_active = 0 WHERE id = $1", [tournament.id]);
 
         return winnersInfo;
     },
 
+    // resetDailyQuestsForAll: async () => {
+    //     // Очищаем прогресс игр, claimed ставим в false
+    //     await global.pool.query(
+    //         `UPDATE players
+    //          SET daily_quests = '{"gamesPlayed": 0, "claimed": false}'::jsonb`
+    //     );
+    //     console.log("✅ Ежедневные квесты успешно сброшены в СУБД для всех игроков.");
+    // },
+
     resetDailyQuestsForAll: async () => {
-        // Очищаем прогресс игр, claimed ставим в false
-        await global.pool.query(
-            `UPDATE players 
-             SET daily_quests = '{"gamesPlayed": 0, "claimed": false}'::jsonb`
+        // Вместо апдейта тяжелого JSONB, мы просто очищаем таблицу текущего прогресса на новый день
+        await global.pool.query('DELETE FROM player_quest_progress');
+        console.log("==> [CRON] Таблица прогресса ежедневных квестов успешно очищена в PostgreSQL.");
+    },
+
+    getPlayerGamificationStatus: async (username, partnerId) => {
+        // Запрашиваем данные игрока
+        const pRes = await global.pool.query(
+            'SELECT daily_quests, tournament_points, level, xp FROM players WHERE username = $1 AND partner_id = $2 LIMIT 1',
+            [username, partnerId]
         );
-        console.log("✅ Ежедневные квесты успешно сброшены в СУБД для всех игроков.");
+        if (pRes.rowCount === 0) return null;
+        const player = pRes.rows[0];
+
+        const dailyQuests = typeof player.daily_quests === 'string' ? JSON.parse(player.daily_quests) : (player.daily_quests || { gamesPlayed: 0, claimed: false });
+
+        // Извлекаем конфигурацию геймификации партнера
+        const partnerConfig = global.CONFIG?.[partnerId]?.gamification || { questTargetGames: 30, questReward: 50 };
+        const targetGames = Number(partnerConfig.questTargetGames);
+
+        // Получаем ТОП-10 лидеров текущего турнира для вывода таблицы на фронтенд игрока
+        const leaderboardRes = await global.pool.query(
+            'SELECT username, tournament_points as points, level FROM players WHERE partner_id = $1 AND tournament_points > 0 ORDER BY tournament_points DESC LIMIT 10',
+            [partnerId]
+        );
+
+        return {
+            quest: {
+                gamesPlayed: dailyQuests.gamesPlayed,
+                targetGames: targetGames,
+                claimed: dailyQuests.claimed,
+                progressPercentage: Math.min(Math.floor((dailyQuests.gamesPlayed / targetGames) * 100), 100)
+            },
+            tournament: {
+                playerPoints: player.tournament_points,
+                leaderboard: leaderboardRes.rows
+            },
+            profile: {
+                level: player.level,
+                xp: player.xp,
+                nextLevelXp: player.level * (partnerConfig.xpMultiplier || 1000)
+            }
+        };
+    },
+
+    // 2. МЕТОД ЗАБРАТЬ НАГРАДУ ЗА ЕЖЕДНЕВНЫЙ КВЕСТ (CLAIM REWARD)
+    claimDailyQuestReward: async (username, partnerId, sessionId) => {
+        const client = await global.pool.connect();
+        const walletService = seamless || require('./services/seamlessService');
+
+        try {
+            await client.query('BEGIN');
+
+            // Запрашиваем состояние игрока под блокировкой FOR UPDATE
+            const pRes = await client.query(
+                'SELECT daily_quests, balance FROM players WHERE username = $1 AND partner_id = $2 FOR UPDATE',
+                [username, partnerId]
+            );
+            if (pRes.rowCount === 0) { await client.query('ROLLBACK'); return { success: false, error: "PLAYER_NOT_FOUND" }; }
+            const player = pRes.rows[0];
+
+            let dailyQuests = typeof player.daily_quests === 'string' ? JSON.parse(player.daily_quests) : (player.daily_quests || { gamesPlayed: 0, claimed: false });
+
+            const partnerConfig = global.CONFIG?.[partnerId]?.gamification || { questTargetGames: 30, questReward: 50 };
+            const targetGames = Number(partnerConfig.questTargetGames);
+            const rewardAmount = Number(partnerConfig.questReward);
+
+            // ВАЛИДАЦИЯ: Выполнен ли квест?
+            if (dailyQuests.gamesPlayed < targetGames) {
+                await client.query('ROLLBACK');
+                return { success: false, error: "QUEST_NOT_COMPLETED", message: `You need to play ${targetGames - dailyQuests.gamesPlayed} more games.` };
+            }
+
+            // ВАЛИДАЦИЯ: Не забирал ли награду ранее?
+            if (dailyQuests.claimed) {
+                await client.query('ROLLBACK');
+                return { success: false, error: "REWARD_ALREADY_CLAIMED", message: "You have already claimed today's reward." };
+            }
+
+            // Ставим флаг, что награда получена
+            dailyQuests.claimed = true;
+
+            // Выплачиваем деньги через бесшовный шлюз на внешнюю витрину
+            const questRoundId = `q_claim_${crypto.randomBytes(6).toString('hex')}`;
+            const creditResult = await walletService.credit(
+                username, partnerId, sessionId, rewardAmount, "Daily Quest Completed Reward", questRoundId
+            );
+
+            const finalBalance = creditResult && creditResult.balance !== undefined
+                ? Number(creditResult.balance)
+                : Number(player.balance) + rewardAmount;
+
+            // Обновляем данные в Postgres
+            await client.query(
+                'UPDATE players SET daily_quests = $1::jsonb, balance = $2 WHERE username = $3 AND partner_id = $4',
+                [JSON.stringify(dailyQuests), finalBalance, username, partnerId]
+            );
+
+            // Пишем событие в ленту активности player_history
+            await client.query(
+                `INSERT INTO player_history (username, partner_id, category, action_type, description, amount_change)
+                 VALUES ($1, $2, 'system', 'quest_claim', $3, $4)`,
+                [username, partnerId, `Claimed daily retention quest reward! 📅`, rewardAmount]
+            );
+
+            await client.query('COMMIT');
+            return { success: true, reward: rewardAmount, balance: finalBalance };
+
+        } catch (err) {
+            await client.query('ROLLBACK');
+            console.error("Quest claim transaction failure:", err.message);
+            return { success: false, error: "TRANSACTION_ERROR", message: "Failed to claim reward due to system error" };
+        } finally {
+            client.release();
+        }
     },
 
     // 3. Массовый Крон-сброс квестов в Postgres одной строчкой (БЕЗ циклов, не нагружает базу данных)

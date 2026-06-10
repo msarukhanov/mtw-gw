@@ -3,6 +3,54 @@ const state = require('../state');
 
 // Хранилище активных демо-сессий витрины в оперативной памяти: { "session_token_xyz": "username" }
 
+exports.initPublicWebsite = async (req, res) => {
+    try {
+        const domain = req.query.domain || 'localhost';
+        const partnerId = req.query.partnerId || 'demo_mtwtech';
+
+        // 1. Ищем сайт в СУБД по домену
+        const webRes = await global.pool.query(
+            `SELECT id, title, settings, meta, styles 
+             FROM b2b_websites 
+             WHERE partner_id = $1 AND domain_name = $2 AND is_active = 1 LIMIT 1`,
+            [partnerId, domain.toLowerCase()]
+        );
+
+        if (webRes.rowCount === 0) {
+            return res.status(404).json({ success: false, error: "BRAND_NOT_FOUND" });
+        }
+        const web = webRes.rows[0];
+
+        // 2. Сразу вытягиваем все активные баннеры для этого сайта
+        const bannersRes = await global.pool.query(
+            `SELECT banner_type, image_url, click_url 
+             FROM b2b_banners 
+             WHERE website_id = $1 AND is_active = 1 
+             ORDER BY sort_order ASC`,
+            [web.id]
+        );
+
+        // Группируем баннеры по типам для удобства фронтенда
+        const banners = { home: [], casino: [], sport: [] };
+        bannersRes.rows.forEach(b => {
+            if (banners[b.banner_type]) banners[b.banner_type].push(b);
+        });
+
+        res.json({
+            success: true,
+            title: web.title,
+            settings: typeof web.settings === 'string' ? JSON.parse(web.settings) : web.settings,
+            meta: typeof web.meta === 'string' ? JSON.parse(web.meta) : web.meta,
+            styles: typeof web.styles === 'string' ? JSON.parse(web.styles) : web.styles,
+            banners: banners // Сгруппированные массивы баннеров
+        });
+
+    } catch (err) {
+        console.error("❌ Public website init crash:", err.message);
+        res.status(500).json({ error: "Ecosystem boot failure" });
+    }
+};
+
 // 1. ЛОГИН НА ПЛАТФОРМУ: Генерируем sessionId для фронтенда
 exports.login = async (req, res) => {
     const { username } = req.body;
