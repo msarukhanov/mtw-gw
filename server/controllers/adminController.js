@@ -1,5 +1,6 @@
 const state = require('../state');
 const seamless = require('../services/seamlessService');
+const payment = require('../services/paymentService');
 
 // 1. Отдаем все данные одним пакетом для фронтенда админки (Строго для текущего partnerId)
 exports.getAdminData = async (req, res) => {
@@ -681,3 +682,25 @@ exports.deleteBanner = async (req, res) => {
 };
 
 
+// АДМИНКА: Получить список заявок
+exports.getAdminWithdrawalsList = async (req, res) => {
+    try {
+        const partnerId = req.query.partnerId || "demo_mtwtech";
+        const status = req.query.status || 'PENDING';
+        const list = await payment.getAdminWithdrawals(partnerId, status);
+        res.json({ success: true, requests: list });
+    } catch (err) { res.status(500).json({ error: "Failed to load requests" }); }
+};
+
+// АДМИНКА: Клик по кнопкам Одобрить / Отклонить
+exports.processAdminWithdrawalAction = async (req, res) => {
+    try {
+        const partnerId = req.body.partnerId || "demo_mtwtech";
+        const { requestId, action } = req.body; // action: 'APPROVE' или 'REJECT'
+
+        const result = await payment.processAdminWithdrawal(partnerId, requestId, action);
+        if (!result.success) return res.status(400).json(result);
+
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: "Failed to process withdrawal node" }); }
+};

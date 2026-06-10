@@ -362,3 +362,41 @@ CREATE TABLE IF NOT EXISTS b2b_banners (
 -- Индексы для мгновенной сборки слайдеров на фронтенде игроков
 CREATE INDEX IF NOT EXISTS idx_banners_render ON b2b_banners (website_id, banner_type, is_active, sort_order ASC);
 
+CREATE TABLE IF NOT EXISTS b2b_payment_gateways (
+    id SERIAL PRIMARY KEY,
+    partner_id VARCHAR(50) NOT NULL,
+    website_id INT NOT NULL REFERENCES b2b_websites(id) ON DELETE CASCADE,
+    gateway_name VARCHAR(50) NOT NULL, -- 'cryptomus', 'aaio', 'payok'
+    merchant_id VARCHAR(100) NOT NULL,
+    secret_key TEXT NOT NULL,
+    is_active INT DEFAULT 1,
+    timestamp TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS deposit_orders (
+    id SERIAL PRIMARY KEY,
+    partner_id VARCHAR(50) NOT NULL,
+    username VARCHAR(50) NOT NULL,
+    order_uuid VARCHAR(100) NOT NULL UNIQUE, -- Уникальный ID платежа для платежки
+    gateway VARCHAR(30) NOT NULL,            -- 'cryptomus' или 'aaio'
+    amount NUMERIC(15, 2) NOT NULL,
+    status VARCHAR(20) DEFAULT 'PENDING',    -- 'PENDING', 'SUCCESS', 'FAILED'
+    timestamp TIMESTAMP DEFAULT NOW()
+);
+
+-- Индекс для мгновенного поиска заказа по вебхуку
+CREATE INDEX IF NOT EXISTS idx_deposit_orders_uuid ON deposit_orders(order_uuid);
+
+CREATE TABLE IF NOT EXISTS withdraw_requests (
+    id SERIAL PRIMARY KEY,
+    partner_id VARCHAR(50) NOT NULL,
+    username VARCHAR(50) NOT NULL,
+    amount NUMERIC(15, 2) NOT NULL,
+    gateway VARCHAR(30) NOT NULL,            -- 'cryptomus', 'aaio', 'payeer', 'pix'
+    wallet_details TEXT NOT NULL,            -- Номер карты или криптокошелька игрока
+    status VARCHAR(20) DEFAULT 'PENDING',    -- 'PENDING', 'APPROVED', 'REJECTED'
+    timestamp TIMESTAMP DEFAULT NOW()
+);
+
+-- Индекс для админки, чтобы быстро выводить новые заявки
+CREATE INDEX IF NOT EXISTS idx_withdraw_pending ON withdraw_requests(partner_id, status);

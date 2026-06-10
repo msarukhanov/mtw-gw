@@ -47,11 +47,12 @@
 
         <div class="sidebar-inner" id="accordionMenu">
             <!-- РАЗДЕЛ 1: Financial -->
-            <div class="nav-title" onclick="toggleMenuSection('sec-financial', this)">Reports</div>
+            <div class="nav-title" onclick="toggleMenuSection('sec-financial', this)">Finance</div>
             <div class="nav-section-content" id="sec-financial">
                 <button class="nav-btn active" onclick="switchTab('tab-finance', this)"><span>📊</span><span class="nav-btn-text">Totals</span></button>
                 <button class="nav-btn" onclick="switchTab('tab-bets-registry', this)"><span>🎰</span><span class="nav-btn-text">Bets Registry</span></button>
                 <button class="nav-btn" onclick="switchTab('tab-transactions-ledger', this)"><span>💳</span><span class="nav-btn-text">Transactions</span></button>
+                <button class="nav-btn" onclick="switchTab('tab-widthrawal-ledger', this)"><span>💵</span><span class="nav-btn-text">Widthrawal Requests</span></button>
             </div>
 
             <!-- РАЗДЕЛ 2: Players -->
@@ -325,11 +326,54 @@
             </div>
         </div>
 
+        <div id="tab-widthrawal-ledger" class="tab-content">
+            <div class="card" style="margin-top: 25px;">
+                <h2 style="color: var(--accent-pink);">⏳ Pending Player Withdrawal Requests</h2>
+                <div style="margin-bottom: 15px; color: var(--text-muted); font-size: 13px;">
+                    Manual auditing safety layer. Review player betting activity history logs before confirming payouts.
+                </div>
+                <div style="max-height: 400px; overflow-y: auto;">
+                    <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
+                        <thead>
+                        <tr style="color: var(--text-muted); text-align: left; border-bottom: 1px solid #1a1e26;">
+                            <th style="padding: 8px 0;">Timestamp</th>
+                            <th>User</th>
+                            <th>Amount</th>
+                            <th>Gateway</th>
+                            <th>Recipient Details</th>
+                            <th style="text-align: right;">Auditing Security</th>
+                        </tr>
+                        </thead>
+                        <tbody id="adminWithdrawalsTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
         <!-- TAB 10: WEBSITES AND BANNERS CONTROLLER -->
         <!-- TAB 10: WEBSITES AND BANNERS CONTROLLER -->
         <div id="tab-websites" class="tab-content">
             <div class="card">
                 <h2>🌐 Connected B2B Websites Registry</h2>
+                <div class="game-block" style="margin-top:20px;">
+                    <h4 style="margin:0 0 10px 0; color:#8a99ad; font-size:13px; text-transform:uppercase; letter-spacing:0.5px;">Active Network Brands</h4>
+                    <div style="max-height: 250px; overflow-y: auto;">
+                        <table style="width:100%; font-size:12px; border-collapse:collapse;">
+                            <thead>
+                            <tr style="color:var(--text-muted); text-align:left; border-bottom:1px solid #1a1e26;">
+                                <th style="padding:6px 0;">Brand Name</th>
+                                <th>Target Domain</th>
+                                <th style="text-align:right;">Status</th>
+                            </tr>
+                            </thead>
+                            <tbody id="adminWebsitesTableBody">
+                            <!-- Данные загрузятся через JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <div class="game-block" style="background:#090b0f; border:1px solid #1a1e26; padding:20px; border-radius:8px;">
                     <h3 style="margin-top:0; font-size:14px; color:#fff; border-bottom:1px solid #1a1e26; padding-bottom:8px; letter-spacing:0.5px;">REGISTER / UPDATE WEB BRAND</h3>
 
@@ -377,6 +421,44 @@
                             </div>
                         </div>
 
+                        <div style="border-top: 1px solid #141822; padding-top:12px;">
+                            <h4 style="margin:0 0 10px 0; font-size:12px; color:var(--accent-blue); text-transform:uppercase; letter-spacing:0.5px;">⚙️ System & Payment Settings</h4>
+
+                            <!-- Основные статусы сайта -->
+                            <div style="display:flex; gap:20px; align-items:center; margin-bottom: 12px;">
+                                <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:#fff; cursor:pointer;">
+                                    <input type="checkbox" id="w_reg_open" checked style="accent-color:var(--accent-blue); width:16px; height:16px;"> Open Registration
+                                </label>
+                                <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:#fff; cursor:pointer;">
+                                    <input type="checkbox" id="w_maintenance" style="accent-color:var(--accent-blue); width:16px; height:16px;"> Maintenance Mode
+                                </label>
+                            </div>
+
+                            <!-- Переключатели доступных платежек для этого сайта -->
+                            <span style="font-size:11px; color:var(--text-muted); font-weight:700; display:block; margin-bottom:6px;">ENABLED GATEWAYS FOR CASHIER:</span>
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; background:#080a0e; padding:10px; border-radius:4px; border:1px solid #161a23;">
+                                <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#8a99ad; cursor:pointer;">
+                                    <input type="checkbox" id="w_pay_cryptomus" checked style="accent-color:var(--accent-pink);"> Cryptomus (Crypto)
+                                </label>
+                                <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#8a99ad; cursor:pointer;">
+                                    <input type="checkbox" id="w_pay_aaio" checked style="accent-color:var(--accent-pink);"> Aaio (Cards/СБП)
+                                </label>
+                                <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#8a99ad; cursor:pointer;">
+                                    <input type="checkbox" id="w_pay_pix" checked style="accent-color:var(--accent-pink);"> PIX (Brazil)
+                                </label>
+                                <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#8a99ad; cursor:pointer;">
+                                    <input type="checkbox" id="w_pay_payeer" checked style="accent-color:var(--accent-pink);"> Payeer Wallet
+                                </label>
+                                <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#8a99ad; cursor:pointer;">
+                                    <input type="checkbox" id="w_pay_flutterwave" style="accent-color:var(--accent-pink);"> Flutterwave (Africa MoMo)
+                                </label>
+                                <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#8a99ad; cursor:pointer;">
+                                    <input type="checkbox" id="w_pay_vodafone" style="accent-color:var(--accent-pink);"> Vodafone Cash (MENA/Egypt)
+                                </label>
+                            </div>
+                        </div>
+
+
                         <!--<button type="submit" class="btn-primary" style="padding:12px; font-weight:bold; margin-top:5px; background:var(&#45;&#45;accent-blue)!important; box-shadow:none;">💾 Save Brand Domain & Layout</button>-->
                         <div style="display: flex; gap: 10px; margin-top: 5px;">
                             <button type="submit" id="w_submit_btn" class="btn-primary" style="width: 100%; padding:12px; font-weight:bold; background:var(--accent-blue)!important; box-shadow:none;">💾 Save Brand Domain & Layout</button>
@@ -386,23 +468,7 @@
                 </div>
 
                 <!-- 📊 ВОТ ЭТА ТАБЛИЦА СЮДА ВЕРНУЛАСЬ: Список активных сайтов бренда -->
-                <div class="game-block" style="margin-top:20px;">
-                    <h4 style="margin:0 0 10px 0; color:#8a99ad; font-size:13px; text-transform:uppercase; letter-spacing:0.5px;">Active Network Brands</h4>
-                    <div style="max-height: 250px; overflow-y: auto;">
-                        <table style="width:100%; font-size:12px; border-collapse:collapse;">
-                            <thead>
-                            <tr style="color:var(--text-muted); text-align:left; border-bottom:1px solid #1a1e26;">
-                                <th style="padding:6px 0;">Brand Name</th>
-                                <th>Target Domain</th>
-                                <th style="text-align:right;">Status</th>
-                            </tr>
-                            </thead>
-                            <tbody id="adminWebsitesTableBody">
-                            <!-- Данные загрузятся через JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+
             </div>
         </div>
 

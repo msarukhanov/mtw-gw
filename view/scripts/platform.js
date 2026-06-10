@@ -623,56 +623,74 @@ async function apiApplyPromo() {
 
 async function apiDeposit() {
     const amountInput = document.getElementById('depositAmount');
-    if (!amountInput) return;
+    const gatewaySelect = document.getElementById('depositGateway');
+    if (!amountInput || !gatewaySelect) return;
 
-    const amount = parseFloat(amountInput.value);
-    if (!amount || amount <= 0) return alert('Please specify a positive numeric deposit value');
+    const amount = amountInput.value.trim();
+    const gateway = gatewaySelect.value;
+
+    if (!amount || Number(amount) <= 0) return alert('Please enter a valid deposit amount.');
 
     try {
-        const res = await fetch(`${CORE_SERVER}/api/player/deposit`, {
+        const res = await fetch(`${CORE_SERVER}/api/player/deposit/init`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 username: currentUsername,
                 partnerId: 'demo_mtwtech',
-                amount: amount
+                token: currentSessionId, // для checkPlayer middleware
+                amount: amount,
+                gateway: gateway
             })
         });
         const data = await res.json();
 
-        if (data.success) {
-            alert(`Simulation successful! Credit addition of ${amount} 🪙 approved.`);
-            openUserMenu(); // Update balance views
-        } else { alert(data.error || 'Deposit routing failed.'); }
-    } catch(e) { alert('Gateway timeout error during transaction.'); }
+        if (data.success && data.paymentUrl) {
+            alert('Redirecting secure frame node to official merchant billing gateway...');
+            // Автоматически открываем ссылку на оплату в новой вкладке браузера
+            window.open(data.paymentUrl, '_blank');
+        } else {
+            alert(data.error || 'Payment service provider is offline. Try again later.');
+        }
+    } catch (err) {
+        console.error('Deposit checkout routing crashed:', err);
+        alert('Billing engine connection error.');
+    }
 }
+
 
 async function apiWithdraw() {
-    const withdrawInput = document.getElementById('withdrawAmount');
-    if (!withdrawInput) return;
+    const amount = document.getElementById('withdrawAmount').value.trim();
+    const gateway = document.getElementById('withdrawGateway').value;
+    const walletDetails = document.getElementById('withdrawWalletDetails').value.trim();
 
-    const amount = parseFloat(withdrawInput.value);
-    if (!amount || amount <= 0) return alert('Please specify a valid withdrawal amount');
+    if (!amount || Number(amount) <= 0 || !walletDetails) {
+        return alert('Please enter amount and your payout wallet/card details.');
+    }
 
     try {
-        const res = await fetch(`${CORE_SERVER}/api/player/withdraw`, {
+        const res = await fetch(`${CORE_SERVER}/api/player/withdraw/init`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                username: currentUsername,
-                partnerId: 'demo_mtwtech',
-                amount: amount
+                username: currentUsername, partnerId: 'demo_mtwtech', token: currentSessionId,
+                amount, gateway, walletDetails
             })
         });
         const data = await res.json();
 
         if (data.success) {
-            alert(`Cashout pipeline order requested! Debited amount: -${amount} 🪙.`);
-            withdrawInput.value = '';
-            openUserMenu(); // Update balance views
-        } else { alert(data.error || 'Insufficient funds.'); }
-    } catch(e) { alert('Server validation error during withdraw.'); }
+            alert(data.message);
+            document.getElementById('withdrawAmount').value = '';
+            document.getElementById('withdrawWalletDetails').value = '';
+            // Обновляем баланс в UI
+            if (typeof updatePlayerBalanceOnUI === 'function') updatePlayerBalanceOnUI(data.balance);
+        } else {
+            alert(`Error: ${data.message || data.error}`);
+        }
+    } catch (err) { alert('Connection error during cashout request routing.'); }
 }
+
 
 
 
@@ -770,6 +788,30 @@ async function bootWhiteLabelPlatform() {
             }
         }
 
+        if (data.settings && data.settings.gateways) {
+            const gtw = data.settings.gateways;
+
+            // Проверяем селекты депозита и вывода, если они есть на странице
+            ['depositGateway', 'withdrawGateway'].forEach(selectId => {
+                const selectEl = document.getElementById(selectId);
+                if (selectEl) {
+                    // Перебираем все option внутри select и скрываем те, что отключены админом
+                    Array.from(selectEl.options).forEach(opt => {
+                        if (gtw[opt.value] === false) {
+                            opt.style.display = 'none'; // Скрываем платежку
+                            opt.disabled = true;
+                        } else {
+                            opt.style.display = 'block';
+                            opt.disabled = false;
+                        }
+                    });
+
+                    // Сбрасываем выбранный дефолтный элемент на первый видимый
+                    const firstVisible = Array.from(selectEl.options).find(o => o.style.display !== 'none');
+                    if (firstVisible) selectEl.value = firstVisible.value;
+                }
+            });
+        }
 
     } catch (err) {
         console.error('Ecosystem boot collapsed:', err);

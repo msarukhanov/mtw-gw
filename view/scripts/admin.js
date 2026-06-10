@@ -232,6 +232,8 @@ async function loadData() {
         loadAdminTournamentsMatrix();
 
         loadAdminWebsites();
+
+        loadAdminPendingWithdrawals();
     }
     catch (err) {
         console.error(err);
@@ -1727,7 +1729,7 @@ async function loadAdminWebsites() {
 }
 
 // 2. Клик по строке таблицы: перенос данных в форму
-function editWebsiteNode(websiteId) {
+function editWebsiteNode2222(websiteId) {
     const site = cachedWebsites.find(w => w.id === websiteId);
     if (!site) return;
 
@@ -1758,6 +1760,45 @@ function editWebsiteNode(websiteId) {
     loadAdminWebsites();
 }
 
+function editWebsiteNode(websiteId) {
+    const site = cachedWebsites.find(w => w.id === websiteId);
+    if (!site) return;
+
+    editingWebsiteId = websiteId;
+
+    const set = typeof site.settings === 'string' ? JSON.parse(site.settings) : (site.settings || {});
+    const meta = typeof site.meta === 'string' ? JSON.parse(site.meta) : (site.meta || {});
+    const stl = typeof site.styles === 'string' ? JSON.parse(site.styles) : (site.styles || {});
+    const gtw = set.gateways || { cryptomus: true, aaio: true, pix: true, payeer: true }; // Дефолты, если старая запись
+
+    // Заполняем форму
+    document.getElementById('w_domain').value = site.domain_name;
+    document.getElementById('w_title').value = site.title;
+    document.getElementById('w_reg_open').checked = set.registrationOpen !== false;
+    document.getElementById('w_maintenance').checked = !!set.maintenance;
+
+    // ВОССТАНАВЛИВАЕМ ГАЛОЧКИ ТУМБЛЕРОВ ПЛАТЕЖЕК
+    document.getElementById('w_pay_cryptomus').checked = gtw.cryptomus !== false;
+    document.getElementById('w_pay_aaio').checked = gtw.aaio !== false;
+    document.getElementById('w_pay_pix').checked = gtw.pix !== false;
+    document.getElementById('w_pay_payeer').checked = gtw.payeer !== false;
+    document.getElementById('w_pay_flutterwave').checked = gtw.flutterwave !== false;
+    document.getElementById('w_pay_vodafone').checked = gtw.vodafone !== false;
+
+    document.getElementById('w_meta_title').value = meta.title || '';
+    document.getElementById('w_meta_desc').value = meta.description || '';
+    document.getElementById('w_theme_mode').value = stl.bgTheme || 'dark';
+    document.getElementById('w_color_hex').value = stl.primaryColor || '#e94560';
+    document.getElementById('w_color_picker').value = stl.primaryColor || '#e94560';
+
+    document.getElementById('w_submit_btn').innerText = '🔄 Update Brand Configurations';
+    document.getElementById('w_submit_btn').style.background = 'var(--accent-pink)';
+    document.getElementById('w_cancel_btn').style.display = 'inline-block';
+
+    loadAdminWebsites();
+}
+
+
 // 3. Сброс формы в режим создания нового сайта
 function resetWebsiteForm() {
     editingWebsiteId = null;
@@ -1772,6 +1813,13 @@ function resetWebsiteForm() {
     document.getElementById('w_submit_btn').innerText = '💾 Save Brand Domain & Layout';
     document.getElementById('w_submit_btn').style.background = 'var(--accent-blue)';
     document.getElementById('w_cancel_btn').style.display = 'none';
+
+    document.getElementById('w_pay_cryptomus').checked = true;
+    document.getElementById('w_pay_aaio').checked = true;
+    document.getElementById('w_pay_pix').checked = true;
+    document.getElementById('w_pay_payeer').checked = true;
+    document.getElementById('w_pay_flutterwave').checked = true;
+    document.getElementById('w_pay_vodafone').checked = true;
 
     loadAdminWebsites();
 }
@@ -1791,6 +1839,10 @@ document.getElementById('websiteForm').addEventListener('submit', async (e) => {
 
     const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
 
+    // Упаковываем основные сеттинги и включенные шлюзы в один объект settings
+
+    // Дальше переменные metaObj, stylesObj и отправка fetch (остаются как были)
+
     // Собираем чистый объект конфигурации
     const payload = {
         partnerId: currentPartnerId,
@@ -1798,7 +1850,15 @@ document.getElementById('websiteForm').addEventListener('submit', async (e) => {
         title: title,
         settings: {
             registrationOpen: document.getElementById('w_reg_open').checked,
-            maintenance: document.getElementById('w_maintenance').checked
+            maintenance: document.getElementById('w_maintenance').checked,
+            gateways: {
+                cryptomus: document.getElementById('w_pay_cryptomus').checked,
+                aaio: document.getElementById('w_pay_aaio').checked,
+                pix: document.getElementById('w_pay_pix').checked,
+                payeer: document.getElementById('w_pay_payeer').checked,
+                flutterwave: document.getElementById('w_pay_flutterwave').checked,
+                vodafone: document.getElementById('w_pay_vodafone').checked
+            }
         },
         meta: {
             title: document.getElementById('w_meta_title').value.trim() || title,
@@ -2016,6 +2076,66 @@ document.getElementById('w_color_hex').addEventListener('input', (e) => {
         document.getElementById('w_color_picker').value = e.target.value;
     }
 });
+
+
+
+
+// 1. Загрузка списка ожидающих заявок в админку
+async function loadAdminPendingWithdrawals() {
+    try {
+        const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+        const res = await fetch(`${SERVER_URL}/api/admin/withdrawals?partnerId=${currentPartnerId}&status=PENDING`);
+        const data = await res.json();
+        const tbody = document.getElementById('adminWithdrawalsTableBody');
+
+        if (tbody && data.success && data.requests) {
+            if (data.requests.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-muted);">No pending withdrawal requests in queue. Good job!</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = data.requests.map(r => `
+                <tr style="border-bottom: 1px solid #141822;">
+                    <td style="padding: 10px 0;"><small style="color:var(--text-muted);">${new Date(r.timestamp).toLocaleString()}</small></td>
+                    <td><b>${r.username}</b></td>
+                    <td><b style="color:#ff4d4d;">-${Number(r.amount).toFixed(2)} 🪙</b></td>
+                    <td><span class="badge" style="background:#161920; border:1px solid #262c3a; padding:2px 6px; border-radius:4px;">${r.gateway.toUpperCase()}</span></td>
+                    <td><small style="font-family:monospace; color:#fff;">${r.wallet_details}</small></td>
+                    <td style="text-align: right;">
+                        <div style="display:inline-flex; gap:8px;">
+                            <button onclick="processWithdrawalNode(${r.id}, 'APPROVE')" style="background:#1b382c; border:1px solid var(--neon-green); color:var(--neon-green); padding:4px 10px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:11px;">🟢 APPROVE</button>
+                            <button onclick="processWithdrawalNode(${r.id}, 'REJECT')" style="background:#381b1b; border:1px solid #ff4d4d; color:#ff4d4d; padding:4px 10px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:11px;">🔴 REJECT</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    } catch (err) { console.error(err); }
+}
+
+// 2. Обработка клика админа Одобрить/Отклонить [INDEX]
+async function processWithdrawalNode(requestId, action) {
+    const confirmMsg = action === 'APPROVE'
+        ? 'Confirm payout approval? Make sure you have checked player betting logs for security clearance.'
+        : 'Reject this request and refund full amount back to player balance?';
+
+    if (!confirm(confirmMsg)) return;
+
+    showLoader();
+    const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+
+    try {
+        const res = await fetch(`${SERVER_URL}/api/admin/withdrawals/process`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ partnerId: currentPartnerId, requestId, action })
+        });
+        if (res.ok) {
+            await loadAdminPendingWithdrawals(); // обновляем список заявок
+            if (typeof loadAdminFinanceReport === 'function') loadAdminFinanceReport(); // обновляем общий финансовый лог кассы
+        }
+    } catch (err) { console.error(err); }
+    finally { hideLoader(); }
+}
 
 
 // Run auth validation sequence on page boot
