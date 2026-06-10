@@ -1,4 +1,6 @@
 const axios = require('axios');
+const crypto = require('crypto');
+
 const state = require('../state');
 
 const isDemo = process.env.env === 'demo';
@@ -45,7 +47,6 @@ module.exports = {
     },
 
     debit: async (player, username, partnerId, sessionId, amount, gameName, roundId) => {
-        console.log();
 
         const betAmount = Number(amount);
         const isSport = gameName === "Sportsbook";
@@ -84,15 +85,6 @@ module.exports = {
                 secret: 'demo_showcase_secure_token'
             };
             integration.url += 'debit';
-
-            console.log({
-                username,
-                token: sessionId,
-                amount: Number(amount),
-                game: gameName,
-                roundId,
-                secret: integration.secret
-            });
 
             const response = await axios.post(`${integration.url}`, {
                 username,
@@ -145,6 +137,74 @@ module.exports = {
             //         }
             //     }
             // }
+
+            // [ВСТАВИТЬ ВНУТРЬ СЕРВИСА seamless.debit СТРОГО ПОСЛЕ УСПЕШНОГО ОТВЕТА AXIOS ПЛАТФОРМЫ ПАРТНЕРА]
+// finalBalance — это баланс, который вернула витрина после списания ставки
+
+            try {
+                await global.pool.query('BEGIN');
+
+                // Запрашиваем текущий вейджер и бонусный кошелек игрока
+                const pQuery = await global.pool.query(
+                    'SELECT bonus_balance, wager_left, balance FROM players WHERE username = $1 AND partner_id = $2 FOR UPDATE',
+                    [username, partnerId]
+                );
+
+                if (pQuery.rowCount > 0) {
+                    const pData = pQuery.rows[0];
+                    let currentBonus = Number(pData.bonus_balance);
+                    let currentWagerLeft = Number(pData.wager_left);
+
+                    // 1. Если у игрока есть активный вейджер — уменьшаем его на сумму сделанной ставки!
+                    if (currentWagerLeft > 0) {
+                        currentWagerLeft = Math.max(0, currentWagerLeft - betAmount);
+
+                        // 2. ТРИГГЕР: Проверяем, откручен ли вейджер в 0 прямо сейчас?
+                        if (currentWagerLeft === 0 && currentBonus > 0) {
+                            // Вейджер полностью отыгран! Переносим бонусные деньги в реальный баланс
+                            // Для этого мы делаем фоновый CREDIT на внешнюю витрину партнера через seamless шлюз
+
+                            const wagerCompleteRoundId = `wg_comp_${crypto.randomBytes(6).toString('hex')}`;
+
+                            const creditResult = await module.exports.credit(
+                                username, partnerId, sessionId, currentBonus,
+                                `Welcome Bonus Wager Completed - Funds Unlocked!`, wagerCompleteRoundId
+                            );
+
+                            if (creditResult && creditResult.balance !== undefined) {
+                                finalBalance = Number(creditResult.balance);
+                            }
+
+                            // Логируем триумф в историю активности
+                            await global.pool.query(
+                                `INSERT INTO player_history (username, partner_id, category, action_type, description, amount_change)
+                     VALUES ($1, $2, 'system', 'wager_unlock', $3, $4)`,
+                                [username, partnerId, `🎉 Congratulations! Welcome bonus fully wagered. Funds converted to real balance!`, currentBonus]
+                            );
+
+                            currentBonus = 0; // Бонус успешно обнулен, так как улетел в реал
+                        }
+
+                        // Записываем обновленные балансы и остаток вейджера в PostgreSQL
+                        await global.pool.query(
+                            `UPDATE players 
+                 SET bonus_balance = $1, 
+                     wager_left = $2, 
+                     balance = $3 
+                 WHERE username = $4 AND partner_id = $5`,
+                            [currentBonus, currentWagerLeft, finalBalance, username, partnerId]
+                        );
+                    }
+                }
+
+                await global.pool.query('COMMIT');
+            } catch (dbErr) {
+                await global.pool.query('ROLLBACK');
+                console.error("❌ Ошибка процессинга вейджера в дебите:", dbErr.message);
+            } finally {
+                global.pool.release();
+            }
+
 
             return response.data; // { balance: NewBalance }
         } catch (err) {

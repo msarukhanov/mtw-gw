@@ -17,6 +17,10 @@ CREATE TABLE IF NOT EXISTS players (
     sport_min_limit NUMERIC(15, 2) DEFAULT NULL,
     sport_max_limit NUMERIC(15, 2) DEFAULT NULL,
     password_hash TEXT DEFAULT NULL,
+    bonus_balance NUMERIC(15, 2) DEFAULT 0.00,
+    wager_total NUMERIC(15, 2) DEFAULT 0.00,
+    wager_left NUMERIC(15, 2) DEFAULT 0.00,
+    total_deposited_amount NUMERIC(15, 2) DEFAULT 0.00,
     UNIQUE(username, partner_id)
 );
 
@@ -400,3 +404,29 @@ CREATE TABLE IF NOT EXISTS withdraw_requests (
 
 -- Индекс для админки, чтобы быстро выводить новые заявки
 CREATE INDEX IF NOT EXISTS idx_withdraw_pending ON withdraw_requests(partner_id, status);
+
+CREATE TABLE IF NOT EXISTS b2b_welcome_bonuses (
+    id SERIAL PRIMARY KEY,
+    partner_id VARCHAR(50) NOT NULL,
+    website_id INT NOT NULL REFERENCES b2b_websites(id) ON DELETE CASCADE,
+    bonus_percent INT DEFAULT 100,       -- Процент бонуса (например, 100%)
+    wager_multiplier INT DEFAULT 30,     -- Вейджер (например, x30)
+    min_deposit_amount NUMERIC(15, 2) DEFAULT 100.00, -- Минимальный деп для активации
+    max_bonus_amount NUMERIC(15, 2) DEFAULT 5000.00,  -- Максимальная сумма подарка
+    is_active INT DEFAULT 1,
+    UNIQUE(website_id) -- Один велкам-бонус на один сайт
+);
+
+-- 3. Таблица Антифрод-инцидентов (Подозрительные действия)
+CREATE TABLE IF NOT EXISTS antifraud_alerts (
+    id SERIAL PRIMARY KEY,
+    partner_id VARCHAR(50) NOT NULL,
+    username VARCHAR(50) NOT NULL,
+    alert_type VARCHAR(50) NOT NULL,     -- 'SPEED_WITHDRAW', 'ZERO_TURNOVER', 'HIGH_WINRATE'
+    risk_score INT NOT NULL,             -- Оценка риска от 1 до 100
+    description TEXT NOT NULL,
+    status VARCHAR(20) DEFAULT 'NEW',    -- 'NEW', 'REVIEWED', 'DISMISSED'
+    timestamp TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_antifraud_status ON antifraud_alerts(partner_id, status);

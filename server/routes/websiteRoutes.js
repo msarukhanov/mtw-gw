@@ -11,9 +11,6 @@ const showcaseController = require('../controllers/showcaseController');
 
 router.get('/website/init', showcaseController.initPublicWebsite);
 
-
-
-
 // Роуты, которые имитируют эндпоинты внешней платформы
 router.post('/showcase/validate', showcaseController.validate);
 router.post('/showcase/validate', showcaseController.validate);

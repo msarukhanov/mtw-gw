@@ -130,6 +130,8 @@ router.post('/auth', async (req, res) => {
             username: player.username,
             partnerId: targetPartnerId,
             balance: player.balance,
+            realBalance: player.realBalance,
+            bonusBalance: player.bonusBalance,
             sessionId,
             jackpot: state.getJackpot(targetPartnerId),
             config: state.getConfig(targetPartnerId)

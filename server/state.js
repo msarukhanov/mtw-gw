@@ -42,10 +42,9 @@ const playerMethods = {
                 }
             }
 
-            // Больше не вставляем пустой массив в поле history, оно нам не нужно
             const insertRes = await global.pool.query(
-                `INSERT INTO players (username, partner_id, balance, daily_quests, used_promos, tournament_points) 
-                 VALUES ($1, $2, $3, '{"gamesPlayed": 0, "claimed": false}'::jsonb, '{}'::jsonb, 0) RETURNING *`,
+                `INSERT INTO players (username, partner_id, balance, daily_quests, used_promos, tournament_points, bonus_balance, wager_total, wager_left) 
+                 VALUES ($1, $2, $3, '{"gamesPlayed": 0, "claimed": false}'::jsonb, '{}'::jsonb, 0, 0.00, 0.00, 0.00) RETURNING *`,
                 [username, partnerId, initialBalance]
             );
             player = insertRes.rows[0];
@@ -55,7 +54,14 @@ const playerMethods = {
         player.usedPromos = typeof player.used_promos === 'string' ? JSON.parse(player.used_promos) : player.used_promos;
         player.tournamentPoints = Number(player.tournament_points);
 
-        // Заглушка для совместимости: если где-то на фронте жестко ожидается player.history
+        // Читаем новые бонусные поля
+        player.realBalance = Number(player.balance);
+        player.bonusBalance = Number(player.bonus_balance || 0);
+        player.wagerLeft = Number(player.wager_left || 0);
+
+        // 💎 ГЛАВНОЕ: Вычисляем суммарный доступный баланс для игры
+        player.balance = Number(player.realBalance + player.bonusBalance);
+
         player.history = [];
 
         const memKey = `${partnerId}_${username}`;
@@ -65,7 +71,7 @@ const playerMethods = {
         return player;
     },
 
-    updateBalance: async (username, partnerId, newBalance) => {
+    updateBalance222: async (username, partnerId, newBalance) => {
         if (global.io) {
             global.io.to(`${partnerId}_${username}`).emit('wallet_update', { balance: newBalance });
         }
@@ -74,6 +80,96 @@ const playerMethods = {
             [Number(newBalance), username, partnerId]
         );
     },
+
+    updateBalance: async (username, partnerId, newBalance) => {
+        const client = await global.pool.connect();
+        try {
+            await client.query('BEGIN');
+
+            // 1. Блокируем строку игрока и считываем текущее состояние кошельков
+            const pRes = await client.query(
+                'SELECT balance, bonus_balance, wager_left FROM players WHERE username = $1 AND partner_id = $2 FOR UPDATE',
+                [username, partnerId]
+            );
+
+            if (pRes.rowCount === 0) {
+                await client.query('ROLLBACK');
+                return null;
+            }
+
+            const player = pRes.rows[0];
+            const oldReal = Number(player.balance);
+            let bonusBalance = Number(player.bonus_balance || 0);
+            let wagerLeft = Number(player.wager_left || 0);
+
+            let finalReal = Number(newBalance);
+
+            // Вычисляем дельту изменения: если > 0, это выигрыш/депозит (Credit), если < 0, это ставка (Debit)
+            const delta = finalReal - oldReal;
+
+            if (delta < 0) {
+                // --- СЦЕНАРИЙ А: Списание (Debit / Ставка) ---
+                const betAmount = Math.abs(delta);
+
+                // Если вейджер активен — уменьшаем его на сумму ставки
+                if (wagerLeft > 0) {
+                    wagerLeft = Math.max(0, wagerLeft - betAmount);
+
+                    // ТРИГГЕР: Если вейджер откручен в 0 — переносим бонусы в реальный баланс!
+                    if (wagerLeft === 0 && bonusBalance > 0) {
+                        finalReal += bonusBalance;
+
+                        // Записываем лог разблокировки в player_history
+                        await client.query(
+                            `INSERT INTO player_history (username, partner_id, category, action_type, description, amount_change)
+                             VALUES ($1, $2, 'system', 'wager_unlock', '🎉 Welcome bonus successfully wagered! Funds converted to real balance.', $3)`,
+                            [username, partnerId, bonusBalance]
+                        );
+
+                        bonusBalance = 0;
+                    }
+                }
+            }
+            else if (delta > 0 && wagerLeft > 0) {
+                // --- СЦЕНАРИЙ Б: Начисление при активном вейджере (Credit / Выигрыш) ---
+                // Так как вейджер еще не откручен, выигрыш не должен идти в реал!
+                // Отменяем изменение реального баланса и перенаправляем весь выигрыш в бонусы
+                finalReal = oldReal;
+                bonusBalance += delta;
+            }
+
+            // 2. Делаем ОДИН единственный и финальный UPDATE в базу данных
+            const updateRes = await client.query(
+                `UPDATE players 
+                 SET balance = $1, bonus_balance = $2, wager_left = $3 
+                 WHERE username = $4 AND partner_id = $5 
+                 RETURNING *`,
+                [finalReal, bonusBalance, wagerLeft, username, partnerId]
+            );
+
+            await client.query('COMMIT');
+
+            // 3. Отправляем в сокеты суммарный playable-баланс для UI платформы и игр
+            const totalPlayable = finalReal + bonusBalance;
+            if (global.io) {
+                global.io.to(`${partnerId}_${username}`).emit('wallet_update', {
+                    balance: totalPlayable,
+                    realBalance: finalReal,
+                    bonusBalance: bonusBalance
+                });
+            }
+
+            return updateRes;
+
+        } catch (err) {
+            await client.query('ROLLBACK');
+            console.error("❌ Умный апдейт баланса дал сбой:", err.message);
+            return null;
+        } finally {
+            client.release();
+        }
+    },
+
 
     // Вспомогательный метод для форматирования времени (как было у тебя, если нужно для описания)
     savePlayerActionHistory: async (username, partnerId, actionData) => {
@@ -1984,6 +2080,82 @@ const sessionMethods = {
     }
 };
 
+const antifradMethods = {
+    // 1. Автоматическая фиксация инцидента безопасности
+    logAntifraudAlert: async (partnerId, username, alertType, riskScore, description) => {
+        try {
+            await global.pool.query(
+                `INSERT INTO antifraud_alerts (partner_id, username, alert_type, risk_score, description, status) 
+                 VALUES ($1, $2, $3, $4, $5, 'NEW')`,
+                [partnerId, username, alertType, Number(riskScore), description.trim()]
+            );
+            console.log(`⚠️ [Antifraud Triggered] Player: ${username}, Type: ${alertType}, Score: ${riskScore}`);
+            return true;
+        } catch (err) {
+            console.error("❌ Failed to log antifraud alert in DB:", err.message);
+            return false;
+        }
+    },
+
+    // 2. Получение списка всех новых алертов для админ-панели
+    getNewAntifraudAlerts: async (partnerId) => {
+        const res = await global.pool.query(
+            `SELECT id, username, alert_type, risk_score, description, timestamp 
+             FROM antifraud_alerts 
+             WHERE partner_id = $1 AND status = 'NEW' 
+             ORDER BY id DESC`,
+            [partnerId]
+        );
+        return res.rows;
+    },
+
+    // 3. Закрытие инцидента (перевод в архив)
+    dismissAntifraudAlertStatus: async (partnerId, alertId) => {
+        const res = await global.pool.query(
+            `UPDATE antifraud_alerts 
+             SET status = 'REVIEWED' 
+             WHERE id = $1 AND partner_id = $2`,
+            [Number(alertId), partnerId]
+        );
+        return res.rowCount > 0;
+    }
+};
+
+const bonusBalanceMethods  = {
+    // Получить текущие настройки Welcome-бонуса для конкретного сайта
+    getAdminWelcomeBonusConfig: async (partnerId, websiteId) => {
+        const res = await global.pool.query(
+            `SELECT id, bonus_percent, wager_multiplier, min_deposit_amount::numeric, max_bonus_amount::numeric, is_active 
+             FROM b2b_welcome_bonuses 
+             WHERE partner_id = $1 AND website_id = $2 LIMIT 1`,
+            [partnerId, Number(websiteId)]
+        );
+        // Если настроек еще нет — возвращаем стандартные дефолты платформы
+        return res.rows[0] || { bonus_percent: 100, wager_multiplier: 30, min_deposit_amount: 100, max_bonus_amount: 5000, is_active: 0 };
+    },
+
+    // Сохранить или обновить параметры Welcome-бонуса (Upsert)
+    saveAdminWelcomeBonusConfig: async (partnerId, data) => {
+        const { websiteId, bonusPercent, wagerMultiplier, minDeposit, maxBonus, isActive } = data;
+
+        await global.pool.query(
+            `INSERT INTO b2b_welcome_bonuses (partner_id, website_id, bonus_percent, wager_multiplier, min_deposit_amount, max_bonus_amount, is_active)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)
+             ON CONFLICT (website_id) 
+             DO UPDATE SET 
+                bonus_percent = EXCLUDED.bonus_percent,
+                wager_multiplier = EXCLUDED.wager_multiplier,
+                min_deposit_amount = EXCLUDED.min_deposit_amount,
+                max_bonus_amount = EXCLUDED.max_bonus_amount,
+                is_active = EXCLUDED.is_active`,
+            [partnerId, Number(websiteId), Number(bonusPercent), Number(wagerMultiplier), Number(minDeposit), Number(maxBonus), Number(isActive)]
+        );
+        return true;
+    }
+};
+
+
+
 module.exports = {
 
     BGS: {
@@ -2005,6 +2177,7 @@ module.exports = {
     ...affiliateMethods,
     ...financialMethods,
     ...backOfficeMethods,
+    ...antifradMethods,
 
     ...minesMethods,
     ...crashMethods,
@@ -2015,6 +2188,7 @@ module.exports = {
     ...sportsMethods,
     ...catalogMethods,
     ...sessionMethods,
+    ...bonusBalanceMethods,
 
     getConfig: (partnerId) => {
         const globalConfig = global.CONFIG || {};

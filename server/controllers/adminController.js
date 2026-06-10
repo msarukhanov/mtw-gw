@@ -704,3 +704,68 @@ exports.processAdminWithdrawalAction = async (req, res) => {
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: "Failed to process withdrawal node" }); }
 };
+
+// Контроллер получения списка инцидентов безопасности
+exports.getAdminAlerts = async (req, res) => {
+    try {
+        const partnerId = req.query.partnerId || "demo_mtwtech";
+        const alerts = await state.getNewAntifraudAlerts(partnerId);
+        res.json({ success: true, alerts });
+    } catch (err) {
+        console.error("❌ Error fetching antifraud alerts:", err.message);
+        res.status(500).json({ error: "Failed to load risk shield anomalies logs" });
+    }
+};
+
+// Контроллер закрытия/архивации алерта
+exports.dismissAlert = async (req, res) => {
+    try {
+        const partnerId = req.body.partnerId || "demo_mtwtech";
+        const { alertId } = req.body;
+
+        if (!alertId) {
+            return res.status(400).json({ error: "Missing alert identifier (alertId)" });
+        }
+
+        const success = await state.dismissAntifraudAlertStatus(partnerId, alertId);
+        if (!success) {
+            return res.status(404).json({ error: "Alert item not found or token mismatched" });
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error("❌ Error dismissing alert:", err.message);
+        res.status(500).json({ error: "Failed to archive security alert node" });
+    }
+};
+
+exports.getWelcomeBonus = async (req, res) => {
+    try {
+        const partnerId = req.query.partnerId || "demo_mtwtech";
+        const websiteId = req.query.websiteId;
+
+        if (!websiteId) return res.status(400).json({ error: "Missing websiteId parameter" });
+
+        const config = await state.getAdminWelcomeBonusConfig(partnerId, websiteId);
+        res.json({ success: true, config });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to load welcome bonus structure" });
+    }
+};
+
+exports.saveWelcomeBonus = async (req, res) => {
+    try {
+        const partnerId = req.body.partnerId || "demo_mtwtech";
+        const { websiteId, bonusPercent, wagerMultiplier, minDeposit, maxBonus, isActive } = req.body;
+
+        if (!websiteId) return res.status(400).json({ error: "Missing required websiteId identifier" });
+
+        await state.saveAdminWelcomeBonusConfig(partnerId, {
+            websiteId, bonusPercent, wagerMultiplier, minDeposit, maxBonus, isActive
+        });
+
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to write welcome bonus payload to Postgres" });
+    }
+};

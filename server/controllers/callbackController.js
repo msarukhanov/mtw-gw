@@ -48,6 +48,65 @@ async function processSuccessfulDeposit(orderUuid) {
             [order.partner_id, order.username, Number(order.amount), `${order.gateway.toUpperCase()} Deposit`]
         );
 
+        // [ВСТАВИТЬ ВНУТРЬ processSuccessfulDeposit ПОСЛЕ ОБНОВЛЕНИЯ СТАТУСА ЗАКАЗА НА 'SUCCESS']
+        const depositAmount = Number(order.amount);
+
+// 1. Проверяем, сколько суммарно депонировал игрок ранее
+        const checkFirstDep = await client.query(
+            'SELECT total_deposited_amount FROM players WHERE username = $1 AND partner_id = $2 FOR UPDATE',
+            [order.username, order.partner_id]
+        );
+        const totalDepBefore = Number(checkFirstDep.rows[0]?.total_deposited_amount || 0);
+
+// Инкрементируем общую сумму депозитов игрока в СУБД
+        await client.query(
+            'UPDATE players SET total_deposited_amount = total_deposited_amount + $1 WHERE username = $2 AND partner_id = $3',
+            [depositAmount, order.username, order.partner_id]
+        );
+
+// 2. Если это ПЕРВЫЙ ДЕПОЗИТ в истории игрока, проверяем наличие Welcome-бонуса для этого домена
+        if (totalDepBefore === 0) {
+            // Находим сайт, с которого пришел заказ (связываем через deposit_orders если у тебя там есть website_id, либо ищем первый активный)
+            const bonusConfigRes = await client.query(
+                `SELECT b.* FROM b2b_welcome_bonuses b
+         JOIN b2b_websites w ON b.website_id = w.id
+         WHERE b.partner_id = $1 AND b.is_active = 1 LIMIT 1`,
+                [order.partner_id]
+            );
+
+            if (bonusConfigRes.rowCount > 0) {
+                const bonusCfg = bonusConfigRes.rows[0];
+
+                // Проверяем, проходит ли депозит по минимальной планке
+                if (depositAmount >= Number(bonusCfg.min_deposit_amount)) {
+                    // Рассчитываем сумму бонуса
+                    let rawBonus = depositAmount * (Number(bonusCfg.bonus_percent) / 100);
+                    // Ограничиваем максимальным лимитом (например, не больше 5000 коинов)
+                    const finalBonusAmount = Math.min(rawBonus, Number(bonusCfg.max_bonus_amount));
+
+                    // Рассчитываем вейджер: сумма бонуса * вейджер-мультипликатор (например, x30)
+                    const targetWager = finalBonusAmount * Number(bonusCfg.wager_multiplier);
+
+                    // Начисляем бонус на бонусный кошелек и выставляем вейджер в Postgres
+                    await client.query(
+                        `UPDATE players 
+                 SET bonus_balance = bonus_balance + $1,
+                     wager_total = wager_total + $2,
+                     wager_left = wager_left + $3
+                 WHERE username = $4 AND partner_id = $5`,
+                        [finalBonusAmount, targetWager, targetWager, order.username, order.partner_id]
+                    );
+
+                    // Логируем активацию бонуса в историю игрока
+                    await client.query(
+                        `INSERT INTO player_history (username, partner_id, category, action_type, description, amount_change)
+                 VALUES ($1, $2, 'system', 'welcome_bonus', $3, $4)`,
+                        [order.username, order.partner_id, `Activated Welcome Bonus +${bonusCfg.bonus_percent}%! Wager x${bonusCfg.wager_multiplier} initialized.`, finalBonusAmount]
+                    );
+                }
+            }
+        }
+
         await client.query('COMMIT');
         return true;
     } catch (e) {

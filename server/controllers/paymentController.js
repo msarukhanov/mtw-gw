@@ -67,6 +67,40 @@ exports.initiateWithdraw2222 = async (req, res) => {
 exports.initiateWithdraw = async (req, res) => {
     const client = await global.pool.connect();
     try {
+        // [АНТИФРОД ФИЛЬТР ВНУТРЬ ИНИЦИАЛИЗАЦИИ ВЫВОДА playerWithdrawInit]
+        // [ИНТЕГРАЦИЯ СУБД МЕТОДА ВНУТРЬ ПРОВЕРКИ playerWithdrawInit]
+        try {
+            const depositCheck = await global.pool.query(
+                `SELECT 
+                    (SELECT COALESCE(SUM(amount), 0) FROM deposit_orders WHERE username = $1 AND partner_id = $2 AND status = 'SUCCESS') as total_deps,
+                    (SELECT COALESCE(SUM(amount), 0) FROM accounting_logs WHERE username = $1 AND partner_id = $2 AND type = 'DEBIT') as total_bets,
+                    (SELECT timestamp FROM deposit_orders WHERE username = $1 AND partner_id = $2 AND status = 'SUCCESS' ORDER BY timestamp DESC LIMIT 1) as last_dep_time`,
+                [username, partnerId]
+            );
+
+            const fraudData = depositCheck.rows[0] || {};
+            const totalDeps = Number(fraudData.total_deps || 0);
+            const totalBets = Number(fraudData.total_bets || 0);
+            const lastDepTime = fraudData.last_dep_time ? new Date(fraudData.last_dep_time) : null;
+
+            // Проверяем Критерий 1: Нулевой оборот (Вывод без игры)
+            if (totalDeps > 0 && totalBets < totalDeps) {
+                const desc = `User attempts layout drain. Turnover: ${totalBets} 🪙. Total Deposits: ${totalDeps} 🪙. High liquidity laundering risk factor.`;
+                // Вызываем наш новый боевой метод модели Postgres!
+                await state.logAntifraudAlert(partnerId, username, 'ZERO_TURNOVER', 75, desc);
+            }
+
+            // Проверяем Критерий 2: Мгновенный скоростной вывод
+            if (lastDepTime && (new Date() - lastDepTime) < 15 * 60 * 1000) {
+                const desc = `Immediate velocity withdrawal cashout request triggered less than 15 minutes after successful checkout deposit transaction node.`;
+                await state.logAntifraudAlert(partnerId, username, 'SPEED_WITHDRAW', 60, desc);
+            }
+
+        } catch (frErr) {
+            console.error("❌ Security shield analysis runtime failure:", frErr.message);
+        }
+
+
         const { username, partnerId, sessionId } = req; // Из middleware checkPlayer
         const { amount, gateway, walletDetails } = req.body;
 

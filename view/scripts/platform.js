@@ -6,116 +6,27 @@ let currentUsername = "";
 let currentSessionId = ""; // Храним защищенный токен сессии
 let socket = null;
 
-async function startShowcase() {
-    const usernameInput = document.getElementById('playerInput').value.trim();
-    if (!usernameInput) return alert('Please enter a valid player username');
+function updateWallet(data) {
 
-    try {
-        // 1. ОТПРАВЛЯЕМ ЗАПРОС НА ЛОГИН ДЛЯ ГЕНЕРАЦИИ ТОКЕНА СЕССИИ
-        const response = await fetch(`${CORE_SERVER}/api/player/login`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({username: usernameInput})
-        });
-        const data = await response.json();
+    console.log(data);
+    const profileBalance = document.getElementById('profile-balance');
+    const profileBonus = document.getElementById('profile-bonus');
 
-        if (!response.ok || !data.success) {
-            return alert(data.error || 'Login session initialization failed');
-        }
+    const walletDisplay = document.getElementById('wallet-display');
+    const bonusDisplay = document.getElementById('bonus-display');
 
-        // Сохраняем полученные данные
-        currentUsername = data.username;
-        currentSessionId = data.sessionId; // Наш сгенерированный безопасный токен!
+    if (data.balance !== undefined) {
+        const formattedBal = data.realBalance + ' 🪙';
+        const formattedBonus = data.bonusBalance + ' 🪙';
 
-        document.getElementById('setup-screen').style.display = 'none';
-        document.getElementById('platform-screen').style.display = 'block';
-        document.getElementById('drop-username').innerText = currentUsername;
-        document.getElementById('wallet-display').innerText = data.balance + ' 🪙';
-        document.getElementById('side-username').innerText = currentUsername;
+        if (profileBalance) profileBalance.innerText = formattedBal;
+        if (profileBonus) profileBonus.innerText = formattedBonus;
 
-        // 2. ИНИЦИАЛИЗАЦИЯ ВЕБ-СОКЕТА ДЛЯ ОБНОВЛЕНИЙ
-        console.log(CORE_SERVER);
-        socket = io(CORE_SERVER);
-
-        socket.on('connect', () => {
-            console.log('WS Connect', {
-                username: currentUsername,
-                partnerId: 'demo_mtwtech'
-            });
-
-            setTimeout(() => {
-                console.log('🚀 Sending handshake now...');
-                socket.emit('platform_join', {
-                    username: currentUsername,
-                    partnerId: 'demo_mtwtech'
-                });
-            }, 100);
-        });
-
-        socket.on('connect_error', (err) => {
-            console.error('❌ Ошибка подключения сокета в лайве:', err.message);
-        });
-
-        updateWallet();
-
-        socket.on('wallet_update', (data) => {
-            console.log('⚡ Live WS Wallet Update:', data.balance);
-            document.getElementById('wallet-display').innerText = data.balance + ' 🪙';
-        });
-
-
-        // Допиши в самый конец функции startShowcase()
-
-// 1. Генерируем и показываем личную реф-ссылку игрока (код равен его юзернейму)
-        const currentUrlWithoutParams = window.location.href.split('?')[0];
-        const personalRefLink = `${currentUrlWithoutParams}?ref=${currentUsername}`;
-        const refBox = document.getElementById('refLinkDisplay');
-        if (refBox) refBox.innerText = personalRefLink;
-
-// 2. АВТО-ПРИВЯЗКА: Проверяем, перешел ли этот игрок по чужой реф-ссылке
-        const urlParams = new URLSearchParams(window.location.search);
-        const incomingRefCode = urlParams.get('ref');
-
-        if (incomingRefCode && incomingRefCode !== currentUsername) {
-            console.log(`🔗 Found incoming referral code: ${incomingRefCode}. Registering...`);
-            fetch(`${CORE_SERVER}/api/auth/link-ref`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    username: currentUsername,
-                    partnerId: 'demo_mtwtech',
-                    refCode: incomingRefCode
-                })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) console.log(`✅ Successfully linked as a referral of ${incomingRefCode}`);
-                });
-        }
-
-
-        toggleView('home');
-
-    } catch (err) {
-        alert('Connection error during platform initialization');
+        if (walletDisplay) walletDisplay.innerText = formattedBal;
+        if (bonusDisplay) profileBonus.innerText = formattedBonus;
     }
-}
 
-async function updateWallet() {
-    if (!currentSessionId) return;
-    try {
-        const res = await fetch(`${CORE_SERVER}/api/player/info?sessionId=${currentSessionId}`);
-        const data = await res.json();
-        document.getElementById('wallet-display').innerText = data.balance + ' 🪙';
-    } catch (e) {
-        console.error('Wallet backup sync broken.');
-    }
-}
-
-function toggleProfileDropdown(e) {
-    e.stopPropagation();
-    const dropdown = document.getElementById('profileDropdown');
-    dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+    console.log(walletDisplay.innerText)
 }
 
 function launchGame(gameKey) {
@@ -345,10 +256,10 @@ function initSession(data) {
 
     // Fill in player details across components
     const userDisplay = document.getElementById('user-display');
-    const walletDisplay = document.getElementById('wallet-display');
 
     if (userDisplay) userDisplay.innerText = currentUsername;
-    if (walletDisplay) walletDisplay.innerText = data.balance + ' 🪙';
+
+    updateWallet(data);
 
     // Build unique multi-device personal referral links
     const currentUrlWithoutParams = window.location.href.split('?')[0];
@@ -382,10 +293,7 @@ function initSession(data) {
         });
         socket.on('wallet_update', (wsData) => {
             console.log('⚡ Live WS Wallet Update:', data.balance);
-            const liveWallet = document.getElementById('wallet-display');
-            const liveProfile = document.getElementById('profile-balance');
-            if (liveWallet) liveWallet.innerText = wsData.balance + ' 🪙';
-            if (liveProfile) liveProfile.innerText = wsData.balance + ' 🪙';
+            updateWallet(wsData);
         });
     }
 
@@ -549,14 +457,7 @@ async function apiGetPlayer() {
         });
         const data = await res.json();
 
-        const profileBalance = document.getElementById('profile-balance');
-        const walletDisplay = document.getElementById('wallet-display');
 
-        if (data.success && data.balance !== undefined) {
-            const formattedBal = data.balance + ' 🪙';
-            if (profileBalance) profileBalance.innerText = formattedBal;
-            if (walletDisplay) walletDisplay.innerText = formattedBal;
-        }
     } catch(e) {
         console.error('Profile sync failure:', e);
     }

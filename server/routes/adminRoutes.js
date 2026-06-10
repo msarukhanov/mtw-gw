@@ -60,6 +60,13 @@ router.post('/admin/banners/create', adminController.createBanner);
 router.post('/admin/banners/update', adminController.updateBanner);
 router.post('/admin/banners/delete', adminController.deleteBanner);
 
+router.get('/admin/antifraud', adminController.getAdminAlerts);
+router.post('/admin/antifraud/dismiss', adminController.dismissAlert);
+
+router.get('/admin/bonus/welcome', adminController.getWelcomeBonus);
+router.post('/admin/bonus/welcome/save', adminController.saveWelcomeBonus);
+
+
 router.post('/admin/catalog/collection', gameController.adminAddCollection);
 router.put('/admin/catalog/collection/:slug', gameController.adminEditCollection);
 router.delete('/admin/catalog/collection/:slug', gameController.adminDeleteCollection);

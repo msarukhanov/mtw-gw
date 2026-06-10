@@ -51,6 +51,19 @@ exports.initPublicWebsite = async (req, res) => {
     }
 };
 
+exports.getWelcomeBonus = async (req, res) => {
+    try {
+        const partnerId = req.query.partnerId || "demo_mtwtech";
+        const websiteId = req.query.websiteId;
+
+        if (!websiteId) return res.status(400).json({ error: "Missing websiteId parameter" });
+
+        const config = await stateMethods.getAdminWelcomeBonusConfig(partnerId, websiteId);
+        res.json({ success: true, config });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to load welcome bonus structure" });
+    }
+};
 // 1. ЛОГИН НА ПЛАТФОРМУ: Генерируем sessionId для фронтенда
 exports.login = async (req, res) => {
     const { username } = req.body;
@@ -102,7 +115,7 @@ exports.validate = async (req, res) => {
 
 // 3. Списание баланса (Debit) по токену сессии
 exports.debit = async (req, res) => {
-    const { token, amount } = req.body; // Игры шлют либо token, либо username
+    const { token, amount } = req.body;
     const realUsername = global.activePlayerSessions[token] || req.body.username;
     const partnerId = "demo_mtwtech";
 
@@ -110,15 +123,26 @@ exports.debit = async (req, res) => {
 
     try {
         const player = await state.getOrCreatePlayer(realUsername, partnerId);
-        if (player.balance < amount) return res.status(400).json({ error: "Insufficient funds" });
 
+        // Проверяем по суммарному (виртуальному) балансу, хватает ли денег на ставку
+        if (player.totalBalance < Number(amount)) {
+            return res.status(400).json({ error: "Insufficient funds" });
+        }
+
+        // Вычисляем гипотетический новый реальный баланс и скармливаем функции
         const newBalance = Number(player.balance) - Number(amount);
+
+        // Умная функция сама пересчитает остатки бонусов, вейджера и обновит СУБД за 1 раз!
         const upd = await state.updateBalance(realUsername, partnerId, newBalance);
 
-        const io = req.app.get('io');
+        // Тянем свежие данные из апдейта для корректного ответа игре
+        const updatedPlayer = upd.rows[0];
+        const totalPlayable = Number(updatedPlayer.balance) + Number(updatedPlayer.bonus_balance);
 
-        res.json({ balance: newBalance });
-    } catch (err) { res.status(500).json({ error: "Debit processing failed" }); }
+        res.json({ balance: totalPlayable });
+    } catch (err) {
+        res.status(500).json({ error: "Debit processing failed" });
+    }
 };
 
 // 4. Начисление выигрыша (Credit) по токену сессии
@@ -131,12 +155,23 @@ exports.credit = async (req, res) => {
 
     try {
         const player = await state.getOrCreatePlayer(realUsername, partnerId);
+
+        // Просто прибавляем выигрыш к текущему реалу
         const newBalance = Number(player.balance) + Number(amount);
+
+        // Функция сама увидит, что идет плюс. Если вейджер > 0, она заблокирует реал и переведет профит в бонус!
         const upd = await state.updateBalance(realUsername, partnerId, newBalance);
 
-        res.json({ balance: newBalance });
-    } catch (err) { res.status(500).json({ error: "Credit processing failed" }); }
+        const updatedPlayer = upd.rows[0];
+        const totalPlayable = Number(updatedPlayer.balance) + Number(updatedPlayer.bonus_balance);
+
+        res.json({ balance: totalPlayable });
+    } catch (err) {
+        res.status(500).json({ error: "Credit processing failed" });
+    }
 };
+
+
 
 // Эндпоинт для обновления шапки сайта-витрины (по токену сессии)
 exports.getUserInfo = async (req, res) => {

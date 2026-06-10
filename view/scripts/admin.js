@@ -234,6 +234,14 @@ async function loadData() {
         loadAdminWebsites();
 
         loadAdminPendingWithdrawals();
+        loadAdminAntifraudAlerts();
+
+        loadAdminWelcomeBonusMatrix();
+
+        const wbSelect = document.getElementById('wb_target_site');
+        if (wbSelect && typeof cachedWebsites !== 'undefined' && cachedWebsites.length > 0) {
+            wbSelect.innerHTML = cachedWebsites.map(w => `<option value="${w.id}">${w.title} (${w.domain_name})</option>`).join('');
+        }
     }
     catch (err) {
         console.error(err);
@@ -2136,6 +2144,107 @@ async function processWithdrawalNode(requestId, action) {
     } catch (err) { console.error(err); }
     finally { hideLoader(); }
 }
+
+// 1. Загрузка инцидентов безопасности в таблицу
+async function loadAdminAntifraudAlerts() {
+    try {
+        const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+        const res = await fetch(`${SERVER_URL}/api/admin/antifraud?partnerId=${currentPartnerId}`);
+        const data = await res.json();
+        const tbody = document.getElementById('adminAntifraudTableBody');
+
+        if (tbody && data.success && data.alerts) {
+            if (data.alerts.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:15px; color:var(--text-muted);">Ecosystem is secure. No fraud risk anomalies detected.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = data.alerts.map(a => `
+                <tr style="border-bottom: 1px solid #141822; background: rgba(255, 77, 77, 0.02);">
+                    <td style="padding: 8px 0;"><small style="color:var(--text-muted);">${new Date(a.timestamp).toLocaleTimeString()}</small></td>
+                    <td><b style="color:#fff;">${a.username}</b></td>
+                    <td><span class="badge" style="background:#381b1b; color:#ff4d4d; border:1px solid #ff4d4d; padding:2px 6px; border-radius:4px; font-weight:bold;">${a.alert_type}</span></td>
+                    <td><b style="color: ${a.risk_score >= 70 ? '#ff4d4d' : '#ffb703'};">${a.risk_score} / 100</b></td>
+                    <td style="color: var(--text-muted); font-size:11px;">${a.description}</td>
+                    <td style="text-align: right;">
+                        <button onclick="dismissAntifraudAlert(${a.id})" class="btn-bets-period" style="padding: 2px 8px; font-size: 11px; border-color:#262c3a; color:#8a99ad;">Dismiss</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    } catch (err) { console.error(err); }
+}
+
+// 2. Кнопка сброса/архивации алерта админом
+async function dismissAntifraudAlert(alertId) {
+    const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+    const res = await fetch(`${SERVER_URL}/api/admin/antifraud/dismiss`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ partnerId: currentPartnerId, alertId })
+    });
+    if (res.ok) loadAdminAntifraudAlerts();
+}
+
+
+// 1. Загрузка параметров Welcome-бонуса из СУБД для выбранного сайта
+async function loadAdminWelcomeBonusMatrix() {
+    const websiteId = document.getElementById('wb_target_site').value;
+    if (!websiteId) return;
+
+    try {
+        const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+        const res = await fetch(`${SERVER_URL}/api/admin/bonus/welcome?partnerId=${currentPartnerId}&websiteId=${websiteId}`);
+        const data = await res.json();
+
+        if (data.success && data.config) {
+            const cfg = data.config;
+            document.getElementById('wb_percent').value = cfg.bonus_percent;
+            document.getElementById('wb_wager').value = cfg.wager_multiplier;
+            document.getElementById('wb_min_dep').value = parseInt(cfg.min_deposit_amount);
+            document.getElementById('wb_max_bonus').value = parseInt(cfg.max_bonus_amount);
+            document.getElementById('wb_active').value = cfg.is_active;
+        }
+    } catch (err) {
+        console.error('Failed to query welcome bonus matrix state:', err);
+    }
+}
+
+// 2. Сохранение/Обновление параметров бонуса в Postgres
+async function saveAdminWelcomeBonusNode() {
+    const websiteId = document.getElementById('wb_target_site').value;
+    if (!websiteId) return alert('No active brand website selected.');
+
+    showLoader();
+    const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+
+    const payload = {
+        partnerId: currentPartnerId,
+        websiteId: websiteId,
+        bonusPercent: document.getElementById('wb_percent').value,
+        wagerMultiplier: document.getElementById('wb_wager').value,
+        minDeposit: document.getElementById('wb_min_dep').value,
+        maxBonus: document.getElementById('wb_max_bonus').value,
+        isActive: document.getElementById('wb_active').value
+    };
+
+    try {
+        const res = await fetch(`${SERVER_URL}/api/admin/bonus/welcome/save`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            alert('First deposit promo campaign rules successfully updated in PostgreSQL database!');
+            loadAdminWelcomeBonusMatrix();
+        }
+    } catch (err) {
+        console.error(err);
+    } finally {
+        hideLoader();
+    }
+}
+
 
 
 // Run auth validation sequence on page boot
