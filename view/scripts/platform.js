@@ -711,7 +711,7 @@ async function executeTelegramBackendAuth(tgInitData) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 partnerId: 'demo_mtwtech',
-                initData: tgInitData
+                ...tgInitData
             })
         });
         const data = await authRes.json();
