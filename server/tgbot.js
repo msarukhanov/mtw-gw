@@ -12,7 +12,7 @@ bot.start(async (ctx) => {
         `👾 Welcome to MTW iGaming Platform, ${tgUsername}!\n\n` +
         `Experience highload B2B White Label slots and sportsbook ecosystem directly inside Telegram nodes. Mapped seamlessly, lightning fast, secured by PostgreSQL structure.`,
         Markup.inlineKeyboard([
-            Markup.button.webApp('🎮 Launch Gaming Arena', 'https://t.me/MTWTechBot/mtwtech_platform')
+            Markup.button.webApp('🎮 Launch Gaming Arena', 'https://mtwtech.onrender.com/platform')
         ])
     );
 });
