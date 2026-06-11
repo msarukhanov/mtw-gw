@@ -722,10 +722,10 @@ async function executeTelegramBackendAuth(tgInitData) {
 
             printTgLog(`✅ [Telegram Auth Success] Раунды синхронизированы. Добро пожаловать, ${currentUsername}!`);
         } else {
-            printTgLog("⚠️ [Telegram Auth Reject] Бэкенд отклонил подпись Телеграма:", data.message);
+            printTgLog("⚠️ [Telegram Auth Reject] Бэкенд отклонил подпись Телеграма:", data);
         }
     } catch (err) {
-        printTgLog("❌ Критическая ошибка соединения со шлюзом tg-auth:", err);
+        printTgLog("❌ Критическая ошибка соединения со шлюзом tg-auth:", JSON.stringify(err));
     }
 }
 
