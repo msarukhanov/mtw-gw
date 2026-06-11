@@ -705,8 +705,9 @@ function initializeTelegramEcosystemAuth() {
 
 // Вынесем сам запрос в изолированную функцию
 async function executeTelegramBackendAuth(tgInitData) {
+    printTgLog(JSON.stringify(tgInitData));
     try {
-        const authRes = await fetch(`${SERVER_URL}/api/public/tg-auth`, {
+        const authRes = await fetch(`${CORE_SERVER}/api/public/tg-auth`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
