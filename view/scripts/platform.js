@@ -669,6 +669,61 @@ function changePlatformLanguage(newLang) {
     translatePage();
 }
 
+// Функция запуска WebApp, которая ждет полной готовности скрипта Дурова
+function initializeTelegramEcosystemAuth() {
+    // Проверяем наличие объекта WebApp
+    const tg = window.Telegram ? window.Telegram.WebApp : null;
+
+    if (tg) {
+        // Сигнализируем Телеграму, что наше приложение готово к работе (расширяет окно) [INDEX]
+        tg.ready();
+
+        // Вытаскиваем initData
+        const tgInitData = tg.initData;
+
+        // Если строка пустая (такое бывает, если ты открыл сайт в обычном Chrome, а не внутри ТГ)
+        if (!tgInitData) {
+            console.log("ℹ️ [Telegram SDK] Платформа запущена в обычном веб-браузере. Автологин пропущен.");
+            return;
+        }
+
+        console.log("🤖 [Telegram WebApp Detected] Строка initData получена. Запуск бесшовной сессии...");
+
+        // Запускаем твой fetch-запрос авторизации
+        executeTelegramBackendAuth(tgInitData);
+    } else {
+        console.log("ℹ️ [Telegram SDK] Объект WebApp не найден. Включен стандартный режим витрины.");
+    }
+}
+
+// Вынесем сам запрос в изолированную функцию
+async function executeTelegramBackendAuth(tgInitData) {
+    try {
+        const authRes = await fetch(`${SERVER_URL}/api/public/tg-auth`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                partnerId: 'demo_mtwtech',
+                initData: tgInitData
+            })
+        });
+        const authData = await authRes.json();
+
+        if (authData.success && authData.token) {
+
+            initSession(authData);
+
+            console.log(`✅ [Telegram Auth Success] Раунды синхронизированы. Добро пожаловать, ${currentUsername}!`);
+        } else {
+            console.warn("⚠️ [Telegram Auth Reject] Бэкенд отклонил подпись Телеграма:", authData.message);
+        }
+    } catch (err) {
+        console.error("❌ Критическая ошибка соединения со шлюзом tg-auth:", err);
+    }
+}
+
+// Запускаем инициализацию строго после того, как DOM-структура полностью готова
+window.addEventListener('DOMContentLoaded', initializeTelegramEcosystemAuth);
 window.addEventListener('DOMContentLoaded', bootWhiteLabelPlatform);
 
 async function bootWhiteLabelPlatform() {
@@ -678,38 +733,6 @@ async function bootWhiteLabelPlatform() {
 
         const baseUrl = (location.hostname === 'localhost') ? 'http://localhost:3000' : 'https://mtw-gw.onrender.com';
         const baseUrlApi = baseUrl + '/api';
-
-        // [ДОБАВИТЬ В САМОЕ НАЧАЛО bootWhiteLabelPlatform НА ПЛАТФОРМЕ ИГРОКА]
-// Проверяем, доступен ли глобальный объект Telegram WebApp внутри TWA-браузера
-        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
-            const tgInitData = window.Telegram.WebApp.initData;
-
-            console.log("🤖 [Telegram WebApp Detected] Запуск автоматической бесшовной авторизации...");
-
-            try {
-                const authRes = await fetch(`${SERVER_URL}/api/public/tg-auth`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        partnerId: 'demo_mtwtech',
-                        initData: tgInitData
-                    })
-                });
-                const authData = await authRes.json();
-
-                if (authData.success && authData.token) {
-                    // Записываем полученную бесшовную сессию в глобальные переменные платформы
-                    currentUsername = authData.username;
-                    currentSessionId = authData.token;
-                    localStorage.setItem('sessionId', authData.token);
-
-                    console.log(`✅ [Telegram Auth Success] Добро пожаловать, ${currentUsername}! Баланс синхронизирован.`);
-                }
-            } catch (err) {
-                console.error("❌ Авторизация через Telegram бот упала:", err);
-            }
-        }
-
 
         const res = await fetch(`${baseUrlApi}/website/init?domain=${currentHostname}&partnerId=${defaultPartnerId}`);
         const data = await res.json();
