@@ -435,21 +435,39 @@ exports.getAdminQuests = async (req, res) => {
     }
 };
 
+// 1. ТОЛЬКО СОЗДАНИЕ КВЕСТА
 exports.createAdminQuest = async (req, res) => {
     try {
         const { partnerId, questType, targetValue, rewardAmount, description } = req.body;
 
-        // Вставляем новый квест. Если такой тип у партнера уже есть — обновляем параметры
         await global.pool.query(
-            `INSERT INTO b2b_quests (partner_id, quest_type, target_value, reward_amount, description, is_active)
-             VALUES ($1, $2, $3, $4, $5, 1)
-             ON CONFLICT (partner_id, quest_type) 
-             DO UPDATE SET target_value = EXCLUDED.target_value, reward_amount = EXCLUDED.reward_amount, description = EXCLUDED.description, is_active = 1`,
-            [partnerId, questType, Number(targetValue), Number(rewardAmount), description]
+            `INSERT INTO b2b_quests (partner_id, quest_type, target_value, reward_amount, description)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [partnerId, questType, Number(targetValue), Number(rewardAmount), description.trim()]
         );
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: "Failed to save quest template" });
+        if (err.code === '23505') return res.status(400).json({ error: "Quest type already configured for this partner" });
+        res.status(500).json({ error: "Failed to create quest" });
+    }
+};
+
+// 2. ТОЛЬКО ОБНОВЛЕНИЕ КВЕСТА (По ID)
+exports.updateAdminQuest = async (req, res) => {
+    try {
+        const { id, partnerId, questType, targetValue, rewardAmount, description } = req.body;
+
+        const result = await global.pool.query(
+            `UPDATE b2b_quests 
+             SET quest_type = $1, target_value = $2, reward_amount = $3, description = $4
+             WHERE id = $5 AND partner_id = $6`,
+            [questType, Number(targetValue), Number(rewardAmount), description.trim(), Number(id), partnerId]
+        );
+
+        if (result.rowCount === 0) return res.status(404).json({ error: "Quest not found" });
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to update quest template" });
     }
 };
 
@@ -769,3 +787,179 @@ exports.saveWelcomeBonus = async (req, res) => {
         res.status(500).json({ error: "Failed to write welcome bonus payload to Postgres" });
     }
 };
+
+// controllers/clanController.js
+exports.getAdminClanQuests = async (req, res) => {
+    try {
+        const partnerId = req.query.partnerId || "demo_mtwtech";
+
+        // Список созданных квестов
+        const quests = await global.pool.query(
+            `SELECT id, title, target_turnover::numeric, reward_pool::numeric, expires_at, is_active 
+             FROM b2b_clan_quests WHERE partner_id = $1 ORDER BY id DESC`,
+            [partnerId]
+        );
+
+        // Статистика по созданным кланам в системе
+        const clans = await global.pool.query(
+            `SELECT c.id, c.clan_name, c.owner_username, c.clan_level, c.clan_xp, COUNT(m.id)::int as members_count 
+             FROM b2b_clans c
+             LEFT JOIN b2b_clan_members m ON c.id = m.clan_id
+             WHERE c.partner_id = $1
+             GROUP BY c.id ORDER BY c.clan_level DESC, c.clan_xp DESC`,
+            [partnerId]
+        );
+
+        res.json({ success: true, quests: quests.rows, clans: clans.rows });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to load guild engine matrices" });
+    }
+};
+
+exports.createAdminClanQuest = async (req, res) => {
+    try {
+        const { partnerId, title, targetTurnover, rewardPool, expiresAt } = req.body;
+
+        // Принудительно деактивируем прошлые клановые квесты, чтобы активным был только один
+        await global.pool.query("UPDATE b2b_clan_quests SET is_active = 0 WHERE partner_id = $1 AND is_active = 1", [partnerId]);
+
+        await global.pool.query(
+            `INSERT INTO b2b_clan_quests (partner_id, title, target_turnover, reward_pool, expires_at) 
+             VALUES ($1, $2, $3, $4, $5)`,
+            [partnerId, title.trim(), Number(targetTurnover), Number(rewardPool), expiresAt]
+        );
+
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to deploy guild quest node" });
+    }
+};
+
+exports.getAdminAchievements = async (req, res) => {
+    try {
+        const partnerId = req.query.partnerId || "demo_mtwtech";
+        const result = await global.pool.query(
+            'SELECT id, title, description, badge_icon, condition_type, target_value::numeric, reward_amount::numeric FROM b2b_achievements WHERE partner_id = $1 ORDER BY id DESC',
+            [partnerId]
+        );
+        res.json({ success: true, achievements: result.rows });
+    } catch (err) { res.status(500).json({ error: "Failed to load achievements dictionary" }); }
+};
+
+// 1. ТОЛЬКО СОЗДАНИЕ АЧИВКИ
+exports.createAdminAchievement = async (req, res) => {
+    try {
+        const { partnerId, title, description, badgeIcon, conditionType, targetValue, rewardAmount } = req.body;
+
+        await global.pool.query(
+            `INSERT INTO b2b_achievements (partner_id, title, description, badge_icon, condition_type, target_value, reward_amount)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [partnerId, title.trim(), description.trim(), badgeIcon.trim(), conditionType, Number(targetValue), Number(rewardAmount)]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        if (err.code === '23505') return res.status(400).json({ error: "Achievement title already exists" });
+        res.status(500).json({ error: "Failed to create achievement template" });
+    }
+};
+
+// 2. ТОЛЬКО ОБНОВЛЕНИЕ АЧИВКИ (По ID)
+exports.updateAdminAchievement = async (req, res) => {
+    try {
+        const { id, partnerId, title, description, badgeIcon, conditionType, targetValue, rewardAmount } = req.body;
+
+        const result = await global.pool.query(
+            `UPDATE b2b_achievements 
+             SET title = $1, description = $2, badge_icon = $3, condition_type = $4, target_value = $5, reward_amount = $6
+             WHERE id = $7 AND partner_id = $8`,
+            [title.trim(), description.trim(), badgeIcon.trim(), conditionType, Number(targetValue), Number(rewardAmount), Number(id), partnerId]
+        );
+
+        if (result.rowCount === 0) return res.status(404).json({ error: "Achievement template not found" });
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to update achievement template" });
+    }
+};
+
+
+exports.deleteAdminAchievement = async (req, res) => {
+    try {
+        const { partnerId, achievementId } = req.body;
+        await global.pool.query(
+            'DELETE FROM b2b_achievements WHERE partner_id = $1 AND id = $2',
+            [partnerId, Number(achievementId)]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to delete achievement badge" });
+    }
+};
+
+
+// 1. Получить настройки языков и сам JSON-пакет конкретного перевода
+exports.getWebsiteTranslationConfig = async (req, res) => {
+    try {
+        const partnerId = req.query.partnerId || "demo_mtwtech";
+        const websiteId = Number(req.query.websiteId);
+        const langCode = req.query.langCode || "en";
+
+        if (!websiteId) return res.status(400).json({ error: "Missing websiteId" });
+
+        // Тянем настройки языков из таблицы сайтов
+        const webRes = await global.pool.query(
+            'SELECT lang_settings FROM b2b_websites WHERE id = $1 AND partner_id = $2',
+            [websiteId, partnerId]
+        );
+        const langSettings = typeof webRes.rows[0]?.lang_settings === 'string'
+            ? JSON.parse(webRes.rows[0].lang_settings)
+            : (webRes.rows[0]?.lang_settings || { supported_langs: ["en"], default_lang: "en" });
+
+        // Тянем конкретный языковой JSON-пакет
+        const transRes = await global.pool.query(
+            'SELECT payload FROM b2b_website_translations WHERE website_id = $1 AND lang_code = $2',
+            [websiteId, langCode]
+        );
+
+        // Если перевода в базе еще нет — отдаем пустую заготовку структуры
+        const payload = transRes.rowCount > 0
+            ? (typeof transRes.rows[0].payload === 'string' ? JSON.parse(transRes.rows[0].payload) : transRes.rows[0].payload)
+            : { header: { links: {}, buttons: {}, balance: {} }, auth: {} };
+
+        res.json({ success: true, langSettings, payload });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to load translations config" });
+    }
+};
+
+// 2. Сохранить настройки языков сайта и JSON-пакет (Upsert)
+exports.saveWebsiteTranslationConfig = async (req, res) => {
+    try {
+        const partnerId = req.body.partnerId || "demo_mtwtech";
+        const { websiteId, langCode, langSettings, payload } = req.body;
+
+        if (!websiteId || !langCode) return res.status(400).json({ error: "Missing required parameters" });
+
+        // 1. Обновляем массив поддерживаемых языков в b2b_websites
+        await global.pool.query(
+            'UPDATE b2b_websites SET lang_settings = $1::jsonb WHERE id = $2 AND partner_id = $3',
+            [JSON.stringify(langSettings), Number(websiteId), partnerId]
+        );
+
+        // 2. Записываем или обновляем сам языковой JSON-пакет
+        await global.pool.query(
+            `INSERT INTO b2b_website_translations (partner_id, website_id, lang_code, payload)
+             VALUES ($1, $2, $3, $4::jsonb)
+             ON CONFLICT (website_id, lang_code) 
+             DO UPDATE SET payload = EXCLUDED.payload`,
+            [partnerId, Number(websiteId), langCode, JSON.stringify(payload)]
+        );
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to write translations to database" });
+    }
+};
+
+

@@ -129,6 +129,193 @@ const playerMethods = {
                         bonusBalance = 0;
                     }
                 }
+
+                // [ВСТАВИТЬ В КОНЕЦ МЕТОДА updateBalance ПЕРЕД ТРАНЗАКЦИОННЫМ COMMIT]
+                try {
+                    const actionStake = Math.abs(delta); // Сумма ставки (если delta < 0)
+                    const actionWin = delta > 0 ? delta : 0; // Сумма выигрыша (если delta > 0)
+
+                    // Вычисляем коэффициент выигрыша (multiplier), если это был credit
+                    let winMultiplier = 0;
+                    if (actionWin > 0 && actionStake > 0) {
+                        winMultiplier = actionWin / actionStake;
+                    }
+
+                    // Извлекаем все активные шаблоны ачивок партнера
+                    const activeAchRes = await client.query(
+                        'SELECT * FROM b2b_achievements WHERE partner_id = $1 AND is_active = 1',
+                        [partnerId]
+                    );
+
+                    for (const ach of activeAchRes.rows) {
+                        let increment = 0;
+                        let isDirectSet = false;
+                        let newValue = 0;
+
+                        // Определяем математику прогресса в зависимости от типа достижения
+                        if (ach.condition_type === 'TOTAL_GAMES' && delta < 0) {
+                            increment = 1; // +1 сыгранная игра при дебите
+                        }
+                        else if (ach.condition_type === 'TOTAL_TURNOVER' && delta < 0) {
+                            increment = actionStake; // +сумма ставки в общий оборот
+                        }
+                        else if (ach.condition_type === 'BIG_WIN_SINGLE' && actionWin > 0) {
+                            // Для рекордов проверяем: побит ли текущий максимум сингл-выигрыша
+                            isDirectSet = true;
+                            newValue = actionWin;
+                        }
+                        else if (ach.condition_type === 'MAX_WIN_MULTIPLIER' && winMultiplier > 0) {
+                            // Для рекордов проверяем: побит ли максимальный икс
+                            isDirectSet = true;
+                            newValue = winMultiplier;
+                        }
+
+                        if (increment > 0 || isDirectSet) {
+                            if (isDirectSet) {
+                                // Логика обновления рекордов (обновляем только если новый икс/вин больше старого)
+                                await client.query(`
+                    INSERT INTO player_achievements (partner_id, username, achievement_id, current_value)
+                    VALUES ($1, $2, $3, $4)
+                    ON CONFLICT (partner_id, username, achievement_id)
+                    DO UPDATE SET 
+                        current_value = CASE 
+                            WHEN player_achievements.is_unlocked = false AND EXCLUDED.current_value > player_achievements.current_value THEN EXCLUDED.current_value
+                            ELSE player_achievements.current_value
+                        END
+                `, [partnerId, username, ach.id, newValue]);
+                            } else {
+                                // Логика накопительного прогресса (плюсуем игры и оборот)
+                                await client.query(`
+                    INSERT INTO player_achievements (partner_id, username, achievement_id, current_value)
+                    VALUES ($1, $2, $3, $4)
+                    ON CONFLICT (partner_id, username, achievement_id)
+                    DO UPDATE SET 
+                        current_value = CASE 
+                            WHEN player_achievements.is_unlocked = false THEN player_achievements.current_value + EXCLUDED.current_value
+                            ELSE player_achievements.current_value
+                        END
+                `, [partnerId, username, ach.id, increment]);
+                            }
+
+                            // --- ТРИГГЕР ДЕБЛОКИРОВКИ ДОСТИЖЕНИЯ И ВЫДАЧИ ЗНАЧКА ---
+                            const checkAchProgress = await client.query(
+                                'SELECT current_value, is_unlocked FROM player_achievements WHERE partner_id = $1 AND username = $2 AND achievement_id = $3 FOR UPDATE',
+                                [partnerId, username, ach.id]
+                            );
+
+                            const progress = checkAchProgress.rows[0];
+                            if (Number(progress.current_value) >= Number(ach.target_value) && !progress.is_unlocked) {
+
+                                // 1. Намертво блокируем ачивку в статус разблокированной (is_unlocked = true)
+                                await client.query(
+                                    `UPDATE player_achievements 
+                     SET is_unlocked = true, unlocked_at = NOW(), current_value = $1
+                     WHERE partner_id = $2 AND username = $3 AND achievement_id = $4`,
+                                    [ach.target_value, partnerId, username, ach.id]
+                                );
+
+                                // 2. Начисляем денежный приз на реальный баланс (finalReal) прямо внутри текущей транзакции!
+                                finalReal += Number(ach.reward_amount);
+
+                                // 3. Записываем системный лог триумфа в player_history (игрок увидит значок!)
+                                await client.query(
+                                    `INSERT INTO player_history (username, partner_id, category, action_type, description, amount_change)
+                     VALUES ($1, $2, 'system', 'achievement', $3, $4)`,
+                                    [username, partnerId, `Unlocked Badge ${ach.badge_icon} "${ach.title}"! Reward credited to balance.`, Number(ach.reward_amount)]
+                                );
+                            }
+                        }
+                    }
+                } catch (achErr) {
+                    console.error("❌ Achievements tracking module failure:", achErr.message);
+                }
+
+                // [ВСТАВИТЬ ВНУТРЬ updateBalance ИМЕННО ВНУТРЬ БЛОКА if (delta < 0) ПОСЛЕ ОБСЛУЖИВАНИЯ ВЕЙДЖЕРА]
+                try {
+                    const betAmount = Math.abs(delta);
+
+                    // 1. Проверяем, состоит ли игрок в каком-либо клане
+                    const memberCheck = await client.query(
+                        'SELECT clan_id FROM b2b_clan_members WHERE username = $1 AND partner_id = $2 LIMIT 1',
+                        [username, partnerId]
+                    );
+
+                    if (memberCheck.rowCount > 0) {
+                        const clanId = memberCheck.rows[0].clan_id;
+
+                        // 2. Ищем активный командный квест, у которого не истек срок действия
+                        const activeClanQuestRes = await client.query(
+                            `SELECT id, target_turnover, reward_pool FROM b2b_clan_quests 
+             WHERE partner_id = $1 AND is_active = 1 AND expires_at > NOW() LIMIT 1`,
+                            [partnerId]
+                        );
+
+                        if (activeClanQuestRes.rowCount > 0) {
+                            const clanQuest = activeClanQuestRes.rows[0];
+
+                            // 3. Атомарно обновляем оборот клана в таблице прогресса (Upsert)
+                            await client.query(`
+                                INSERT INTO b2b_clan_quest_progress (clan_id, quest_id, current_turnover)
+                                VALUES ($1, $2, $3)
+                                ON CONFLICT (clan_id, quest_id)
+                                DO UPDATE SET 
+                                    current_turnover = CASE 
+                                        WHEN b2b_clan_quest_progress.is_completed = false THEN b2b_clan_quest_progress.current_turnover + EXCLUDED.current_turnover
+                                        ELSE b2b_clan_quest_progress.current_turnover
+                                    END
+                            `, [clanId, clanQuest.id, betAmount]);
+
+                            // 4. ТРИГГЕР: Проверяем, выполнил ли клан цель по обороту прямо сейчас?
+                            const checkClanProgress = await client.query(
+                                'SELECT current_turnover, is_completed FROM b2b_clan_quest_progress WHERE clan_id = $1 AND quest_id = $2 FOR UPDATE',
+                                [clanId, clanQuest.id]
+                            );
+
+                            const progress = checkClanProgress.rows[0];
+                            if (Number(progress.current_turnover) >= Number(clanQuest.target_turnover) && !progress.is_completed) {
+
+                                // Помечаем квест клана как выполненный
+                                await client.query(
+                                    'UPDATE b2b_clan_quest_progress SET is_completed = true WHERE clan_id = $1 AND quest_id = $2',
+                                    [clanId, clanQuest.id]
+                                );
+
+                                // Начисляем Клан-XP за успешное выполнение ретеншн-цели
+                                await client.query('UPDATE b2b_clans SET clan_xp = clan_xp + 500 WHERE id = $1', [clanId]);
+
+                                // 💰РАСПРЕДЕЛЕНИЕ ПРИЗОВОГО ФОНДА (МЕТОД МГНОВЕННОЙ ВЫПЛАТЫ ВСЕМ ЧЛЕНАМ КЛАНА)
+                                // Вытягиваем всех участников этого клана
+                                const membersRes = await client.query('SELECT username FROM b2b_clan_members WHERE clan_id = $1', [clanId]);
+                                const membersCount = membersRes.rowCount;
+
+                                if (membersCount > 0) {
+                                    // Делим общий призовой фонд поровну между всеми участниками гильдии
+                                    const shareReward = Math.floor(Number(clanQuest.reward_pool) / membersCount);
+                                    const walletService = seamless || require('./services/seamlessService');
+
+                                    for (const member of membersRes.rows) {
+                                        try {
+                                            const clanRoundId = `cln_rw_${crypto.randomBytes(6).toString('hex')}`;
+                                            // Начисляем коины на внешнюю витрину партнера через seamless шлюз credit
+                                            await walletService.credit(member.username, partnerId, null, shareReward, `Guild Quest Victory: ${clanQuest.title}`, clanRoundId);
+
+                                            // Пишем лог в личную историю активности игрока player_history
+                                            await client.query(
+                                                `INSERT INTO player_history (username, partner_id, category, action_type, description, amount_change)
+                                 VALUES ($1, $2, 'system', 'clan_reward', $3, $4)`,
+                                                [member.username, partnerId, `🏆 Your Guild completed the quest "${clanQuest.title}"! Your split reward share.`, shareReward]
+                                            );
+                                        } catch (payoutErr) {
+                                            console.error(`❌ Не удалось начислить долю кланового приза игроку ${member.username}:`, payoutErr.message);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (clnErr) {
+                    console.error("❌ Guild turnover increment sequence crashed:", clnErr.message);
+                }
             }
             else if (delta > 0 && wagerLeft > 0) {
                 // --- СЦЕНАРИЙ Б: Начисление при активном вейджере (Credit / Выигрыш) ---
@@ -2080,7 +2267,7 @@ const sessionMethods = {
     }
 };
 
-const antifradMethods = {
+const antifraudMethods = {
     // 1. Автоматическая фиксация инцидента безопасности
     logAntifraudAlert: async (partnerId, username, alertType, riskScore, description) => {
         try {
@@ -2177,7 +2364,7 @@ module.exports = {
     ...affiliateMethods,
     ...financialMethods,
     ...backOfficeMethods,
-    ...antifradMethods,
+    ...antifraudMethods,
 
     ...minesMethods,
     ...crashMethods,

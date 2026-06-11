@@ -3,7 +3,7 @@ const state = require('../state');
 
 // Хранилище активных демо-сессий витрины в оперативной памяти: { "session_token_xyz": "username" }
 
-exports.initPublicWebsite = async (req, res) => {
+exports.initPublicWebsite222 = async (req, res) => {
     try {
         const domain = req.query.domain || 'localhost';
         const partnerId = req.query.partnerId || 'demo_mtwtech';
@@ -50,6 +50,63 @@ exports.initPublicWebsite = async (req, res) => {
         res.status(500).json({ error: "Ecosystem boot failure" });
     }
 };
+
+exports.initPublicWebsite = async (req, res) => {
+    try {
+        const domain = req.query.domain || 'localhost';
+        const partnerId = req.query.partnerId || 'demo_mtwtech';
+
+        // 1. Ищем сайт, подтягивая lang_settings
+        const webRes = await global.pool.query(
+            `SELECT id, title, settings, meta, styles, lang_settings 
+             FROM b2b_websites 
+             WHERE partner_id = $1 AND domain_name = $2 AND is_active = 1 LIMIT 1`,
+            [partnerId, domain.toLowerCase()]
+        );
+
+        if (webRes.rowCount === 0) return res.status(404).json({ success: false, error: "BRAND_NOT_FOUND" });
+        const web = webRes.rows[0];
+
+        const langSettings = typeof web.lang_settings === 'string' ? JSON.parse(web.lang_settings) : (web.lang_settings || { supported_langs: ['en'], default_lang: 'en' });
+
+        // 2. Вытягиваем ВСЕ переводы, загруженные админом для этого конкретного сайта
+        const transRes = await global.pool.query(
+            `SELECT lang_code, payload FROM b2b_website_translations WHERE website_id = $1`,
+            [web.id]
+        );
+
+        // Собираем объект локализации на лету из строк базы данных
+        const websiteTranslations = {};
+        transRes.rows.forEach(row => {
+            websiteTranslations[row.lang_code] = typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload;
+        });
+
+        // 3. Вытягиваем баннеры (оставляем без изменений)
+        const bannersRes = await global.pool.query(
+            `SELECT banner_type, image_url, click_url FROM b2b_banners WHERE website_id = $1 AND is_active = 1 ORDER BY sort_order ASC`,
+            [web.id]
+        );
+        const banners = { home: [], casino: [], sport: [] };
+        bannersRes.rows.forEach(b => { if (banners[b.banner_type]) banners[b.banner_type].push(b); });
+
+        res.json({
+            success: true,
+            title: web.title,
+            settings: typeof web.settings === 'string' ? JSON.parse(web.settings) : web.settings,
+            meta: typeof web.meta === 'string' ? JSON.parse(web.meta) : web.meta,
+            styles: typeof web.styles === 'string' ? JSON.parse(web.styles) : web.styles,
+            banners: banners,
+            // 🌐 НОВЫЕ ПАРАМЕТРЫ ДИНАМИЧЕСКОЙ ЛОКАЛИЗАЦИИ
+            langSettings: langSettings,         // {"supported_langs": ["en", "ru"], "default_lang": "en"}
+            translations: websiteTranslations   // Динамические тексты из Postgres b2b_website_translations
+        });
+
+    } catch (err) {
+        console.error("❌ Public website init crash:", err.message);
+        res.status(500).json({ error: "Ecosystem boot failure" });
+    }
+};
+
 
 exports.getWelcomeBonus = async (req, res) => {
     try {

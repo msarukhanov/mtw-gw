@@ -44,6 +44,7 @@ router.post('/admin/gamification/config/save', adminController.saveGamificationC
 
 router.get('/admin/quests', adminController.getAdminQuests);
 router.post('/admin/quests/create', adminController.createAdminQuest);
+router.post('/admin/quests/update', adminController.updateAdminQuest);
 router.post('/admin/quests/delete', adminController.deleteAdminQuest);
 
 router.get('/admin/tournaments', adminController.getAdminTournamentsOverview);
@@ -55,10 +56,21 @@ router.post('/admin/websites/create', adminController.createWebsite);
 router.post('/admin/websites/update', adminController.updateWebsite);
 router.post('/admin/websites/delete', adminController.deleteWebsite);
 
+router.get('/admin/websites/translations', adminController.getWebsiteTranslationConfig);
+router.post('/admin/websites/translations/save', adminController.saveWebsiteTranslationConfig);
+
 router.get('/admin/banners', adminController.getBanners);
 router.post('/admin/banners/create', adminController.createBanner);
 router.post('/admin/banners/update', adminController.updateBanner);
 router.post('/admin/banners/delete', adminController.deleteBanner);
+
+router.get('/admin/achievements', adminController.getAdminAchievements);
+router.post('/admin/achievements/create', adminController.createAdminAchievement);
+router.post('/admin/achievements/update', adminController.updateAdminAchievement);
+router.post('/admin/achievements/delete', adminController.deleteAdminAchievement);
+
+router.get('/admin/clans/quests', adminController.getAdminClanQuests);
+router.post('/admin/clans/quests/create', adminController.createAdminClanQuest);
 
 router.get('/admin/antifraud', adminController.getAdminAlerts);
 router.post('/admin/antifraud/dismiss', adminController.dismissAlert);

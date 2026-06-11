@@ -236,12 +236,15 @@ async function loadData() {
         loadAdminPendingWithdrawals();
         loadAdminAntifraudAlerts();
 
-        loadAdminWelcomeBonusMatrix();
-
         const wbSelect = document.getElementById('wb_target_site');
         if (wbSelect && typeof cachedWebsites !== 'undefined' && cachedWebsites.length > 0) {
             wbSelect.innerHTML = cachedWebsites.map(w => `<option value="${w.id}">${w.title} (${w.domain_name})</option>`).join('');
         }
+        loadAdminWelcomeBonusMatrix();
+
+        loadAdminClansEcosystem();
+
+        loadAdminAchievementsInventory();
     }
     catch (err) {
         console.error(err);
@@ -280,7 +283,7 @@ document.getElementById('configForm').addEventListener('submit', async (e) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(configData)
     });
-    if (res.ok) { alert('Config changed successfully!'); loadData(); }
+    if (!res.error) { alert('Config changed successfully!'); loadData(); }
 });
 
 document.getElementById('jackpotForm').addEventListener('submit', async (e) => {
@@ -291,7 +294,7 @@ document.getElementById('jackpotForm').addEventListener('submit', async (e) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ jackpot: val })
     });
-    if (res.ok) { alert('Jackpot changed!'); loadData(); }
+    if (!res.error) { alert('Jackpot changed!'); loadData(); }
 });
 
 
@@ -387,7 +390,7 @@ async function saveCollectionData() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, slug, gameIds, partnerId: currentPartnerId })
     });
-    if (res.ok) { closeCollectionModal(); loadAdminCollections(); }
+    if (!res.error) { closeCollectionModal(); loadAdminCollections(); }
 }
 
 // Удаление коллекции (Запрос 7)
@@ -396,7 +399,7 @@ async function deleteCollectionRequest(slug) {
     const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
 
     const res = await fetch(`${SERVER_URL}/api/admin/catalog/collection/${slug}`, { method: 'DELETE', body: JSON.stringify({ partnerId: currentPartnerId }) });
-    if (res.ok) loadAdminCollections();
+    if (!res.error) loadAdminCollections();
 }
 
 // Таблица кастомного тюнинга RTP и Игр (Запрос 9)
@@ -455,7 +458,7 @@ async function saveSingleGameSettings(gameId) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ gameId, isActive, customName, customRtp })
     });
-    if (res.ok) { alert('Параметры игры сохранены в Postgres!'); loadAdminGamesConfig(); }
+    if (!res.error) { alert('Параметры игры сохранены в Postgres!'); loadAdminGamesConfig(); }
 }
 
 // Сетка провайдеров / агрегаторов (Запрос 8)
@@ -481,7 +484,7 @@ async function setAggregatorStatus(aggregator, isActive) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ aggregator, isActive })
     });
-    if (res.ok) alert(`Статус шлюза провайдера '${aggregator}' успешно изменен!`);
+    if (!res.error) alert(`Статус шлюза провайдера '${aggregator}' успешно изменен!`);
 }
 
 // Загрузить текущий статус фоновых сервисов с бэкенда при загрузке страницы
@@ -1194,7 +1197,7 @@ async function togglePlayerBan(username, currentStatus) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ partnerId: currentPartnerId, username, isBanned: !currentStatus })
     });
-    if (res.ok) loadPlayers();
+    if (!res.error) loadPlayers();
 }
 
 // Общая кнопка сохранения лимитов и баланса
@@ -1227,7 +1230,7 @@ async function savePlayerSettings(username) {
         })
     });
 
-    if (res.ok) {
+    if (!res.error) {
         alert(`Параметры игрока ${username} успешно обновлены!`);
         loadPlayers();
     }
@@ -1293,7 +1296,7 @@ document.getElementById('promoForm').addEventListener('submit', async (e) => {
             body: JSON.stringify({ partnerId: currentPartnerId, code, reward, maxUses, expiresAt })
         });
 
-        if (res.ok) {
+        if (!res.error) {
             alert('Promo voucher registered!');
             document.getElementById('promoForm').reset();
             document.getElementById('p_maxUses').value = '1';
@@ -1316,7 +1319,7 @@ async function togglePromoCodeState(code, currentStatus) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ partnerId: currentPartnerId, code, currentStatus })
         });
-        if (res.ok) loadAdminPromos();
+        if (!res.error) loadAdminPromos();
     } catch (err) {
         console.error(err);
     } finally {
@@ -1368,7 +1371,7 @@ document.getElementById('cashbackConfigForm').addEventListener('submit', async (
             body: JSON.stringify({ partnerId: currentPartnerId, percent, mode })
         });
 
-        if (res.ok) {
+        if (!res.error) {
             alert(`Cashback rule updated successfully to [${mode.toUpperCase()}] at ${percent}%!`);
             loadAdminCashbackConfig(); // Перечитываем и обновляем состояние кнопки
         }
@@ -1454,7 +1457,7 @@ document.getElementById('gamificationForm').addEventListener('submit', async (e)
             body: JSON.stringify(payload)
         });
 
-        if (res.ok) {
+        if (!res.error) {
             alert('Gamification and retention parameters successfully saved to PostgreSQL!');
             loadAdminGamificationConfig();
         }
@@ -1497,7 +1500,10 @@ document.getElementById('endTournamentBtn').addEventListener('click', async () =
     }
 });
 
-// 1. Загрузка списка квестов партнера в таблицу
+let editingQuestId = null;
+let cachedQuests = [];
+
+// Загрузка квестов с подсветкой активной строки
 async function loadAdminQuestsMatrix() {
     try {
         const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
@@ -1506,39 +1512,69 @@ async function loadAdminQuestsMatrix() {
 
         const tbody = document.getElementById('adminQuestsTableBody');
         if (tbody && data.success && data.quests) {
+            cachedQuests = data.quests; // сохраняем в кэш
+
             if (data.quests.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:15px; color:var(--text-muted);">No active quest types configured</td></tr>`;
                 return;
             }
 
-            tbody.innerHTML = data.quests.map(q => `
-                <tr style="border-bottom: 1px solid #141822;">
-                    <td style="padding: 8px 0;"><b style="color: var(--neon-green);">${q.quest_type}</b></td>
-                    <td><b>${Number(q.target_value)}</b></td>
-                    <td><b style="color: #fff;">${Number(q.reward_amount)} 🪙</b></td>
-                    <td><span style="color: var(--text-muted); font-size:11px;">${q.description}</span></td>
-                    <td style="text-align: right;">
-                        <button type="button" onclick="deleteAdminQuestNode(${q.id})" style="background: transparent; border: 1px solid #ff4d4d; color: #ff4d4d; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">
-                            Delete
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = data.quests.map(q => {
+                const isSelectedRow = editingQuestId === q.id ? 'background: rgba(78, 204, 163, 0.08); border-left: 2px solid var(--neon-green);' : '';
+
+                return `
+                    <tr style="border-bottom: 1px solid #141822; cursor:pointer; ${isSelectedRow}" onclick="editQuestNode(${q.id})">
+                        <td style="padding: 8px 0;"><b style="color: var(--neon-green);">${q.quest_type}</b></td>
+                        <td><b>${Number(q.target_value)}</b></td>
+                        <td><b style="color: #fff;">${Number(q.reward_amount)} 🪙</b></td>
+                        <td><span style="color: var(--text-muted); font-size:11px;">${q.description}</span></td>
+                        <td style="text-align: right;" onclick="event.stopPropagation();">
+                            <button type="button" onclick="deleteAdminQuestNode(${q.id})" style="background: transparent; border: none; color: #ff4d4d; font-size: 16px; cursor: pointer; padding: 0 10px;">×</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         }
-    } catch (err) {
-        console.error('Failed to load quest matrix:', err);
-    }
+    } catch (err) { console.error(err); }
 }
 
-// 2. Добавление или обновление типа квеста
+// Перенос данных квеста в инпуты формы при клике
+function editQuestNode(questId) {
+    const quest = cachedQuests.find(q => q.id === questId);
+    if (!quest) return;
+
+    editingQuestId = questId;
+
+    document.getElementById('q_type').value = quest.quest_type;
+    document.getElementById('q_target').value = Number(quest.target_value);
+    document.getElementById('q_reward').value = Number(quest.reward_amount);
+    document.getElementById('q_desc').value = quest.description;
+
+    document.getElementById('q_submit_btn').innerText = '🔄 Update Quest Type';
+    document.getElementById('q_cancel_btn').style.display = 'inline-block';
+
+    loadAdminQuestsMatrix(); // перерисовываем для подсветки строки
+}
+
+// Сброс формы квестов
+function resetQuestForm() {
+    editingQuestId = null;
+    document.getElementById('q_target').value = '';
+    document.getElementById('q_reward').value = '';
+    document.getElementById('q_desc').value = '';
+
+    document.getElementById('q_submit_btn').innerText = '➕ Add / Update Quest Type';
+    document.getElementById('q_cancel_btn').style.display = 'none';
+    loadAdminQuestsMatrix();
+}
+
 async function createAdminQuestNode() {
     const target = document.getElementById('q_target').value;
     const reward = document.getElementById('q_reward').value;
     const desc = document.getElementById('q_desc').value;
 
-    if (!target || !reward || !desc) return alert('Please fill all quest configuration fields');
+    if (!target || !reward || !desc) return alert('Please fill all quest parameters');
 
-    showLoader();
     const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
     const payload = {
         partnerId: currentPartnerId,
@@ -1548,23 +1584,25 @@ async function createAdminQuestNode() {
         description: desc
     };
 
+    // ДИНАМИЧЕСКИЙ РОУТИНГ КВЕСТОВ
+    let targetUrl = `${SERVER_URL}/api/admin/quests/create`;
+    if (editingQuestId) {
+        targetUrl = `${SERVER_URL}/api/admin/quests/update`;
+        payload.id = editingQuestId; // Прокидываем ID строки
+    }
+
+    showLoader();
     try {
-        const res = await fetch(`${SERVER_URL}/api/admin/quests/create`, {
+        const res = await fetch(targetUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        if (res.ok) {
-            document.getElementById('q_target').value = '';
-            document.getElementById('q_reward').value = '';
-            document.getElementById('q_desc').value = '';
-            loadAdminQuestsMatrix(); // Перерисовываем таблицу матриц квестов
+        if (!res.error) {
+            resetQuestForm(); // Очистит инпуты и сбросит ID редактирования
         }
-    } catch (err) {
-        console.error(err);
-    } finally {
-        hideLoader();
-    }
+    } catch (err) { console.error(err); }
+    finally { hideLoader(); }
 }
 
 // 3. Удаление типа квеста
@@ -1580,7 +1618,7 @@ async function deleteAdminQuestNode(questId) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ partnerId: currentPartnerId, questId })
         });
-        if (res.ok) loadAdminQuestsMatrix();
+        if (!res.error) resetQuestForm();
     } catch (err) {
         console.error(err);
     } finally {
@@ -1658,7 +1696,7 @@ async function createAdminTournamentNode() {
             body: JSON.stringify({ partnerId: currentPartnerId, title, prizePool: prize, minBet: minbet, startAt: start, endAt: end })
         });
 
-        if (res.ok) {
+        if (!res.error) {
             alert('Championship node deployed successfully!');
             document.getElementById('t_title').value = '';
             document.getElementById('t_prize').value = '';
@@ -1732,6 +1770,13 @@ async function loadAdminWebsites() {
             const optionsHtml = data.websites.map(w => `<option value="${w.id}">${w.title} (${w.domain_name})</option>`).join('');
             if (bTargetSelect) bTargetSelect.innerHTML = optionsHtml;
             if (bFilterSelect) bFilterSelect.innerHTML = `<option value="">🌍 Все подключенные сайты</option>` + optionsHtml;
+
+            const tlTargetSelect = document.getElementById('tl_target_site');
+            if (tlTargetSelect) {
+                tlTargetSelect.innerHTML = data.websites.map(w => `<option value="${w.id}">${w.title} (${w.domain_name})</option>`).join('');
+            }
+// Сразу подгружаем переводы для первого сайта в селекторе
+            loadAdminTranslationMatrix();
         }
     } catch (err) { console.error(err); }
 }
@@ -1896,7 +1941,7 @@ document.getElementById('websiteForm').addEventListener('submit', async (e) => {
 
         const data = await res.json();
 
-        if (res.ok && data.success) {
+        if (!res.error && data.success) {
             alert(editingWebsiteId ? 'Website configurations updated successfully!' : 'New website brand registered!');
             resetWebsiteForm(); // Сбрасывает форму и очищает переменную editingWebsiteId
             loadAdminBannersMatrix();
@@ -1924,7 +1969,7 @@ async function deleteWebsiteNode(websiteId) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ partnerId: currentPartnerId, websiteId })
         });
-        if (res.ok) {
+        if (!res.error) {
             if (editingWebsiteId === websiteId) resetWebsiteForm();
             await loadAdminWebsites();
             loadAdminBannersMatrix();
@@ -2052,7 +2097,7 @@ async function createAdminBannerNode() {
             body: JSON.stringify(payload)
         });
 
-        if (res.ok) {
+        if (!res.error) {
             alert(editingBannerId ? 'Banner campaign updated!' : 'New banner campaign node injected!');
             resetBannerForm(); // Очистит форму и сбросит ID
         }
@@ -2071,7 +2116,7 @@ async function deleteAdminBannerNode(bannerId) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ partnerId: currentPartnerId, bannerId })
         });
-        if (res.ok) loadAdminBannersMatrix();
+        if (!res.error) loadAdminBannersMatrix();
     } catch (err) { console.error(err); }
     finally { hideLoader(); }
 }
@@ -2137,7 +2182,7 @@ async function processWithdrawalNode(requestId, action) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ partnerId: currentPartnerId, requestId, action })
         });
-        if (res.ok) {
+        if (!res.error) {
             await loadAdminPendingWithdrawals(); // обновляем список заявок
             if (typeof loadAdminFinanceReport === 'function') loadAdminFinanceReport(); // обновляем общий финансовый лог кассы
         }
@@ -2182,13 +2227,16 @@ async function dismissAntifraudAlert(alertId) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ partnerId: currentPartnerId, alertId })
     });
-    if (res.ok) loadAdminAntifraudAlerts();
+    if (!res.error) loadAdminAntifraudAlerts();
 }
 
 
-// 1. Загрузка параметров Welcome-бонуса из СУБД для выбранного сайта
+// 1. Автоматическая загрузка параметров Welcome-бонуса из СУБД для выбранного бренда
 async function loadAdminWelcomeBonusMatrix() {
-    const websiteId = document.getElementById('wb_target_site').value;
+    const websiteSelect = document.getElementById('wb_target_site');
+    if (!websiteSelect) return;
+
+    const websiteId = websiteSelect.value;
     if (!websiteId) return;
 
     try {
@@ -2198,18 +2246,19 @@ async function loadAdminWelcomeBonusMatrix() {
 
         if (data.success && data.config) {
             const cfg = data.config;
-            document.getElementById('wb_percent').value = cfg.bonus_percent;
-            document.getElementById('wb_wager').value = cfg.wager_multiplier;
-            document.getElementById('wb_min_dep').value = parseInt(cfg.min_deposit_amount);
-            document.getElementById('wb_max_bonus').value = parseInt(cfg.max_bonus_amount);
-            document.getElementById('wb_active').value = cfg.is_active;
+            // Наполняем инпуты красивой формы данными из Postgres
+            document.getElementById('wb_percent').value = cfg.bonus_percent || 100;
+            document.getElementById('wb_wager').value = cfg.wager_multiplier || 30;
+            document.getElementById('wb_min_dep').value = parseInt(cfg.min_deposit_amount || 100);
+            document.getElementById('wb_max_bonus').value = parseInt(cfg.max_bonus_amount || 5000);
+            document.getElementById('wb_active').value = cfg.is_active !== undefined ? cfg.is_active : 1;
         }
     } catch (err) {
         console.error('Failed to query welcome bonus matrix state:', err);
     }
 }
 
-// 2. Сохранение/Обновление параметров бонуса в Postgres
+// 2. Сохранение/Обновление параметров бонуса (Upsert в b2b_welcome_bonuses)
 async function saveAdminWelcomeBonusNode() {
     const websiteId = document.getElementById('wb_target_site').value;
     if (!websiteId) return alert('No active brand website selected.');
@@ -2234,9 +2283,424 @@ async function saveAdminWelcomeBonusNode() {
             body: JSON.stringify(payload)
         });
 
-        if (res.ok) {
+        if (!res.error) {
             alert('First deposit promo campaign rules successfully updated in PostgreSQL database!');
-            loadAdminWelcomeBonusMatrix();
+            loadAdminWelcomeBonusMatrix(); // Перечитываем актуальное состояние
+        } else {
+            alert('Failed to save bonus layout structure');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Ecosystem connection timeout during bonus routing');
+    } finally {
+        hideLoader();
+    }
+}
+
+
+// 1. Загрузка кланов и квестов из Postgres
+async function loadAdminClansEcosystem() {
+    try {
+        const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+        const res = await fetch(`${SERVER_URL}/api/admin/clans/quests?partnerId=${currentPartnerId}`);
+        const data = await res.json();
+
+        const tbody = document.getElementById('adminClansListTbody');
+        if (tbody && data.success && data.clans) {
+            if (data.clans.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:15px; color:var(--text-muted);">No player guild unions created yet.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = data.clans.map(c => `
+                <tr style="border-bottom: 1px solid #141822;">
+                    <td style="padding:8px 0;"><b style="color:#fff;">${c.clan_name}</b></td>
+                    <td><small style="color:var(--text-muted); font-family:monospace;">${c.owner_username}</small></td>
+                    <td>
+                        <span class="badge" style="background:#1b2438; color:#fff; font-size:11px; padding:2px 6px; border-radius:4px; font-weight:bold;">Lvl ${c.clan_level}</span>
+                        <small style="color:var(--text-muted); font-weight:600; margin-left:5px;">(${c.members_count} members)</small>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    } catch (err) { console.error('Failed to parse clan arrays:', err); }
+}
+
+// 2. Создание командного ивента
+async function createAdminClanQuestNode() {
+    const title = document.getElementById('cq_title').value;
+    const target = document.getElementById('cq_target').value;
+    const pool = document.getElementById('cq_pool').value;
+    const expiresAt = document.getElementById('cq_end').value;
+
+    if (!title || !target || !pool || !expiresAt) return alert('Please set title, targets, rewards and date timeline rules');
+
+    showLoader();
+    const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+
+    try {
+        const res = await fetch(`${SERVER_URL}/api/admin/clans/quests/create`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ partnerId: currentPartnerId, title, targetTurnover: target, rewardPool: pool, expiresAt })
+        });
+        if (!res.error) {
+            alert('Co-Op Guild Tournament Campaign successfully deployed!');
+            document.getElementById('cq_title').value = '';
+            document.getElementById('cq_target').value = '';
+            document.getElementById('cq_pool').value = '';
+            document.getElementById('cq_end').value = '';
+            loadAdminClansEcosystem();
+        }
+    } catch (err) { console.error(err); }
+    finally { hideLoader(); }
+}
+
+
+let editingAchievementId = null;
+let cachedAchievements = [];
+
+// Загрузка значков с подсветкой активной строки
+async function loadAdminAchievementsInventory() {
+    try {
+        const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+        const res = await fetch(`${SERVER_URL}/api/admin/achievements?partnerId=${currentPartnerId}`);
+        const data = await res.json();
+
+        const tbody = document.getElementById('adminAchievementsListTbody');
+        if (tbody && data.success && data.achievements) {
+            cachedAchievements = data.achievements; // сохраняем в кэш
+
+            if (data.achievements.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:15px; color:var(--text-muted);">No achievements configured.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = data.achievements.map(a => {
+                const isSelectedRow = editingAchievementId === a.id ? 'background: rgba(0, 245, 212, 0.08); border-left: 2px solid #00f5d4;' : '';
+
+                return `
+                    <tr style="border-bottom: 1px solid #141822; cursor:pointer; ${isSelectedRow}" onclick="editAchievementNode(${a.id})">
+                        <td style="padding:8px 0;"><span style="font-size:16px; margin-right:5px;">${a.badge_icon}</span> <b>${a.title}</b></td>
+                        <td><small style="color:var(--text-muted); font-family:monospace;">${a.condition_type} (${Number(a.target_value)})</small></td>
+                        <td style="text-align:right; vertical-align: middle; display:flex; gap:8px; justify-content:flex-end; padding-top:10px;" onclick="event.stopPropagation();">
+                            <b style="color:var(--neon-green);">+${Number(a.reward_amount)} 🪙</b>
+                            <button type="button" onclick="deleteAdminAchievementNode(${a.id})" style="background:transparent; border:none; color:#ff4d4d; font-size:16px; cursor:pointer; padding:0 5px;" title="Delete Badge">×</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    } catch (err) { console.error(err); }
+}
+
+// Перенос данных ачивки в инпуты формы при клике
+function editAchievementNode(achievementId) {
+    const ach = cachedAchievements.find(a => a.id === achievementId);
+    if (!ach) return;
+
+    editingAchievementId = achievementId;
+
+    document.getElementById('a_title').value = ach.title;
+    document.getElementById('a_icon').value = ach.badge_icon;
+    document.getElementById('a_type').value = ach.condition_type;
+    document.getElementById('a_target').value = Number(ach.target_value);
+    document.getElementById('a_reward').value = Number(ach.reward_amount);
+    document.getElementById('a_desc').value = ach.description;
+
+    document.getElementById('a_submit_btn').innerText = '🔄 UPDATE BADGE TEMPLATE';
+    document.getElementById('a_cancel_btn').style.display = 'inline-block';
+
+    loadAdminAchievementsInventory(); // перерисовываем для подсветки строки
+}
+
+// Сброс формы ачивок
+function resetAchievementForm() {
+    editingAchievementId = null;
+    document.getElementById('a_title').value = '';
+    document.getElementById('a_icon').value = '';
+    document.getElementById('a_target').value = '';
+    document.getElementById('a_reward').value = '';
+    document.getElementById('a_desc').value = '';
+
+    document.getElementById('a_submit_btn').innerText = '➕ MINT BADGE TEMPLATE';
+    document.getElementById('a_cancel_btn').style.display = 'none';
+    loadAdminAchievementsInventory();
+}
+
+// УДАЛЕНИЕ ЗНАЧКА ЧЕРЕЗ БОЕВОЙ РОУТ БЭКЕНДА
+async function deleteAdminAchievementNode(achievementId) {
+    if (!confirm('Are you sure you want to delete this achievement badge? Progress for all players will be permanently wiped.')) return;
+
+    showLoader();
+    const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+    try {
+        const res = await fetch(`${SERVER_URL}/api/admin/achievements/delete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ partnerId: currentPartnerId, achievementId })
+        });
+        if (!res.error) {
+            if (editingAchievementId === achievementId) resetAchievementForm();
+            else loadAdminAchievementsInventory();
+        }
+    } catch (err) { console.error(err); }
+    finally { hideLoader(); }
+}
+
+// 2. Создание нового значка
+async function createAdminAchievementNode() {
+    const title = document.getElementById('a_title').value;
+    const icon = document.getElementById('a_icon').value;
+    const target = document.getElementById('a_target').value;
+    const reward = document.getElementById('a_reward').value;
+    const desc = document.getElementById('a_desc').value;
+
+    if (!title || !icon || !target || !reward || !desc) return alert('Fill all badge token parameters');
+
+    const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+    const payload = {
+        partnerId: currentPartnerId, title, description: desc, badgeIcon: icon,
+        conditionType: document.getElementById('a_type').value, targetValue: target, rewardAmount: reward
+    };
+
+    // ДИНАМИЧЕСКИЙ РОУТИНГ АЧИВОК
+    let targetUrl = `${SERVER_URL}/api/admin/achievements/create`;
+    if (editingAchievementId) {
+        targetUrl = `${SERVER_URL}/api/admin/achievements/update`;
+        payload.id = editingAchievementId; // Прокидываем ID строки
+    }
+
+    showLoader();
+    try {
+        const res = await fetch(targetUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (!res.error) {
+            resetAchievementForm(); // Очистит инпуты и сбросит ID редактирования
+        }
+    } catch (err) { console.error(err); }
+    finally { hideLoader(); }
+}
+
+
+let currentTranslationPayload = {}; // Хранит редактируемый JSON-пакет
+const platformLanguageMap = {
+    "en": { flag: "🇺🇸", label: "EN" },
+    "es": { flag: "🇪🇸", label: "ES" },
+    "pt": { flag: "🇧🇷", label: "PT" },
+    "fr": { flag: "🇫🇷", label: "FR" },
+    "de": { flag: "🇩🇪", label: "DE" },
+    "it": { flag: "🇮🇹", label: "IT" },
+    "hi": { flag: "🇮🇳", label: "HI" },
+    "ru": { flag: "🇷🇺", label: "RU" }
+};
+
+
+// 🗺️ ЭТАЛОННЫЙ ШАБЛОН СТРУКТУРЫ (Если в базе для языка еще пусто, строим форму по нему)
+const i18nMasterTemplate = {
+    "header": {
+        "links": {
+            "home": "",
+            "games": "",
+            "sport": "",
+            "profile": ""
+        },
+        "buttons": {
+            "sign_in": "",
+            "sign_up": ""
+        },
+        "balance": {
+            "wallet": "",
+            "bonus": ""
+        }
+    },
+    "auth": {
+        "acc_sign_in": "",
+        "username": "",
+        "password": "",
+        "sign_in": "",
+        "ref_code": "",
+        "create": ""
+    }
+};
+
+// 1. Загрузка параметров мультиязычности из СУБД
+async function loadAdminTranslationMatrix() {
+    const websiteSelect = document.getElementById('tl_target_site');
+    const langSelect = document.getElementById('tl_editing_lang');
+    if (!websiteSelect || !langSelect) return;
+
+    const websiteId = websiteSelect.value;
+    const langCode = langSelect.value;
+    if (!websiteId) return;
+
+    try {
+        const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+        const res = await fetch(`${SERVER_URL}/api/admin/websites/translations?partnerId=${currentPartnerId}&websiteId=${websiteId}&langCode=${langCode}`);
+        const data = await res.json();
+
+        if (data.success && data.langSettings) {
+            // Восстанавливаем чекбоксы поддерживаемых языков
+            const supported = data.langSettings.supported_langs || ['en'];
+            ['en', 'es', 'pt', 'fr', 'de', 'it', 'hi', 'ru'].forEach(lang => {
+                const chk = document.getElementById(`tl_check_${lang}`);
+                if (chk) chk.checked = supported.includes(lang);
+            });
+
+            // Выставляем дефолтный язык в селекторе
+            const defLangSelect = document.getElementById('tl_default_lang');
+            if (defLangSelect) defLangSelect.value = data.langSettings.default_lang || 'en';
+
+            // Очищаем контейнер для инпутов
+            const container = document.getElementById('localization-inputs-container');
+            if (container) {
+                container.innerHTML = ''; // Полностью зачищаем старую верстку
+
+                // Проверяем: пустой ли JSON пришел из базы?
+                let finalPayload = data.payload;
+                if (!finalPayload || Object.keys(finalPayload).length === 0 || !finalPayload.header) {
+                    // Если в базе пусто — берем наш чистый эталонный шаблон
+                    finalPayload = JSON.parse(JSON.stringify(i18nMasterTemplate));
+                }
+
+                currentTranslationPayload = finalPayload; // Сохраняем в кэш для отправки
+
+                // 🪄 ЗАПУСКАЕМ СБОРКУ ФОРМЫ
+                buildDynamicJsonForm(finalPayload, container);
+            }
+        }
+    } catch (err) {
+        console.error('Failed to load translations layout:', err);
+    }
+}
+
+// 2. ИСПРАВЛЕННАЯ РЕКУРСИВНАЯ ФУНКЦИЯ (СТРОИТ ДЕРЕВО ИНПУТОВ)
+function buildDynamicJsonForm(obj, parentElement, currentPath = '') {
+    for (const key in obj) {
+        const value = obj[key];
+        const fieldPath = currentPath ? `${currentPath}.${key}` : key;
+
+        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+            // --- КАТЕГОРИЯ / ГРУППА ПОЛЕЙ (Вложенный объект JSON) ---
+            const groupWrapper = document.createElement('div');
+            groupWrapper.style.cssText = 'border: 1px solid #1a1e26; background: #0c0f14; padding: 15px; border-radius: 6px; margin-bottom: 12px; width: 100%; box-sizing: border-box;';
+
+            const groupTitle = document.createElement('span');
+            groupTitle.style.cssText = 'font-size: 11px; font-weight: 800; display: block; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;';
+            groupTitle.style.color = currentPath ? 'var(--accent-pink)' : 'var(--accent-blue)';
+            groupTitle.innerText = fieldPath.replace(/\./g, ' ➔ ');
+
+            groupWrapper.appendChild(groupTitle);
+
+            // Создаем СЕТКУ (Grid) внутри контейнера для дочерних элементов
+            const gridContainer = document.createElement('div');
+            gridContainer.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;';
+            groupWrapper.appendChild(gridContainer);
+
+            // Добавляем всю группу в родительский элемент
+            parentElement.appendChild(groupWrapper);
+
+            // Рекурсивно уходим вглубь объекта, передавая СЕТКУ как нового родителя
+            buildDynamicJsonForm(value, gridContainer, fieldPath);
+        } else {
+            // --- КОНЕЧНОЕ ПОЛЕ (Строка / Инпут) ---
+            const label = document.createElement('label');
+            label.className = 'gamification-label';
+            label.style.cssText = 'display: flex; flex-direction: column; gap: 5px; color: #8a99ad; font-size: 11px; font-weight: 600; text-transform: uppercase;';
+            label.innerText = key.replace(/_/g, ' ') + ':';
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'dynamic-i18n-input';
+            input.setAttribute('data-json-path', fieldPath); // Сохраняем путь для сборщика payload
+            input.value = value || ''; // Если значение пустое — оставляем инпут чистым
+            input.style.cssText = 'background: #0d1017 !important; border: 1px solid #262c3a !important; color: #fff !important; padding: 8px 12px !important; border-radius: 5px !important; font-size: 13px !important; margin-top: 4px !important; box-sizing: border-box !important; width: 100% !important;';
+
+            // Неоновые фокусы
+            input.addEventListener('focus', () => {
+                input.style.borderColor = 'var(--neon-green)';
+                input.style.boxShadow = '0 0 8px rgba(78, 204, 163, 0.2)';
+            });
+            input.addEventListener('blur', () => {
+                input.style.borderColor = '#262c3a';
+                input.style.boxShadow = 'none';
+            });
+
+            label.appendChild(input);
+            parentElement.appendChild(label); // Вставляем инпут внутрь сетки (gridContainer)
+        }
+    }
+}
+
+
+
+// Функция-помощник для динамической записи значения внутрь объекта по строке-пути
+function setJsonValueByPath(obj, path, value) {
+    const parts = path.split('.');
+    const lastPart = parts.pop();
+    // Доходим до предпоследнего вложенного объекта
+    const targetObj = parts.reduce((acc, part) => {
+        if (!acc[part]) acc[part] = {}; // Создаем ветку, если её не было
+        return acc[part];
+    }, obj);
+    targetObj[lastPart] = value; // Присваиваем значение конечной строке
+}
+
+// Сохранение динамически собранного словаря в Postgres
+async function saveAdminTranslationMatrixNode() {
+    const websiteId = document.getElementById('tl_target_site').value;
+    const langCode = document.getElementById('tl_editing_lang').value;
+    if (!websiteId) return alert('Select website brand to deploy localization matrix.');
+
+    // Собираем массив поддерживаемых языков
+    const supportedLangs = [];
+    ['en', 'es', 'pt', 'fr', 'de', 'it', 'hi', 'ru'].forEach(lang => {
+        if (document.getElementById(`tl_check_${lang}`).checked) {
+            supportedLangs.push(lang);
+        }
+    });
+
+    if (supportedLangs.length === 0) return alert('You must enable at least one supported language.');
+
+
+    // 🪄 ДИНАМИЧЕСКИЙ СБОР ДАННЫХ ИЗ ИНПУТОВ
+    // Клонируем исходный payload, чтобы сохранить структуру ключей, которых могло не быть на экране
+    const updatedPayloadObj = JSON.parse(JSON.stringify(currentTranslationPayload));
+
+    // Находим все динамические инпуты на странице
+    const allInputs = document.querySelectorAll('.dynamic-i18n-input');
+    allInputs.forEach(input => {
+        const path = input.getAttribute('data-json-path'); // например: "header.links.home"
+        const value = input.value.trim();
+
+        // Записываем измененный текст строго по его пути в JSON
+        setJsonValueByPath(updatedPayloadObj, path, value);
+    });
+
+    showLoader();
+    const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
+
+    const bodyData = {
+        partnerId: currentPartnerId,
+        websiteId: websiteId,
+        langCode: langCode,
+        langSettings: {
+            supported_langs: supportedLangs,
+            default_lang: document.getElementById('tl_default_lang').value
+        },
+        payload: updatedPayloadObj // Отправляем полностью пересобранный чистый JSONB-пакет
+    };
+
+    try {
+        const res = await fetch(`${SERVER_URL}/api/admin/websites/translations/save`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(bodyData)
+        });
+        if (res.ok) {
+            alert(`Dynamic localization matrix for [${langCode.toUpperCase()}] saved successfully!`);
+            loadAdminTranslationMatrix(); // Перечитываем интерфейс
         }
     } catch (err) {
         console.error(err);
@@ -2244,6 +2708,7 @@ async function saveAdminWelcomeBonusNode() {
         hideLoader();
     }
 }
+
 
 
 

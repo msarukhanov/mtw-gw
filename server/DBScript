@@ -344,8 +344,22 @@ CREATE TABLE IF NOT EXISTS b2b_websites (
     title VARCHAR(100) NOT NULL,       -- Понятное название для админки
     is_active INT DEFAULT 1,
     timestamp TIMESTAMP DEFAULT NOW(),
+    lang_settings JSONB DEFAULT '{"supported_langs": ["en"], "default_lang": "en"}'::jsonb,
     UNIQUE(partner_id, domain_name)    -- Защита от дублей доменов у одного партнера
 );
+
+CREATE TABLE IF NOT EXISTS b2b_website_translations (
+    id SERIAL PRIMARY KEY,
+    partner_id VARCHAR(50) NOT NULL,
+    website_id INT NOT NULL REFERENCES b2b_websites(id) ON DELETE CASCADE,
+    lang_code VARCHAR(10) NOT NULL, -- 'en', 'ru', 'pt', 'es'
+    payload JSONB NOT NULL,          -- Сам огромный JSON-объект с текстами (твоя структура)
+    timestamp TIMESTAMP DEFAULT NOW(),
+    UNIQUE(website_id, lang_code)   -- Один язык на один сайт
+);
+
+-- Индекс для мгновенного сбора локализации при boot-сессии игрока
+CREATE INDEX IF NOT EXISTS idx_web_translations_fetch ON b2b_website_translations (website_id, lang_code);
 
 -- 2. Таблица баннеров
 CREATE TABLE IF NOT EXISTS b2b_banners (
@@ -430,3 +444,75 @@ CREATE TABLE IF NOT EXISTS antifraud_alerts (
 );
 
 CREATE INDEX IF NOT EXISTS idx_antifraud_status ON antifraud_alerts(partner_id, status);
+
+-- 1. Таблица самих Кланов (Синдикатов)
+CREATE TABLE IF NOT EXISTS b2b_clans (
+    id SERIAL PRIMARY KEY,
+    partner_id VARCHAR(50) NOT NULL,
+    clan_name VARCHAR(50) NOT NULL,
+    owner_username VARCHAR(50) NOT NULL,
+    clan_level INT DEFAULT 1,
+    clan_xp INT DEFAULT 0,
+    timestamp TIMESTAMP DEFAULT NOW(),
+    UNIQUE(partner_id, clan_name) -- Защита от дублирования названий внутри одного партнера
+);
+
+-- 2. Таблица участников кланов (Связующая)
+CREATE TABLE IF NOT EXISTS b2b_clan_members (
+    id SERIAL PRIMARY KEY,
+    partner_id VARCHAR(50) NOT NULL,
+    clan_id INT NOT NULL REFERENCES b2b_clans(id) ON DELETE CASCADE,
+    username VARCHAR(50) NOT NULL,
+    role VARCHAR(20) DEFAULT 'MEMBER', -- 'OWNER', 'OFFICER', 'MEMBER'
+    timestamp TIMESTAMP DEFAULT NOW(),
+    UNIQUE(partner_id, username) -- Игрок может состоять строго в одном клане одновременно
+);
+
+-- 3. Таблица командных квестов (Шаблоны от админа)
+CREATE TABLE IF NOT EXISTS b2b_clan_quests (
+    id SERIAL PRIMARY KEY,
+    partner_id VARCHAR(50) NOT NULL,
+    title VARCHAR(100) NOT NULL,
+    target_turnover NUMERIC(15, 2) NOT NULL, -- Общая цель по обороту ставок для клана
+    reward_pool NUMERIC(15, 2) NOT NULL,     -- Общий призовой фонд на клан
+    expires_at TIMESTAMP NOT NULL,
+    is_active INT DEFAULT 1
+);
+
+-- 4. Прогресс выполнения квестов кланами
+CREATE TABLE IF NOT EXISTS b2b_clan_quest_progress (
+    clan_id INT NOT NULL REFERENCES b2b_clans(id) ON DELETE CASCADE,
+    quest_id INT NOT NULL REFERENCES b2b_clan_quests(id) ON DELETE CASCADE,
+    current_turnover NUMERIC(15, 2) DEFAULT 0.00,
+    is_completed BOOLEAN DEFAULT false,
+    PRIMARY KEY (clan_id, quest_id)
+);
+
+-- 1. Таблица шаблонов достижений (создает админ)
+CREATE TABLE IF NOT EXISTS b2b_achievements (
+    id SERIAL PRIMARY KEY,
+    partner_id VARCHAR(50) NOT NULL,
+    title VARCHAR(100) NOT NULL,
+    description TEXT NOT NULL,
+    badge_icon VARCHAR(50) NOT NULL,       -- Имя иконки или эмодзи (например, '🥇', '🚀', '🔥')
+    condition_type VARCHAR(30) NOT NULL,   -- 'TOTAL_GAMES', 'TOTAL_TURNOVER', 'MAX_WIN_MULTIPLIER', 'BIG_WIN_SINGLE'
+    target_value NUMERIC(15, 2) NOT NULL,  -- Целевое значение для выполнения
+    reward_amount NUMERIC(15, 2) NOT NULL, -- Награда коинами за разблокировку
+    is_active INT DEFAULT 1,
+    UNIQUE(partner_id, title)
+);
+
+-- 2. Таблица прогресса и разблокированных значков игроков
+CREATE TABLE IF NOT EXISTS player_achievements (
+    partner_id VARCHAR(50) NOT NULL,
+    username VARCHAR(50) NOT NULL,
+    achievement_id INT NOT NULL REFERENCES b2b_achievements(id) ON DELETE CASCADE,
+    current_value NUMERIC(15, 2) DEFAULT 0.00,
+    is_unlocked BOOLEAN DEFAULT false,
+    unlocked_at TIMESTAMP DEFAULT NULL,
+    PRIMARY KEY (partner_id, username, achievement_id)
+);
+
+-- Индекс для мгновенной сборки профиля значков игрока
+CREATE INDEX IF NOT EXISTS idx_player_badges_unlocked
+ON player_achievements (partner_id, username, is_unlocked);

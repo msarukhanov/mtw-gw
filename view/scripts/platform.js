@@ -3,12 +3,20 @@ const CORE_SERVER = (location.hostname === 'localhost' || location.hostname === 
     : 'https://mtw-gw.onrender.com';
 
 let currentUsername = "";
-let currentSessionId = ""; // Храним защищенный токен сессии
+let currentSessionId = "";
 let socket = null;
 
-function updateWallet(data) {
+let currentPlayerHistoryType = 'all';
 
-    console.log(data);
+let currentSlideIndex = 0;
+let currentSlideIdx = 0;
+let sliderTimerInterval = null;
+
+let dynamicTranslations = {};
+let currentLanguage = 'en';
+
+
+function updateWallet(data) {
     const profileBalance = document.getElementById('profile-balance');
     const profileBonus = document.getElementById('profile-bonus');
 
@@ -25,8 +33,6 @@ function updateWallet(data) {
         if (walletDisplay) walletDisplay.innerText = formattedBal;
         if (bonusDisplay) profileBonus.innerText = formattedBonus;
     }
-
-    console.log(walletDisplay.innerText)
 }
 
 function launchGame(gameKey) {
@@ -82,29 +88,53 @@ function toggleView(viewType) {
     }
 }
 
-let currentSlideIdx = 0;
 
-function moveSlide(idx) {
-    currentSlideIdx = idx;
-    const container = document.getElementById('sliderContainer');
-    // Смещаем контейнер на нужный процент влево
-    container.style.transform = `translateX(-${idx * 33.333}%)`;
 
-    // Переключаем активную точку навигации
-    const dots = document.querySelectorAll('.slider-dot');
-    dots.forEach(dot => dot.classList.remove('active'));
-    if (dots[idx]) dots[idx].classList.add('active');
+function moveSlide(index) {
+    const sliderContainer = document.getElementById('sliderContainer');
+    const totalSlides = document.querySelectorAll('#sliderContainer .slide-item').length;
+    if (!sliderContainer || totalSlides === 0) return;
+
+    // Гарантируем, что индекс не выйдет за пределы (если индекс больше черты, сбрасываем в 0)
+    currentSlideIdx = (index >= totalSlides || index < 0) ? 0 : index;
+
+    // Плавное смещение контейнера по горизонтали (X) на нужный кадр
+    sliderContainer.style.transform = `translateX(-${currentSlideIdx * 100}%)`;
+
+    // Переключаем активный CSS-класс у точек
+    document.querySelectorAll('.slider-dot').forEach(dot => dot.classList.remove('active'));
+    const targetDot = document.getElementById(`mtw_dot_${currentSlideIdx}`);
+    if (targetDot) targetDot.classList.add('active');
+
+    // Перезапускаем таймер авто-слайдов, чтобы картинка не прыгнула сразу после ручного клика
+    startSliderAutoCycle(totalSlides);
 }
 
-// Автоматическая прокрутка баннеров каждые 5 секунд для живой презентации
-setInterval(() => {
-    if (document.getElementById('section-home').classList.contains('active')) {
-        let nextIdx = (currentSlideIdx + 1) % 3;
-        moveSlide(nextIdx);
-    }
-}, 5000);
+// Функция циклического таймера авто-перелистывания (раз в 5 секунд)
+function startSliderAutoCycle(totalSlides) {
+    if (sliderTimerInterval) clearInterval(sliderTimerInterval);
+    if (totalSlides <= 1) return; // Если слайд один, крутить нечего
 
-// --- FIX: SAFE AUTHENTICATION INTERACTIVE LOGIC ---
+    sliderTimerInterval = setInterval(() => {
+        // Вычисляем следующий индекс с остатком от деления, чтобы после 2 шёл 0
+        currentSlideIdx = (currentSlideIdx + 1) % totalSlides;
+
+        const sliderContainer = document.getElementById('sliderContainer');
+        if (sliderContainer) {
+            sliderContainer.style.transform = `translateX(-${currentSlideIdx * 100}%)`;
+
+            document.querySelectorAll('.slider-dot').forEach(dot => dot.classList.remove('active'));
+            const nextDot = document.getElementById(`mtw_dot_${currentSlideIdx}`);
+            if (nextDot) nextDot.classList.add('active');
+        }
+    }, 5000);
+}
+
+// ВАЖНО: Удалите старый фоновый setInterval, который вызывал moveSlide(nextIdx) каждые 5 секунд.
+// Он конфликтовал с функцией startSliderAutoCycle и удваивал скорость прокрутки!
+
+
+
 function openAuthModal(mode = 'login') {
     const modal = document.getElementById('authModal');
     if (modal) {
@@ -131,7 +161,7 @@ function switchAuthMode(mode) {
         if (btnSignup) btnSignup.classList.add('active');
         if (formLogin) formLogin.classList.remove('active');
         if (formSignup) formSignup.classList.add('active');
-        if (modalTitle) modalTitle.innerText = 'Account Sign Up';
+        if (modalTitle) modalTitle.innerText = _t('header.buttons.sign_up');
 
         const urlParams = new URLSearchParams(window.location.search);
         const signupRef = document.getElementById('signupRef');
@@ -143,25 +173,22 @@ function switchAuthMode(mode) {
         if (btnLogin) btnLogin.classList.add('active');
         if (formSignup) formSignup.classList.remove('active');
         if (formLogin) formLogin.classList.add('active');
-        if (modalTitle) modalTitle.innerText = 'Account Sign In';
+        if (modalTitle) modalTitle.innerText = _t('auth.windows.acc_sign_in');
     }
 }
 
-
-// Перехват клика по кнопке "Profile" на мобилках
 function handleMobileProfileClick() {
     if (currentSessionId) {
-        openUserMenu(); // Если авторизован, открываем ЛК
+        openUserMenu();
     } else {
-        openAuthModal('login'); // Если гость, отправляем логиниться
+        openAuthModal('login');
     }
 }
 
-// Сетевой запрос: Вход (Адаптирован под твой бэкенд роут /auth)
 async function handleLogin() {
     const user = document.getElementById('loginUser').value.trim();
     // Пароль в бэкенде пока не проверяется, берем только username
-    if (!user) return alert('Please enter a valid username');
+    if (!user) return alert(_t('auth.messages.username_invalid'));
 
     try {
         const response = await fetch(`${CORE_SERVER}/api/auth`, {
@@ -175,13 +202,9 @@ async function handleLogin() {
         const data = await response.json();
 
         if (!response.ok || data.error) {
-            return alert(data.error || 'Authentication failed');
+            return alert(data.error || _t('auth.messages.login_fail'));
         }
 
-        // Твой бэкенд не генерирует sessionId на /auth, создаем временный демо-токен для фронтенда
-//            data.sessionId = 'demo_session_' + Math.random().toString(36).substr(2, 9);
-
-        // Успешный вход — инициализируем сессию игрока
         closeAuthModal();
         initSession(data);
     } catch (err) {
@@ -189,12 +212,11 @@ async function handleLogin() {
     }
 }
 
-// Сетевой запрос: Регистрация (Адаптирован под твой бэкенд)
 async function handleSignup() {
     const user = document.getElementById('signupUser').value.trim();
     const refCode = document.getElementById('signupRef').value.trim();
 
-    if (!user) return alert('Username field is required');
+    if (!user) return alert(_t('auth.messages.username_required'));
 
     try {
         // Так как в демо-бэкенде нет отдельного /signup, мы создаем пользователя через /auth
@@ -230,7 +252,7 @@ async function handleSignup() {
             }
         }
 
-        alert('Account successfully created! Please sign in using your username.');
+        alert(_t('auth.messages.signup_suc'));
         switchAuthMode('login');
 
         // Подставляем созданное имя в поле логина для удобства
@@ -241,7 +263,6 @@ async function handleSignup() {
         alert('Server communication error during Sign Up');
     }
 }
-
 
 function initSession(data) {
     currentUsername = data.username;
@@ -302,11 +323,6 @@ function initSession(data) {
 }
 
 
-// --- 👤 USER DASHBOARD LOGIC (ADAPTED FOR ROUTER.CHECKPLAYER) ---
-
-// Open Dashboard Modal and Sync Live Data from Server via POST
-let currentPlayerHistoryType = 'all'; // Глобальное состояние фильтра истории игрока
-
 async function openUserMenu() {
     const modal = document.getElementById('userMenuModal');
     const profileUser = document.getElementById('profile-username');
@@ -335,12 +351,12 @@ async function openUserMenu() {
     if (!currentUsername) return;
 
     await apiGetPlayer();
+    loadPlayerGamificationStats();
 
     // ФЕТЧ 1: Запрашиваем ТОЛЬКО данные профиля и баланса (Отработает мгновенно)
 
 }
 
-// ФЕТЧ 2: Отдельная независимая функция загрузки истории игрока
 async function loadPlayerHistory() {
     const historyList = document.getElementById('history-list');
     if (!historyList || !currentUsername) return;
@@ -388,20 +404,16 @@ async function loadPlayerHistory() {
     }
 }
 
-// Функция клика по фильтрам истории («Все», «Ставки», «Касса»)
 function setPlayerHistoryType(type) {
     currentPlayerHistoryType = type;
 
-    // Переключаем активные классы на кнопках-фильтрах
     document.querySelectorAll('[id^="btn_history_"]').forEach(btn => btn.classList.remove('active'));
     if (type === 'bets') document.getElementById('btn_history_bets').classList.add('active');
     else if (type === 'cashier') document.getElementById('btn_history_cash').classList.add('active');
     // else document.getElementById('btn_history_all').classList.add('active');
 
-    // Перезагружаем ленту активности
     loadPlayerHistory();
 }
-
 
 function closeUserMenu() {
     const modal = document.getElementById('userMenuModal');
@@ -433,13 +445,11 @@ function switchLkTab(tabId) {
     }
 }
 
-
-
 function copyRefLink() {
     const refBox = document.getElementById('refLinkDisplay');
     if (!refBox) return;
     navigator.clipboard.writeText(refBox.innerText).then(() => {
-        alert('Referral affiliate link copied to clipboard successfully!');
+        alert(_t('player.affiliate.copied'));
     });
 }
 
@@ -456,8 +466,6 @@ async function apiGetPlayer() {
             body: JSON.stringify({ username: currentUsername, partnerId: 'demo_mtwtech', token: currentSessionId })
         });
         const data = await res.json();
-
-
     } catch(e) {
         console.error('Profile sync failure:', e);
     }
@@ -468,7 +476,7 @@ async function apiChangePassword() {
     if (!passInput) return;
 
     const newPass = passInput.value.trim();
-    if (!newPass || newPass.length < 6) return alert('Password must be at least 6 characters long.');
+    if (!newPass || newPass.length < 6) return alert(_t('player.info.short_password'));
 
     try {
         const res = await fetch(`${CORE_SERVER}/api/player/change-password`, {
@@ -484,23 +492,22 @@ async function apiChangePassword() {
         const data = await res.json();
 
         if (data.success) {
-            alert('Security configuration password updated successfully.');
+            alert(_t('player.info.pass_changed'));
             passInput.value = '';
         } else {
-            alert(data.error || 'Failed to update credentials.');
+            alert(data.error || _t('player.info.pass_err'));
         }
     } catch(e) {
         alert('Connection error during credential routing.');
     }
 }
 
-
 async function apiApplyPromo() {
     const promoInput = document.getElementById('promoCodeInput');
     if (!promoInput) return;
 
     const code = promoInput.value.trim();
-    if (!code) return alert('Please input an active promotional code');
+    if (!code) return alert(_t('player.promo.invalid'));
 
     try {
         const res = await fetch(`${CORE_SERVER}/api/player/apply-promo`, {
@@ -515,10 +522,10 @@ async function apiApplyPromo() {
         const data = await res.json();
 
         if (data.success) {
-            alert(`Promo activation approved! Loaded: +${data.bonus} 🪙`);
+            alert(`${_t('player.promo.success')}: +${data.bonus} 🪙`);
             promoInput.value = '';
             openUserMenu(); // Refresh data
-        } else { alert(data.error || 'Invalid or expired promo code.'); }
+        } else { alert(data.error || _t('player.promo.fail')); }
     } catch(e) { alert('Server validation timeout error.'); }
 }
 
@@ -530,7 +537,7 @@ async function apiDeposit() {
     const amount = amountInput.value.trim();
     const gateway = gatewaySelect.value;
 
-    if (!amount || Number(amount) <= 0) return alert('Please enter a valid deposit amount.');
+    if (!amount || Number(amount) <= 0) return alert(_t('player.payments.deposit_invalid_amount'));
 
     try {
         const res = await fetch(`${CORE_SERVER}/api/player/deposit/init`, {
@@ -547,11 +554,11 @@ async function apiDeposit() {
         const data = await res.json();
 
         if (data.success && data.paymentUrl) {
-            alert('Redirecting secure frame node to official merchant billing gateway...');
+            alert(_t('player.payments.deposit_redirecting'));
             // Автоматически открываем ссылку на оплату в новой вкладке браузера
             window.open(data.paymentUrl, '_blank');
         } else {
-            alert(data.error || 'Payment service provider is offline. Try again later.');
+            alert(data.error || _t('player.payments.deposit_reject'));
         }
     } catch (err) {
         console.error('Deposit checkout routing crashed:', err);
@@ -559,14 +566,13 @@ async function apiDeposit() {
     }
 }
 
-
 async function apiWithdraw() {
     const amount = document.getElementById('withdrawAmount').value.trim();
     const gateway = document.getElementById('withdrawGateway').value;
     const walletDetails = document.getElementById('withdrawWalletDetails').value.trim();
 
     if (!amount || Number(amount) <= 0 || !walletDetails) {
-        return alert('Please enter amount and your payout wallet/card details.');
+        return alert(_t('player.payments.withdraw_invalid'));
     }
 
     try {
@@ -592,19 +598,78 @@ async function apiWithdraw() {
     } catch (err) { alert('Connection error during cashout request routing.'); }
 }
 
-
-
-
-
 function logoutSession() {
     location.reload();
 }
 
 
+function translatePage() {
+    const langPackage = dynamicTranslations[currentLanguage];
+    if (!langPackage) return;
 
-// Переменные для управления текущим состоянием слайдера
-let currentSlideIndex = 0;
-let sliderTimerInterval = null;
+    if (!window.htmlTranslationIndexed) {
+        document.querySelectorAll('a, button, label, h2, h3, span, div').forEach(element => {
+            const currentText = element.innerText.trim();
+            if (!currentText || element.children.length > 0) return;
+            const foundPath = findKeyByValue(dynamicTranslations['en'] || langPackage, currentText);
+            if (foundPath) {
+                element.setAttribute('data-i18n', foundPath);
+            }
+        });
+        window.htmlTranslationIndexed = true;
+    }
+
+    // --- СТАНДАРТНЫЙ ДВИЖОК ОБНОВЛЕНИЯ ТЕКСТОВ ---
+    document.querySelectorAll('[data-i18n]').forEach(element => {
+        const path = element.getAttribute('data-i18n');
+        const text = path.split('.').reduce((acc, part) => acc && acc[part], langPackage);
+        if (text) element.innerText = text;
+    });
+
+    // Переводим плейсхолдеры в инпутах
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(input => {
+        const path = input.getAttribute('data-i18n-placeholder');
+        const placeholderText = path.split('.').reduce((acc, part) => acc && acc[part], langPackage);
+        if (placeholderText) input.setAttribute('placeholder', placeholderText);
+    });
+}
+
+function _t(path, fallbackText = '') {
+    const langPackage = dynamicTranslations[currentLanguage];
+    if (!langPackage) return fallbackText; // Если язык еще не загрузился — отдаем дефолт
+
+    // Ищем строку по вложенным ключам (например, "auth.errors.invalid_pass")
+    const translatedText = path.split('.').reduce((acc, part) => acc && acc[part], langPackage);
+
+    return translatedText || fallbackText; // Если перевода в базе нет — отдаем fallbackText
+}
+
+// Рекурсивный помощник для поиска пути ключа по тексту (например: находит "header.links.home" по слову "Home")
+function findKeyByValue(obj, targetValue, currentPath = '') {
+    for (const key in obj) {
+        const value = obj[key];
+        const newPath = currentPath ? `${currentPath}.${key}` : key;
+
+        if (typeof value === 'object' && value !== null) {
+            const deepResult = findKeyByValue(value, targetValue, newPath);
+            if (deepResult) return deepResult;
+        } else if (typeof value === 'string' && value.toLowerCase() === targetValue.toLowerCase()) {
+            return newPath;
+        }
+    }
+    return null;
+}
+
+
+// Переключение языка игроком кликом по селектору
+function changePlatformLanguage(newLang) {
+    if (!dynamicTranslations[newLang]) return;
+    currentLanguage = newLang;
+    localStorage.setItem('platform_lang', newLang); // Запоминаем выбор в LocalStorage
+    translatePage();
+}
+
+window.addEventListener('DOMContentLoaded', bootWhiteLabelPlatform);
 
 async function bootWhiteLabelPlatform() {
     try {
@@ -652,9 +717,49 @@ async function bootWhiteLabelPlatform() {
             document.head.appendChild(styleNode);
         }
 
-        // --- 4. 🖼️ ДИНАМИЧЕСКИЙ ПОДГРУЗЧИК СЛАЙДЕРА БАННЕРОВ (Новая логика) ---
+        if (data.translations && data.langSettings) {
+            dynamicTranslations = data.translations; // Сохраняем тексты из СУБД
 
-        if(data.banners?.home) {
+            const supportedLangs = data.langSettings.supported_langs || ['en'];
+            const defaultLang = data.langSettings.default_lang || 'en';
+
+            let savedLang = localStorage.getItem('platform_lang');
+
+            if (savedLang && supportedLangs.includes(savedLang)) {
+                currentLanguage = savedLang;
+            } else {
+                currentLanguage = defaultLang;
+                localStorage.setItem('platform_lang', defaultLang);
+            }
+
+            const langSelector = document.getElementById('langSelector');
+            if (langSelector) {
+                if (supportedLangs.length <= 1) {
+                    langSelector.style.display = 'none';
+                } else {
+                    langSelector.style.display = 'inline-block';
+
+                    const langOpt = {
+                        en: '<option value="en">🇺🇸 EN</option>',
+                        es: '<option value="es">🇪🇸 ES</option>',
+                        pt: '<option value="pt">🇧🇷 PT</option>',
+                        fr: '<option value="fr">🇫🇷 FR</option>',
+                        de: '<option value="de">🇩🇪 DE</option>',
+                        it: '<option value="it">🇮🇹 IT</option>',
+                        hi: '<option value="hi">🇮🇳 HI</option>',
+                        ru: '<option value="ru">🇷🇺 RU</option>',
+                    };
+                    // Генерируем опции выбора на лету на основе массива из базы данных
+                    langSelector.innerHTML = supportedLangs.map(lang => langOpt[lang]).join('');
+                    langSelector.value = currentLanguage;
+                }
+            }
+
+            translatePage();
+        }
+
+
+        if(data.banners?.home?.length) {
             const homeBanners = data.banners?.home || [];
             const sliderContainer = document.getElementById('sliderContainer');
             const dotsContainer = document.getElementById('sliderDotsContainer');
@@ -662,21 +767,44 @@ async function bootWhiteLabelPlatform() {
             if (sliderContainer && dotsContainer && homeBanners.length > 0) {
 
                 // Генерируем HTML слайдов на основе URL картинок и ссылок из админки
+                // sliderContainer.innerHTML = homeBanners.map((b, index) => {
+                //     // Извлекаем чистый эндпоинт клика (например, 'casino' или 'sport') для поддержки навигации твоей витрины
+                //     const targetView = b.click_url.replace('/', '');
+                //     const clickAction = targetView ? `toggleView('${targetView}')` : `alert('Campaign link registered!')`;
+                //
+                //     return `
+                //     <div class="slide-item" style="background-image: linear-gradient(135deg, rgba(13,16,23,0.92) 0%, rgba(13,17,23,0.7) 100%), url('${b.image_url}'); border-left: 5px solid var(--accent-pink);">
+                //         <div class="slide-content">
+                //             <h2>${_t('home.slider.banners.title', `Dynamic Campaign Node #${index + 1}`)}</h2>
+                //             <p>${_t('home.slider.banners.description', 'Exclusive limited offer deployed by administration for domain layout tracking. Tap button to unlock event arena routing map.')}</p>
+                //             <button class="btn-primary" onclick="${clickAction}">${_t('home.slider.banners.button', 'Launch Event')}</button>
+                //         </div>
+                //     </div>
+                // `;
+                // }).join('');
+
+                // Генерируем HTML слайдов на основе URL картинок и ссылок из админки
                 sliderContainer.innerHTML = homeBanners.map((b, index) => {
                     // Извлекаем чистый эндпоинт клика (например, 'casino' или 'sport') для поддержки навигации твоей витрины
-                    const targetView = b.click_url.replace('/', '');
+                    const targetView = b.click_url ? b.click_url.replace('/', '') : '';
                     const clickAction = targetView ? `toggleView('${targetView}')` : `alert('Campaign link registered!')`;
 
+                    // Безопасно получаем переводы с гарантированным дефолтным текстом
+                    const titleText = _t('home.slider.key_100') || `Dynamic Campaign Node #${index + 1}`;
+                    const descText = _t('home.slider.key_89') || 'Exclusive limited offer deployed by administration for domain layout tracking. Tap button to unlock event arena routing map.';
+                    const btnText = _t('home.slider.key_90') || 'Launch Event';
+
                     return `
-                    <div class="slide-item" style="background-image: linear-gradient(135deg, rgba(13,16,23,0.92) 0%, rgba(13,17,23,0.7) 100%), url('${b.image_url}'); border-left: 5px solid var(--accent-pink);">
-                        <div class="slide-content">
-                            <h2>Dynamic Campaign Node #${index + 1}</h2>
-                            <p>Exclusive limited offer deployed by administration for domain layout tracking. Tap button to unlock event arena routing map.</p>
-                            <button class="btn-primary" onclick="${clickAction}">Launch Event</button>
+                        <div class="slide-item" style="background-image: linear-gradient(135deg, rgba(13,16,23,0.92) 0%, rgba(13,17,23,0.7) 100%), url('${b.image_url}'); border-left: 5px solid var(--accent-pink);">
+                            <div class="slide-content">
+                                <h2>${titleText}</h2>
+                                <p>${descText}</p>
+                                <button class="btn-primary" onclick="${clickAction}">${btnText}</button>
+                            </div>
                         </div>
-                    </div>
-                `;
+                    `;
                 }).join('');
+
 
                 // Генерируем HTML навигационных точек (dots) строго по количеству баннеров
                 dotsContainer.innerHTML = homeBanners.map((_, index) => `
@@ -684,7 +812,7 @@ async function bootWhiteLabelPlatform() {
             `).join('');
 
                 // Сбрасываем счетчик и запускаем цикл автоматического перелистывания слайдера
-                currentSlideIndex = 0;
+                currentSlideIdx = 0;
                 startSliderAutoCycle(homeBanners.length);
             }
         }
@@ -719,45 +847,148 @@ async function bootWhiteLabelPlatform() {
     }
 }
 
-// --- 5. 🛠️ ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ УПРАВЛЕНИЯ СЛАЙДЕРОМ ---
+async function loadPlayerGamificationStats() {
+    try {
+        const res = await fetch(`${CORE_SERVER}/api/player/stats`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: currentUsername, partnerId: 'demo_mtwtech', token: currentSessionId })
+        });
+        const data = await res.json();
 
-// Функция ручного переключения слайда при клике на точку (твоя moveSlide)
-function moveSlide(index) {
-    const sliderContainer = document.getElementById('sliderContainer');
-    const totalSlides = document.querySelectorAll('#sliderContainer .slide-item').length;
-    if (!sliderContainer || totalSlides === 0) return;
+        if (data.success) {
+            // А. Рендерим Уровень и прогресс-бар XP игрока
+            document.getElementById('lk-player-level-badge').innerText = `${_t('player.info.level')}: ${data.level}`;
+            document.getElementById('lk-player-xp-text').innerText = `${data.xp} / ${data.nextLevelXp} XP`;
+            document.getElementById('lk-player-xp-bar').style.width = `${data.xpPct}%`;
 
-    currentSlideIndex = index;
+            // Б. Управляем интерфейсом Кланов
+            const activePane = document.getElementById('lk-clan-active-pane');
+            const joinPane = document.getElementById('lk-clan-join-pane');
 
-    // Плавное смещение контейнера по горизонтали (X) на нужный кадр
-    sliderContainer.style.transform = `translateX(-${currentSlideIndex * 100}%)`;
+            // [ВСТАВИТЬ ВНУТРЬ loadPlayerGamificationStats ПОСЛЕ ОБРАБОТКИ КЛАНОВ]
+            const badgesGrid = document.getElementById('lk-badges-grid');
 
-    // Переключаем активный CSS-класс у точек
-    document.querySelectorAll('.slider-dot').forEach(dot => dot.classList.remove('active'));
-    const targetDot = document.getElementById(`mtw_dot_${index}`);
-    if (targetDot) targetDot.classList.add('active');
+            if (badgesGrid && data.achievements) {
+                if (data.achievements.length === 0) {
+                    badgesGrid.innerHTML = `<div style="grid-column:1/-1; color:var(--text-muted); font-size:12px; padding:10px 0;">No trophies minted by server</div>`;
+                } else {
+                    badgesGrid.innerHTML = data.achievements.map(ach => {
+                        // Если ачивка заблокирована — делаем ее черно-белой и прозрачной
+                        const isUnlocked = ach.is_unlocked;
+                        const filterStyle = isUnlocked ? 'filter: drop-shadow(0 0 6px var(--accent-yellow));' : 'filter: grayscale(1) opacity(0.25);';
+                        const borderStyle = isUnlocked ? 'border-color: rgba(255, 183, 3, 0.4); background: rgba(255, 183, 3, 0.04);' : 'border-color: #1a1e26;';
 
-    // Перезапускаем таймер авто-слайдов, чтобы картинка не прыгнула сразу после ручного клика
-    startSliderAutoCycle(totalSlides);
-}
+                        // Локализуем статус "Completed"
+                        const progressText = isUnlocked ? `✅ ${_t('player.achievements.completed')}` : `${Math.floor(ach.current_value)} / ${Math.floor(ach.target_value)}`;
 
-// Функция циклического таймера авто-перелистывания (раз в 5 секунд)
-function startSliderAutoCycle(totalSlides) {
-    if (sliderTimerInterval) clearInterval(sliderTimerInterval);
+                        return `
+                <div class="badge-item" style="border: 1px solid; ${borderStyle} padding: 10px 5px; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; transition: all 0.2s ease;" title="${ach.description}">
+                    <!-- Иконка значка (эмодзи) -->
+                    <span style="font-size: 26px; margin-bottom: 4px; ${filterStyle}">${ach.badge_icon}</span>
+                    
+                    <!-- Короткое имя ачивки -->
+                    <b style="font-size: 11px; color: ${isUnlocked ? '#fff' : 'var(--text-muted)'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; display: block;">${ach.title}</b>
+                    
+                    <!-- Цифровой прогресс мелким шрифтом -->
+                    <span style="font-size: 9px; color: var(--text-muted); font-family: monospace; margin-top: 3px; display: block; white-space: nowrap;">${progressText}</span>
+                </div>
+            `;
+                    }).join('');
+                }
+            }
 
-    sliderTimerInterval = setInterval(() => {
-        currentSlideIndex = (currentSlideIndex + 1) % totalSlides;
 
-        const sliderContainer = document.getElementById('sliderContainer');
-        if (sliderContainer) {
-            sliderContainer.style.transform = `translateX(-${currentSlideIndex * 100}%)`;
+            if (data.clan) {
+                // Игрок состоит в клане
+                joinPane.style.display = 'none';
+                activePane.style.display = 'block';
+                document.getElementById('lk-my-clan-name').innerText = data.clan.name;
+                document.getElementById('lk-my-clan-level').innerText = `${_t('player.guild.level')}${data.clan.level}`;
 
-            document.querySelectorAll('.slider-dot').forEach(dot => dot.classList.remove('active'));
-            const nextDot = document.getElementById(`mtw_dot_${currentSlideIndex}`);
-            if (nextDot) nextDot.classList.add('active');
+                // Выводим командный квест клана
+                const qBox = document.getElementById('lk-clan-quest-box');
+                if (data.clanQuest) {
+                    qBox.style.display = 'block';
+                    document.getElementById('lk-cq-title').innerText = data.clanQuest.title;
+                    document.getElementById('lk-cq-progress-text').innerText = `${data.clanQuest.current.toFixed(0)} / ${data.clanQuest.target} 🪙`;
+                    document.getElementById('lk-cq-pct').innerText = `${data.clanQuest.pct}%`;
+                    document.getElementById('lk-cq-bar').style.width = `${data.clanQuest.pct}%`;
+                    document.getElementById('lk-cq-reward-text').innerText = `${_t('player.guild.pool_reward')}: ${data.clanQuest.reward} ${_t('player.guild.split')}`;
+                } else {
+                    qBox.style.display = 'none'; // Нет активного квеста
+                }
+            } else {
+                // У игрока нет клана
+                activePane.style.display = 'none';
+                joinPane.style.display = 'flex';
+
+                // Подгружаем список публичных кланов в селект для вступления
+                loadPublicClansSelectOptions();
+            }
         }
-    }, 5000);
+    } catch (err) { console.error('Gamification layout update crashed:', err); }
 }
+
+async function loadPublicClansSelectOptions() {
+    try {
+        const res = await fetch(`${CORE_SERVER}/api/player/clan/list?partnerId=demo_mtwtech`);
+        const data = await res.json();
+        const select = document.getElementById('lk-public-clans-select');
+        if (select && data.success && data.clans) {
+            if (data.clans.length === 0) {
+                select.innerHTML = `<option value="">${_t('player.guild.no_active')}</option>`;
+                return;
+            }
+            select.innerHTML = data.clans.map(c => `<option value="${c.id}">${c.clan_name} (${_t('player.guild.level')}${c.clan_level}) — Owner: ${c.owner_username}</option>`).join('');
+        }
+    } catch (err) { console.error(err); }
+}
+
+
+async function apiCreatePlayerClan() {
+    const nameInput = document.getElementById('lk-new-clan-name-input');
+    const name = nameInput.value.trim();
+    if (!name) return alert(_t('player.guild.create_name_invalid'));
+
+    showLoader();
+    try {
+        const res = await fetch(`${CORE_SERVER}/api/player/clan/create`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: currentUsername, partnerId: 'demo_mtwtech', token: currentSessionId, clanName: name })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+            alert(`Syndicate "${name}" ${_t('player.guild.create_success')}`);
+            nameInput.value = '';
+            loadPlayerGamificationStats(); // Перерисовываем блок
+        } else { alert(data.error || 'Failed to create clan'); }
+    } catch (err) { console.error(err); }
+    finally { hideLoader(); }
+}
+
+async function apiJoinPlayerClan() {
+    const select = document.getElementById('lk-public-clans-select');
+    const clanId = select.value;
+    if (!clanId) return alert(_t('player.guild.join_select_invalid'));
+
+    showLoader();
+    try {
+        const res = await fetch(`${CORE_SERVER}/api/player/clan/join`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: currentUsername, partnerId: 'demo_mtwtech', token: currentSessionId, clanId })
+        });
+        if (res.ok) {
+            alert(_t('player.guild.join_success'));
+            loadPlayerGamificationStats();
+        } else { alert('Failed to join selected clan array'); }
+    } catch (err) { console.error(err); }
+    finally { hideLoader(); }
+}
+
+
 
 // Инициализация при загрузке документа
 window.addEventListener('DOMContentLoaded', bootWhiteLabelPlatform);

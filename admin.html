@@ -81,6 +81,7 @@
             <div class="nav-section-content" id="sec-global">
                 <button class="nav-btn" onclick="switchTab('tab-websites', this)"><span></span><span class="nav-btn-text">Websites</span></button>
                 <button class="nav-btn" onclick="switchTab('tab-websites-banners', this)"><span></span><span class="nav-btn-text">Banners</span></button>
+                <button class="nav-btn" onclick="switchTab('tab-websites-translations', this)"><span></span><span class="nav-btn-text">Translations</span></button>
             </div>
 
             <!-- РАЗДЕЛ 4: Casino -->
@@ -528,6 +529,76 @@
             </div>
         </div>
 
+        <div id="tab-websites-translations" class="tab-content">
+            <!-- 🌐 БЛОК 3: УПРАВЛЕНИЕ МУЛЬТИЯЗЫЧНОСТЬЮ БРЕНДА -->
+            <div class="card" style="grid-column: span 3; margin-top: 10px;">
+                <h2>🌐 White Label Dynamic Localization Editor</h2>
+                <div class="game-block" style="background:#090b0f; border:1px solid #1a1e26; padding:20px; border-radius:8px; display: grid; grid-template-columns: 1fr 2fr; gap: 20px;">
+
+                    <!-- Левая часть: Выбор сайта, поддерживаемых языков и дефолта -->
+                    <div style="display:flex; flex-direction:column; gap:14px; border-right:1px solid #1a1e26; padding-right:20px;">
+                        <h4 style="margin:0; color:#fff; font-size:13px; text-transform:uppercase; letter-spacing:0.5px;">Ecosystem Scope</h4>
+
+                        <label class="gamification-label">Target Website:
+                            <select id="tl_target_site" onchange="loadAdminTranslationMatrix()" style="background:#0d1017; border:1px solid #262c3a; color:#fff; padding:8px; border-radius:5px; margin-top:5px; width:100%;"></select>
+                        </label>
+
+                        <label class="gamification-label">Editing Language:
+                            <select id="tl_editing_lang" onchange="loadAdminTranslationMatrix()" style="background:#0d1017; border:1px solid #262c3a; color:#fff; padding:8px; border-radius:5px; margin-top:5px; width:100%;">
+                                <option value="en">🇺🇸 English (en)</option>
+                                <option value="es">🇪🇸 Spanish (es)</option>
+                                <option value="pt">🇧🇷 Portuguese (pt)</option>
+                                <option value="fr">🇫🇷 French (fr)</option>
+                                <option value="de">🇩🇪 German (de)</option>
+                                <option value="it">🇮🇹 Italian (it)</option>
+                                <option value="hi">🇮🇳 Hindi (hi)</option>
+                                <option value="ru">🇷🇺 Русский (ru)</option>
+                            </select>
+                        </label>
+
+                        <div style="border-top:1px solid #141822; padding-top:10px;">
+                            <span style="font-size:11px; color:var(--text-muted); font-weight:700; display:block; margin-bottom:6px;">SUPPORTED PLATFORM LANGUAGES:</span>
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; background:#080a0e; padding:10px; border-radius:4px; border:1px solid #161a23; max-height:160px; overflow-y:auto;">
+                                <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#8a99ad; cursor:pointer;"><input type="checkbox" id="tl_check_en" checked> 🇺🇸 EN</label>
+                                <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#8a99ad; cursor:pointer;"><input type="checkbox" id="tl_check_es"> 🇪🇸 ES</label>
+                                <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#8a99ad; cursor:pointer;"><input type="checkbox" id="tl_check_pt"> 🇧🇷 PT</label>
+                                <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#8a99ad; cursor:pointer;"><input type="checkbox" id="tl_check_fr"> 🇫🇷 FR</label>
+                                <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#8a99ad; cursor:pointer;"><input type="checkbox" id="tl_check_de"> 🇩🇪 DE</label>
+                                <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#8a99ad; cursor:pointer;"><input type="checkbox" id="tl_check_it"> 🇮🇹 IT</label>
+                                <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#8a99ad; cursor:pointer;"><input type="checkbox" id="tl_check_hi"> 🇮🇳 HI</label>
+                                <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#8a99ad; cursor:pointer;"><input type="checkbox" id="tl_check_ru"> 🇷🇺 RU</label>
+                            </div>
+                        </div>
+
+                        <label class="gamification-label">Default Language:
+                            <select id="tl_default_lang" style="background:#0d1017; border:1px solid #262c3a; color:#fff; padding:8px; border-radius:5px; margin-top:5px; width:100%;">
+                                <option value="en">🇺🇸 English</option>
+                                <option value="es">🇪🇸 Spanish</option>
+                                <option value="pt">🇧🇷 Portuguese</option>
+                                <option value="fr">🇫🇷 French</option>
+                                <option value="de">🇩🇪 German</option>
+                                <option value="it">🇮🇹 Italian</option>
+                                <option value="hi">🇮🇳 Hindi</option>
+                                <option value="ru">🇷🇺 Русский</option>
+                            </select>
+                        </label>
+
+                        <button type="button" onclick="saveAdminTranslationMatrixNode()" class="btn-primary" style="padding:12px; font-weight:bold; background:var(--accent-blue)!important; box-shadow:none; margin-top:auto;">💾 SAVE LOCALIZATION</button>
+                    </div>
+
+                    <!-- Правая часть: Визуальная форма редактирования полей перевода -->
+                    <div style="max-height: 480px; overflow-y: auto; padding-right: 10px;">
+                        <h4 style="margin:0 0 15px 0; color:#fff; font-size:13px; text-transform:uppercase; letter-spacing:0.5px;">Language Dictionary Strings</h4>
+
+                        <div id="localization-inputs-container" style="display:flex; flex-direction:column; gap:16px;">
+                            <!-- Инпуты для перевода сгенерируются автоматически скриптом на основе твоей структуры -->
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
         <!-- TAB 1: GAME ENGINE CONFIGURATION -->
         <div id="tab-config" class="tab-content">
             <div class="card" style="margin-top: 25px;">
@@ -772,7 +843,12 @@
                                 Public Description for Player:
                                 <input type="text" id="q_desc" placeholder="Play 30 games in any slots to get a reward!" style="margin-top:5px;">
                             </label>
-                            <button type="button" onclick="createAdminQuestNode()" class="btn-primary" style="padding: 8px; font-size: 12px; margin-top: 5px; background: var(--neon-green) !important; color:#000 !important; box-shadow:none;">➕ Add / Update Quest Type</button>
+                            <!--<button type="button" onclick="createAdminQuestNode()" class="btn-primary" style="padding: 8px; font-size: 12px; margin-top: 5px; background: var(&#45;&#45;neon-green) !important; color:#000 !important; box-shadow:none;">➕ Add / Update Quest Type</button>-->
+
+                            <div style="grid-column: 1 / -1; display: flex; gap: 10px; margin-top: 5px;">
+                                <button type="button" id="q_submit_btn" onclick="createAdminQuestNode()" class="btn-primary" style="width: 100%; padding: 8px; font-size: 12px; background: var(--neon-green) !important; color:#000 !important; box-shadow:none; font-weight:bold;">➕ Add / Update Quest Type</button>
+                                <button type="button" id="q_cancel_btn" onclick="resetQuestForm()" style="display: none; background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); padding: 8px 15px; cursor: pointer; border-radius: 4px; font-size: 12px; font-weight: bold;">Cancel</button>
+                            </div>
                         </div>
 
                         <!-- Таблица текущих активных типов квестов -->
@@ -795,9 +871,98 @@
                         </div>
                     </div>
 
+                    <!-- TAB 6: ACHIEVEMENT BADGES MANAGEMENT CONSTRUCTOR -->
+                    <div class="game-block" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 25px; border-top: 1px solid #1a1e26; padding-top: 20px;">
+                        <h3 style="grid-column: 1/-1; margin: 0; color: #00f5d4;">🥇 Achievement Badges Gamification Matrix</h3>
+
+                        <!-- Форма создания ачивки -->
+                        <div style="display: flex; flex-direction: column; gap: 10px; background: #090b0f; padding: 15px; border-radius: 6px; border: 1px solid #1a1e26;">
+                            <h4 style="margin:0; color:#fff; font-size:13px;">Mint New Achievement Badge</h4>
+                            <div style="display:flex; gap:10px;">
+                                <label class="gamification-label" style="width:100%;">Badge Title: <input type="text" id="a_title" placeholder="Slot Master" style="margin-top:5px;"></label>
+                                <label class="gamification-label" style="width:45px;">Icon: <input type="text" id="a_icon" placeholder="🏆" style="margin-top:5px; text-align:center; padding:8px 0!important;"></label>
+                            </div>
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                                <label class="gamification-label">Condition Trigger:
+                                    <select id="a_type" style="background:#0d1017; border:1px solid #262c3a; color:#fff; padding:8px; border-radius:5px; margin-top:5px;">
+                                        <option value="TOTAL_GAMES">🎰 TOTAL_GAMES</option>
+                                        <option value="TOTAL_TURNOVER">💰 TOTAL_TURNOVER</option>
+                                        <option value="MAX_WIN_MULTIPLIER">🔥 MAX_WIN_MULTIPLIER</option>
+                                        <option value="BIG_WIN_SINGLE">👑 BIG_WIN_SINGLE</option>
+                                    </select>
+                                </label>
+                                <label class="gamification-label">Target Goal (N): <input type="number" id="a_target" placeholder="1000" style="margin-top:5px;"></label>
+                            </div>
+                            <label class="gamification-label">Cash Reward (🪙): <input type="number" id="a_reward" placeholder="100" style="margin-top:5px;"></label>
+                            <label class="gamification-label">Public Description: <input type="text" id="a_desc" placeholder="Spin 1000 times to secure badge rewards" style="margin-top:5px;"></label>
+
+                            <!--<button type="button" onclick="createAdminAchievementNode()" class="btn-primary" style="padding: 10px; font-weight: bold; background: #00f5d4 !important; color:#000 !important; box-shadow:none; margin-top:5px;">➕ MINT BADGE TEMPLATE</button>-->
+
+                            <div style="grid-column: 1 / -1; display: flex; gap: 10px; margin-top: 5px;">
+                                <button type="button" id="a_submit_btn" onclick="createAdminAchievementNode()" class="btn-primary" style="width: 100%; padding: 10px; font-weight: bold; background: #00f5d4 !important; color:#000 !important; box-shadow:none; text-transform: uppercase;">➕ Mint Badge Template</button>
+                                <button type="button" id="a_cancel_btn" onclick="resetAchievementForm()" style="display: none; background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); padding: 10px 20px; cursor: pointer; border-radius: 4px; font-size: 13px; font-weight: bold;">Cancel</button>
+                            </div>
+
+                        </div>
+
+                        <!-- Реестр созданных значков -->
+                        <div style="display: flex; flex-direction: column; background: #090b0f; padding: 15px; border-radius: 6px; border: 1px solid #1a1e26;">
+                            <h4 style="margin:0 0 10px 0; color:#fff; font-size:13px;">Ecosystem Badges Inventory</h4>
+                            <div style="max-height: 250px; overflow-y: auto;">
+                                <table style="width:100%; font-size:12px; border-collapse:collapse;">
+                                    <thead>
+                                    <tr style="color:var(--text-muted); text-align:left; border-bottom:1px solid #1a1e26;">
+                                        <th style="padding:4px 0;">Badge</th>
+                                        <th>Condition / Target</th>
+                                        <th style="text-align:right;">Prize</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="adminAchievementsListTbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+
                     <div class="game-block" style="display: grid; grid-template-columns: 1fr; gap: 15px;">
                         <h3 style="margin: 0; color: #8c7ae6;">📢 Affiliate System (RevShare)</h3>
                         <label class="gamification-label">Affiliate Commission (% from net loss): <input type="number" id="g_affiliatePercent"></label>
+                    </div>
+
+                    <!-- REVOLUTIONARY MODULE: GUILDS AND CLANS MULTIPLIER ENGINE -->
+                    <div class="game-block" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 25px; border-top: 1px solid #1a1e26; padding-top: 20px;">
+                        <h3 style="grid-column: 1/-1; margin: 0; color: #8c7ae6;">👥 B2B Multi-Brand Guilds & Clans Engine</h3>
+
+                        <!-- Левый блок: Создание Командного Квеста -->
+                        <div style="display: flex; flex-direction: column; gap: 10px; background: #090b0f; padding: 15px; border-radius: 6px; border: 1px solid #1a1e26;">
+                            <h4 style="margin:0; color:#fff; font-size:13px;">Deploy Guild Co-Op Quest</h4>
+                            <label class="gamification-label">Quest Event Title: <input type="text" id="cq_title" placeholder="Syndicate Turnover Race" style="margin-top:5px;"></label>
+                            <div style="display:flex; gap:10px;">
+                                <label class="gamification-label" style="width:100%;">Target Turnover: <input type="number" id="cq_target" placeholder="50000" style="margin-top:5px;"></label>
+                                <label class="gamification-label" style="width:100%;">Reward Pool: <input type="number" id="cq_pool" placeholder="10000" style="margin-top:5px;"></label>
+                            </div>
+                            <label class="gamification-label">Event Expire Expiration:<input type="datetime-local" id="cq_end" style="margin-top:5px;"></label>
+                            <button type="button" onclick="createAdminClanQuestNode()" class="btn-primary" style="padding: 10px; font-weight: bold; background: #8c7ae6 !important; box-shadow:none; margin-top:5px;">🚀 DEPLOY CLAN CAMPAIGN</button>
+                        </div>
+
+                        <!-- Правый блок: Список зарегистрированных кланов -->
+                        <div style="display: flex; flex-direction: column; background: #090b0f; padding: 15px; border-radius: 6px; border: 1px solid #1a1e26;">
+                            <h4 style="margin:0 0 10px 0; color:#fff; font-size:13px;">Registered Network Guilds</h4>
+                            <div style="max-height: 220px; overflow-y: auto;">
+                                <table style="width:100%; font-size:12px; border-collapse:collapse;">
+                                    <thead>
+                                    <tr style="color:var(--text-muted); text-align:left; border-bottom:1px solid #1a1e26;">
+                                        <th style="padding:4px 0;">Clan Name</th>
+                                        <th>Leader</th>
+                                        <th>Rank / Members</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="adminClansListTbody">
+                                    <!-- Загрузится через JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
 
                     <button type="submit" class="btn-primary" style="padding: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">💾 Save Gamification Parameters</button>
