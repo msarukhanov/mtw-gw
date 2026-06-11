@@ -669,6 +669,13 @@ function changePlatformLanguage(newLang) {
     translatePage();
 }
 
+function printTgLog(text, color = '#00f5d4') {
+    const logger = document.getElementById('tg-debug-logger');
+    if (logger) {
+        logger.innerHTML += `<br><span style="color:${color}">${text}</span>`;
+        logger.scrollTop = logger.scrollHeight; // Прокрутка вниз
+    }
+}
 // Функция запуска WebApp, которая ждет полной готовности скрипта Дурова
 function initializeTelegramEcosystemAuth() {
     // Проверяем наличие объекта WebApp
@@ -683,16 +690,16 @@ function initializeTelegramEcosystemAuth() {
 
         // Если строка пустая (такое бывает, если ты открыл сайт в обычном Chrome, а не внутри ТГ)
         if (!tgInitData) {
-            console.log("ℹ️ [Telegram SDK] Платформа запущена в обычном веб-браузере. Автологин пропущен.");
+            printTgLog("ℹ️ [Telegram SDK] Платформа запущена в обычном веб-браузере. Автологин пропущен.");
             return;
         }
 
-        console.log("🤖 [Telegram WebApp Detected] Строка initData получена. Запуск бесшовной сессии...");
+        printTgLog("🤖 [Telegram WebApp Detected] Строка initData получена. Запуск бесшовной сессии...");
 
         // Запускаем твой fetch-запрос авторизации
         executeTelegramBackendAuth(tgInitData);
     } else {
-        console.log("ℹ️ [Telegram SDK] Объект WebApp не найден. Включен стандартный режим витрины.");
+        printTgLog("ℹ️ [Telegram SDK] Объект WebApp не найден. Включен стандартный режим витрины.");
     }
 }
 
@@ -713,12 +720,12 @@ async function executeTelegramBackendAuth(tgInitData) {
 
             initSession(data);
 
-            console.log(`✅ [Telegram Auth Success] Раунды синхронизированы. Добро пожаловать, ${currentUsername}!`);
+            printTgLog(`✅ [Telegram Auth Success] Раунды синхронизированы. Добро пожаловать, ${currentUsername}!`);
         } else {
-            console.warn("⚠️ [Telegram Auth Reject] Бэкенд отклонил подпись Телеграма:", data.message);
+            printTgLog("⚠️ [Telegram Auth Reject] Бэкенд отклонил подпись Телеграма:", data.message);
         }
     } catch (err) {
-        console.error("❌ Критическая ошибка соединения со шлюзом tg-auth:", err);
+        printTgLog("❌ Критическая ошибка соединения со шлюзом tg-auth:", err);
     }
 }
 
