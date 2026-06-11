@@ -65,12 +65,7 @@ global.io = io;
 
 
 const tgBot = require('./tgbot');
-// 1. Открываем специальный роут для приема сигналов от серверов Telegram
 app.use(tgBot.webhookCallback('/api/callback/telegram'));
-
-// 2. Говорим серверам Telegram, куда именно слать POST-запросы (Указываем адрес твоего API на Render)
-
-
 
 
 const authRoutes = require('./routes/authRoutes');
