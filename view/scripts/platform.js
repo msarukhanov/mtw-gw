@@ -201,7 +201,7 @@ async function handleLogin() {
         });
         const data = await response.json();
 
-        if (!response.ok || data.error) {
+        if (data.error) {
             return alert(data.error || _t('auth.messages.login_fail'));
         }
 
@@ -707,15 +707,15 @@ async function executeTelegramBackendAuth(tgInitData) {
                 initData: tgInitData
             })
         });
-        const authData = await authRes.json();
+        const data = await authRes.json();
 
-        if (authData.success && authData.token) {
+        if (!data.error) {
 
-            initSession(authData);
+            initSession(data);
 
             console.log(`✅ [Telegram Auth Success] Раунды синхронизированы. Добро пожаловать, ${currentUsername}!`);
         } else {
-            console.warn("⚠️ [Telegram Auth Reject] Бэкенд отклонил подпись Телеграма:", authData.message);
+            console.warn("⚠️ [Telegram Auth Reject] Бэкенд отклонил подпись Телеграма:", data.message);
         }
     } catch (err) {
         console.error("❌ Критическая ошибка соединения со шлюзом tg-auth:", err);
