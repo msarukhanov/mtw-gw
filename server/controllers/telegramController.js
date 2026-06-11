@@ -36,7 +36,6 @@ exports.authTelegramWebApp222 = async (req, res) => {
         // 2. Распаковываем данные пользователя из строки
         const params = new URLSearchParams(initData);
         const userObj = JSON.parse(params.get('user')); // { id: 1234567, username: 'mark_dev' }
-        console.log('[TG] User obj', userObj);
 
         const tgId = userObj.id;
         // Если у юзера нет юзернейма в ТГ, используем его ID в качестве никнейма платформы
@@ -49,8 +48,6 @@ exports.authTelegramWebApp222 = async (req, res) => {
             // 3. Ищем игрока по telegram_id
             let pRes = await client.query('SELECT username FROM players WHERE partner_id = $1 AND telegram_id = $2 LIMIT 1', [partnerId, tgId]);
             let finalUsername = pRes.rows?.[0]?.username;
-
-            console.log('[TG] User pRes', pRes);
 
             if (pRes.rowCount === 0) {
                 // Если игрока еще нет, проверяем, вдруг никнейм занят обычным пользователем
@@ -125,7 +122,6 @@ exports.authTelegramWebApp = async (req, res) => {
         // 2. Безопасно распаковываем данные пользователя из строки
         const params = new URLSearchParams(initData);
         const userObj = JSON.parse(params.get('user')); // { id: 760612918, username: 'mmalkav', ... }
-        console.log('[TG] User obj parsed successfully:', userObj);
 
         const tgId = userObj.id;
         // Если у игрока нет юзернейма в ТГ, используем его ID в качестве базового никнейма
@@ -139,7 +135,6 @@ exports.authTelegramWebApp = async (req, res) => {
 
             // 3. Ищем игрока по telegram_id в PostgreSQL [INDEX]
             let pRes = await client.query('SELECT username FROM players WHERE partner_id = $1 AND telegram_id = $2 LIMIT 1', [partnerId, tgId]);
-            console.log('[TG] Database search row count:', pRes.rowCount);
 
             if (pRes.rowCount > 0) {
                 // Игрок уже зарегистрирован ранее, берем его никнейм из базы
@@ -164,8 +159,6 @@ exports.authTelegramWebApp = async (req, res) => {
                 //      VALUES ($1, $2, 'system', 'register', 'Successfully registered via Telegram WebApp Bot 🤖', 0)`,
                 //     [finalUsername, partnerId]
                 // );
-
-                console.log(`🤖 [TG] Создан новый аккаунт для игрока: ${finalUsername}`);
             }
 
             await client.query('COMMIT');
@@ -184,12 +177,21 @@ exports.authTelegramWebApp = async (req, res) => {
             // Синхронизируем UI платформы и выстреливаем WebSockets wallet_update [INDEX]
             await state.updateBalance(player.username, partnerId, currentRealBalance);
 
+            player.realBalance = Number(player.balance);
+            player.bonusBalance = Number(player.bonus_balance || 0);
+            player.wagerLeft = Number(player.wager_left || 0);
+
+            // 💎 ГЛАВНОЕ: Вычисляем суммарный доступный баланс для игры
+            player.balance = Number(player.realBalance + player.bonusBalance);
+
             // Отдаем фронтенду полную конфигурацию экосистемы (в точности, как при обычном логине)
             res.json({
                 success: true,
                 username: player.username,
                 partnerId: partnerId,
-                balance: currentRealBalance,
+                realBalance: player.realBalance,
+                bonusBalance: player.bonusBalance,
+                wagerLeft: player.wagerLeft,
                 sessionId: sessionId,
                 // Безопасно подтягиваем виртуальные методы джекпота и конфига, если они есть
                 jackpot: typeof state.getJackpot === 'function' ? state.getJackpot(partnerId) : 0,

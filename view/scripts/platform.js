@@ -690,16 +690,16 @@ function initializeTelegramEcosystemAuth() {
 
         // Если строка пустая (такое бывает, если ты открыл сайт в обычном Chrome, а не внутри ТГ)
         if (!tgInitData) {
-            printTgLog("ℹ️ [Telegram SDK] Платформа запущена в обычном веб-браузере. Автологин пропущен.");
+            // printTgLog("ℹ️ [Telegram SDK] Платформа запущена в обычном веб-браузере. Автологин пропущен.");
             return;
         }
 
-        printTgLog("🤖 [Telegram WebApp Detected] Строка initData получена. Запуск бесшовной сессии...");
+        // printTgLog("🤖 [Telegram WebApp Detected] Строка initData получена. Запуск бесшовной сессии...");
 
         // Запускаем твой fetch-запрос авторизации
         executeTelegramBackendAuth(tgInitData);
     } else {
-        printTgLog("ℹ️ [Telegram SDK] Объект WebApp не найден. Включен стандартный режим витрины.");
+        // printTgLog("ℹ️ [Telegram SDK] Объект WebApp не найден. Включен стандартный режим витрины.");
     }
 }
 
@@ -720,13 +720,13 @@ async function executeTelegramBackendAuth(tgInitData) {
         if (!data.error) {
 
             initSession(data);
-
-            printTgLog(`✅ [Telegram Auth Success] Раунды синхронизированы. Добро пожаловать, ${currentUsername}!`);
+            //
+            // printTgLog(`✅ [Telegram Auth Success] Раунды синхронизированы. Добро пожаловать, ${currentUsername}!`);
         } else {
-            printTgLog("⚠️ [Telegram Auth Reject] Бэкенд отклонил подпись Телеграма:", data);
+            // printTgLog("⚠️ [Telegram Auth Reject] Бэкенд отклонил подпись Телеграма:", data);
         }
     } catch (err) {
-        printTgLog("❌ Критическая ошибка соединения со шлюзом tg-auth:", JSON.stringify(err));
+        // printTgLog("❌ Критическая ошибка соединения со шлюзом tg-auth:", JSON.stringify(err));
     }
 }
 
