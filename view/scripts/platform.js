@@ -679,6 +679,38 @@ async function bootWhiteLabelPlatform() {
         const baseUrl = (location.hostname === 'localhost') ? 'http://localhost:3000' : 'https://mtw-gw.onrender.com';
         const baseUrlApi = baseUrl + '/api';
 
+        // [ДОБАВИТЬ В САМОЕ НАЧАЛО bootWhiteLabelPlatform НА ПЛАТФОРМЕ ИГРОКА]
+// Проверяем, доступен ли глобальный объект Telegram WebApp внутри TWA-браузера
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
+            const tgInitData = window.Telegram.WebApp.initData;
+
+            console.log("🤖 [Telegram WebApp Detected] Запуск автоматической бесшовной авторизации...");
+
+            try {
+                const authRes = await fetch(`${SERVER_URL}/api/public/tg-auth`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        partnerId: 'demo_mtwtech',
+                        initData: tgInitData
+                    })
+                });
+                const authData = await authRes.json();
+
+                if (authData.success && authData.token) {
+                    // Записываем полученную бесшовную сессию в глобальные переменные платформы
+                    currentUsername = authData.username;
+                    currentSessionId = authData.token;
+                    localStorage.setItem('sessionId', authData.token);
+
+                    console.log(`✅ [Telegram Auth Success] Добро пожаловать, ${currentUsername}! Баланс синхронизирован.`);
+                }
+            } catch (err) {
+                console.error("❌ Авторизация через Telegram бот упала:", err);
+            }
+        }
+
+
         const res = await fetch(`${baseUrlApi}/website/init?domain=${currentHostname}&partnerId=${defaultPartnerId}`);
         const data = await res.json();
 

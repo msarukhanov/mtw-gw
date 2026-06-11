@@ -10,4 +10,6 @@ router.post('/callback/payeer', callbackController.payeerCallback);
 router.post('/callback/flutterwave', callbackController.flutterwaveCallback);
 router.post('/callback/vodafone', callbackController.vodafoneCallback);
 
+router.post('/callback/telegram', callbackController.vodafoneCallback);
+
 module.exports = router;

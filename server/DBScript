@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS players (
     wager_total NUMERIC(15, 2) DEFAULT 0.00,
     wager_left NUMERIC(15, 2) DEFAULT 0.00,
     total_deposited_amount NUMERIC(15, 2) DEFAULT 0.00,
+    telegram_id BIGINT DEFAULT NULL,
     UNIQUE(username, partner_id)
 );
 

@@ -7,9 +7,11 @@ const platformPlayers = {
 };
 
 const showcaseController = require('../controllers/showcaseController');
+const telegramController = require('../controllers/telegramController');
 
 
 router.get('/website/init', showcaseController.initPublicWebsite);
+router.post('/public/tg-auth', telegramController.authTelegramWebApp);
 
 // Роуты, которые имитируют эндпоинты внешней платформы
 router.post('/showcase/validate', showcaseController.validate);
