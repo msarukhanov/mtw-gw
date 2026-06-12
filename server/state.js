@@ -454,6 +454,7 @@ const playerMethods = {
             }
 
             // 2. Делаем ОДИН единственный и финальный UPDATE в базу данных
+            // 1. Сначала обновляем "горячий кэш" в таблице игроков (остается твой запрос)
             const updateRes = await client.query(
                 `UPDATE players 
                  SET balance = $1, bonus_balance = $2, wager_left = $3 
@@ -462,6 +463,20 @@ const playerMethods = {
                 [finalReal, bonusBalance, wagerLeft, username, partnerId]
             );
 
+            // 2. 🎯 ВАЖНЕЙШЕЕ ИСПРАВЛЕНИЕ: Синхронизируем измененные балансы с реляционным архивом!
+            // Записываем новые значения реала, бонуса и вейджера строго для текущей активной валюты игрока [INDEX].
+            // Благодаря ON CONFLICT, если кошелька вдруг не было, база его создаст, исключая любые баги [INDEX].
+            await client.query(`
+                INSERT INTO player_wallets (partner_id, username, currency, balance, bonus_balance, wager_left)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                ON CONFLICT (partner_id, username, currency) 
+                DO UPDATE SET 
+                    balance = EXCLUDED.balance, 
+                    bonus_balance = EXCLUDED.bonus_balance, 
+                    wager_left = EXCLUDED.wager_left
+            `, [partnerId, username, player.current_currency, finalReal, bonusBalance, wagerLeft]);
+
+            // Только теперь фиксируем транзакцию ACID в PostgreSQL [INDEX]
             await client.query('COMMIT');
 
             // 3. Отправляем в сокеты суммарный playable-баланс для UI платформы и игр
@@ -471,7 +486,7 @@ const playerMethods = {
                     balance: totalPlayable,
                     realBalance: finalReal,
                     bonusBalance: bonusBalance,
-                    currency: player.current_currency
+                    currency: player.current_currency // Передаем строковый код активной валюты игрока [INDEX]
                 });
             }
 
