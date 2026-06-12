@@ -8,14 +8,34 @@ bot.start(async (ctx) => {
     const chatInstance = ctx.chat;
     const tgUsername = chatInstance.username || chatInstance.first_name || 'Cyber Player';
 
-    console.log(`🤖 [Telegram Bot] Игрок ${tgUsername} запустил бота.`);
+    // console.log(`🤖 [Telegram Bot] Игрок ${tgUsername} запустил бота.`);
+    //
+    // // Отправляем красивое приветственное сообщение с инлайн-кнопкой запуска WebApp
+    // await ctx.reply(
+    //     `👾 Welcome to MTW iGaming Platform, ${tgUsername}!\n\n` +
+    //     `Experience highload B2B White Label slots and sportsbook ecosystem directly inside Telegram nodes. Mapped seamlessly, lightning fast, secured by PostgreSQL structure.`,
+    //     Markup.inlineKeyboard([
+    //         Markup.button.webApp('🎮 Launch Gaming Arena', 'https://mtwtech.onrender.com/platform')
+    //     ])
+    // );
 
-    // Отправляем красивое приветственное сообщение с инлайн-кнопкой запуска WebApp
+    const refCode = ctx.startPayload || '';
+
+    console.log(`🤖 [Telegram Bot] Игрок ${tgUsername} запустил бота. Реф-код: ${refCode || 'НЕТ'}`);
+
+    // Формируем прямую ссылку на WebApp-приложение.
+    // Если есть реф-код, добавляем его в параметр startapp, как требует Telegram SDK
+    let webAppUrl = 'https://t.me';
+    if (refCode) {
+        webAppUrl += `?startapp=${refCode}`;
+    }
+
     await ctx.reply(
         `👾 Welcome to MTW iGaming Platform, ${tgUsername}!\n\n` +
-        `Experience highload B2B White Label slots and sportsbook ecosystem directly inside Telegram nodes. Mapped seamlessly, lightning fast, secured by PostgreSQL structure.`,
+        `Experience highload B2B White Label slots and sportsbook ecosystem directly inside Telegram nodes. Mapped seamlessly, lightning fast, secured by AI!.`,
         Markup.inlineKeyboard([
-            Markup.button.webApp('🎮 Launch Gaming Arena', 'https://mtwtech.onrender.com/platform')
+            // Передаем ссылку с реф-кодом в кнопку
+            Markup.button.webApp('🎮 Launch Gaming Arena', webAppUrl)
         ])
     );
 });

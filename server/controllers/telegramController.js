@@ -40,6 +40,7 @@ exports.authTelegramWebApp222 = async (req, res) => {
         const tgId = userObj.id;
         // Если у юзера нет юзернейма в ТГ, используем его ID в качестве никнейма платформы
         const tgUsername = userObj.username || `tg_${tgId}`;
+        const referralCode = req.body.referralCode || '';
 
         const client = await global.pool.connect();
         try {
@@ -49,11 +50,18 @@ exports.authTelegramWebApp222 = async (req, res) => {
             let pRes = await client.query('SELECT username FROM players WHERE partner_id = $1 AND telegram_id = $2 LIMIT 1', [partnerId, tgId]);
             let finalUsername = pRes.rows?.[0]?.username;
 
+            let newPlayer = false;
+            let invitedBy = null;
+            if (referralCode) {
+                invitedBy = referralCode.trim();
+            }
+
             if (pRes.rowCount === 0) {
                 // Если игрока еще нет, проверяем, вдруг никнейм занят обычным пользователем
                 const nickCheck = await client.query('SELECT username FROM players WHERE partner_id = $1 AND username = $2', [partnerId, tgUsername]);
                 finalUsername = nickCheck.rowCount > 0 ? `tg_${tgUsername}_${crypto.randomBytes(3).toString('hex')}` : tgUsername;
 
+                newPlayer = true;
                 // const player = await state.getOrCreatePlayer(finalUsername, partnerId);
                 //
                 // // Создаем игрока в Postgres и намертво привязываем его telegram_id
@@ -88,11 +96,19 @@ exports.authTelegramWebApp222 = async (req, res) => {
             const freshBalance = externalUser.balance !== undefined ? Number(externalUser.balance) : player.balance;
             await state.updateBalance(player.username, partnerId, freshBalance);
 
+            if(newPlayer && referralCode) {
+                await client.query('UPDATE players SET invited_by = $1 WHERE username = $2 AND partner_id = $3', [referralCode, username, partnerId]);
+            }
+
             res.json({
                 username: player.username,
                 partnerId: partnerId,
                 balance: freshBalance,
+                realBalance: player.realBalance,
+                bonusBalance: player.bonusBalance,
+                currency: player.current_currency,
                 sessionId,
+                unreadNotifications: player.unreadNotifications,
                 jackpot: state.getJackpot(partnerId),
                 config: state.getConfig(partnerId)
             });

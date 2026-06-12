@@ -25,11 +25,117 @@ const getTimeString = () => new Date().toLocaleTimeString([], { hour: '2-digit',
 // =========================================================================
 
 const playerMethods = {
+
+    getOrCreatePlayer: async (username, partnerId, fetchPlatformBalance = null, domainName = 'localhost') => {
+        const client = await global.pool.connect();
+        try {
+            await client.query('BEGIN');
+
+            // 1. Вытягиваем настройки валют сайта по домену
+            const siteRes = await client.query(
+                'SELECT id, currency_settings FROM b2b_websites WHERE partner_id = $1 AND domain_name = $2 AND is_active = 1 LIMIT 1',
+                [partnerId, domainName.toLowerCase()]
+            );
+
+            let curCfg = { supported_currencies: ["USD"], default_currency: "USD" };
+            if (siteRes.rowCount > 0 && siteRes.rows[0].currency_settings) {
+                curCfg = typeof siteRes.rows[0].currency_settings === 'string'
+                    ? JSON.parse(siteRes.rows[0].currency_settings)
+                    : siteRes.rows[0].currency_settings;
+            }
+            const supportedCurrencies = curCfg.supported_currencies || ["USD"];
+            const defaultCurrency = curCfg.default_currency || "USD";
+
+            // 2. Ищем игрока в players
+            let res = await client.query('SELECT * FROM players WHERE username = $1 AND partner_id = $2 LIMIT 1', [username, partnerId]);
+            let player = res.rowCount > 0 ? res.rows[0] : null;
+
+            if (!player) {
+                let initialBalance = 0;
+                if (typeof fetchPlatformBalance === 'function') {
+                    try {
+                        const platformData = await fetchPlatformBalance(username, partnerId);
+                        if (platformData && platformData.balance !== undefined) initialBalance = Number(platformData.balance);
+                    } catch (err) { console.error(`[Postgres B2B] Failed platform balance sync:`, err.message); }
+                }
+
+                // Инсертим нового игрока со стартовой валютой по умолчанию для этого домена
+                const insertRes = await client.query(
+                    `INSERT INTO players (username, partner_id, balance, bonus_balance, wager_total, wager_left, current_currency, daily_quests, used_promos, tournament_points) 
+                     VALUES ($1, $2, $3, 0.00, 0.00, 0.00, $4, '{"gamesPlayed": 0, "claimed": false}'::jsonb, '{}'::jsonb, 0) RETURNING *`,
+                    [username, partnerId, initialBalance, defaultCurrency]
+                );
+                player = insertRes.rows[0];
+            }
+
+            // 3. 🎯 КРИТИЧЕСКИЙ АВТО-ИНЖЕКТ ПУНКТА 5: Проверяем наличие кошельков из конфига сайта в архиве
+            for (const currency of supportedCurrencies) {
+                // Пытаемся создать кошелек, если его еще нет (благодаря ON CONFLICT DO NOTHING база не выдаст ошибку)
+                const isDefault = (currency === player.current_currency);
+                const startBal = isDefault ? Number(player.balance) : 0.00;
+                const startBonus = isDefault ? Number(player.bonus_balance) : 0.00;
+                const startWager = isDefault ? Number(player.wager_left) : 0.00;
+
+                await client.query(`
+                    INSERT INTO player_wallets (partner_id, username, currency, balance, bonus_balance, wager_left)
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                    ON CONFLICT (partner_id, username, currency) DO NOTHING
+                `, [partnerId, username, currency, startBal, startBonus, startWager]);
+            }
+
+            await client.query('COMMIT');
+
+            // Парсим стандартные JSONB блоки (остается без изменений)
+            player.dailyQuests = typeof player.daily_quests === 'string' ? JSON.parse(player.daily_quests) : player.daily_quests;
+            player.usedPromos = typeof player.used_promos === 'string' ? JSON.parse(player.used_promos) : player.used_promos;
+            player.tournamentPoints = Number(player.tournament_points);
+
+            player.realBalance = Number(player.balance);
+            player.bonusBalance = Number(player.bonus_balance || 0);
+            player.wagerLeft = Number(player.wager_left || 0);
+
+            // 💎 ГЛАВНОЕ: Вычисляем суммарный доступный баланс для игры
+            player.balance = Number(player.realBalance + player.bonusBalance);
+
+            const unreadCountRes = await client.query(
+                `SELECT COUNT(id)::int as count FROM player_notifications WHERE partner_id = $1 AND username = $2 AND is_read = false`,
+                [partnerId, player.username]
+            );
+
+            const unreadNotifyCount = unreadCountRes.rows ? (unreadCountRes.rows[0]?.count || 0) : 0;
+            player.unreadNotifications = unreadNotifyCount;
+
+            const memKey = `${partnerId}_${username}`;
+            if (!activeTickets[memKey]) activeTickets[memKey] = [];
+            player.tickets = activeTickets[memKey];
+
+            return player;
+        } catch (err) {
+            await client.query('ROLLBACK');
+            console.error("❌ Critical error in multi-wallet getOrCreatePlayer:", err.message);
+            throw err;
+        } finally { client.release(); }
+    },
+
     // Проверьте, чтобы в вашем файле этот метод выглядел так:
-    getOrCreatePlayer: async (username, partnerId, fetchPlatformBalance = null) => {
+    getOrCreatePlayer222: async (username, partnerId, fetchPlatformBalance = null, domainName = 'localhost') => {
         let res = await global.pool.query('SELECT * FROM players WHERE username = $1 AND partner_id = $2 LIMIT 1', [username, partnerId]);
 
         let player = res.rowCount > 0 ? res.rows[0] : null;
+
+        const siteRes = await client.query(
+            'SELECT id, currency_settings FROM b2b_websites WHERE partner_id = $1 AND domain_name = $2 AND is_active = 1 LIMIT 1',
+            [partnerId, domainName.toLowerCase()]
+        );
+
+        let curCfg = { supported_currencies: ["USD"], default_currency: "USD" };
+        if (siteRes.rowCount > 0 && siteRes.rows[0].currency_settings) {
+            curCfg = typeof siteRes.rows[0].currency_settings === 'string'
+                ? JSON.parse(siteRes.rows[0].currency_settings)
+                : siteRes.rows[0].currency_settings;
+        }
+        const supportedCurrencies = curCfg.supported_currencies || ["USD"];
+        const defaultCurrency = curCfg.default_currency || "USD";
 
         if (!player) {
             let initialBalance = 0;
@@ -50,6 +156,20 @@ const playerMethods = {
             player = insertRes.rows[0];
         }
 
+        for (const currency of supportedCurrencies) {
+            // Пытаемся создать кошелек, если его еще нет (благодаря ON CONFLICT DO NOTHING база не выдаст ошибку)
+            const isDefault = (currency === player.current_currency);
+            const startBal = isDefault ? Number(player.balance) : 0.00;
+            const startBonus = isDefault ? Number(player.bonus_balance) : 0.00;
+            const startWager = isDefault ? Number(player.wager_left) : 0.00;
+
+            await global.pool.query(`
+                    INSERT INTO player_wallets (partner_id, username, currency, balance, bonus_balance, wager_left)
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                    ON CONFLICT (partner_id, username, currency) DO NOTHING
+                `, [partnerId, username, currency, startBal, startBonus, startWager]);
+        }
+
         player.dailyQuests = typeof player.daily_quests === 'string' ? JSON.parse(player.daily_quests) : player.daily_quests;
         player.usedPromos = typeof player.used_promos === 'string' ? JSON.parse(player.used_promos) : player.used_promos;
         player.tournamentPoints = Number(player.tournament_points);
@@ -64,9 +184,17 @@ const playerMethods = {
 
         player.history = [];
 
+        const unreadCountRes = await global.pool.query(
+            `SELECT COUNT(id)::int as count FROM player_notifications WHERE partner_id = $1 AND username = $2 AND is_read = false`,
+            [partnerId, player.username]
+        );
+        const unreadNotifyCount = unreadCountRes.rows[0]?.count || 0;
+
         const memKey = `${partnerId}_${username}`;
         if (!activeTickets[memKey]) activeTickets[memKey] = [];
         player.tickets = activeTickets[memKey];
+
+        player.unreadNotifications = unreadNotifyCount;
 
         return player;
     },
@@ -88,7 +216,7 @@ const playerMethods = {
 
             // 1. Блокируем строку игрока и считываем текущее состояние кошельков
             const pRes = await client.query(
-                'SELECT balance, bonus_balance, wager_left FROM players WHERE username = $1 AND partner_id = $2 FOR UPDATE',
+                'SELECT balance, bonus_balance, wager_left, current_currency FROM players WHERE username = $1 AND partner_id = $2 FOR UPDATE',
                 [username, partnerId]
             );
 
@@ -342,7 +470,8 @@ const playerMethods = {
                 global.io.to(`${partnerId}_${username}`).emit('wallet_update', {
                     balance: totalPlayable,
                     realBalance: finalReal,
-                    bonusBalance: bonusBalance
+                    bonusBalance: bonusBalance,
+                    currency: player.current_currency
                 });
             }
 
@@ -354,6 +483,33 @@ const playerMethods = {
             return null;
         } finally {
             client.release();
+        }
+    },
+
+    sendNotification: async (partnerId, username, type, text) => {
+        try {
+            // 1. Записываем уведомление в СУБД (для хранения истории)
+            const result = await global.pool.query(
+                `INSERT INTO player_notifications (partner_id, username, type, text) 
+                 VALUES ($1, $2, $3, $4) RETURNING id, type, text, timestamp`,
+                [partnerId, username, type, text.trim()]
+            );
+
+            const notifyNode = result.rows[0];
+
+            // 2. Мгновенно отправляем по сокетам в комнату юзера
+            if (global.io) {
+                global.io.to(`${partnerId}_${username}`).emit('new_notification', {
+                    id: notifyNode.id,
+                    type: notifyNode.type,
+                    text: notifyNode.text,
+                    date: notifyNode.timestamp
+                });
+            }
+            return true;
+        } catch (err) {
+            console.error("❌ Failed to broadcast notification node:", err.message);
+            return false;
         }
     },
 
@@ -1082,6 +1238,16 @@ const promoMethods = {
             }
             const promo = promoRes.rows[0];
 
+            const playerRes = await global.pool.query(
+                'SELECT * FROM players WHERE username = $1 AND partner_id = $2 LIMIT 1',
+                [username, partnerId]
+            );
+            if (playerRes.rowCount === 0) {
+                await client.query('ROLLBACK');
+                return { success: false, error: "PLAYER_INVALID", message: "Player not found" }
+            }
+            const player = playerRes.rows[0];
+
             // ВАЛИДАЦИЯ 1: Ручная деактивация админом
             if (promo.is_active !== 1) {
                 await client.query('ROLLBACK');
@@ -1100,8 +1266,46 @@ const promoMethods = {
                 return { success: false, error: "PROMO_EXHAUSTED", message: "This promo code limit has been reached" };
             }
 
-            // [Дальше идет твой старый код проверки дубликата юзера, начисления баланса и COMMIT транзакции]
-            // ... (оставляем без изменений, как делали на предыдущем шаге) ...
+            const currentPromos = typeof player.used_promos === 'string'
+                ? JSON.parse(player.used_promos)
+                : (player.used_promos || {});
+
+            const timesUsed = currentPromos[cleanCode] || 0;
+
+            if (timesUsed >= promo.maxUses) {
+                await client.query('ROLLBACK');
+                return { success: false, error: "PROMO_LIMIT", message: "You have already used this promo code maximum times" };
+            }
+
+            // Безопасный криптографический roundId вместо Date.now()
+            const promoRoundId = `promo_${cleanCode.toLowerCase()}_${crypto.randomBytes(6).toString('hex')}`;
+
+            // Передаем сессию null (так как активация промокода — это фоновая операция кэша)
+            const creditResult = await seamlessCredit(
+                username,
+                partnerId,
+                null,
+                Number(promo.reward),
+                "Promo Activation",
+                promoRoundId
+            );
+
+            // Получаем свежий баланс, который вернул шлюз платформы витрины
+            const newBalance = creditResult && creditResult.balance !== undefined
+                ? Number(creditResult.balance)
+                : Number(player.balance) + promo.reward;
+
+            currentPromos[cleanCode] = timesUsed + 1;
+
+            // Фиксируем использование кода и пишем свежий баланс напрямую в Postgres таблицу players
+            await global.pool.query(
+                'UPDATE players SET used_promos = $1::jsonb, balance = $2 WHERE username = $3 AND partner_id = $4',
+                [JSON.stringify(currentPromos), newBalance, username, partnerId]
+            );
+
+            await state.sendNotification(partnerId, username, 'BONUS', '💰 Promo code activated successfully! '  + promo.reward + ' coins added to your balance.');
+
+            return promo.reward;
 
         } catch (err) {
             await client.query('ROLLBACK');
@@ -1721,14 +1925,24 @@ const backOfficeMethods = {
         const { search = '', limit = 15, page = 1 } = filters;
         const offset = (page - 1) * limit;
 
-        let queryText = `SELECT id, username, balance, xp, level, tournament_points, is_banned, 
-                            casino_min_limit, casino_max_limit, sport_min_limit, sport_max_limit 
-                     FROM players WHERE partner_id = $1`;
+        // Базовые тексты запросов с агрегацией кошельков через подзапрос
+        let queryText = `
+            SELECT p.id, p.username, p.current_currency, p.balance, p.bonus_balance, p.xp, p.level, 
+                   p.tournament_points, p.is_banned, p.casino_min_limit, p.casino_max_limit, 
+                   p.sport_min_limit, p.sport_max_limit,
+                   (
+                       SELECT json_agg(json_build_object('currency', w.currency, 'balance', w.balance::numeric)) 
+                       FROM player_wallets w 
+                       WHERE w.username = p.username AND w.partner_id = p.partner_id
+                   ) as all_wallets
+            FROM players p 
+            WHERE p.partner_id = $1`;
+
         let countQuery = `SELECT COUNT(*)::int as count FROM players WHERE partner_id = $1`;
         let queryParams = [partnerId];
 
         if (search) {
-            queryText += ` AND username ILIKE $2`;
+            queryText += ` AND p.username ILIKE $2`;
             countQuery += ` AND username ILIKE $2`;
             queryParams.push(`%${search}%`);
         }
@@ -1736,14 +1950,18 @@ const backOfficeMethods = {
         const countRes = await global.pool.query(countQuery, queryParams);
         const totalItems = countRes.rows[0]?.count || 0;
 
-        queryText += ` ORDER BY id DESC LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}`;
-        queryParams.push(limit, offset);
+        // Позиционные параметры для лимита и смещения динамически рассчитываются
+        const limitParamIndex = queryParams.length + 1;
+        const offsetParamIndex = queryParams.length + 2;
+
+        queryText += ` ORDER BY p.id DESC LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}`;
+        queryParams.push(Number(limit), Number(offset));
 
         const res = await global.pool.query(queryText, queryParams);
 
         return {
             items: res.rows,
-            pagination: { page, limit, totalItems, totalPages: Math.ceil(totalItems / limit) }
+            pagination: { page: Number(page), limit: Number(limit), totalItems, totalPages: Math.ceil(totalItems / limit) }
         };
     },
 

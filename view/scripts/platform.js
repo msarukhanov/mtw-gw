@@ -24,8 +24,8 @@ function updateWallet(data) {
     const bonusDisplay = document.getElementById('bonus-display');
 
     if (data.balance !== undefined) {
-        const formattedBal = data.realBalance + ' 🪙';
-        const formattedBonus = data.bonusBalance + ' 🪙';
+        const formattedBal = data.realBalance + ' ' + data.currency;
+        const formattedBonus = data.bonusBalance;
 
         if (profileBalance) profileBalance.innerText = formattedBal;
         if (profileBonus) profileBonus.innerText = formattedBonus;
@@ -202,12 +202,14 @@ async function handleLogin() {
         const data = await response.json();
 
         if (data.error) {
+            console.log(data.error);
             return alert(data.error || _t('auth.messages.login_fail'));
         }
 
         closeAuthModal();
         initSession(data);
     } catch (err) {
+        console.log(err);
         alert('Server communication error during Sign In');
     }
 }
@@ -281,6 +283,11 @@ function initSession(data) {
     if (userDisplay) userDisplay.innerText = currentUsername;
 
     updateWallet(data);
+
+    if (data.unreadNotifications !== undefined) {
+        unreadNotificationsCount = Number(data.unreadNotifications);
+        updateNotificationBadgesUI(); // Красные кружки загорятся мгновенно, без задержек на сеть!
+    }
 
     // Build unique multi-device personal referral links
     const currentUrlWithoutParams = window.location.href.split('?')[0];
@@ -443,6 +450,10 @@ function switchLkTab(tabId) {
         loadPlayerHistory();
         document.getElementById('btn_history_bets').classList.add('active');
     }
+
+    if (tabId === 'lk-notifications') {
+        loadPlayerNotificationsArchive(); // Загружает архив и вычисляет непрочитанные из Postgres
+    }
 }
 
 function copyRefLink() {
@@ -460,16 +471,131 @@ async function apiGetPlayer() {
 
     if (!currentUsername) return;
     try {
+        const currentHostname = window.location.hostname;
         const res = await fetch(`${CORE_SERVER}/api/player/info`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: currentUsername, partnerId: 'demo_mtwtech', token: currentSessionId })
+            body: JSON.stringify({ username: currentUsername, partnerId: 'demo_mtwtech', token: currentSessionId, domain: currentHostname })
         });
         const data = await res.json();
+        await loadPlayerMultiWalletsMatrix();
     } catch(e) {
         console.error('Profile sync failure:', e);
     }
 }
+
+async function loadPlayerMultiWalletsMatrix() {
+    const container = document.getElementById('lk-multi-wallets-container');
+    if (!container || !currentUsername) return;
+
+    try {
+        const currentHostname = window.location.hostname;
+        const res = await fetch(`${CORE_SERVER}/api/player/wallets`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: currentUsername, partnerId: 'demo_mtwtech', token: currentSessionId, domain: currentHostname })
+        });
+        const data = await res.json();
+
+        if (data.wallets) {
+            container.innerHTML = data.wallets.map(w => {
+                const isActive = (w.currency === data.activeCurrency);
+
+                // Рассчитываем визуальные стили состояний кошелька
+                const cardStyle = isActive
+                    ? 'background: rgba(78, 204, 163, 0.04); border: 1px solid rgba(78, 204, 163, 0.3); box-shadow: 0 0 10px rgba(78, 204, 163, 0.1); cursor: default;'
+                    : 'background: rgba(13, 16, 23, 0.6); border: 1px solid #1c2331; cursor: pointer;';
+
+                const hoverEffect = isActive ? '' : 'onmouseover="this.style.borderColor=\'var(--accent-blue)\'" onmouseout="this.style.borderColor=\'#1c2331\'"';
+                const actionClick = isActive ? '' : `onclick="apiSwitchActivePlayerWallet('${w.currency}')"`;
+
+                // Значок валюты для красоты
+                let currSymbol = '🪙';
+                if (w.currency === 'USD') currSymbol = '💵';
+                else if (w.currency === 'EUR') currSymbol = '💶';
+                else if (w.currency === 'BRL') currSymbol = '🇧🇷';
+                else if (w.currency === 'RUB') currSymbol = '₽';
+
+                // Рендерим информацию о вейджере, если он есть на этом кошельке
+                const wagerValue = Number(w.wager_left || 0);
+                const wagerHtml = wagerValue > 0
+                    ? `<div style="font-size:10px; color:var(--accent-yellow); margin-top:2px; font-weight:600;">⚠️ Wager Locked: ${wagerValue.toFixed(0)}</div>`
+                    : '';
+
+                return `
+                    <div ${actionClick} ${hoverEffect} style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-radius:6px; transition:all 0.2s ease; ${cardStyle}">
+                        <div style="display:flex; flex-direction:column; gap:2px;">
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <span style="font-size:16px;">${currSymbol}</span>
+                                <b style="color:#fff; font-size:13px; letter-spacing:0.5px;">${w.currency} Account</b>
+                                ${isActive ? '<span style="background: #1b382c; color: var(--neon-green); font-size: 9px; font-weight: 800; padding: 1px 5px; border-radius: 3px; border: 1px solid var(--neon-green);">ACTIVE</span>' : ''}
+                            </div>
+                            ${wagerHtml}
+                        </div>
+                        
+                        <div style="text-align:right;">
+                            <b style="color:#fff; font-size:14px; font-family:monospace;">${Number(w.balance).toFixed(2)}</b>
+                            <small style="display:block; font-size:10px; color:var(--text-muted); margin-top:1px;">Bonus: ${Number(w.bonus_balance).toFixed(2)}</small>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Синхронизируем верхнюю шапку десктопного баланса витрины
+            const activeWallet = data.wallets.find(w => w.currency === data.activeCurrency);
+            if (activeWallet) {
+                document.getElementById('wallet-display').innerText = `${Number(activeWallet.balance).toFixed(2)} ${activeWallet.currency}`;
+                document.getElementById('bonus-display').innerText = `${Number(activeWallet.bonus_balance).toFixed(2)}`;
+                document.getElementById('profile-balance').innerText = `${(Number(activeWallet.balance)).toFixed(2)} ${activeWallet.currency}`;
+                document.getElementById('profile-bonus').innerText = `${Number(activeWallet.bonus_balance).toFixed(2)}`;
+            }
+        }
+    } catch (err) {
+        console.error('Failed to render advanced player wallets:', err);
+    }
+}
+
+// ОБНОВЛЕННОЕ БРОНИРОВАННОЕ ОБЪЯВЛЕНИЕ ФУНКЦИИ (Привязываем к window)
+async function apiSwitchActivePlayerWallet(currencyCode) {
+    console.log(`💱 [Wallet Switch Triggered] Запрос на переключение валюты на: ${currencyCode}`);
+
+    // Включаем лоадер, чтобы игрок не кликал дважды
+    if (typeof showLoader === 'function') showLoader();
+
+    try {
+        const res = await fetch(`${CORE_SERVER}/api/player/wallets/switch`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                username: currentUsername,
+                partnerId: 'demo_mtwtech',
+                token: currentSessionId,
+                targetCurrency: currencyCode
+            })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+            alert(`Wallet switched to ${currencyCode}! Reloading session environment.`);
+
+            // Перерисовываем матрицу кошельков в ЛК
+            await loadPlayerMultiWalletsMatrix();
+
+            // Обновляем квесты/турниры под новую валюту
+            if (typeof loadPlayerGamificationStats === 'function') {
+                loadPlayerGamificationStats();
+            }
+        } else {
+            alert(data.error || 'Failed to switch wallet provider');
+        }
+    } catch (err) {
+        console.error('❌ Wallet switch critical failure:', err);
+        alert('Ecosystem connection timeout during wallet routing.');
+    } finally {
+        if (typeof hideLoader === 'function') hideLoader();
+    }
+}
+
 
 async function apiChangePassword() {
     const passInput = document.getElementById('changePasswordInput');
@@ -694,17 +820,23 @@ function initializeTelegramEcosystemAuth() {
             return;
         }
 
+        const telegramRefCode = tg.initDataUnsafe?.start_param || '';
+        console.log(`🤖 [Telegram SDK] Обнаружен реферальный трекинг-код: ${telegramRefCode || 'НЕТ'}`);
+
+        // Передаем этот код в функцию fetch-запроса на бэкенд
+        executeTelegramBackendAuth(tgInitData, telegramRefCode);
+
         // printTgLog("🤖 [Telegram WebApp Detected] Строка initData получена. Запуск бесшовной сессии...");
 
         // Запускаем твой fetch-запрос авторизации
-        executeTelegramBackendAuth(tgInitData);
+        // executeTelegramBackendAuth(tgInitData);
     } else {
         // printTgLog("ℹ️ [Telegram SDK] Объект WebApp не найден. Включен стандартный режим витрины.");
     }
 }
 
 // Вынесем сам запрос в изолированную функцию
-async function executeTelegramBackendAuth(tgInitData) {
+async function executeTelegramBackendAuth(tgInitData, telegramRefCode=null) {
     printTgLog(JSON.stringify(tgInitData));
     try {
         const authRes = await fetch(`${CORE_SERVER}/api/public/tg-auth`, {
@@ -712,7 +844,8 @@ async function executeTelegramBackendAuth(tgInitData) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 partnerId: 'demo_mtwtech',
-                initData: tgInitData
+                initData: tgInitData,
+                referralCode: telegramRefCode
             })
         });
         const data = await authRes.json();
@@ -1049,6 +1182,130 @@ async function apiJoinPlayerClan() {
         } else { alert('Failed to join selected clan array'); }
     } catch (err) { console.error(err); }
     finally { hideLoader(); }
+}
+
+
+
+let unreadNotificationsCount = 0; // Глобальный счетчик непрочитанных логов
+
+// 1. Прием real-time сокетов от бэкенда (когда игрок онлайн в слотах)
+if (window.socket) {
+    window.socket.on('new_notification', (data) => {
+        console.log("🔔 Сработало сокет-уведомление:", data);
+
+        // Инкрементируем счетчик и обновляем индикаторы (Badges) на экране
+        unreadNotificationsCount++;
+        updateNotificationBadgesUI();
+
+        // Опционально: можно вызвать звуковой сигнал или обновить список, если таб открыт
+        const container = document.getElementById('notifications-list-container');
+        if (container && document.getElementById('lk-notifications').classList.contains('active')) {
+            loadPlayerNotificationsArchive(); // Перерисовываем список на лету
+        }
+    });
+}
+
+// 2. Функция обновления красных кружков на десктопе и мобилке
+function updateNotificationBadgesUI() {
+    document.querySelectorAll('.notify-badge-count').forEach(badge => {
+        if (unreadNotificationsCount > 0) {
+            badge.innerText = unreadNotificationsCount;
+            badge.style.display = 'block'; // Показываем красный круг
+        } else {
+            badge.style.display = 'none';  // Скрываем, если непрочитанных 0
+        }
+    });
+}
+
+// 3. ФЕТЧ: Загрузка архива сообщений из базы данных PostgreSQL
+async function loadPlayerNotificationsArchive() {
+    const container = document.getElementById('notifications-list-container');
+    if (!container || !currentUsername) return;
+
+    container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px; font-size:13px;">Loading system logs...</div>`;
+
+    try {
+        const res = await fetch(`${CORE_SERVER}/api/player/notifications`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: currentUsername, partnerId: 'demo_mtwtech', token: currentSessionId })
+        });
+        const data = await res.json();
+
+        if (data.success && data.notifications) {
+            // Обновляем глобальный счетчик на основе реальных данных из базы
+            unreadNotificationsCount = data.notifications.filter(n => !n.is_read).length;
+            updateNotificationBadgesUI();
+
+            if (data.notifications.length === 0) {
+                container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:30px 0; font-size:12px;">No notification history logged.</div>`;
+                return;
+            }
+
+            container.innerHTML = data.notifications.map(n => {
+                // Выбираем фирменный неоновый цвет в зависимости от категории
+                let typeColor = 'var(--accent-blue)';
+                if (n.type === 'BONUS') typeColor = 'var(--accent-yellow)';
+                else if (n.type === 'FINANCE') color = 'var(--neon-green)';
+                else if (n.type === 'CLAN') typeColor = '#8c7ae6';
+                else if (n.type === 'TOURNAMENT') typeColor = '#ff007f';
+
+                // --- 🎨 ИСПРАВЛЕНИЕ: ДИНАМИЧЕСКИЙ СТИЛЬ СОСТОЯНИЙ ---
+                let cardStyle = '';
+                let unreadDot = '';
+                let textOpacity = 'opacity: 1;';
+
+                if (!n.is_read) {
+                    // СТИЛЬ ДЛЯ НЕПРОЧИТАННЫХ: Яркий, плотный, со светящейся границей
+                    cardStyle = `background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.12); border-left: 4px solid ${typeColor}; box-shadow: 0 0 10px ${typeColor}15;`;
+                    // Горящая точка-маркер слева от текста
+                    unreadDot = `<span style="display:inline-block; width: 6px; height: 6px; background: ${typeColor}; border-radius: 50%; margin-right: 6px; box-shadow: 0 0 6px ${typeColor};"></span>`;
+                } else {
+                    // СТИЛЬ ДЛЯ ПРОЧИТАННЫХ: Приглушенный, полупрозрачный, без свечения
+                    cardStyle = `background: rgba(0, 0, 0, 0.15); border: 1px solid rgba(255, 255, 255, 0.04); border-left: 2px solid var(--border-color);`;
+                    textOpacity = 'opacity: 0.55;'; // Приглушаем текст, уводя в тень
+                }
+
+                const formattedDate = new Date(n.timestamp).toLocaleDateString('en-US', {
+                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+
+                return `
+                    <div style="display:flex; flex-direction:column; gap:4px; padding:12px; border-radius:6px; transition: all 0.2s ease; ${cardStyle}">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div style="display:flex; align-items:center;">
+                                ${unreadDot}
+                                <span style="font-size:10px; font-weight:800; color:${typeColor}; text-transform:uppercase; letter-spacing:0.5px;">${n.type} UPDATE</span>
+                            </div>
+                            <small style="color:var(--text-muted); font-size:10px; font-family:monospace; opacity: 0.7;">${formattedDate}</small>
+                        </div>
+                        <span style="color:#fff; font-size:13px; line-height:1.4; margin-top:3px; ${textOpacity}">${n.text}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+    } catch (err) {
+        console.error('Failed to render notifications layout logs:', err);
+    }
+}
+
+
+// 4. ФЕТЧ: Сбросить счетчик и пометить всё прочитанным в базе данных
+async function apiMarkNotificationsAsRead() {
+    if (!currentUsername) return;
+    try {
+        const res = await fetch(`${CORE_SERVER}/api/player/notifications/read`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: currentUsername, partnerId: 'demo_mtwtech', token: currentSessionId })
+        });
+        const data = await res.json();
+        if (data.success) {
+            unreadNotificationsCount = 0;
+            updateNotificationBadgesUI();
+            loadPlayerNotificationsArchive(); // Перерисовываем список без "жирных" границ
+        }
+    } catch (err) { console.error(err); }
 }
 
 

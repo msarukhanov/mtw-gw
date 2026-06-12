@@ -48,7 +48,7 @@ exports.getUserProfile = async (req, res) => {
 
         res.json({
             success: true,
-            balance: Number(pRes.rows[0].balance).toFixed(2)
+            balance: Number(pRes.rows[0].balance).toFixed(2),
         });
     } catch (err) {
         res.status(500).json({ error: "Failed to load profile" });
@@ -166,6 +166,7 @@ exports.getPlayerStats = async (req, res) => {
         const nextLevelXp = Number(pData.level) * Number(gamificationConfig.xpMultiplier);
         const xpProgressPercentage = Math.min(Math.floor((Number(pData.xp) / nextLevelXp) * 100), 100);
 
+
         // 2. Ищем активный квест клана и текущий прогресс, если игрок состоит в клане
         let clanQuestData = null;
         if (pData.clan_id) {
@@ -218,7 +219,7 @@ exports.getPlayerStats = async (req, res) => {
             clan: pData.clan_id ? { id: pData.clan_id, name: pData.clan_name, level: pData.clan_level } : null,
             clanQuest: clanQuestData,
             topClans: topClansRes.rows,
-            achievements: achievementsRes.rows
+            achievements: achievementsRes.rows,
         });
 
     } catch (err) {
@@ -296,4 +297,131 @@ exports.playerJoinClan = async (req, res) => {
         if (err.code === '23505') return res.status(400).json({ error: "You are already a member of a clan." });
         res.status(500).json({ error: "Failed to join clan." });
     }
+};
+
+exports.getPlayerNotificationsList = async (req, res) => {
+    try {
+        const { username, partnerId } = req;
+        const result = await global.pool.query(
+            `SELECT id, type, text, is_read, timestamp FROM player_notifications 
+             WHERE partner_id = $1 AND username = $2 ORDER BY timestamp DESC LIMIT 20`,
+            [partnerId, username]
+        );
+        res.json({ success: true, notifications: result.rows });
+    } catch (err) { res.status(500).json({ error: "Failed to load notification registry" }); }
+};
+
+// Пометить ВСЕ уведомления игрока как прочитанные
+exports.markNotificationsAsRead = async (req, res) => {
+    try {
+        const { username, partnerId } = req;
+        await global.pool.query(
+            `UPDATE player_notifications SET is_read = true WHERE partner_id = $1 AND username = $2`,
+            [partnerId, username]
+        );
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: "Failed to update notification state" }); }
+};
+
+// 1. Получить список ВСЕХ кошельков игрока (Для личного кабинета)
+exports.getPlayerWalletsList = async (req, res) => {
+    try {
+        const { username, partnerId } = req;
+        const domainName = req.body.domain || 'localhost';
+
+        // Вытягиваем, какие валюты в принципе разрешены на этом сайте
+        const siteRes = await global.pool.query('SELECT currency_settings FROM b2b_websites WHERE partner_id = $1 AND domain_name = $2 LIMIT 1', [partnerId, domainName.toLowerCase()]);
+        let supported = ["USD"];
+        if (siteRes.rowCount > 0 && siteRes.rows[0].currency_settings) {
+            const cfg = typeof siteRes.rows[0].currency_settings === 'string' ? JSON.parse(siteRes.rows[0].currency_settings) : siteRes.rows[0].currency_settings;
+            supported = cfg.supported_currencies || ["USD"];
+        }
+
+        // Вытягиваем кошельки игрока из архива, которые входят в список разрешенных сайтом
+        const walletsRes = await global.pool.query(
+            `SELECT currency, balance::numeric, bonus_balance::numeric, wager_left::numeric 
+             FROM player_wallets 
+             WHERE partner_id = $1 AND username = $2 AND currency = ANY($3)
+             ORDER BY currency ASC`,
+            [partnerId, username, supported]
+        );
+
+        // Получаем текущую активную валюту игрока из "горячего кэша"
+        const playerRes = await global.pool.query('SELECT current_currency FROM players WHERE username = $1 AND partner_id = $2', [username, partnerId]);
+        const activeCurrency = playerRes.rows?.[0]?.current_currency || 'USD';
+        // return {  activeCurrency, wallets: walletsRes.rows};
+        res.json({  activeCurrency, wallets: walletsRes.rows});
+    } catch (err) {
+        // return { error: "Failed to load wallet matrix" }
+        res.status(500).json({ error: "Failed to load wallet matrix" });
+    }
+};
+
+// 2. АТОМАРНАЯ СМЕНА АКТИВНОГО КОШЕЛЬКА (Сброс горячего кэша в архив и загрузка нового)
+exports.switchActiveWallet = async (req, res) => {
+    const client = await global.pool.connect();
+    try {
+        const { username, partnerId } = req;
+        const { targetCurrency } = req.body; // например, 'BRL'
+
+        if (!targetCurrency) return res.status(400).json({ error: "Missing targetCurrency" });
+
+        await client.query('BEGIN');
+
+        // 1. Блокируем строку игрока и забираем текущие "горячие" балансы
+        const pRes = await client.query(
+            'SELECT balance, bonus_balance, wager_left, current_currency FROM players WHERE username = $1 AND partner_id = $2 FOR UPDATE',
+            [username, partnerId]
+        );
+        const player = pRes.rows[0];
+        const oldCurrency = player.current_currency;
+
+        if (oldCurrency === targetCurrency) {
+            await client.query('ROLLBACK');
+            return res.json({ success: true, message: "Wallet already active" });
+        }
+
+        // 2. Сбрасываем (архивируем) текущий горячий баланс в player_wallets
+        await client.query(`
+            INSERT INTO player_wallets (partner_id, username, currency, balance, bonus_balance, wager_left)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (partner_id, username, currency) 
+            DO UPDATE SET balance = EXCLUDED.balance, bonus_balance = EXCLUDED.bonus_balance, wager_left = EXCLUDED.wager_left
+        `, [partnerId, username, oldCurrency, Number(player.balance), Number(player.bonus_balance), Number(player.wager_left)]);
+
+        // 3. Вытягиваем из архива балансы для новой целевой валюты
+        const targetWalletRes = await client.query(
+            'SELECT balance, bonus_balance, wager_left FROM player_wallets WHERE partner_id = $1 AND username = $2 AND currency = $3 FOR UPDATE',
+            [partnerId, username, targetCurrency]
+        );
+
+        let newReal = 0.00;
+        let newBonus = 0.00;
+        let newWager = 0.00;
+
+        if (targetWalletRes.rowCount > 0) {
+            newReal = Number(targetWalletRes.rows[0].balance);
+            newBonus = Number(targetWalletRes.rows[0].bonus_balance);
+            newWager = Number(targetWalletRes.rows[0].wager_left);
+        }
+
+        // 4. Перезаписываем "горячий кэш" в таблице players на новые значения!
+        await client.query(`
+            UPDATE players 
+            SET balance = $1, bonus_balance = $2, wager_left = $3, current_currency = $4 
+            WHERE username = $5 AND partner_id = $6
+        `, [newReal, newBonus, newWager, targetCurrency, username, partnerId]);
+
+        await client.query('COMMIT');
+
+        // Выстреливаем Socket-уведомление, которое заставит твои слоты перезапуститься в новой валюте!
+        await state.updateBalance(username, partnerId, newReal);
+
+        res.json({ success: true, activeCurrency: targetCurrency, balance: newReal + newBonus });
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error("❌ Failed to switch player active wallet wallet:", err.message);
+        res.status(500).json({ error: "Wallet switch sequence timeout" });
+    } finally { client.release(); }
 };

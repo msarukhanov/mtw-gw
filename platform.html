@@ -62,9 +62,17 @@
             <!-- Authenticated Player Tools (Hidden by default) -->
             <div id="user-tools" style="display: none; align-items: center; gap: 15px;">
                 <div class="wallet-badge">
-                    Wallet: <span class="balance-val" id="wallet-display">0 🪙</span>
-                    Bonus: <span class="balance-val" id="bonus-display">0 🪙</span>
+                    <span class="wallet-block">Wallet: <span class="balance-val" id="wallet-display">0 🪙</span></span>
+                    <span class="wallet-block">Bonus: <span class="balance-val" id="bonus-display">0 🪙</span></span>
                 </div>
+
+                <!-- 🔔 ДЕСКТОПНЫЙ КОЛОКОЛЬЧИК -->
+                <div id="header-notification-trigger" onclick="switchLkTab('lk-notifications'); openUserMenu();" style="position: relative; cursor: pointer; font-size: 18px; user-select: none; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 6px;">
+                    🔔
+                    <!-- Красный индикатор количества (скрыт по дефолту) -->
+                    <span class="notify-badge-count" style="display: none; position: absolute; top: -4px; right: -4px; background: var(--accent-red); color: #fff; font-size: 9px; font-weight: bold; border-radius: 50%; padding: 2px 5px; min-width: 10px; text-align: center; box-shadow: 0 0 6px var(--accent-red);">0</span>
+                </div>
+
                 <div class="avatar-menu-trigger" onclick="openUserMenu()">
                     👤 <span id="user-display">Account</span>
                 </div>
@@ -81,9 +89,6 @@
                 <option value="ru">🇷🇺 RU</option>
             </select>
         </div>
-
-
-
 
         <!-- WALLET AND USER DROPDOWN PROFILE -->
         <!--<div class="user-panel">-->
@@ -185,6 +190,7 @@
                 <button id="lk-tab-btn-profile" class="lk-tab-btn active" onclick="switchLkTab('lk-profile')">👤 Profile</button>
                 <button id="lk-tab-btn-wallet" class="lk-tab-btn" onclick="switchLkTab('lk-wallet')">💵 Cashier</button>
                 <button id="lk-tab-btn-history" class="lk-tab-btn" onclick="switchLkTab('lk-history')">📊 History</button>
+                <button id="lk-tab-btn-notifications" class="lk-tab-btn" onclick="switchLkTab('lk-notifications')">🔔 Alerts</button>
             </div>
 
 
@@ -215,19 +221,42 @@
                     </div>
 
 
+                    <!--<div class="lk-block">-->
+                        <!--<div class="lk-row">-->
+                            <!--<span class="lk-label">Account Username</span>-->
+                            <!--<span class="lk-value" id="profile-username">-&#45;&#45;</span>-->
+                        <!--</div>-->
+                        <!--<div class="lk-row" style="margin-bottom:0;">-->
+                            <!--<span class="lk-label">Available Balance</span>-->
+                            <!--<span class="lk-value" id="profile-balance" style="color:var(&#45;&#45;neon-green);">0 🪙</span>-->
+                        <!--</div>-->
+                        <!--<div class="lk-row" style="margin-bottom:0;">-->
+                            <!--<span class="lk-label">Available Bonus</span>-->
+                            <!--<span class="lk-value" id="profile-bonus" style="color:var(&#45;&#45;neon-green);">0 🪙</span>-->
+                        <!--</div>-->
+                    <!--</div>-->
+
                     <div class="lk-block">
                         <div class="lk-row">
                             <span class="lk-label">Account Username</span>
-                            <span class="lk-value" id="profile-username">---</span>
+                            <span class="lk-value" id="profile-username" style="font-family:monospace;">---</span>
                         </div>
                         <div class="lk-row" style="margin-bottom:0;">
-                            <span class="lk-label">Available Balance</span>
-                            <span class="lk-value" id="profile-balance" style="color:var(--neon-green);">0 🪙</span>
+                            <span class="lk-label">Active Core Wallet</span>
+                            <span class="lk-value" id="profile-balance" style="color:var(--neon-green); font-weight:bold;">0.00 USD</span>
                         </div>
                         <div class="lk-row" style="margin-bottom:0;">
                             <span class="lk-label">Available Bonus</span>
-                            <span class="lk-value" id="profile-bonus" style="color:var(--neon-green);">0 🪙</span>
+                            <span class="lk-value" id="profile-bonus" style="color:var(--neon-green);">0</span>
                         </div>
+                    </div>
+
+                    <!-- 💱 ДЕТАЛЬНАЯ МУЛЬТИВАЛЮТНАЯ МАТРИЦА (Пункт 4) -->
+                    <div class="lk-block" style="border: 1px solid #262c3a; background: #090b0f;">
+                        <div style="font-weight:700; margin-bottom:10px; font-size:12px; color:var(--accent-blue); text-transform:uppercase; letter-spacing:0.5px;">💱 Available Multi-Currency Vaults</div>
+
+                        <!-- Сюда JS соберет развернутые карточки счетов -->
+                        <div id="lk-multi-wallets-container" style="display:flex; flex-direction:column; gap:8px;"></div>
                     </div>
 
                     <!-- 👥 НОВЫЙ БЛОК: МОДУЛЬ КЛАНОВ ДЛЯ ИГРОКА -->
@@ -366,6 +395,17 @@
                     </div>
                 </div>
 
+                <div id="lk-notifications" class="lk-pane">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                        <div style="font-weight:700; font-size:14px; color:#fff;">🔔 Platform System Alerts</div>
+                        <button onclick="apiMarkNotificationsAsRead()" style="background:transparent; border:1px solid var(--border-color); color:var(--text-muted); font-size:11px; padding:4px 8px; border-radius:4px; cursor:pointer; font-weight:600;">Mark all as read</button>
+                    </div>
+
+                    <!-- Сюда JS загрузит архив из PostgreSQL -->
+                    <div id="notifications-list-container" style="display:flex; flex-direction:column; gap:10px; max-height:300px; overflow-y:auto; padding-right:5px;">
+                        <!-- Rows injected dynamically -->
+                    </div>
+                </div>
 
                 <!-- Universal Logout Button -->
                 <button class="slide-content button" onclick="logoutSession()" style="width:100%; margin-top:25px; background:transparent !important; border:1px solid var(--accent-red) !important; color:var(--accent-red) !important; box-shadow:none !important;">
@@ -487,35 +527,26 @@
     </footer>
 
     <!-- 📱 NATIVE-STYLE MOBILE BOTTOM FOOTER MENU -->
-    <nav class="mobile-nav"
-         style="display: none; position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: var(--bg-navbar); border-top: 1px solid var(--border-color); z-index: 100; justify-content: space-around; align-items: center; box-shadow: 0 -4px 10px rgba(0,0,0,0.3); -webkit-tap-highlight-color: transparent;">
-        <button id="m-btn-home" class="mobile-nav-item active"
-                style="background:transparent; border:0; color:var(--text-muted); display:flex; flex-direction:column; align-items:center; font-size:11px; font-weight:bold; cursor:pointer;"
-                onclick="toggleView('home')">
+    <nav class="mobile-nav" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: var(--bg-navbar); border-top: 1px solid var(--border-color); z-index: 100; justify-content: space-around; align-items: center; box-shadow: 0 -4px 10px rgba(0,0,0,0.3); -webkit-tap-highlight-color: transparent;">
+        <button id="m-btn-home" class="mobile-nav-item active" style="background:transparent; border:0; color:var(--text-muted); display:flex; flex-direction:column; align-items:center; font-size:11px; font-weight:bold; cursor:pointer;" onclick="toggleView('home')">
             <span style="font-size:20px;">🏠</span><span>Home</span>
         </button>
-
-        <button id="m-btn-casino" class="mobile-nav-item"
-                style="background:transparent; border:0; color:var(--text-muted); display:flex; flex-direction:column; align-items:center; font-size:11px; font-weight:bold; cursor:pointer;"
-                onclick="toggleView('casino')">
+        <button id="m-btn-casino" class="mobile-nav-item" style="background:transparent; border:0; color:var(--text-muted); display:flex; flex-direction:column; align-items:center; font-size:11px; font-weight:bold; cursor:pointer;" onclick="toggleView('casino')">
             <span style="font-size:20px;">🎰</span><span>Casino</span>
         </button>
-        <button id="m-btn-sports" class="mobile-nav-item"
-                style="background:transparent; border:0; color:var(--text-muted); display:flex; flex-direction:column; align-items:center; font-size:11px; font-weight:bold; cursor:pointer;"
-                onclick="toggleView('sports')">
+        <button id="m-btn-sports" class="mobile-nav-item" style="background:transparent; border:0; color:var(--text-muted); display:flex; flex-direction:column; align-items:center; font-size:11px; font-weight:bold; cursor:pointer;" onclick="toggleView('sports')">
             <span style="font-size:20px;">⚽</span><span>Sports</span>
         </button>
-        <!--<button class="mobile-nav-item" onclick="toggleMobileRightMenu(event)">-->
-        <!--<span style="font-size:20px;">👤</span><span>Profile</span>-->
-        <!--</button>-->
-        <button class="mobile-nav-item"
-                style="background:transparent; border:0; color:var(--text-muted); display:flex; flex-direction:column; align-items:center; font-size:11px; font-weight:bold; cursor:pointer;"
-                onclick="handleMobileProfileClick(event)">
+
+        <!-- 🔔 МОБИЛЬНЫЙ КОЛОКОЛЬЧИК (Добавлен в навигацию) -->
+        <button id="m-btn-notifications" class="mobile-nav-item" style="background:transparent; border:0; color:var(--text-muted); display:flex; flex-direction:column; align-items:center; font-size:11px; font-weight:bold; cursor:pointer; position: relative;" onclick="switchLkTab('lk-notifications'); openUserMenu();">
+            <span style="font-size:20px;">🔔</span><span>Alerts</span>
+            <span class="notify-badge-count" style="display: none; position: absolute; top: 2px; right: 12px; background: var(--accent-red); color: #fff; font-size: 8px; font-weight: bold; border-radius: 50%; padding: 1px 4px; min-width: 8px; text-align: center;">0</span>
+        </button>
+
+        <button class="mobile-nav-item" style="background:transparent; border:0; color:var(--text-muted); display:flex; flex-direction:column; align-items:center; font-size:11px; font-weight:bold; cursor:pointer;" onclick="handleMobileProfileClick(event)">
             <span style="font-size:20px;">👤</span><span>Profile</span>
         </button>
-        <!--<button class="mobile-nav-item" style="background:transparent; border:0; color:var(&#45;&#45;text-muted); display:flex; flex-direction:column; align-items:center; font-size:11px; font-weight:bold; cursor:pointer;" onclick="toggleMobileSidebar(event)">-->
-        <!--<span style="font-size:20px;">☰</span><span>Menu</span toggleMobileRightMenu>-->
-        <!--</button>-->
     </nav>
 
 

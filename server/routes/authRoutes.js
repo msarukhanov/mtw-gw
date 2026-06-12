@@ -97,7 +97,11 @@ router.post('/auth/seamless', async (req, res) => {
             username: player.username,
             partnerId: partnerId,
             balance: freshBalance,
+            realBalance: player.realBalance,
+            bonusBalance: player.bonusBalance,
+            currency: player.current_currency,
             sessionId,
+            unreadNotifications: player.unreadNotifications,
             jackpot: state.getJackpot(partnerId),
             config: state.getConfig(partnerId)
         });
@@ -132,7 +136,9 @@ router.post('/auth', async (req, res) => {
             balance: player.balance,
             realBalance: player.realBalance,
             bonusBalance: player.bonusBalance,
+            currency: player.current_currency,
             sessionId,
+            unreadNotifications: player.unreadNotifications,
             jackpot: state.getJackpot(targetPartnerId),
             config: state.getConfig(targetPartnerId)
         });

@@ -22,10 +22,27 @@ CREATE TABLE IF NOT EXISTS players (
     wager_left NUMERIC(15, 2) DEFAULT 0.00,
     total_deposited_amount NUMERIC(15, 2) DEFAULT 0.00,
     telegram_id BIGINT DEFAULT NULL,
+    current_currency VARCHAR(10) DEFAULT 'USD',
     UNIQUE(username, partner_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_players_partner_search ON players (partner_id, username);
+
+CREATE TABLE IF NOT EXISTS player_wallets (
+    id SERIAL PRIMARY KEY,
+    partner_id VARCHAR(50) NOT NULL,
+    username VARCHAR(50) NOT NULL,
+    currency VARCHAR(10) NOT NULL,
+    balance NUMERIC(15, 2) DEFAULT 0.00,
+    bonus_balance NUMERIC(15, 2) DEFAULT 0.00,
+    wager_left NUMERIC(15, 2) DEFAULT 0.00,
+    timestamp TIMESTAMP DEFAULT NOW(),
+    UNIQUE(partner_id, username, currency) -- Защита от дублирования кошельков одной валюты
+);
+
+-- Индекс для моментальной выгрузки всех кошельков игрока в профиль
+CREATE INDEX IF NOT EXISTS idx_player_wallets_fetch ON player_wallets (partner_id, username);
+
 
 -- 2. Логи транзакций
 CREATE TABLE IF NOT EXISTS accounting_logs (
@@ -346,6 +363,8 @@ CREATE TABLE IF NOT EXISTS b2b_websites (
     is_active INT DEFAULT 1,
     timestamp TIMESTAMP DEFAULT NOW(),
     lang_settings JSONB DEFAULT '{"supported_langs": ["en"], "default_lang": "en"}'::jsonb,
+    is_banned BOOLEAN DEFAULT 0,
+    currency_settings JSONB DEFAULT '{"supported_currencies": ["USD"], "default_currency": "USD"}'::jsonb,
     UNIQUE(partner_id, domain_name)    -- Защита от дублей доменов у одного партнера
 );
 
@@ -517,3 +536,33 @@ CREATE TABLE IF NOT EXISTS player_achievements (
 -- Индекс для мгновенной сборки профиля значков игрока
 CREATE INDEX IF NOT EXISTS idx_player_badges_unlocked
 ON player_achievements (partner_id, username, is_unlocked);
+
+CREATE TABLE IF NOT EXISTS player_notifications (
+    id SERIAL PRIMARY KEY,
+    partner_id VARCHAR(50) NOT NULL,
+    username VARCHAR(50) NOT NULL,
+    type VARCHAR(30) DEFAULT 'SYSTEM', -- 'SYSTEM', 'BONUS', 'FINANCE', 'CLAN', 'TOURNAMENT'
+    text TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT false,
+    timestamp TIMESTAMP DEFAULT NOW()
+);
+
+-- Индекс для мгновенной выборки непрочитанных уведомлений при входе игрока
+CREATE INDEX IF NOT EXISTS idx_player_notifications_unread
+ON player_notifications (partner_id, username, is_read);
+
+CREATE TABLE IF NOT EXISTS player_spin_history (
+    id SERIAL PRIMARY KEY,
+    partner_id VARCHAR(50) NOT NULL,
+    username VARCHAR(50) NOT NULL,
+    round_id VARCHAR(100) NOT NULL,         -- Уникальный ID раунда от провайдера игры
+    game_code VARCHAR(50) NOT NULL,        -- Код слота (например, 'sweet_bonanza')
+    bet_amount NUMERIC(15, 2) DEFAULT 0.00,  -- Сколько поставил (Debit)
+    win_amount NUMERIC(15, 2) DEFAULT 0.00,  -- Сколько выиграл (Credit)
+    currency VARCHAR(10) DEFAULT 'USD',
+    timestamp TIMESTAMP DEFAULT NOW()
+);
+
+-- Индексы для мгновенного поиска истории по конкретному раунду или игроку
+CREATE UNIQUE INDEX IF NOT EXISTS idx_spin_round ON player_spin_history (partner_id, round_id);
+CREATE INDEX IF NOT EXISTS idx_spin_player_logs ON player_spin_history (partner_id, username);

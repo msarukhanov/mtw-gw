@@ -427,6 +427,38 @@
                             </div>
                         </div>
 
+                        <div style="margin-top:12px; border-top:1px solid #141822; padding-top:10px;">
+                            <span style="font-size:11px; color:var(--accent-blue); font-weight:700; display:block; margin-bottom:6px;">💱 INTEGRATED BRAND CURRENCY NETWORK:</span>
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; background:#080a0e; padding:12px; border-radius:4px; border:1px solid #161a23;">
+
+                                <!-- Чекбоксы выбора доступных валют -->
+                                <div>
+                                    <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:6px;">ENABLED WALLETS:</label>
+                                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px;">
+                                        <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#fff; cursor:pointer;"><input type="checkbox" class="w-currency-checkbox" value="USD"> 🇺🇸 USD</label>
+                                        <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#fff; cursor:pointer;"><input type="checkbox" class="w-currency-checkbox" value="EUR"> 🇪🇺 EUR</label>
+                                        <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#fff; cursor:pointer;"><input type="checkbox" class="w-currency-checkbox" value="BRL"> 🇧🇷 BRL (Latam)</label>
+                                        <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#fff; cursor:pointer;"><input type="checkbox" class="w-currency-checkbox" value="RUB"> 🇷🇺 RUB (CIS)</label>
+                                        <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#fff; cursor:pointer;"><input type="checkbox" class="w-currency-checkbox" value="NGN"> 🇳🇬 NGN (Africa)</label>
+                                        <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:#fff; cursor:pointer;"><input type="checkbox" class="w-currency-checkbox" value="EGP"> 🇪🇬 EGP (MENA)</label>
+                                    </div>
+                                </div>
+
+                                <!-- Выбор базовой валюты -->
+                                <label style="display:flex; flex-direction:column; gap:4px; font-size:11px; color:var(--text-muted);">
+                                    DEFAULT SYSTEM CURRENCY:
+                                    <select id="w_default_currency" style="background:#0d1017; border:1px solid #262c3a; color:#fff; padding:8px; border-radius:4px; font-size:12px; margin-top:4px; width:100%;">
+                                        <option value="USD">USD ($)</option>
+                                        <option value="EUR">EUR (€)</option>
+                                        <option value="BRL">BRL (R$)</option>
+                                        <option value="RUB">RUB (₽)</option>
+                                        <option value="NGN">NGN (₦)</option>
+                                        <option value="EGP">EGP (E£)</option>
+                                    </select>
+                                </label>
+                            </div>
+                        </div>
+
                         <div style="border-top: 1px solid #141822; padding-top:12px;">
                             <h4 style="margin:0 0 10px 0; font-size:12px; color:var(--accent-blue); text-transform:uppercase; letter-spacing:0.5px;">⚙️ System & Payment Settings</h4>
 

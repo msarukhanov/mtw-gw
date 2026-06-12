@@ -60,7 +60,7 @@ exports.initPublicWebsite = async (req, res) => {
         const webRes = await global.pool.query(
             `SELECT id, title, settings, meta, styles, lang_settings 
              FROM b2b_websites 
-             WHERE partner_id = $1 AND domain_name = $2 AND is_active = 1 LIMIT 1`,
+             WHERE partner_id = $1 AND domain_name = $2 AND is_active = 1 AND is_banned = FALSE LIMIT 1`,
             [partnerId, domain.toLowerCase()]
         );
 
@@ -172,7 +172,7 @@ exports.validate = async (req, res) => {
 
 // 3. Списание баланса (Debit) по токену сессии
 exports.debit = async (req, res) => {
-    const { token, amount } = req.body;
+    const { token, amount, round_id, game_code } = req.body;
     const realUsername = global.activePlayerSessions[token] || req.body.username;
     const partnerId = "demo_mtwtech";
 
@@ -196,6 +196,18 @@ exports.debit = async (req, res) => {
         const updatedPlayer = upd.rows[0];
         const totalPlayable = Number(updatedPlayer.balance) + Number(updatedPlayer.bonus_balance);
 
+     //    if(round_id || game_code) {
+     //        const roundId = req.body.round_id || `rnd_${crypto.randomBytes(6).toString('hex')}`;
+     //        const gameCode = req.body.game_code || 'unknown_slot';
+     //
+     //        await global.pool.query(
+     //            `INSERT INTO player_spin_history (partner_id, username, round_id, game_code, bet_amount, win_amount)
+     // VALUES ($1, $2, $3, $4, $5, 0.00)
+     // ON CONFLICT (partner_id, round_id) DO NOTHING`,
+     //            [partnerId, realUsername, roundId, gameCode, Number(amount)]
+     //        );
+     //    }
+
         res.json({ balance: totalPlayable });
     } catch (err) {
         res.status(500).json({ error: "Debit processing failed" });
@@ -204,7 +216,7 @@ exports.debit = async (req, res) => {
 
 // 4. Начисление выигрыша (Credit) по токену сессии
 exports.credit = async (req, res) => {
-    const { token, amount } = req.body;
+    const { token, amount, round_id } = req.body;
     const realUsername = global.activePlayerSessions[token] || req.body.username;
     const partnerId = "demo_mtwtech";
 
@@ -221,6 +233,17 @@ exports.credit = async (req, res) => {
 
         const updatedPlayer = upd.rows[0];
         const totalPlayable = Number(updatedPlayer.balance) + Number(updatedPlayer.bonus_balance);
+
+        // const roundId = req.body.round_id;
+        //
+        // if (roundId) {
+        //     await global.pool.query(
+        //         `UPDATE player_spin_history
+        //  SET win_amount = $1
+        //  WHERE partner_id = $2 AND round_id = $3`,
+        //         [Number(amount), partnerId, roundId]
+        //     );
+        // }
 
         res.json({ balance: totalPlayable });
     } catch (err) {

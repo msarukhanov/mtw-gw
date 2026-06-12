@@ -260,6 +260,7 @@ exports.getPlayers = async (req, res) => {
     }
 };
 
+
 exports.updatePlayer = async (req, res) => {
     try {
         const partnerId = req.body.partnerId || "demo_mtwtech";
@@ -536,7 +537,10 @@ exports.getWebsites = async (req, res) => {
     try {
         const partnerId = req.query.partnerId || "demo_mtwtech";
         const result = await global.pool.query(
-            'SELECT id, domain_name, title, is_active FROM b2b_websites WHERE partner_id = $1 ORDER BY id DESC',
+            `SELECT id, domain_name, title, is_active, settings, meta, styles, currency_settings, lang_settings 
+             FROM b2b_websites 
+             WHERE partner_id = $1 
+             ORDER BY id DESC`,
             [partnerId]
         );
         res.json({ success: true, websites: result.rows });

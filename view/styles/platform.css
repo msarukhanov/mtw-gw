@@ -634,8 +634,13 @@ iframe {
         font-size: 18px;
     }
 
-    .nav-links, .avatar-menu-trigger {
+    .nav-links, .avatar-menu-trigger, #header-notification-trigger {
         display: none !important;
+    }
+
+    .wallet-block {
+        display: flex;
+        flex-direction: column;
     }
 
     .mobile-nav {

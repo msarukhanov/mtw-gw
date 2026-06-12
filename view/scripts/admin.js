@@ -221,7 +221,7 @@ async function loadData() {
         loadAdminFinanceReport();
         loadAdminBetsRegistry();
 
-        loadPlayers();
+        loadAdminPlayers();
 
         loadAdminPromos();
         loadAdminCashbackConfig();
@@ -1111,7 +1111,7 @@ async function exportLedgerToCSV() {
 
 
 
-async function loadPlayers() {
+async function loadAdminPlayers() {
     showLoader();
     try {
         const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
@@ -1135,12 +1135,20 @@ async function loadPlayers() {
 
         if (tbody && data.success && data.players) {
             tbody.innerHTML = data.players.map(p => {
+
+                const walletsArray = p.all_wallets || [];
+                const walletsHtml = walletsArray.map(w => {
+                    const isCurrent = (w.currency === p.current_currency);
+                    // Если кошелек активный — красим его в зеленый неон, если архивный — в серый цвет
+                    const badgeColor = isCurrent ? 'background: #1b382c; color: var(--neon-green); border: 1px solid var(--neon-green); font-weight:bold;' : 'background: #161920; color: var(--text-muted); border: 1px solid #262c3a;';
+                    return `<span class="badge" style="padding:2px 5px; border-radius:4px; font-size:11px; margin-right:4px; display:inline-block; ${badgeColor}">${w.currency}: ${Number(w.balance).toFixed(2)}</span>`;
+                }).join('');
                 // Подготавливаем значения лимитов (если NULL, оставляем инпут пустым)
                 const cMin = p.casino_min_limit !== null ? p.casino_min_limit : '';
                 const cMax = p.casino_max_limit !== null ? p.casino_max_limit : '';
                 const sMin = p.sport_min_limit !== null ? p.sport_min_limit : '';
                 const sMax = p.sport_max_limit !== null ? p.sport_max_limit : '';
-
+                //<b style="color:var(--neon-green);">💵 Balance: ${Number(p.balance).toFixed(2)} 🪙</b><br>
                 return `
                     <tr>
                         <td>
@@ -1148,7 +1156,7 @@ async function loadPlayers() {
                             <small style="color:var(--text-muted);">Level: ${p.level || 1} (${p.xp || 0} XP)</small>
                         </td>
                         <td>
-                            <b style="color:var(--neon-green);">💵 Balance: ${Number(p.balance).toFixed(2)} 🪙</b><br>
+                            ${walletsHtml}
                             <small style="color:var(--text-muted);">🏆 Tournament points: ${p.tournament_points || 0}</small>
                         </td>
                         <!-- КОЛОНКА 1: КАЗИНО ЛИМИТЫ -->
@@ -1197,7 +1205,7 @@ async function togglePlayerBan(username, currentStatus) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ partnerId: currentPartnerId, username, isBanned: !currentStatus })
     });
-    if (!res.error) loadPlayers();
+    if (!res.error) loadAdminPlayers();
 }
 
 // Общая кнопка сохранения лимитов и баланса
@@ -1232,13 +1240,13 @@ async function savePlayerSettings(username) {
 
     if (!res.error) {
         alert(`Параметры игрока ${username} успешно обновлены!`);
-        loadPlayers();
+        loadAdminPlayers();
     }
 }
 
 function changePlayersPage(direction) {
     currentPlayersPage += direction;
-    loadPlayers();
+    loadAdminPlayers();
 }
 
 // 1. Загрузка списка промокодов с кнопками деактивации и выводом дат
@@ -1813,7 +1821,7 @@ function editWebsiteNode2222(websiteId) {
     loadAdminWebsites();
 }
 
-function editWebsiteNode(websiteId) {
+function editWebsiteNode222(websiteId) {
     const site = cachedWebsites.find(w => w.id === websiteId);
     if (!site) return;
 
@@ -1848,7 +1856,86 @@ function editWebsiteNode(websiteId) {
     document.getElementById('w_submit_btn').style.background = 'var(--accent-pink)';
     document.getElementById('w_cancel_btn').style.display = 'inline-block';
 
+    const curCfg = site.currency_settings || { supported_currencies: ['USD'], default_currency: ['USD'] };
+
+    // Сбрасываем и проставляем чекбоксы валют
+    document.querySelectorAll('.w-currency-checkbox').forEach(cb => {
+        cb.checked = (curCfg.supported_currencies || []).includes(cb.value);
+    });
+    document.getElementById('w_default_currency').value = curCfg.default_currency || 'USD';
+
     loadAdminWebsites();
+}
+
+function editWebsiteNode(websiteId) {
+    // cachedWebsites заводится глобально при загрузке таблицы сайтов
+    const site = cachedWebsites.find(w => w.id === websiteId);
+    if (!site) return console.error(`[Admin] Brand website ${websiteId} not found in cache.`);
+
+    editingWebsiteId = websiteId;
+
+    // Безопасно парсим JSONB объекты, если они пришли строкой
+    const set = typeof site.settings === 'string' ? JSON.parse(site.settings) : (site.settings || {});
+    const meta = typeof site.meta === 'string' ? JSON.parse(site.meta) : (site.meta || {});
+    const stl = typeof site.styles === 'string' ? JSON.parse(site.styles) : (site.styles || {});
+
+    // 💱 РАСПАКОВКА ВАЛЮТ (Пункт 3)
+    const curCfg = typeof site.currency_settings === 'string' ? JSON.parse(site.currency_settings) : (site.currency_settings || { supported_currencies: ['USD'], default_currency: 'USD' });
+    const supportedCurrencies = curCfg.supported_currencies || ['USD'];
+
+    document.querySelectorAll('.w-currency-checkbox').forEach(cb => {
+        cb.checked = supportedCurrencies.includes(cb.value);
+    });
+    const defCurrSelect = document.getElementById('w_default_currency');
+    if (defCurrSelect) defCurrSelect.value = curCfg.default_currency || 'USD';
+
+    // 🌐 РАСПАКОВКА СИСТЕМНЫХ ЯЗЫКОВ И ПЛАТЕЖЕК
+    const gtw = set.gateways || { cryptomus: true, aaio: true, pix: true, payeer: true, flutterwave: true, vodafone: true };
+    const langCfg = typeof site.lang_settings === 'string' ? JSON.parse(site.lang_settings) : (site.lang_settings || { supported_langs: ['en'], default_lang: 'en' });
+    const supportedLangs = langCfg.supported_langs || ['en'];
+
+    // Восстанавливаем чекбоксы шлюзов в кассе
+    if(document.getElementById('w_pay_cryptomus')) document.getElementById('w_pay_cryptomus').checked = gtw.cryptomus !== false;
+    if(document.getElementById('w_pay_aaio')) document.getElementById('w_pay_aaio').checked = gtw.aaio !== false;
+    if(document.getElementById('w_pay_pix')) document.getElementById('w_pay_pix').checked = gtw.pix !== false;
+    if(document.getElementById('w_pay_payeer')) document.getElementById('w_pay_payeer').checked = gtw.payeer !== false;
+    if(document.getElementById('w_pay_flutterwave')) document.getElementById('w_pay_flutterwave').checked = gtw.flutterwave !== false;
+    if(document.getElementById('w_pay_vodafone')) document.getElementById('w_pay_vodafone').checked = gtw.vodafone !== false;
+
+    // Восстанавливаем чекбоксы доступных сайту языков
+    ['en', 'es', 'pt', 'fr', 'de', 'it', 'hi', 'ru'].forEach(lang => {
+        const chk = document.getElementById(`tl_check_${lang}`);
+        if (chk) chk.checked = supportedLangs.includes(lang);
+    });
+    const defLangSelect = document.getElementById('tl_default_lang');
+    if (defLangSelect) defLangSelect.value = langCfg.default_lang || 'en';
+
+    // Восстанавливаем базовые текстовые инпуты
+    document.getElementById('w_domain').value = site.domain_name;
+    document.getElementById('w_title').value = site.title;
+    document.getElementById('w_reg_open').checked = set.registrationOpen !== false;
+    document.getElementById('w_maintenance').checked = !!set.maintenance;
+
+    document.getElementById('w_meta_title').value = meta.title || '';
+    document.getElementById('w_meta_desc').value = meta.description || '';
+    document.getElementById('w_theme_mode').value = stl.bgTheme || 'dark';
+    document.getElementById('w_color_hex').value = stl.primaryColor || '#e94560';
+    if(document.getElementById('w_color_picker')) document.getElementById('w_color_picker').value = stl.primaryColor || '#e94560';
+
+    // Переводим форму в режим обновления
+    const submitBtn = document.getElementById('w_submit_btn');
+    if (submitBtn) {
+        submitBtn.innerText = '🔄 Update Brand Configurations';
+        submitBtn.style.background = 'var(--accent-pink)';
+    }
+    if (document.getElementById('w_cancel_btn')) document.getElementById('w_cancel_btn').style.display = 'inline-block';
+
+    // Обновляем таблицы отображения локализации и баннеров под выбранный ID сайта
+    const tlTargetSite = document.getElementById('tl_target_site');
+    if (tlTargetSite) {
+        tlTargetSite.value = websiteId;
+        // loadAdminTranslationMatrix(); // Пересобирает рекурсивное дерево инпутов перевода для этого сайта
+    }
 }
 
 
@@ -1892,6 +1979,20 @@ document.getElementById('websiteForm').addEventListener('submit', async (e) => {
 
     const currentPartnerId = localStorage.getItem('partnerId') || 'demo_mtwtech';
 
+    const selectedCurrencies = [];
+    document.querySelectorAll('.w-currency-checkbox:checked').forEach(cb => {
+        selectedCurrencies.push(cb.value);
+    });
+
+    if (selectedCurrencies.length === 0) {
+        alert('Please select at least one enabled wallet currency.');
+        return;
+    }
+
+    const currencySettings = {
+        supported_currencies: selectedCurrencies,
+        default_currency: document.getElementById('w_default_currency').value
+    };
     // Упаковываем основные сеттинги и включенные шлюзы в один объект settings
 
     // Дальше переменные metaObj, stylesObj и отправка fetch (остаются как были)
@@ -1911,7 +2012,8 @@ document.getElementById('websiteForm').addEventListener('submit', async (e) => {
                 payeer: document.getElementById('w_pay_payeer').checked,
                 flutterwave: document.getElementById('w_pay_flutterwave').checked,
                 vodafone: document.getElementById('w_pay_vodafone').checked
-            }
+            },
+            currencySettings
         },
         meta: {
             title: document.getElementById('w_meta_title').value.trim() || title,

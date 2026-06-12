@@ -1,6 +1,8 @@
 const crypto = require('crypto');
 const axios = require('axios');
 
+const state = require('../state');
+
 // Замени на свои боевые ключи в .env файле
 const CRYPTOMUS_MERCHANT_ID = process.env.CRYPTOMUS_MERCHANT_ID || 'your_cryptomus_merchant_id';
 const CRYPTOMUS_API_KEY = process.env.CRYPTOMUS_API_KEY || 'your_cryptomus_api_key';
@@ -415,6 +417,8 @@ module.exports = {
                     `INSERT INTO accounting_logs (partner_id, username, type, amount, game) VALUES ($1, $2, 'WITHDRAW', $3, $4)`,
                     [partnerId, request.username, Number(request.amount), `${request.gateway.toUpperCase()} Withdraw`]
                 );
+
+                await state.sendNotification(partnerId, request.username, 'FINANCE', '🟢 Payout Approved! Your withdrawal request has been completed via API.');
             }
             else if (action === 'REJECT') {
                 // ОТКЛОНЯЕМ И ВОЗВРАЩАЕМ ДЕНЬГИ ИГРОКУ
@@ -440,6 +444,8 @@ module.exports = {
                      VALUES ($1, $2, 'system', 'withdraw_refund', $3, $4)`,
                     [request.username, partnerId, `Withdraw request rejected. Coins refunded to balance.`, Number(request.amount)]
                 );
+
+                await state.sendNotification(partnerId, request.username, 'FINANCE', '🔴 Withdrawal Rejected. Funds have been returned to your playable balance.')
             }
 
             await client.query('COMMIT');

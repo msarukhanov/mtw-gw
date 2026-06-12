@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const state = require('../state');
 const paymentService = require('../services/paymentService');
 
 // Ключи верификации вебхуков (те же, что и выше)
@@ -106,6 +107,8 @@ async function processSuccessfulDeposit(orderUuid) {
                 }
             }
         }
+
+        await state.sendNotification(order.partner_id, order.username, 'FINANCE', '🟢 Deposit Approved! Amount is ' + depositAmount);
 
         await client.query('COMMIT');
         return true;
