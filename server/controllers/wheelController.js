@@ -26,7 +26,6 @@ exports.spin = async (req, res) => {
     }
 
     let currentBalance = debitResult.balance;
-    state.addJackpot(partnerId, 2); // Добавляем в джекпот конкретного партнера
 
     // Роллим шанс от 0 до 999
     const roll = state.getRandomInt(1000);
@@ -56,7 +55,6 @@ exports.spin = async (req, res) => {
     let prize = sector.prize;
     if (prize === 'JACKPOT') {
         prize = state.getJackpot(partnerId);
-        state.resetJackpot(partnerId);
     }
 
     if (prize > 0) {

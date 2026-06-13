@@ -91,7 +91,9 @@ router.post('/auth/seamless', async (req, res) => {
 
         // Принудительно синхронизируем баланс NeDB с тем, что прислал шлюз
         const freshBalance = externalUser.balance !== undefined ? Number(externalUser.balance) : player.balance;
-        await state.updateBalance(player.username, partnerId, freshBalance);
+        await state.updateBalance(player.username, partnerId, loginType, req);
+
+        await state.logPlayerLoginSuccess(partnerId, player.username, 'SESSION_TOKEN', req);
 
         res.json({
             username: player.username,
@@ -127,6 +129,8 @@ router.post('/auth', async (req, res) => {
 
         const sessionId = 'ss_' + crypto.randomBytes(16).toString('hex');
         global.activePlayerSessions[sessionId] = username;
+
+        await state.logPlayerLoginSuccess(partnerId, player.username, 'WEBSITE', req);
 
         setTimeout(() => { delete global.activePlayerSessions[sessionId]; }, 24 * 60 * 60 * 1000);
 

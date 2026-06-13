@@ -28,9 +28,6 @@ exports.spin = async (req, res) => {
     // Получаем актуальный баланс из ответа сервера платформы
     let currentBalance = debitResult.balance;
 
-    // Начисляем отчисления в джекпот конкретного партнера
-    state.addJackpot(partnerId, 1);
-
     // Генерируем случайное число от 0 до 99 для определения категории исхода
     const roll = state.getRandomInt(100);
     let results = [];

@@ -65,8 +65,6 @@ exports.buy = async (req, res) => {
         win: false
     });
 
-    state.addJackpot(2);
-
     req.player.tickets.push(numbers.sort((a,b) => a-b));
 
     res.json({ balance: currentBalance, jackpot: state.getJackpot() });

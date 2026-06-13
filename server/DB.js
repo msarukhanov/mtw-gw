@@ -1,4 +1,15 @@
 const { Sequelize, DataTypes } = require('sequelize');
+const { Pool } = require('pg');
+
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    // ВАЖНО ДЛЯ NEON: Облачные базы требуют обязательный SSL-сертификат
+    ssl: {
+        rejectUnauthorized: false
+    }
+});
+
+global.pool = pool;
 
 // Подключение к Postgres. В продакшене Render сам подставит DATABASE_URL в process.env
 const DATABASE_URL = process.env.DATABASE_URL;

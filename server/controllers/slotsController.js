@@ -59,11 +59,6 @@ exports.spin = async (req, res) => {
     // Списываем ставку сразу
     req.player.balance -= config.cost;
 
-
-
-
-    state.addJackpot(1);
-
     // Генерируем случайное число от 0 до 99 для определения категории исхода
     const roll = state.getRandomInt(100);
     let results = [];

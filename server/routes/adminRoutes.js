@@ -11,83 +11,89 @@ const state = require('../state'); // ИСПРАВЛЕНО: Добавлен и�
 // router.use(checkAdminAuth);
 
 // Роуты для админ-панели
-router.get('/admin/data', adminController.getAdminData);
-router.post('/admin/update-config', adminController.updateConfig);
-router.post('/admin/update-jackpot', adminController.updateJackpot);
-router.post('/admin/update-balance', adminController.updateBalance);
-router.post('/admin/end-tournament', adminController.endTournament);
-router.post('/admin/add-promocode', adminController.addPromoCode);
-router.post('/admin/run-cashback', adminController.runCashback);
+router.get('/data', adminController.getAdminData);
+router.post('/update-config', adminController.updateConfig);
+// router.post('/update-jackpot', adminController.updateJackpot);
+router.post('/update-balance', adminController.updateBalance);
+router.post('/end-tournament', adminController.endTournament);
+router.post('/add-promocode', adminController.addPromoCode);
+router.post('/run-cashback', adminController.runCashback);
 
-router.get('/admin/withdrawals', adminController.getAdminWithdrawalsList);
-router.post('/admin/withdrawals/process', adminController.processAdminWithdrawalAction);
+router.get('/jackpots/list', adminController.getAdminJackpots);
+router.post('/jackpots/save', adminController.saveAdminJackpotRow);
 
-router.get('/admin/finance/dashboard', adminController.getFinanceDashboard);
-router.get('/admin/finance/report', adminController.getFinanceReport);
-router.get('/admin/finance/chart', adminController.getAdminChart);
-router.get('/admin/bets/report', adminController.getBetReport);
+router.get('/withdrawals', adminController.getAdminWithdrawalsList);
+router.post('/withdrawals/process', adminController.processAdminWithdrawalAction);
 
-router.get('/admin/players', adminController.getPlayers)
-;router.post('/admin/players/update', adminController.updatePlayer);
+router.get('/finance/dashboard', adminController.getFinanceDashboard);
+router.get('/finance/report', adminController.getFinanceReport);
+router.get('/finance/chart', adminController.getAdminChart);
+router.get('/bets/report', adminController.getBetReport);
 
-router.get('/admin/promos', adminController.getPromoCodes);
-router.post('/admin/promos/create', adminController.createPromoCode);
-router.post('/admin/promos/toggle', adminController.togglePromo);
+router.get('/players', adminController.getPlayers)
+;router.post('/players/update', adminController.updatePlayer);
+router.get('/players/auth-logs', adminController.getPlayersAuthLogs);
 
-router.get('/admin/cashback/config', adminController.getCashbackConfig);
-router.post('/admin/cashback/config/save', adminController.saveCashbackConfig);
-router.post('/admin/cashback/run', adminController.triggerCashback);
+router.get('/promos', adminController.getPromoCodes);
+router.post('/promos/create', adminController.createPromoCode);
+router.post('/promos/toggle', adminController.togglePromo);
 
-router.get('/admin/gamification/config', adminController.getGamificationConfig);
-router.post('/admin/gamification/config/save', adminController.saveGamificationConfig);
+router.get('/cashback/config', adminController.getCashbackConfig);
+router.post('/cashback/config/save', adminController.saveCashbackConfig);
+router.post('/cashback/run', adminController.triggerCashback);
 
-
-router.get('/admin/quests', adminController.getAdminQuests);
-router.post('/admin/quests/create', adminController.createAdminQuest);
-router.post('/admin/quests/update', adminController.updateAdminQuest);
-router.post('/admin/quests/delete', adminController.deleteAdminQuest);
-
-router.get('/admin/tournaments', adminController.getAdminTournamentsOverview);
-router.post('/admin/tournaments/create', adminController.createAdminTournament);
-router.post('/admin/tournament/end', adminController.triggerEndTournament);
-
-router.get('/admin/websites', adminController.getWebsites);
-router.post('/admin/websites/create', adminController.createWebsite);
-router.post('/admin/websites/update', adminController.updateWebsite);
-router.post('/admin/websites/delete', adminController.deleteWebsite);
-
-router.get('/admin/websites/translations', adminController.getWebsiteTranslationConfig);
-router.post('/admin/websites/translations/save', adminController.saveWebsiteTranslationConfig);
-
-router.get('/admin/banners', adminController.getBanners);
-router.post('/admin/banners/create', adminController.createBanner);
-router.post('/admin/banners/update', adminController.updateBanner);
-router.post('/admin/banners/delete', adminController.deleteBanner);
-
-router.get('/admin/achievements', adminController.getAdminAchievements);
-router.post('/admin/achievements/create', adminController.createAdminAchievement);
-router.post('/admin/achievements/update', adminController.updateAdminAchievement);
-router.post('/admin/achievements/delete', adminController.deleteAdminAchievement);
-
-router.get('/admin/clans/quests', adminController.getAdminClanQuests);
-router.post('/admin/clans/quests/create', adminController.createAdminClanQuest);
-
-router.get('/admin/antifraud', adminController.getAdminAlerts);
-router.post('/admin/antifraud/dismiss', adminController.dismissAlert);
-
-router.get('/admin/bonus/welcome', adminController.getWelcomeBonus);
-router.post('/admin/bonus/welcome/save', adminController.saveWelcomeBonus);
+router.get('/gamification/config', adminController.getGamificationConfig);
+router.post('/gamification/config/save', adminController.saveGamificationConfig);
 
 
-router.post('/admin/catalog/collection', gameController.adminAddCollection);
-router.put('/admin/catalog/collection/:slug', gameController.adminEditCollection);
-router.delete('/admin/catalog/collection/:slug', gameController.adminDeleteCollection);
+router.get('/quests', adminController.getAdminQuests);
+router.post('/quests/create', adminController.createAdminQuest);
+router.post('/quests/update', adminController.updateAdminQuest);
+router.post('/quests/delete', adminController.deleteAdminQuest);
 
-router.post('/admin/catalog/aggregator', gameController.adminUpdateAggregator);
-router.post('/admin/catalog/game-setup', gameController.adminUpdateGameSettings);
+router.get('/tournaments', adminController.getAdminTournamentsOverview);
+router.post('/tournaments/create', adminController.createAdminTournament);
+router.post('/tournament/end', adminController.triggerEndTournament);
+
+router.get('/websites', adminController.getWebsites);
+router.post('/websites/create', adminController.createWebsite);
+router.post('/websites/update', adminController.updateWebsite);
+router.post('/websites/delete', adminController.deleteWebsite);
+
+router.get('/websites/translations', adminController.getWebsiteTranslationConfig);
+router.post('/websites/translations/save', adminController.saveWebsiteTranslationConfig);
+
+router.get('/analytics/online', adminController.getAdminOnlineAnalytics);
+
+router.get('/banners', adminController.getBanners);
+router.post('/banners/create', adminController.createBanner);
+router.post('/banners/update', adminController.updateBanner);
+router.post('/banners/delete', adminController.deleteBanner);
+
+router.get('/achievements', adminController.getAdminAchievements);
+router.post('/achievements/create', adminController.createAdminAchievement);
+router.post('/achievements/update', adminController.updateAdminAchievement);
+router.post('/achievements/delete', adminController.deleteAdminAchievement);
+
+router.get('/clans/quests', adminController.getAdminClanQuests);
+router.post('/clans/quests/create', adminController.createAdminClanQuest);
+
+router.get('/antifraud', adminController.getAdminAlerts);
+router.post('/antifraud/dismiss', adminController.dismissAlert);
+
+router.get('/bonus/welcome', adminController.getWelcomeBonus);
+router.post('/bonus/welcome/save', adminController.saveWelcomeBonus);
+
+
+router.post('/catalog/collection', gameController.adminAddCollection);
+router.put('/catalog/collection/:slug', gameController.adminEditCollection);
+router.delete('/catalog/collection/:slug', gameController.adminDeleteCollection);
+
+router.post('/catalog/aggregator', gameController.adminUpdateAggregator);
+router.post('/catalog/game-setup', gameController.adminUpdateGameSettings);
 
 // Эндпоинты для админки Спортсбука
-router.get('/admin/sports/pending', async (req, res) => {
+router.get('/sports/pending', async (req, res) => {
     try {
         const partnerId = req.partnerId || req.query.partnerId || "demo_mtwtech";
 
@@ -99,7 +105,7 @@ router.get('/admin/sports/pending', async (req, res) => {
     }
 });
 
-router.post('/admin/sports/settle', async (req, res) => {
+router.post('/sports/settle', async (req, res) => {
     const { betId, status } = req.body; // status: "WON" или "LOST"
     const seamless = require('../services/seamlessService');
 
@@ -114,13 +120,13 @@ router.post('/admin/sports/settle', async (req, res) => {
     }
 });
 
-router.get('/admin/bgs', async (req, res)=>{
+router.get('/bgs', async (req, res)=>{
 
 
     res.json({ success: true, BGS: state.BGS });
 });
 
-router.post('/admin/bgs', async (req, res)=>{
+router.post('/bgs', async (req, res)=>{
     const { service, status } = req.body;
 
     switch (service) {

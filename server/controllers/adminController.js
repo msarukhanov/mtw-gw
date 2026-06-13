@@ -237,12 +237,18 @@ exports.getBetReport = async (req, res) => {
 
 exports.getAdminChart = async (req, res) => {
     try {
-        const partnerId = req.partnerId || "demo_mtwtech";
-        const timeline = await state.getChartAnalytics(partnerId);
-        res.json({ success: true, timeline });
+        const partnerId = req.query.partnerId || "demo_mtwtech";
+        const domain = req.query.domain || "";
+        const days = req.query.days || 7; // Считываем количество дней
+
+        const analyticsPack = await state.getChartAnalytics(partnerId, domain, days);
+        res.json({
+            success: true,
+            timeline: analyticsPack.timeline,
+            shares: analyticsPack.shares
+        });
     } catch (err) {
-        console.error("❌ [Admin API] Chart compilation failed:", err.message);
-        res.status(500).json({ error: "Failed to compile chart data" });
+        res.status(500).json({ error: "Failed to compile chart matrix" });
     }
 };
 
@@ -253,13 +259,84 @@ exports.getPlayers = async (req, res) => {
         const limit = parseInt(req.query.limit, 10) || 15;
         const search = req.query.search || '';
 
-        const data = await state.getAdminPlayersList(partnerId, { search, page, limit });
+        const isOnline = req.query.isOnline || '';
+        const domain = req.query.domain || '';
+
+        const data = await state.getAdminPlayersList(partnerId, { search, domain, isOnline, page, limit });
         res.json({ success: true, players: data.items, pagination: data.pagination });
     } catch (err) {
         res.status(500).json({ error: "Failed to fetch players" });
     }
 };
 
+exports.getPlayersOnline = (req, res) => {
+    const partnerId = req.query.partnerId || "demo_mtwtech";
+
+    // Берем все ключи онлайна и фильтруем по текущему B2B партнеру
+    const keys = Object.keys(global.onlinePlayers || {});
+    const filteredUsers = keys
+        .filter(key => key.startsWith(`${partnerId}_`))
+        .map(key => key.replace(`${partnerId}_`, "")); // возвращаем только чистые никнеймы
+
+    res.json({
+        success: true,
+        count: filteredUsers.length,
+        users: filteredUsers // Массив игроков, которые прямо сейчас крутят слоты
+    });
+};
+
+exports.getPlayersOnlineDomain = (req, res) => {
+    // Возвращаем объект, где ключи — домены, а значения — массивы игроков онлайн
+    res.json({
+        success: true,
+        matrix: global.onlineByDomains || {}
+    });
+};
+
+exports.getPlayersAuthLogs = async (req, res) => {
+    try {
+        const partnerId = req.query.partnerId || "demo_mtwtech";
+        const username = req.query.username ? req.query.username.trim() : "";
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 15;
+
+        const offset = (page - 1) * limit;
+
+        let countQuery = `SELECT COUNT(*)::int as count FROM player_auth_logs WHERE partner_id = $1`;
+        let logsQuery = `SELECT id, username, login_type, ip_address, user_agent, domain_name, timestamp 
+                         FROM player_auth_logs WHERE partner_id = $1`;
+
+        const queryParams = [partnerId];
+
+        // Если админ указал имя игрока в инпуте — добавляем жесткую фильтрацию
+        if (username) {
+            queryParams.push(`%${username}%`); // Используем ILIKE для мягкого поиска по буквам
+            countQuery += ` AND username ILIKE $2`;
+            logsQuery += ` AND username ILIKE $2`;
+        }
+
+        // Считаем тотал для пагинации
+        const countRes = await global.pool.query(countQuery, queryParams);
+        const totalItems = countRes.rows[0]?.count || 0;
+
+        // Добавляем сортировку и пагинацию
+        const limitIndex = queryParams.length + 1;
+        const offsetIndex = queryParams.length + 2;
+        logsQuery += ` ORDER BY timestamp DESC LIMIT $${limitIndex} OFFSET $${offsetIndex}`;
+        queryParams.push(limit, offset);
+
+        const logsRes = await global.pool.query(logsQuery, queryParams);
+
+        res.json({
+            success: true,
+            logs: logsRes.rows,
+            pagination: { page, limit, totalItems, totalPages: Math.ceil(totalItems / limit) }
+        });
+    } catch (err) {
+        console.error("❌ Security audit logs fetch crash:", err.message);
+        res.status(500).json({ error: "Security pipeline offline" });
+    }
+};
 
 exports.updatePlayer = async (req, res) => {
     try {
@@ -967,3 +1044,82 @@ exports.saveWebsiteTranslationConfig = async (req, res) => {
 };
 
 
+exports.getAdminOnlineAnalytics = async (req, res) => {
+    try {
+        const partnerId = req.query.partnerId || "demo_mtwtech";
+        const { domain, period = 'hours' } = req.query; // period может быть 'hours' (за последние 24ч) или 'days' (за месяц)
+
+        if (!domain) return res.status(400).json({ error: "domain parameter is required" });
+
+        let selectTimeFormat = "date_trunc('hour', timestamp)"; // Группировка по часам по дефолту
+        let timeInterval = "INTERVAL '24 hours'";
+
+        if (period === 'days') {
+            selectTimeFormat = "date_trunc('day', timestamp)"; // Группировка по дням
+            timeInterval = "INTERVAL '30 days'";
+        }
+
+        // Берем среднее и максимальное значение онлайна за каждый отрезок времени
+        const result = await global.pool.query(`
+            SELECT 
+                ${selectTimeFormat} as timeframe,
+                MAX(online_count)::int as max_online,
+                AVG(online_count)::int as avg_online
+            FROM b2b_online_snapshots
+            WHERE partner_id = $1 AND domain_name = $2 AND timestamp >= NOW() - ${timeInterval}
+            GROUP BY timeframe
+            ORDER BY timeframe ASC
+        `, [partnerId, domain.toLowerCase().trim()]);
+
+        res.json({ success: true, period, analytics: result.rows });
+    } catch (err) {
+        console.error("❌ Analytics fetch error:", err.message);
+        res.status(500).json({ error: "Failed to compile time-series metrics" });
+    }
+};
+
+
+exports.getAdminJackpots = async (req, res) => {
+    try {
+        const partnerId = req.query.partnerId || "demo_mtwtech";
+        const result = await global.pool.query(
+            `SELECT id, level_name, current_amount::numeric, start_amount::numeric, 
+                    trigger_amount::numeric, fee_percent::numeric, is_active 
+             FROM b2b_jackpots 
+             WHERE partner_id = $1 
+             ORDER BY id ASC`,
+            [partnerId]
+        );
+        res.json({ success: true, jackpots: result.rows });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to load jackpot matrix" });
+    }
+};
+
+// 2. Сохранить измененные параметры конкретного уровня джекпота (Update по ID)
+exports.saveAdminJackpotRow = async (req, res) => {
+    try {
+        const { id, partnerId, currentAmount, startAmount, triggerAmount, feePercent, isActive } = req.body;
+
+        const result = await global.pool.query(
+            `UPDATE b2b_jackpots 
+             SET current_amount = $1, start_amount = $2, trigger_amount = $3, fee_percent = $4, is_active = $5
+             WHERE id = $6 AND partner_id = $7`,
+            [Number(currentAmount), Number(startAmount), Number(triggerAmount), Number(feePercent), Number(isActive), Number(id), partnerId]
+        );
+
+        if (result.rowCount === 0) return res.status(404).json({ error: "Jackpot pool node not found" });
+
+        // Если джекпот обновили, сразу шлем свежий пульс по сокетам, чтобы на витрине цифры изменились мгновенно
+        if (global.io) {
+            const freshRes = await global.pool.query('SELECT level_name, current_amount::numeric FROM b2b_jackpots WHERE partner_id = $1 AND is_active = 1', [partnerId]);
+            const syncPack = {};
+            freshRes.rows.forEach(r => syncPack[r.level_name.toLowerCase()] = Number(r.current_amount));
+            global.io.emit(`jackpot_pulse_${partnerId}`, syncPack);
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to update progressive jackpot configuration" });
+    }
+};

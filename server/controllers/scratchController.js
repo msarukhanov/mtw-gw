@@ -27,9 +27,6 @@ exports.buy = async (req, res) => {
 
     let currentBalance = debitResult.balance;
 
-    // Добавляем отчисления в джекпот конкретного партнера
-    state.addJackpot(partnerId, 3);
-
     let cells = [];
     let prize = 0;
     let selectedSymbol = '';
@@ -43,7 +40,6 @@ exports.buy = async (req, res) => {
         // 3% шанс на Джекпот (Списываем из джекпота текущего партнера)
         selectedSymbol = '👑';
         prize = state.getJackpot(partnerId);
-        state.resetJackpot(partnerId);
     } else if (winChance < loseBoundary) {
         // ДИНАМИЧЕСКИЙ ПРОИГРЫШ (Ничего не выиграл)
         selectedSymbol = '';

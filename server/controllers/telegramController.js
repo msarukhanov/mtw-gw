@@ -200,6 +200,8 @@ exports.authTelegramWebApp = async (req, res) => {
             // 💎 ГЛАВНОЕ: Вычисляем суммарный доступный баланс для игры
             player.balance = Number(player.realBalance + player.bonusBalance);
 
+            await state.logPlayerLoginSuccess(partnerId, player.username, 'TELEGRAM', req);
+
             // Отдаем фронтенду полную конфигурацию экосистемы (в точности, как при обычном логине)
             res.json({
                 success: true,

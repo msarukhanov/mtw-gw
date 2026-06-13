@@ -23,6 +23,8 @@ CREATE TABLE IF NOT EXISTS players (
     total_deposited_amount NUMERIC(15, 2) DEFAULT 0.00,
     telegram_id BIGINT DEFAULT NULL,
     current_currency VARCHAR(10) DEFAULT 'USD',
+    website_id VARCHAR(50),
+    created_at TIMESTAMP DEFAULT NOW(),
     UNIQUE(username, partner_id)
 );
 
@@ -364,7 +366,18 @@ CREATE TABLE IF NOT EXISTS b2b_websites (
     timestamp TIMESTAMP DEFAULT NOW(),
     lang_settings JSONB DEFAULT '{"supported_langs": ["en"], "default_lang": "en"}'::jsonb,
     is_banned BOOLEAN DEFAULT 0,
-    currency_settings JSONB DEFAULT '{"supported_currencies": ["USD"], "default_currency": "USD"}'::jsonb,
+    currency_settings SET DEFAULT '{
+                                     "default_currency": "USD",
+                                     "supported_currencies": ["USD"],
+                                     "gateways": {
+                                       "cryptomus": {
+                                         "is_active": true,
+                                         "limits": {
+                                           "USD": { "min_dep": 10.00, "max_dep": 5000.00, "min_out": 20.00, "max_out": 2000.00 }
+                                         }
+                                       }
+                                     }
+                                   }'::jsonb,
     UNIQUE(partner_id, domain_name)    -- Защита от дублей доменов у одного партнера
 );
 
@@ -566,3 +579,46 @@ CREATE TABLE IF NOT EXISTS player_spin_history (
 -- Индексы для мгновенного поиска истории по конкретному раунду или игроку
 CREATE UNIQUE INDEX IF NOT EXISTS idx_spin_round ON player_spin_history (partner_id, round_id);
 CREATE INDEX IF NOT EXISTS idx_spin_player_logs ON player_spin_history (partner_id, username);
+
+
+CREATE TABLE IF NOT EXISTS b2b_online_snapshots (
+    id SERIAL PRIMARY KEY,
+    partner_id VARCHAR(50) NOT NULL,
+    domain_name VARCHAR(100) NOT NULL, -- Аналитика раздельно по каждому сайту
+    online_count INT DEFAULT 0,
+    timestamp TIMESTAMP DEFAULT NOW()
+);
+
+-- Индекс для мгновенной выборки аналитики за конкретный период (день/неделя/месяц)
+CREATE INDEX IF NOT EXISTS idx_online_snapshots_time
+ON b2b_online_snapshots (partner_id, domain_name, timestamp DESC);
+
+CREATE TABLE IF NOT EXISTS b2b_jackpots (
+    id SERIAL PRIMARY KEY,
+    partner_id VARCHAR(50) NOT NULL,
+    level_name VARCHAR(20) NOT NULL,       -- 'MINI', 'MAJOR', 'MEGA'
+    current_amount NUMERIC(15, 2) DEFAULT 100.00, -- Сколько накоплено прямо сейчас
+    start_amount NUMERIC(15, 2) DEFAULT 100.00,   -- Сумма, к которой сбрасывается банк после выигрыша (Seed)
+    trigger_amount NUMERIC(15, 2) NOT NULL,       -- Скрытый математический порог взрыва джекпота
+    fee_percent NUMERIC(4, 2) DEFAULT 1.00,       -- Какой % от любой ставки уходит в этот джекпот (например, 0.50%)
+    is_active INT DEFAULT 1,
+    UNIQUE(partner_id, level_name)
+);
+
+-- Индекс для мгновенного чтения джекпотов при каждом игровом спине
+CREATE INDEX IF NOT EXISTS idx_b2b_jackpots_fetch ON b2b_jackpots (partner_id, is_active);
+
+CREATE TABLE IF NOT EXISTS player_auth_logs (
+    id SERIAL PRIMARY KEY,
+    partner_id VARCHAR(50) NOT NULL,
+    username VARCHAR(50) NOT NULL,
+    login_type VARCHAR(20) NOT NULL,    -- 'PASSWORD', 'SESSION_TOKEN', 'TELEGRAM_TWA'
+    ip_address VARCHAR(45) NOT NULL,    -- Поддержка IPv4 и IPv6
+    user_agent TEXT NOT NULL,           -- Браузер и устройство (например, iPhone, Chrome)
+    domain_name VARCHAR(100) DEFAULT 'localhost',
+    timestamp TIMESTAMP DEFAULT NOW()
+);
+
+-- Индекс для мгновенной выгрузки истории входов конкретного игрока в админку
+CREATE INDEX IF NOT EXISTS idx_player_auth_logs_audit
+ON player_auth_logs (partner_id, username, timestamp DESC);

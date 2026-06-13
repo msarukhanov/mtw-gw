@@ -1,4 +1,6 @@
 const crypto = require('crypto');
+const { URL } = require('url');
+
 const seamless = require('./services/seamlessService');
 
 const pool = global.pool;
@@ -115,6 +117,34 @@ const playerMethods = {
             console.error("❌ Critical error in multi-wallet getOrCreatePlayer:", err.message);
             throw err;
         } finally { client.release(); }
+    },
+
+    logPlayerLoginSuccess: async(partnerId, username, loginType, req) => {
+        try {
+            // 🔒 ЖЕСТКАЯ ВАЛИДАЦИЯ IP: Извлекаем реальный IP игрока (с учетом Cloudflare/Render прокси) [INDEX]
+            const ipAddress = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress || '0.0.0.0';
+            const userAgent = req.headers['user-agent'] || 'Unknown Agent';
+
+            // 🔒 ЖЕСТКАЯ ВАЛИДАЦИЯ ДОМЕНА: Извлекаем домен из неизменяемых заголовков браузера [INDEX]
+            const originHeader = req.headers.origin || req.headers.referer || '';
+            let detectedDomain = 'localhost';
+
+            if (originHeader && originHeader.startsWith('http')) {
+                try {
+                    const parsedUrl = new URL(originHeader);
+                    detectedDomain = parsedUrl.hostname.toLowerCase();
+                } catch (e) { /* Игнорируем некорректный URL */ }
+            }
+
+            await global.pool.query(
+                `INSERT INTO player_auth_logs (partner_id, username, login_type, ip_address, user_agent, domain_name) 
+                 VALUES ($1, $2, $3, $4, $5, $6)`,
+                [partnerId, username, loginType, ipAddress, userAgent, detectedDomain]
+            );
+            console.log(`🔒 [Auth Audit] ${username} connected from IP: ${ipAddress} | Domain: ${detectedDomain}`);
+        } catch (err) {
+            console.error("❌ Failed to write secure auth log node:", err.message);
+        }
     },
 
     // Проверьте, чтобы в вашем файле этот метод выглядел так:
@@ -443,6 +473,79 @@ const playerMethods = {
                     }
                 } catch (clnErr) {
                     console.error("❌ Guild turnover increment sequence crashed:", clnErr.message);
+                }
+
+                try {
+                    const betAmount = Math.abs(delta);
+
+                    // 1. Вытягиваем все активные уровни джекпота партнера с жесткой блокировкой строки FOR UPDATE
+                    const jackpotsRes = await client.query(
+                        'SELECT id, level_name, current_amount::numeric, trigger_amount::numeric, start_amount::numeric, fee_percent::numeric FROM b2b_jackpots WHERE partner_id = $1 AND is_active = 1 FOR UPDATE',
+                        [partnerId]
+                    );
+
+                    // 🧠 УМНЫЙ B2B ХАК: Если партнер отключил все джекпоты, rows придет пустым!
+                    // Мы просто молча выходим из блока, сохраняя 100% ставки в профит казино [INDEX].
+                    if (jackpotsRes.rowCount > 0) {
+                        for (const jk of jackpotsRes.rows) {
+                            // Вычисляем, сколько коинов от этой ставки улетает в данный уровень джекпота
+                            const contribution = (betAmount * Number(jk.fee_percent)) / 100;
+                            const nextAmount = Number(jk.current_amount) + contribution;
+
+                            // 2. Проверяем: Перешагнула ли накопленная сумма скрытый триггер взрыва?
+                            if (nextAmount >= Number(jk.trigger_amount)) {
+                                console.log(`👑 [JACKPOT EXPLOSION] Игрок ${username} сорвал ${jk.level_name} ДЖЕКПОТ! Сумма: ${nextAmount.toFixed(2)} коинов!`);
+
+                                // А. Зачисляем всю сумму джекпота на РЕАЛЬНЫЙ БАЛАНС игрока прямо внутри текущей транзакции!
+                                finalReal += nextAmount;
+
+                                // Б. Генерируем новый случайный скрытый порог взрыва для следующего круга джекпота
+                                let nextTrigger = Number(jk.start_amount) * 4; // Базовое смещение
+                                if (jk.level_name === 'MINI') nextTrigger = Math.floor(Math.random() * (500 - 300 + 1)) + 300;
+                                else if (jk.level_name === 'MAJOR') nextTrigger = Math.floor(Math.random() * (5000 - 3500 + 1)) + 3500;
+                                else if (jk.level_name === 'MEGA') nextTrigger = Math.floor(Math.random() * (50000 - 38000 + 1)) + 38000;
+
+                                // В. Сбрасываем джекпот в базе данных на начальную сумму (Seed) и прописываем новый триггер
+                                await client.query(
+                                    `UPDATE b2b_jackpots 
+                 SET current_amount = start_amount, trigger_amount = $1 
+                 WHERE id = $2`,
+                                    [nextTrigger, jk.id]
+                                );
+
+                                // Г. Записываем триумф в player_history и отправляем личное системное уведомление игроку
+                                await client.query(
+                                    `INSERT INTO player_history (username, partner_id, category, action_type, description, amount_change)
+                 VALUES ($1, $2, 'system', 'jackpot_win', $3, $4)`,
+                                    [username, partnerId, `🏆 EPIC WIN! You have triggered the global ${jk.level_name} JACKPOT bank!`, nextAmount]
+                                );
+
+                                const state = this || require('./state'); // Вызов нашего хаба уведомлений
+                                if (typeof state.sendNotification === 'function') {
+                                    await state.sendNotification(partnerId, username, 'TOURNAMENT', `👑 EPIC COIN DROP! You just won the global ${jk.level_name} Jackpot of ${nextAmount.toFixed(2)} 🪙!`);
+                                }
+
+                                // Д. Выстреливаем глобальное Socket.io событие на ВЕСЬ ДОМЕН, чтобы у ВСЕХ онлайн-игроков на экране взорвался салют!
+                                if (global.io) {
+                                    const safeDomainString = player.current_currency; // Используем доменную комнату
+                                    global.io.emit('global_jackpot_win', {
+                                        username: username,
+                                        level: jk.level_name,
+                                        amount: nextAmount
+                                    });
+                                }
+
+                            } else {
+                                // Если взрыва не произошло — просто атомарно увеличиваем сумму джекпота в базе данных
+                                await client.query(
+                                    'UPDATE b2b_jackpots SET current_amount = current_amount + $1 WHERE id = $2',
+                                    [contribution, jk.id]
+                                );
+                            }
+                        }
+                    }
+                } catch (jkErr) {
+                    console.error("❌ Progressive Jackpot increment loop crashed:", jkErr.message);
                 }
             }
             else if (delta > 0 && wagerLeft > 0) {
@@ -1905,7 +2008,7 @@ const backOfficeMethods = {
         // };
     },
 
-    getChartAnalytics: async (partnerId) => {
+    getChartAnalytics222: async (partnerId) => {
         const chartQuery = `
             SELECT 
                 TO_CHAR(series_date, 'YYYY-MM-DD') as date_label,
@@ -1934,6 +2037,105 @@ const backOfficeMethods = {
                 betsCount: row.bets_count
             };
         });
+    },
+
+    getChartAnalytics: async (partnerId, domain = '', daysInterval = 7) => {
+        const safeDays = Math.min(Math.max(parseInt(daysInterval, 10) || 7, 2), 90);
+
+        let logDomainFilter = '';
+        let snapshotDomainFilter = '';
+        let playersDomainFilter = '';
+        const queryParams = [partnerId, `${safeDays - 1} days`];
+
+        if (domain) {
+            queryParams.push(domain.toLowerCase().trim()); // Это будет $3
+            logDomainFilter = ` AND al.currency = (SELECT (currency_settings->>'default_currency') FROM b2b_websites WHERE partner_id = $1 AND domain_name = $3 LIMIT 1)`;
+            snapshotDomainFilter = ` AND domain_name = $3`;
+
+            // Фильтр игроков по домену через наличие кошелька (для сквозных аккаунтов)
+            playersDomainFilter = ` AND EXISTS (SELECT 1 FROM player_wallets w WHERE w.username = p.username AND w.partner_id = p.partner_id AND w.currency = (SELECT (currency_settings->>'default_currency') FROM b2b_websites WHERE partner_id = $1 AND domain_name = $3 LIMIT 1))`;
+        }
+
+        // --- ЗАПРОС 1: ТАЙМЛАЙН ГРАФИКОВ (Финансы, Онлайн, Регистрации, FTD) ---
+        const timelineQuery = `
+            SELECT 
+                TO_CHAR(series_date, 'YYYY-MM-DD') as date_label,
+                COALESCE(SUM(CASE WHEN al.type = 'DEBIT' AND al.game NOT SIMILAR TO '%(Deposit|Withdraw|Promo|Cashback|Quest|VIP)%' THEN al.amount ELSE 0 END), 0)::numeric as day_bets,
+                COALESCE(SUM(CASE WHEN al.type = 'CREDIT' AND al.game NOT SIMILAR TO '%(Deposit|Withdraw|Promo|Cashback|Quest|VIP)%' THEN al.amount ELSE 0 END), 0)::numeric as day_wins,
+                COALESCE(SUM(CASE WHEN al.type = 'AFFILIATE' THEN al.amount ELSE 0 END), 0)::numeric as day_affiliate,
+                COALESCE(SUM(CASE WHEN al.game LIKE '%Deposit%' THEN al.amount ELSE 0 END), 0)::numeric as day_deposits,
+                COALESCE(SUM(CASE WHEN al.game LIKE '%Withdraw%' THEN al.amount ELSE 0 END), 0)::numeric as day_withdraws,
+                COUNT(CASE WHEN al.type IN ('DEBIT', 'CREDIT') AND al.game NOT SIMILAR TO '%(Deposit|Withdraw|Promo|Cashback|Quest|VIP)%' THEN al.id END)::int as bets_count,
+                
+                -- Метрики онлайна [INDEX]
+                COALESCE((SELECT MAX(online_count) FROM b2b_online_snapshots WHERE partner_id = $1 ${snapshotDomainFilter} AND DATE(timestamp) = DATE(series_date)), 0)::int as peak_online,
+                COALESCE((SELECT AVG(online_count) FROM b2b_online_snapshots WHERE partner_id = $1 ${snapshotDomainFilter} AND DATE(timestamp) = DATE(series_date)), 0)::int as avg_online,
+                
+                -- 👥 Новые Регистрации (Sign-ups) [INDEX]
+                COALESCE((SELECT COUNT(id) FROM players p WHERE p.partner_id = $1 ${playersDomainFilter} AND DATE(p.created_at) = DATE(series_date)), 0)::int as day_signups,
+                
+                -- 💳 Уникальные первые депозиты за эти сутки (FTDs) [INDEX]
+                COALESCE((
+                    SELECT COUNT(DISTINCT al_ftd.username) FROM accounting_logs al_ftd
+                    WHERE al_ftd.partner_id = $1 ${logDomainFilter.replace(/al\./g, 'al_ftd.')} AND al_ftd.game LIKE '%Deposit%' AND DATE(al_ftd.timestamp) = DATE(series_date)
+                    AND al_ftd.username NOT IN (
+                        SELECT al_old.username FROM accounting_logs al_old 
+                        WHERE al_old.partner_id = $1 ${logDomainFilter.replace(/al\./g, 'al_old.')} AND al_old.game LIKE '%Deposit%' AND DATE(al_old.timestamp) < DATE(series_date)
+                    )
+                ), 0)::int as day_ftds
+                
+            FROM GENERATE_SERIES(CURRENT_DATE - CAST($2 AS INTERVAL), CURRENT_DATE, '1 day'::interval) as series_date
+            LEFT JOIN accounting_logs al ON al.partner_id = $1 ${logDomainFilter} AND DATE(al.timestamp) = DATE(series_date)
+            GROUP BY series_date
+            ORDER BY series_date ASC
+        `;
+
+        // --- ЗАПРОС 2: КРУГОВАЯ ДИАГРАММА (Доли ставок по категориям) ---
+        // Извлекаем общие суммы оборота (Turnover) в разрезе игр за выбранный интервал времени [INDEX]
+        const categoryQuery = `
+            SELECT 
+                CASE 
+                    WHEN al.game SIMILAR TO '%(football|vfoot|match)%' THEN 'Virtual Football'
+                    WHEN al.game SIMILAR TO '%(sport|book|bet_match)%' THEN 'Sportsbook'
+                    ELSE 'Casino Slots'
+                END as game_category,
+                SUM(al.amount)::numeric as category_turnover
+            FROM accounting_logs al
+            WHERE al.partner_id = $1 
+              AND al.type = 'DEBIT' 
+              AND al.game NOT SIMILAR TO '%(Deposit|Withdraw|Promo|Cashback|Quest|VIP)%'
+              AND al.timestamp >= NOW() - CAST($2 AS INTERVAL)
+              ${logDomainFilter}
+            GROUP BY game_category
+            ORDER BY category_turnover DESC
+        `;
+
+        const timelineRes = await global.pool.query(timelineQuery, queryParams);
+        const categoryRes = await global.pool.query(categoryQuery, queryParams);
+
+        // Маппим основной таймлайн
+        const timelineData = timelineRes.rows.map(row => {
+            const ggr = Number(row.day_bets) - Number(row.day_wins);
+            return {
+                date: row.date_label,
+                ggr: ggr,
+                netProfit: ggr - Number(row.day_affiliate),
+                deposits: Number(row.day_deposits),
+                withdraws: Number(row.day_withdraws),
+                betsCount: row.bets_count,
+                peakOnline: row.peak_online,
+                avgOnline: row.avg_online,
+                // Прокидываем новые маркетинговые метрики [INDEX]
+                signups: row.day_signups,
+                ftds: row.day_ftds
+            };
+        });
+
+        // Возвращаем комбинированный JSON-пакет аналитики
+        return {
+            timeline: timelineData,
+            shares: categoryRes.rows // [{ game_category: 'Casino Slots', category_turnover: 25000 }, ...]
+        };
     },
 
     getAdminPlayersList: async (partnerId, filters = {}) => {
@@ -1976,6 +2178,118 @@ const backOfficeMethods = {
 
         return {
             items: res.rows,
+            pagination: { page: Number(page), limit: Number(limit), totalItems, totalPages: Math.ceil(totalItems / limit) }
+        };
+    },
+
+    getAdminPlayersList: async (partnerId, filters = {}) => {
+        const { search = '', domain = '', isOnline = '', limit = 15, page = 1 } = filters;
+        const offset = (page - 1) * limit;
+
+        // Базовые тексты запросов с агрегацией кошельков
+        let queryText = `
+            SELECT p.id, p.username, p.current_currency, p.balance, p.bonus_balance, p.xp, p.level, 
+                   p.tournament_points, p.is_banned, p.casino_min_limit, p.casino_max_limit, 
+                   p.sport_min_limit, p.sport_max_limit,
+                   (
+                       SELECT json_agg(json_build_object('currency', w.currency, 'balance', w.balance::numeric)) 
+                       FROM player_wallets w 
+                       WHERE w.username = p.username AND w.partner_id = p.partner_id
+                   ) as all_wallets
+            FROM players p`;
+
+        let countQuery = `SELECT COUNT(*)::int as count FROM players p`;
+
+        // Массив условий WHERE
+        let whereClauses = [`p.partner_id = $1`];
+        let queryParams = [partnerId];
+
+        // 1. Фильтр динамического текстового поиска по Username
+        if (search) {
+            queryParams.push(`%${search}%`);
+            whereClauses.push(`p.username ILIKE $${queryParams.length}`);
+        }
+
+        if (domain) {
+            try {
+                // 1. Быстрым подзапросом узнаем валюту по умолчанию для выбранного админом домена
+                const domainCurrencyRes = await global.pool.query(
+                    "SELECT (currency_settings->>'default_currency') as def_cur FROM b2b_websites WHERE partner_id = $1 AND domain_name = $2 LIMIT 1",
+                    [partnerId, domain.toLowerCase().trim()]
+                );
+
+                const domainCurrency = domainCurrencyRes.rows?.[0]?.def_cur;
+
+                if (domainCurrency) {
+                    // 2. Добавляем в параметры запроса СУБД целевую валюту сайта
+                    queryParams.push(domainCurrency);
+
+                    // 3. Фильтруем таблицу игроков: оставляем только тех, у кого инициализирован кошелек этой валюты в player_wallets
+                    // Это железобетонно покажет игроков, которые имеют отношение к этому бренду
+                    whereClauses.push(`EXISTS (
+                        SELECT 1 FROM player_wallets w 
+                        WHERE w.username = p.username AND w.partner_id = p.partner_id AND w.currency = $${queryParams.length}
+                    )`);
+
+                    console.log(`🔍 [Admin Query] Фильтр по домену "${domain}" активирован через валютный маркер: ${domainCurrency}`);
+                } else {
+                    console.warn(`⚠️ [Admin Query] Валюта для домена "${domain}" не настроена в b2b_websites. Фильтр пропущен.`);
+                }
+            } catch (curErr) {
+                console.error("❌ Ошибка сборки фильтра домена в SQL:", curErr.message);
+            }
+        }
+
+        // 3. 🟢 ИНЖЕКТ ФИЛЬТРА ПО ОНЛАЙНУ: Работаем с оперативной памятью Socket.io
+        if (isOnline === 'true' || isOnline === true) {
+            // Собираем из нашего глобального сокет-объекта имена всех, кто в сети
+            const onlineKeys = Object.keys(global.onlinePlayers || {}); // ["demo_mtwtech_Марк", ...]
+
+            // Фильтруем никнеймы строго текущего партнера
+            const onlineUsernames = onlineKeys
+                .filter(key => key.startsWith(`${partnerId}_`))
+                .map(key => key.replace(`${partnerId}_`, ""));
+
+            if (onlineUsernames.length === 0) {
+                // Если в сети вообще никого нет — принудительно возвращаем пустой массив, чтобы не мучить базу
+                return { items: [], pagination: { page: Number(page), limit: Number(limit), totalItems: 0, totalPages: 0 } };
+            }
+
+            queryParams.push(onlineUsernames); // Передаем массив ников в параметры Postgres
+            whereClauses.push(`p.username = ANY($$${queryParams.length})`);
+        }
+
+        // Собираем блок WHERE в единый SQL-текст
+        if (whereClauses.length > 0) {
+            const whereSql = ' WHERE ' + whereClauses.join(' AND ');
+            queryText += whereSql;
+            countQuery += whereSql;
+        }
+
+        // Считаем общее количество элементов для пагинации
+        const countRes = await global.pool.query(countQuery, queryParams);
+        const totalItems = countRes.rows[0]?.count || 0;
+
+        // Рассчитываем динамические индексы для LIMIT и OFFSET
+        const limitParamIndex = queryParams.length + 1;
+        const offsetParamIndex = queryParams.length + 2;
+
+        queryText += ` ORDER BY p.id DESC LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}`;
+        queryParams.push(Number(limit), Number(offset));
+
+        const res = await global.pool.query(queryText, queryParams);
+
+        // Расставляем виртуальный флаг IsOnline для строк таблицы, чтобы админ видел зеленую точку прямо в списке
+        const itemsWithOnlineStatus = res.rows.map(player => {
+            const roomKey = `${partnerId}_${player.username}`;
+            return {
+                ...player,
+                is_online: !!(global.onlinePlayers && global.onlinePlayers[roomKey]) // true/false на основе сокетов
+            };
+        });
+
+        return {
+            items: itemsWithOnlineStatus,
             pagination: { page: Number(page), limit: Number(limit), totalItems, totalPages: Math.ceil(totalItems / limit) }
         };
     },

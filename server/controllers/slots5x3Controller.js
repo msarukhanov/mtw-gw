@@ -45,9 +45,6 @@ exports.buyBonus = async (req, res) => {
             return res.status(400).json(debitResult);
         }
 
-        // 2. 5% от покупки идет в изолированный джекпот конкретного партнера
-        state.addJackpot(partnerId, Math.floor(bonusCost * 0.05));
-
         // 3. ГАРАНТИРОВАННЫЙ ВЫИГРЫШ: Генерируем победный символ из пула партнера
         const s = config.symbols;
         const winSymbol = s[state.getRandomInt(s.length)];
