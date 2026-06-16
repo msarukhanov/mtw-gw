@@ -22,6 +22,8 @@
             padding: 15px;
         }
 
+
+
         .game-container {
             width: 100%;
             max-width: 400px;
@@ -279,6 +281,15 @@
             font-size: 15px;
         }
 
+        body.fullscreen {
+            padding: 0;
+        }
+        body.fullscreen .sb-wrapper {
+            padding: 0;
+            margin: 0;
+            max-width: unset;
+            width: 100%;
+        }
 
     </style>
 
@@ -445,6 +456,7 @@
             eventType: urlParams.get('eventType') || null,
             hidePlayer: urlParams.get('hidePlayer') || null,
             hideSidebar: urlParams.get('hideSidebar') || null,
+            fullscreen: urlParams.get('fullscreen') || null,
         };
     }
 
@@ -523,6 +535,9 @@
         }
         if(route.hidePlayer) {
             document.getElementById('player-bar').style.display = 'none';
+        }
+        if(route.fullscreen) {
+            document.body.classList.add('fullscreen');
         }
         applyRouteState();
     }
