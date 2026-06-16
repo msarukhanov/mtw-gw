@@ -287,7 +287,7 @@
 </head>
 <body>
 
-<div class="game-container">
+<div id="player-bar" class="game-container">
     <div class="auth-panel">
         <div id="userInfo">Player: <span id="usernameLabel" style="color:#e94560">Guest</span></div>
         <div>Balance: <span class="balance-value" id="balanceLabel">0</span> 🪙</div>
@@ -309,7 +309,7 @@
 
     <div class="sb-main-layout">
 
-        <div class="sb-sidebar">
+        <div id="sb-sidebar" class="sb-sidebar">
             <!-- Глобальный переключатель Live/Prematch -->
             <div class="sidebar-toggle">
                 <button class="sidebar-toggle-btn active" id="toggleLiveBtn" onclick="setSidebarMode('LIVE')">🔴 LIVE</button>
@@ -440,7 +440,11 @@
             sessionId: urlParams.get('session_id') || globalSessionId,
             sport: urlParams.get('sport') || '⚽ Football', // по умолчанию
             league: urlParams.get('league') || null,
-            matchId: urlParams.get('match') || null
+            matchId: urlParams.get('match') || null,
+
+            eventType: urlParams.get('eventType') || null,
+            hidePlayer: urlParams.get('hidePlayer') || null,
+            hideSidebar: urlParams.get('hideSidebar') || null,
         };
     }
 
@@ -509,6 +513,16 @@
             initSeamlessGame(globalSessionId); // Твой асинхронный логин
         } else {
             updateUIProfile();
+        }
+
+        if(route.eventType) {
+            setSidebarMode(route.eventType);
+        }
+        if(route.hideSidebar) {
+            document.getElementById('sb-sidebar').style.display = 'none';
+        }
+        if(route.hidePlayer) {
+            document.getElementById('player-bar').style.display = 'none';
         }
         applyRouteState();
     }
