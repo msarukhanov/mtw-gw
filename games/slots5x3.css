@@ -138,3 +138,39 @@ body {
 .slots53-btn.fs-active {
     background: var(--btn-bonus-bg, linear-gradient(135deg, #4ecca3, #2b9371));
 }
+
+
+@keyframes characterWinJump {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-30px) scale(1.05); }
+}
+@keyframes characterIdle {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+.char-idle { animation: characterIdle 3s infinite ease-in-out; }
+.char-win { animation: characterWinJump 0.5s ease-in-out; }
+
+.slots53-layout-container {
+    display: flex !important;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 30px;
+    margin: 20px auto;
+    max-width: 1000px;
+}
+
+/* Стили самого бокса персонажа */
+#slotCharacterBox {
+    width: 160px;
+    height: 320px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: bottom center;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+    /* Временная яркая заглушка, чтобы увидеть блок даже без картинки */
+    border: 2px dashed rgba(233, 69, 96, 0.4);
+    background-color: rgba(255, 255, 255, 0.03);
+}
+

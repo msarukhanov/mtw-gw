@@ -238,7 +238,6 @@ function handleUrlRoutingAndStart() {
         changeTab('');
     }
 
-    console.log(urlParams);
     // Если передан токен сессии, запускаем асинхронный бесшовный логин
     if (urlParams.sessionId && urlParams.partnerId) {
         globalSessionId = urlParams.sessionId;
@@ -311,7 +310,4 @@ async function initSeamlessGame(sessionId, partnerId) {
     }
 }
 
-
-
-// ЗАПУСК СИСТЕМЫ: Выполняется мгновенно при чтении скрипта
 handleUrlRoutingAndStart();

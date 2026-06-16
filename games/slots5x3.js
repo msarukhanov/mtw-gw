@@ -10,6 +10,7 @@ let customBackgrounds = {
     game: "",     // Фон контейнера игры
     machine: ""   // Внутренний подкладочный фон слота
 };
+let customCharacterImg = "";
 
 // --- КОНФИГУРАЦИЯ ТЕМАТИКИ СЛОТА (Кастомизируемая часть) ---
 const SLOT_THEME_CONFIG = {
@@ -247,6 +248,8 @@ if (slots53SpinBtn) {
                 slots53Msg.innerText = SLOT_THEME_CONFIG.texts.getWinMessage(data.totalWin, data.hitLines.length);
 
                 slots53Msg.style.color = "#4ecca3";
+
+                triggerCharacterWinAnimation();
 
                 // Проходимся по каждой выигравшей линии и красим её ячейки в неон
                 data.hitLines.forEach(hit => {
@@ -535,7 +538,8 @@ function exportConfigToFile() {
         },
         imgFit: currentImgFit,
         backgrounds: customBackgrounds, // Сохраняем все 3 фона сразу
-        symbolsBlobs: customImages
+        symbolsBlobs: customImages,
+        characterBlob: customCharacterImg
     };
 
     const jsonString = JSON.stringify(exportData, null, 2);
@@ -658,6 +662,22 @@ async function checkUrlParametersAndLoad() {
             // Если файл темы не найден — автомат продолжит работать на дефолтных эмодзи
         }
     }
+
+    const characterName = urlParams.get('character');
+    if (characterName) {
+        // Предполагаем, что картинки персонажей лежат в папке активов сервера
+        customCharacterImg = `./heroes/${characterName}.png`;
+        updateCharacterUI();
+    }
+
+    if(urlParams.get('hidePlayer')) {
+        document.getElementById('player-bar').style.display = 'none';
+    }
+
+    if(urlParams.get('fullscreen')) {
+        document.getElementById('slots53').style.maxWidth = 'unset';
+        document.getElementById('slots53').style.width = '100%';
+    }
 }
 
 // Вспомогательная изолированная функция наката структуры данных из JSON (аналог ручного импорта)
@@ -716,7 +736,57 @@ function applyImportedThemeData(importedData) {
     applySlotTheme();
     initSlots53UI();
     fillConfigInputs();
+
+    if (importedData.characterBlob) {
+        customCharacterImg = importedData.characterBlob;
+    }
+    updateCharacterUI();
 }
+
+function updateCharacterUI() {
+    const charBox = document.getElementById('slotCharacterBox');
+    if (!charBox) return;
+
+    if (customCharacterImg) {
+        charBox.style.backgroundImage = `url(${customCharacterImg})`;
+        charBox.style.display = 'block';
+        charBox.className = 'char-idle'; // запускаем легкое покачивание
+    } else {
+        charBox.style.display = 'none';
+    }
+}
+
+// Функция триггера анимации при победе
+function triggerCharacterWinAnimation() {
+    const charBox = document.getElementById('slotCharacterBox');
+    if (!charBox || !customCharacterImg) return;
+
+    charBox.className = 'char-win';
+    // Через 500мс возвращаем персонажа в состояние покоя
+    setTimeout(() => {
+        if (customCharacterImg) charBox.className = 'char-idle';
+    }, 500);
+}
+
+function handleCharacterLoad() {
+    const fileInput = document.getElementById('characterInput');
+    const preview = document.getElementById('previewCharacter');
+
+    if (fileInput && fileInput.files && fileInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            customCharacterImg = e.target.result;
+            if (preview) {
+                preview.innerText = "";
+                preview.style.backgroundImage = `url(${e.target.result})`;
+            }
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+    }
+}
+
+// Вызовите updateCharacterUI() в самом конце вашей функции saveAndApplyConfig()
+
 
 // Переносим вызов инициализации в самый конец файла
 initConfigPanelUI();
