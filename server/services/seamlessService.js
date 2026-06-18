@@ -98,54 +98,14 @@ module.exports = {
 
             let finalBalance = Number(response.data.balance);
 
-            // 3. 🎰 ИНТЕГРАЦИЯ INSTANT AUTO-CASHBACK (Строго после успешного дебита!)
-            // const cbConfig = partnerConfig.gamification?.cashback || { mode: 'manual', percent: 10 };
-            //
-            // if (cbConfig.mode === 'auto' && Number(cbConfig.percent) > 0) {
-            //     const cashbackAmount = Math.floor(betAmount * (Number(cbConfig.percent) / 100));
-            //
-            //     if (cashbackAmount > 0) {
-            //         try {
-            //             const crypto = require('crypto');
-            //             const cbRoundId = `autocb_${crypto.randomBytes(6).toString('hex')}`;
-            //
-            //             // Вызываем метод CREDIT, чтобы зачислить кэшбэк на внешнюю платформу
-            //             // Передаем баланс игрока, чтобы обновить сессию
-            //             const creditResult = await module.exports.credit(
-            //                 username,
-            //                 partnerId,
-            //                 sessionId,
-            //                 cashbackAmount,
-            //                 `Instant Auto-Cashback ${cbConfig.percent}%`,
-            //                 cbRoundId
-            //             );
-            //
-            //             // Если платформа успешно приняла кэшбэк, обновляем итоговый баланс для игры
-            //             if (creditResult && creditResult.balance !== undefined) {
-            //                 finalBalance = Number(creditResult.balance);
-            //             }
-            //
-            //             // Пишем лог авто-кэшбэка в нашу реляционную историю player_history в Postgres
-            //             await global.pool.query(
-            //                 `INSERT INTO player_history (username, partner_id, category, action_type, description, amount_change)
-            //              VALUES ($1, $2, 'system', 'cashback', $3, $4)`,
-            //                 [username, partnerId, `Instant ${cbConfig.percent}% auto-cashback for bet in ${gameName}`, cashbackAmount]
-            //             );
-            //
-            //         } catch (cbErr) {
-            //             console.error(`❌ [Auto-Cashback Payout Failed] for ${username}:`, cbErr.message);
-            //         }
-            //     }
-            // }
-
-            // [ВСТАВИТЬ ВНУТРЬ СЕРВИСА seamless.debit СТРОГО ПОСЛЕ УСПЕШНОГО ОТВЕТА AXIOS ПЛАТФОРМЫ ПАРТНЕРА]
-// finalBalance — это баланс, который вернула витрина после списания ставки
+            const client = await global.pool.connect();
 
             try {
-                await global.pool.query('BEGIN');
+                // Все запросы внутри транзакции делаем через client, а не через global.pool
+                await client.query('BEGIN');
 
-                // Запрашиваем текущий вейджер и бонусный кошелек игрока
-                const pQuery = await global.pool.query(
+                // Запрашиваем текущий вейджер и бонусный кошелек игрока с блокировкой строки
+                const pQuery = await client.query(
                     'SELECT bonus_balance, wager_left, balance FROM players WHERE username = $1 AND partner_id = $2 FOR UPDATE',
                     [username, partnerId]
                 );
@@ -155,17 +115,15 @@ module.exports = {
                     let currentBonus = Number(pData.bonus_balance);
                     let currentWagerLeft = Number(pData.wager_left);
 
-                    // 1. Если у игрока есть активный вейджер — уменьшаем его на сумму сделанной ставки!
+                    // 1. Если у игрока есть активный вейджер — уменьшаем его на сумму сделанной ставки
                     if (currentWagerLeft > 0) {
                         currentWagerLeft = Math.max(0, currentWagerLeft - betAmount);
 
                         // 2. ТРИГГЕР: Проверяем, откручен ли вейджер в 0 прямо сейчас?
                         if (currentWagerLeft === 0 && currentBonus > 0) {
-                            // Вейджер полностью отыгран! Переносим бонусные деньги в реальный баланс
-                            // Для этого мы делаем фоновый CREDIT на внешнюю витрину партнера через seamless шлюз
-
                             const wagerCompleteRoundId = `wg_comp_${crypto.randomBytes(6).toString('hex')}`;
 
+                            // Внешний API запрос (делается параллельно, пока строка в БД заблокирована)
                             const creditResult = await module.exports.credit(
                                 username, partnerId, sessionId, currentBonus,
                                 `Welcome Bonus Wager Completed - Funds Unlocked!`, wagerCompleteRoundId
@@ -176,7 +134,7 @@ module.exports = {
                             }
 
                             // Логируем триумф в историю активности
-                            await global.pool.query(
+                            await client.query(
                                 `INSERT INTO player_history (username, partner_id, category, action_type, description, amount_change)
                      VALUES ($1, $2, 'system', 'wager_unlock', $3, $4)`,
                                 [username, partnerId, `🎉 Congratulations! Welcome bonus fully wagered. Funds converted to real balance!`, currentBonus]
@@ -186,7 +144,7 @@ module.exports = {
                         }
 
                         // Записываем обновленные балансы и остаток вейджера в PostgreSQL
-                        await global.pool.query(
+                        await client.query(
                             `UPDATE players 
                  SET bonus_balance = $1, 
                      wager_left = $2, 
@@ -197,12 +155,18 @@ module.exports = {
                     }
                 }
 
-                await global.pool.query('COMMIT');
+                await client.query('COMMIT');
             } catch (dbErr) {
-                await global.pool.query('ROLLBACK');
+                // В случае ошибки откатываем транзакцию назад
+                try {
+                    await client.query('ROLLBACK');
+                } catch (rollbackErr) {
+                    console.error("❌ Не удалось сделать ROLLBACK:", rollbackErr.message);
+                }
                 console.error("❌ Ошибка процессинга вейджера в дебите:", dbErr.message);
             } finally {
-                global.pool.release();
+                // 2. Обязательно освобождаем клиента и возвращаем его в пул
+                client.release();
             }
 
 
