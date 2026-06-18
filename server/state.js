@@ -147,94 +147,12 @@ const playerMethods = {
         }
     },
 
-    // Проверьте, чтобы в вашем файле этот метод выглядел так:
-    getOrCreatePlayer222: async (username, partnerId, fetchPlatformBalance = null, domainName = 'localhost') => {
-        let res = await global.pool.query('SELECT * FROM players WHERE username = $1 AND partner_id = $2 LIMIT 1', [username, partnerId]);
-
-        let player = res.rowCount > 0 ? res.rows[0] : null;
-
-        const siteRes = await client.query(
-            'SELECT id, currency_settings FROM b2b_websites WHERE partner_id = $1 AND domain_name = $2 AND is_active = 1 LIMIT 1',
-            [partnerId, domainName.toLowerCase()]
-        );
-
-        let curCfg = { supported_currencies: ["USD"], default_currency: "USD" };
-        if (siteRes.rowCount > 0 && siteRes.rows[0].currency_settings) {
-            curCfg = typeof siteRes.rows[0].currency_settings === 'string'
-                ? JSON.parse(siteRes.rows[0].currency_settings)
-                : siteRes.rows[0].currency_settings;
-        }
-        const supportedCurrencies = curCfg.supported_currencies || ["USD"];
-        const defaultCurrency = curCfg.default_currency || "USD";
-
-        if (!player) {
-            let initialBalance = 0;
-            if (typeof fetchPlatformBalance === 'function') {
-                try {
-                    const platformData = await fetchPlatformBalance(username, partnerId);
-                    if (platformData && platformData.balance !== undefined) initialBalance = Number(platformData.balance);
-                } catch (err) {
-                    console.error(`[Postgres B2B] Failed platform balance sync:`, err.message);
-                }
-            }
-
-            const insertRes = await global.pool.query(
-                `INSERT INTO players (username, partner_id, balance, daily_quests, used_promos, tournament_points, bonus_balance, wager_total, wager_left) 
-                 VALUES ($1, $2, $3, '{"gamesPlayed": 0, "claimed": false}'::jsonb, '{}'::jsonb, 0, 0.00, 0.00, 0.00) RETURNING *`,
-                [username, partnerId, initialBalance]
-            );
-            player = insertRes.rows[0];
-        }
-
-        for (const currency of supportedCurrencies) {
-            // Пытаемся создать кошелек, если его еще нет (благодаря ON CONFLICT DO NOTHING база не выдаст ошибку)
-            const isDefault = (currency === player.current_currency);
-            const startBal = isDefault ? Number(player.balance) : 0.00;
-            const startBonus = isDefault ? Number(player.bonus_balance) : 0.00;
-            const startWager = isDefault ? Number(player.wager_left) : 0.00;
-
-            await global.pool.query(`
-                    INSERT INTO player_wallets (partner_id, username, currency, balance, bonus_balance, wager_left)
-                    VALUES ($1, $2, $3, $4, $5, $6)
-                    ON CONFLICT (partner_id, username, currency) DO NOTHING
-                `, [partnerId, username, currency, startBal, startBonus, startWager]);
-        }
-
-        player.dailyQuests = typeof player.daily_quests === 'string' ? JSON.parse(player.daily_quests) : player.daily_quests;
-        player.usedPromos = typeof player.used_promos === 'string' ? JSON.parse(player.used_promos) : player.used_promos;
-        player.tournamentPoints = Number(player.tournament_points);
-
-        // Читаем новые бонусные поля
-        player.realBalance = Number(player.balance);
-        player.bonusBalance = Number(player.bonus_balance || 0);
-        player.wagerLeft = Number(player.wager_left || 0);
-
-        // 💎 ГЛАВНОЕ: Вычисляем суммарный доступный баланс для игры
-        player.balance = Number(player.realBalance + player.bonusBalance);
-
-        player.history = [];
-
-        const unreadCountRes = await global.pool.query(
-            `SELECT COUNT(id)::int as count FROM player_notifications WHERE partner_id = $1 AND username = $2 AND is_read = false`,
-            [partnerId, player.username]
-        );
-        const unreadNotifyCount = unreadCountRes.rows[0]?.count || 0;
-
-        const memKey = `${partnerId}_${username}`;
-        if (!activeTickets[memKey]) activeTickets[memKey] = [];
-        player.tickets = activeTickets[memKey];
-
-        player.unreadNotifications = unreadNotifyCount;
-
-        return player;
-    },
-
     updateBalance: async (username, partnerId, delta = 0) => {
         const client = await global.pool.connect();
         try {
             await client.query('BEGIN');
 
-            if(delta) {
+            if (delta) {
                 delta = Number(delta);
             }
 
@@ -252,30 +170,41 @@ const playerMethods = {
             const player = pRes.rows[0];
             const oldReal = Number(player.balance);
             const oldBonus = Number(player.bonus_balance);
+            let finalReal = Number(player.balance || 0);
             let bonusBalance = Number(player.bonus_balance || 0);
             let wagerLeft = Number(player.wager_left || 0);
 
-            let finalReal = Number(player.balance);
-
-            // Вычисляем дельту изменения: если > 0, это выигрыш/депозит (Credit), если < 0, это ставка (Debit)
-            // const delta = finalReal - oldReal;
-
             if (delta < 0) {
                 // --- СЦЕНАРИЙ А: Списание (Debit / Ставка) ---
-                const betAmount = Math.abs(delta);
+                let betAmount = Math.abs(delta);
 
-                // Если вейджер активен — уменьшаем его на сумму ставки
+                // Проверка: достаточно ли общих средств для ставки
+                if ((finalReal + bonusBalance) < betAmount) {
+                    await client.query('ROLLBACK');
+                    throw new Error('Insufficient funds');
+                }
+
+                // 1. Списание средств (Сначала реальные, затем бонусные)
+                if (finalReal >= betAmount) {
+                    finalReal -= betAmount;
+                } else {
+                    betAmount -= finalReal;
+                    finalReal = 0;
+                    bonusBalance -= betAmount;
+                }
+
+                // 2. Прогресс вейджера (Учитываем полную сумму ставки, если вейджер активен)
                 if (wagerLeft > 0) {
-                    wagerLeft = Math.max(0, wagerLeft - betAmount);
+                    const originalBet = Math.abs(delta);
+                    wagerLeft = Math.max(0, wagerLeft - originalBet);
 
-                    // ТРИГГЕР: Если вейджер откручен в 0 — переносим бонусы в реальный баланс!
+                    // ТРИГГЕР: Если вейджер откручен в 0 — переносим оставшиеся бонусы в реальный баланс
                     if (wagerLeft === 0 && bonusBalance > 0) {
                         finalReal += bonusBalance;
 
-                        // Записываем лог разблокировки в player_history
                         await client.query(
                             `INSERT INTO player_history (username, partner_id, category, action_type, description, amount_change)
-                             VALUES ($1, $2, 'system', 'wager_unlock', '🎉 Welcome bonus successfully wagered! Funds converted to real balance.', $3)`,
+                     VALUES ($1, $2, 'system', 'wager_unlock', '🎉 Welcome bonus successfully wagered! Funds converted to real balance.', $3)`,
                             [username, partnerId, bonusBalance]
                         );
 
@@ -283,10 +212,6 @@ const playerMethods = {
                     }
                 }
 
-                // [ВСТАВИТЬ В КОНЕЦ МЕТОДА updateBalance ПЕРЕД ТРАНЗАКЦИОННЫМ COMMIT]
-
-
-                // [ВСТАВИТЬ ВНУТРЬ updateBalance ИМЕННО ВНУТРЬ БЛОКА if (delta < 0) ПОСЛЕ ОБСЛУЖИВАНИЯ ВЕЙДЖЕРА]
                 try {
                     const betAmount = Math.abs(delta);
 
@@ -446,15 +371,18 @@ const playerMethods = {
                     console.error("❌ Progressive Jackpot increment loop crashed:", jkErr.message);
                 }
             }
-            else if (delta > 0 && wagerLeft > 0) {
-                // --- СЦЕНАРИЙ Б: Начисление при активном вейджере (Credit / Выигрыш) ---
-                // Так как вейджер еще не откручен, выигрыш не должен идти в реал!
-                // Отменяем изменение реального баланса и перенаправляем весь выигрыш в бонусы
-                finalReal = oldReal;
-                bonusBalance += delta;
+            else if (delta > 0) {
+                // --- СЦЕНАРИЙ Б: Начисление (Credit / Выигрыш) ---
+                if (wagerLeft > 0) {
+                    // Если вейджер активен, выигрыш идет на бонусный баланс
+                    bonusBalance += delta;
+                } else {
+                    // Если вейджера нет, выигрыш идет на реальный баланс
+                    finalReal += delta;
+                }
             }
 
-            if((finalReal !== oldReal) || (bonusBalance !== bonusBalance)) {
+            if((finalReal !== oldReal) || (bonusBalance !== oldBonus)) {
                 // 2. Делаем ОДИН единственный и финальный UPDATE в базу данных
                 // 1. Сначала обновляем "горячий кэш" в таблице игроков (остается твой запрос)
                 const updateRes = await client.query(
@@ -469,14 +397,14 @@ const playerMethods = {
                 // Записываем новые значения реала, бонуса и вейджера строго для текущей активной валюты игрока [INDEX].
                 // Благодаря ON CONFLICT, если кошелька вдруг не было, база его создаст, исключая любые баги [INDEX].
                 await client.query(`
-                INSERT INTO player_wallets (partner_id, username, currency, balance, bonus_balance, wager_left)
-                VALUES ($1, $2, $3, $4, $5, $6)
-                ON CONFLICT (partner_id, username, currency) 
-                DO UPDATE SET 
-                    balance = EXCLUDED.balance, 
-                    bonus_balance = EXCLUDED.bonus_balance, 
-                    wager_left = EXCLUDED.wager_left
-            `, [partnerId, username, player.current_currency, finalReal, bonusBalance, wagerLeft]);
+                    INSERT INTO player_wallets (partner_id, username, currency, balance, bonus_balance, wager_left)
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                    ON CONFLICT (partner_id, username, currency) 
+                    DO UPDATE SET 
+                        balance = EXCLUDED.balance, 
+                        bonus_balance = EXCLUDED.bonus_balance, 
+                        wager_left = EXCLUDED.wager_left
+                `, [partnerId, username, player.current_currency, finalReal, bonusBalance, wagerLeft]);
 
                 if(delta !== 0) {
                     try {

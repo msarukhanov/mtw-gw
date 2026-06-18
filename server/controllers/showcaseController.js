@@ -188,9 +188,9 @@ exports.debit = async (req, res) => {
 
         const upd = await state.updateBalance(realUsername, partnerId, -1*Number(amount));
 
-        // Тянем свежие данные из апдейта для корректного ответа игре
-        const updatedPlayer = upd.rows[0];
-        const totalPlayable = Number(updatedPlayer.balance) + Number(updatedPlayer.bonus_balance);
+        // // Тянем свежие данные из апдейта для корректного ответа игре
+        // const updatedPlayer = upd.rows[0];
+        // const totalPlayable = Number(updatedPlayer.balance) + Number(updatedPlayer.bonus_balance);
 
      //    if(round_id || game_code) {
      //        const roundId = req.body.round_id || `rnd_${crypto.randomBytes(6).toString('hex')}`;
@@ -204,7 +204,7 @@ exports.debit = async (req, res) => {
      //        );
      //    }
 
-        res.json({ balance: totalPlayable });
+        res.json(upd);
     } catch (err) {
         res.status(500).json({ error: "Debit processing failed" });
     }
@@ -222,9 +222,9 @@ exports.credit = async (req, res) => {
         const player = await state.getOrCreatePlayer(realUsername, partnerId);
 
         const upd = await state.updateBalance(realUsername, partnerId, Number(amount));
-
-        const updatedPlayer = upd.rows[0];
-        const totalPlayable = Number(updatedPlayer.balance) + Number(updatedPlayer.bonus_balance);
+        //
+        // const updatedPlayer = upd.rows[0];
+        // const totalPlayable = Number(updatedPlayer.balance) + Number(updatedPlayer.bonus_balance);
 
         // const roundId = req.body.round_id;
         //
@@ -237,7 +237,7 @@ exports.credit = async (req, res) => {
         //     );
         // }
 
-        res.json({ balance: totalPlayable });
+        res.json(upd);
     } catch (err) {
         res.status(500).json({ error: "Credit processing failed" });
     }
