@@ -186,11 +186,7 @@ exports.debit = async (req, res) => {
             return res.status(400).json({ error: "Insufficient funds" });
         }
 
-        // Вычисляем гипотетический новый реальный баланс и скармливаем функции
-        const newBalance = Number(player.balance) - Number(amount);
-
-        // Умная функция сама пересчитает остатки бонусов, вейджера и обновит СУБД за 1 раз!
-        const upd = await state.updateBalance(realUsername, partnerId, newBalance);
+        const upd = await state.updateBalance(realUsername, partnerId, -1*Number(amount));
 
         // Тянем свежие данные из апдейта для корректного ответа игре
         const updatedPlayer = upd.rows[0];
@@ -225,11 +221,7 @@ exports.credit = async (req, res) => {
     try {
         const player = await state.getOrCreatePlayer(realUsername, partnerId);
 
-        // Просто прибавляем выигрыш к текущему реалу
-        const newBalance = Number(player.balance) + Number(amount);
-
-        // Функция сама увидит, что идет плюс. Если вейджер > 0, она заблокирует реал и переведет профит в бонус!
-        const upd = await state.updateBalance(realUsername, partnerId, newBalance);
+        const upd = await state.updateBalance(realUsername, partnerId, Number(amount));
 
         const updatedPlayer = upd.rows[0];
         const totalPlayable = Number(updatedPlayer.balance) + Number(updatedPlayer.bonus_balance);

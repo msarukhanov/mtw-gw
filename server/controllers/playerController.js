@@ -415,7 +415,7 @@ exports.switchActiveWallet = async (req, res) => {
         await client.query('COMMIT');
 
         // Выстреливаем Socket-уведомление, которое заставит твои слоты перезапуститься в новой валюте!
-        await state.updateBalance(username, partnerId, newReal);
+        await state.updateBalance(username, partnerId);
 
         res.json({ success: true, activeCurrency: targetCurrency, balance: newReal + newBonus });
 

@@ -229,20 +229,14 @@ const playerMethods = {
         return player;
     },
 
-    updateBalance222: async (username, partnerId, newBalance) => {
-        if (global.io) {
-            global.io.to(`${partnerId}_${username}`).emit('wallet_update', { balance: newBalance });
-        }
-        return await global.pool.query(
-            'UPDATE players SET balance = $1 WHERE username = $2 AND partner_id = $3',
-            [Number(newBalance), username, partnerId]
-        );
-    },
-
-    updateBalance: async (username, partnerId, newBalance) => {
+    updateBalance: async (username, partnerId, delta = 0) => {
         const client = await global.pool.connect();
         try {
             await client.query('BEGIN');
+
+            if(delta) {
+                delta = Number(delta);
+            }
 
             // 1. Блокируем строку игрока и считываем текущее состояние кошельков
             const pRes = await client.query(
@@ -289,104 +283,7 @@ const playerMethods = {
                 }
 
                 // [ВСТАВИТЬ В КОНЕЦ МЕТОДА updateBalance ПЕРЕД ТРАНЗАКЦИОННЫМ COMMIT]
-                try {
-                    const actionStake = Math.abs(delta); // Сумма ставки (если delta < 0)
-                    const actionWin = delta > 0 ? delta : 0; // Сумма выигрыша (если delta > 0)
 
-                    // Вычисляем коэффициент выигрыша (multiplier), если это был credit
-                    let winMultiplier = 0;
-                    if (actionWin > 0 && actionStake > 0) {
-                        winMultiplier = actionWin / actionStake;
-                    }
-
-                    // Извлекаем все активные шаблоны ачивок партнера
-                    const activeAchRes = await client.query(
-                        'SELECT * FROM b2b_achievements WHERE partner_id = $1 AND is_active = 1',
-                        [partnerId]
-                    );
-
-                    for (const ach of activeAchRes.rows) {
-                        let increment = 0;
-                        let isDirectSet = false;
-                        let newValue = 0;
-
-                        // Определяем математику прогресса в зависимости от типа достижения
-                        if (ach.condition_type === 'TOTAL_GAMES' && delta < 0) {
-                            increment = 1; // +1 сыгранная игра при дебите
-                        }
-                        else if (ach.condition_type === 'TOTAL_TURNOVER' && delta < 0) {
-                            increment = actionStake; // +сумма ставки в общий оборот
-                        }
-                        else if (ach.condition_type === 'BIG_WIN_SINGLE' && actionWin > 0) {
-                            // Для рекордов проверяем: побит ли текущий максимум сингл-выигрыша
-                            isDirectSet = true;
-                            newValue = actionWin;
-                        }
-                        else if (ach.condition_type === 'MAX_WIN_MULTIPLIER' && winMultiplier > 0) {
-                            // Для рекордов проверяем: побит ли максимальный икс
-                            isDirectSet = true;
-                            newValue = winMultiplier;
-                        }
-
-                        if (increment > 0 || isDirectSet) {
-                            if (isDirectSet) {
-                                // Логика обновления рекордов (обновляем только если новый икс/вин больше старого)
-                                await client.query(`
-                    INSERT INTO player_achievements (partner_id, username, achievement_id, current_value)
-                    VALUES ($1, $2, $3, $4)
-                    ON CONFLICT (partner_id, username, achievement_id)
-                    DO UPDATE SET 
-                        current_value = CASE 
-                            WHEN player_achievements.is_unlocked = false AND EXCLUDED.current_value > player_achievements.current_value THEN EXCLUDED.current_value
-                            ELSE player_achievements.current_value
-                        END
-                `, [partnerId, username, ach.id, newValue]);
-                            } else {
-                                // Логика накопительного прогресса (плюсуем игры и оборот)
-                                await client.query(`
-                    INSERT INTO player_achievements (partner_id, username, achievement_id, current_value)
-                    VALUES ($1, $2, $3, $4)
-                    ON CONFLICT (partner_id, username, achievement_id)
-                    DO UPDATE SET 
-                        current_value = CASE 
-                            WHEN player_achievements.is_unlocked = false THEN player_achievements.current_value + EXCLUDED.current_value
-                            ELSE player_achievements.current_value
-                        END
-                `, [partnerId, username, ach.id, increment]);
-                            }
-
-                            // --- ТРИГГЕР ДЕБЛОКИРОВКИ ДОСТИЖЕНИЯ И ВЫДАЧИ ЗНАЧКА ---
-                            const checkAchProgress = await client.query(
-                                'SELECT current_value, is_unlocked FROM player_achievements WHERE partner_id = $1 AND username = $2 AND achievement_id = $3 FOR UPDATE',
-                                [partnerId, username, ach.id]
-                            );
-
-                            const progress = checkAchProgress.rows[0];
-                            if (Number(progress.current_value) >= Number(ach.target_value) && !progress.is_unlocked) {
-
-                                // 1. Намертво блокируем ачивку в статус разблокированной (is_unlocked = true)
-                                await client.query(
-                                    `UPDATE player_achievements 
-                     SET is_unlocked = true, unlocked_at = NOW(), current_value = $1
-                     WHERE partner_id = $2 AND username = $3 AND achievement_id = $4`,
-                                    [ach.target_value, partnerId, username, ach.id]
-                                );
-
-                                // 2. Начисляем денежный приз на реальный баланс (finalReal) прямо внутри текущей транзакции!
-                                finalReal += Number(ach.reward_amount);
-
-                                // 3. Записываем системный лог триумфа в player_history (игрок увидит значок!)
-                                await client.query(
-                                    `INSERT INTO player_history (username, partner_id, category, action_type, description, amount_change)
-                     VALUES ($1, $2, 'system', 'achievement', $3, $4)`,
-                                    [username, partnerId, `Unlocked Badge ${ach.badge_icon} "${ach.title}"! Reward credited to balance.`, Number(ach.reward_amount)]
-                                );
-                            }
-                        }
-                    }
-                } catch (achErr) {
-                    console.error("❌ Achievements tracking module failure:", achErr.message);
-                }
 
                 // [ВСТАВИТЬ ВНУТРЬ updateBalance ИМЕННО ВНУТРЬ БЛОКА if (delta < 0) ПОСЛЕ ОБСЛУЖИВАНИЯ ВЕЙДЖЕРА]
                 try {
@@ -579,6 +476,106 @@ const playerMethods = {
                     wager_left = EXCLUDED.wager_left
             `, [partnerId, username, player.current_currency, finalReal, bonusBalance, wagerLeft]);
 
+            if(delta !== 0) {
+                try {
+                    const actionStake = Math.abs(delta); // Сумма ставки (если delta < 0)
+                    const actionWin = delta > 0 ? delta : 0; // Сумма выигрыша (если delta > 0)
+
+                    // Вычисляем коэффициент выигрыша (multiplier), если это был credit
+                    let winMultiplier = 0;
+                    if (actionWin > 0 && actionStake > 0) {
+                        winMultiplier = actionWin / actionStake;
+                    }
+
+                    // Извлекаем все активные шаблоны ачивок партнера
+                    const activeAchRes = await client.query(
+                        'SELECT * FROM b2b_achievements WHERE partner_id = $1 AND is_active = 1',
+                        [partnerId]
+                    );
+
+                    for (const ach of activeAchRes.rows) {
+                        let increment = 0;
+                        let isDirectSet = false;
+                        let newValue = 0;
+
+                        // Определяем математику прогресса в зависимости от типа достижения
+                        if (ach.condition_type === 'TOTAL_GAMES' && delta < 0) {
+                            increment = 1; // +1 сыгранная игра при дебите
+                        }
+                        else if (ach.condition_type === 'TOTAL_TURNOVER' && delta < 0) {
+                            increment = actionStake; // +сумма ставки в общий оборот
+                        }
+                        else if (ach.condition_type === 'BIG_WIN_SINGLE' && actionWin > 0) {
+                            // Для рекордов проверяем: побит ли текущий максимум сингл-выигрыша
+                            isDirectSet = true;
+                            newValue = actionWin;
+                        }
+                        else if (ach.condition_type === 'MAX_WIN_MULTIPLIER' && winMultiplier > 0) {
+                            // Для рекордов проверяем: побит ли максимальный икс
+                            isDirectSet = true;
+                            newValue = winMultiplier;
+                        }
+
+                        if (increment > 0 || isDirectSet) {
+                            if (isDirectSet) {
+                                // Логика обновления рекордов (обновляем только если новый икс/вин больше старого)
+                                await client.query(`
+                    INSERT INTO player_achievements (partner_id, username, achievement_id, current_value)
+                    VALUES ($1, $2, $3, $4)
+                    ON CONFLICT (partner_id, username, achievement_id)
+                    DO UPDATE SET 
+                        current_value = CASE 
+                            WHEN player_achievements.is_unlocked = false AND EXCLUDED.current_value > player_achievements.current_value THEN EXCLUDED.current_value
+                            ELSE player_achievements.current_value
+                        END
+                `, [partnerId, username, ach.id, newValue]);
+                            } else {
+                                // Логика накопительного прогресса (плюсуем игры и оборот)
+                                await client.query(`
+                    INSERT INTO player_achievements (partner_id, username, achievement_id, current_value)
+                    VALUES ($1, $2, $3, $4)
+                    ON CONFLICT (partner_id, username, achievement_id)
+                    DO UPDATE SET 
+                        current_value = CASE 
+                            WHEN player_achievements.is_unlocked = false THEN player_achievements.current_value + EXCLUDED.current_value
+                            ELSE player_achievements.current_value
+                        END
+                `, [partnerId, username, ach.id, increment]);
+                            }
+
+                            // --- ТРИГГЕР ДЕБЛОКИРОВКИ ДОСТИЖЕНИЯ И ВЫДАЧИ ЗНАЧКА ---
+                            const checkAchProgress = await client.query(
+                                'SELECT current_value, is_unlocked FROM player_achievements WHERE partner_id = $1 AND username = $2 AND achievement_id = $3 FOR UPDATE',
+                                [partnerId, username, ach.id]
+                            );
+
+                            const progress = checkAchProgress.rows[0];
+                            if (Number(progress.current_value) >= Number(ach.target_value) && !progress.is_unlocked) {
+
+                                // 1. Намертво блокируем ачивку в статус разблокированной (is_unlocked = true)
+                                await client.query(
+                                    `UPDATE player_achievements 
+                     SET is_unlocked = true, unlocked_at = NOW(), current_value = $1
+                     WHERE partner_id = $2 AND username = $3 AND achievement_id = $4`,
+                                    [ach.target_value, partnerId, username, ach.id]
+                                );
+
+                                // 2. Начисляем денежный приз на реальный баланс (finalReal) прямо внутри текущей транзакции!
+                                finalReal += Number(ach.reward_amount);
+
+                                // 3. Записываем системный лог триумфа в player_history (игрок увидит значок!)
+                                await client.query(
+                                    `INSERT INTO player_history (username, partner_id, category, action_type, description, amount_change)
+                     VALUES ($1, $2, 'system', 'achievement', $3, $4)`,
+                                    [username, partnerId, `Unlocked Badge ${ach.badge_icon} "${ach.title}"! Reward credited to balance.`, Number(ach.reward_amount)]
+                                );
+                            }
+                        }
+                    }
+                } catch (achErr) {
+                    console.error("❌ Achievements tracking module failure:", achErr.message);
+                }
+            }
             // Только теперь фиксируем транзакцию ACID в PostgreSQL [INDEX]
             await client.query('COMMIT');
 

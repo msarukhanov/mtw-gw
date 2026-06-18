@@ -75,7 +75,7 @@ exports.updateBalance = async (req, res) => {
         if (username && balance !== undefined) {
             // Внимание: Обновляется только локальный кэш Postgres.
             // Для реального изменения требуется интеграция с кошельком вашей витрины!
-            await state.updateBalance(username, partnerId, Number(balance));
+            await state.updateBalance(username, partnerId);
 
             console.warn(`⚠️ [Admin API] Локальный кэш баланса игрока ${username} изменен на ${balance}. Помните, что бесшовный кошелек может перезаписать это значение при следующем игровом раунде.`);
             res.json({ success: true, warning: "Local cache updated. Seamless wallet may overwrite this value on next spin." });

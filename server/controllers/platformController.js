@@ -21,7 +21,7 @@ exports.debit = async (req, res) => {
         if (player.balance < amount) return res.status(400).json({ error: "Low platform balance" });
 
         const newBalance = player.balance - Number(amount);
-        await state.updateBalance(username, "demo_mtwtech", newBalance);
+        await state.updateBalance(username, "demo_mtwtech", -1*Number(amount));
 
         res.json({ balance: newBalance });
     } catch (err) {
@@ -35,7 +35,7 @@ exports.credit = async (req, res) => {
     try {
         const player = await state.getOrCreatePlayer(username, "demo_mtwtech");
         const newBalance = player.balance + Number(amount);
-        await state.updateBalance(username, "demo_mtwtech", newBalance);
+        await state.updateBalance(username, "demo_mtwtech", -1*Number(amount));
 
         res.json({ balance: newBalance });
     } catch (err) {

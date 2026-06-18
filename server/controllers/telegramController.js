@@ -187,11 +187,7 @@ exports.authTelegramWebApp = async (req, res) => {
             const player = await state.getOrCreatePlayer(finalUsername, partnerId);
             player.sessionId = sessionId;
 
-            // Извлекаем чистый текущий баланс игрока из Postgres
-            const currentRealBalance = Number(player.balance || 0);
-
-            // Синхронизируем UI платформы и выстреливаем WebSockets wallet_update [INDEX]
-            await state.updateBalance(player.username, partnerId, currentRealBalance);
+            await state.updateBalance(player.username, partnerId);
 
             player.realBalance = Number(player.balance);
             player.bonusBalance = Number(player.bonus_balance || 0);

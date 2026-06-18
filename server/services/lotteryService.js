@@ -124,7 +124,7 @@ async function runGlobalDraw(io, partnerIds) {
             const finalBalance = player.balance + playerTotalWin;
 
             // ИСПРАВЛЕНО: Все сохранения баланса и истории завязаны на пару player.username + partnerId
-            await state.updateBalance(player.username, partnerId, finalBalance);
+            await state.updateBalance(player.username, partnerId, Number(playerTotalWin));
             await state.savePlayerActionHistory(player.username, partnerId, {
                 game: "Lottery Draw",
                 details: `Drawn: [ ${winningNumbers.join(', ')} ]. Matched in ${player.tickets.length} tickets`,
@@ -140,7 +140,6 @@ async function runGlobalDraw(io, partnerIds) {
                 winningNumbers,
                 ticketsResults,
                 totalPrize: playerTotalWin,
-                newBalance: finalBalance
             });
         }
 

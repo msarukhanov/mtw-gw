@@ -224,8 +224,7 @@ async function startWheelSpin(io, partnerIds) {
                     if (!VIRTUAL_NAMES.includes(username)) {
                         let player = state.getPlayer(username, partnerId);
                         if (player) {
-                            player.balance += winAmount;
-                            await state.updateBalance(username, partnerId, player.balance);
+                            await state.updateBalance(username, partnerId, Number(winAmount));
                         }
                         // Минусуем выигрыш из банка партнера
                         reduceRouletteBank(partnerId, winAmount);
