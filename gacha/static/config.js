@@ -1361,7 +1361,7 @@ const gamesConfigDB = {
                     box_width: "80%",
                     box_height: "auto",
                     box_top: "unset",
-                    box_bottom: "5vh",
+                    box_bottom: "5dvh",
                     box_left: "10%",
                     box_padding: "20px",
                     box_backgroundColor: "rgba(10, 10, 10, 0.9)",

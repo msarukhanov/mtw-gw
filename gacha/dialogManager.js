@@ -60,13 +60,13 @@ export const DialogManager = {
         const sizes = isLandscape ? `
             top: 0; 
             left: 0;
-            width: 100vw;
-            height: 100vh;
+            width: 100dvw;
+            height: 100dvh;
         ` : `
             top: 50%;
             left: 50%;
-            width: 100vh;
-            height: 100vw;
+            width: 100dvh;
+            height: 100dvw;
             transform: translate(-50%, -50%) rotate(90deg);
             transform-origin: center;
         `;
@@ -87,7 +87,7 @@ export const DialogManager = {
             overlayStyle = `
                 position: fixed;
                 top: 0; left: 0;
-                width: 100vw; height: 100vh;
+                width: 100dvw; height: 100dvh;
                 background: transparent;
                 z-index: 150;
                 pointer-events: none;

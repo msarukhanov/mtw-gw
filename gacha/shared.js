@@ -199,10 +199,10 @@ export function updateBackground222(state, config) {
 
     // Функция сброса в стандартный фолбэк (100% экрана, скролл отключен)
     const resetToFullscreen = () => {
-        bgImg.style.width = '100vw';
-        bgImg.style.height = '100vh';
-        bgElement.style.width = '100vw';
-        bgElement.style.height = '100vh';
+        bgImg.style.width = '100dvw';
+        bgImg.style.height = '100dvh';
+        bgElement.style.width = '100dvw';
+        bgElement.style.height = '100dvh';
     };
 
     if (hasImage) {
@@ -224,18 +224,18 @@ export function updateBackground222(state, config) {
 
             if (state === 'MAIN_MENU') {
                 if (orientation === 'landscape') {
-                    // --- ЛАНДШАФТ: Высота 100vh, ширина зависит от пропорций картинки ---
-                    // Вычисляем физическую ширину в пикселях, которую должна занять картинка при высоте 100vh
+                    // --- ЛАНДШАФТ: Высота 100dvh, ширина зависит от пропорций картинки ---
+                    // Вычисляем физическую ширину в пикселях, которую должна занять картинка при высоте 100dvh
                     const calculatedWidthPx = window.innerHeight * imgAspectRatio;
 
-                    // Переводим пиксели в точный, честныйvw
+                    // Переводим пиксели в точный, честныйdvw
                     const targetVw = (calculatedWidthPx / window.innerWidth) * 100;
-                    const targetWidthStr = `${targetVw}vw`;
+                    const targetWidthStr = `${targetVw}dvw`;
 
                     bgImg.style.width = targetWidthStr;
-                    bgImg.style.height = '100vh';
+                    bgImg.style.height = '100dvh';
                     bgElement.style.width = targetWidthStr;
-                    bgElement.style.height = '100vh';
+                    bgElement.style.height = '100dvh';
 
                     // Центрируем нативный скролл wrapper'а
                     requestAnimationFrame(() => {
@@ -246,17 +246,17 @@ export function updateBackground222(state, config) {
                         });
                     });
                 } else {
-                    // --- ПОРТРЕТ: Ширина 100vw, высота зависит от пропорций картинки ---
-                    // Вычисляем физическую высоту в пикселях при ширине 100vw
+                    // --- ПОРТРЕТ: Ширина 100dvw, высота зависит от пропорций картинки ---
+                    // Вычисляем физическую высоту в пикселях при ширине 100dvw
                     const calculatedHeightPx = window.innerWidth / imgAspectRatio;
 
-                    // Переводим пиксели в честный vh
+                    // Переводим пиксели в честный dvh
                     const targetVh = (calculatedHeightPx / window.innerHeight) * 100;
-                    const targetHeightStr = `${targetVh}vh`;
+                    const targetHeightStr = `${targetVh}dvh`;
 
-                    bgImg.style.width = '100vw';
+                    bgImg.style.width = '100dvw';
                     bgImg.style.height = targetHeightStr;
-                    bgElement.style.width = '100vw';
+                    bgElement.style.width = '100dvw';
                     bgElement.style.height = targetHeightStr;
 
                     // Центрируем нативный скролл по вертикали
@@ -316,28 +316,28 @@ export function updateBackground(state, config) {
 
     // Функция сброса в стандартный фиксированный фолбэк (Строго 1 экран, нативный скролл ОТКЛЮЧЕН)
     const resetToFullscreen = () => {
-        // bgImg.style.width = '100vw';
-        // bgImg.style.height = '100vh';
+        // bgImg.style.width = '100dvw';
+        // bgImg.style.height = '100dvh';
         // bgImg.style.objectFit = 'cover'; // Картинка покроет экран без черных полос
-        // bgElement.style.width = '100vw';
-        // bgElement.style.height = '100vh';
+        // bgElement.style.width = '100dvw';
+        // bgElement.style.height = '100dvh';
 
         // Намертво блокируем нативный скролл на уровне CSS, чтобы экран не люфтил
 
         console.log(orientation);
         if (isLandscape) {
-            bgImg.style.width = '100vw';
-            bgImg.style.height = '100vh';
+            bgImg.style.width = '100dvw';
+            bgImg.style.height = '100dvh';
             bgImg.style.objectFit = 'cover'; // Картинка покроет экран без черных полос
-            bgElement.style.width = '100vw';
-            bgElement.style.height = '100vh';
+            bgElement.style.width = '100dvw';
+            bgElement.style.height = '100dvh';
         }
         else {
-            bgImg.style.width = '100vh';
-            bgImg.style.height = '100vw';
+            bgImg.style.width = '100dvh';
+            bgImg.style.height = '100dvw';
             bgImg.style.objectFit = 'cover'; // Картинка покроет экран без черных полос
-            bgElement.style.width = '100vh';
-            bgElement.style.height = '100vw';
+            bgElement.style.width = '100dvh';
+            bgElement.style.height = '100dvw';
         }
 
         wrapper.style.overflow = 'hidden';
@@ -369,12 +369,12 @@ export function updateBackground(state, config) {
                     // --- ЛАНДШАФТ ПАНOРАМА ---
                     const calculatedWidthPx = window.innerHeight * imgAspectRatio;
                     const targetVw = (calculatedWidthPx / window.innerWidth) * 100;
-                    const targetWidthStr = `${targetVw}vw`;
+                    const targetWidthStr = `${targetVw}dvw`;
 
                     bgImg.style.width = targetWidthStr;
-                    bgImg.style.height = '100vh';
+                    bgImg.style.height = '100dvh';
                     bgElement.style.width = targetWidthStr;
-                    bgElement.style.height = '100vh';
+                    bgElement.style.height = '100dvh';
 
                     requestAnimationFrame(() => {
                         wrapper.scrollTo({
@@ -387,17 +387,17 @@ export function updateBackground(state, config) {
                     // --- ПОРТРЕТ ПАНOРАМА ---
                     const calculatedHeightPx = window.innerWidth / imgAspectRatio;
                     const targetVh = (calculatedHeightPx / window.innerHeight) * 100;
-                    const targetHeightStr = `${targetVh}vh`;
+                    const targetHeightStr = `${targetVh}dvh`;
 
-                    // bgImg.style.width = '100vw';
+                    // bgImg.style.width = '100dvw';
                     // bgImg.style.height = targetHeightStr;
-                    // bgElement.style.width = '100vw';
+                    // bgElement.style.width = '100dvw';
                     // bgElement.style.height = targetHeightStr;
 
                     bgImg.style.width = targetHeightStr;
-                    bgImg.style.height = '100vw';
+                    bgImg.style.height = '100dvw';
                     bgElement.style.width = targetHeightStr;
-                    bgElement.style.height = '100vw';
+                    bgElement.style.height = '100dvw';
 
                     requestAnimationFrame(() => {
                         wrapper.scrollTo({
