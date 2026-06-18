@@ -594,7 +594,12 @@ const playerMethods = {
                 });
             }
 
-            return updateRes;
+            return {
+                balance: totalPlayable,
+                realBalance: finalReal,
+                bonusBalance: bonusBalance,
+                currency: player.current_currency // Передаем строковый код активной валюты игрока [INDEX]
+            };
 
         } catch (err) {
             await client.query('ROLLBACK');
