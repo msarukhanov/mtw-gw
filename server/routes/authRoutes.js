@@ -68,7 +68,7 @@ router.checkPlayer = async (req, res, next) => {
 
 // БЕСШОВНЫЙ ВХОД (Seamless Webhook для внешних операторов)
 router.post('/auth/seamless', async (req, res) => {
-    const { sessionId, partnerId } = req.body;
+    const { sessionId, partnerId, loginType } = req.body;
     if (!sessionId) return res.status(400).json({ error: "Session ID required" });
     if (!partnerId) return res.status(400).json({ error: "Partner ID required for B2B routing" });
 
@@ -91,7 +91,7 @@ router.post('/auth/seamless', async (req, res) => {
 
         // Принудительно синхронизируем баланс NeDB с тем, что прислал шлюз
         const freshBalance = externalUser.balance !== undefined ? Number(externalUser.balance) : player.balance;
-        await state.updateBalance(player.username, partnerId, loginType, req);
+        await state.updateBalance(player.username, partnerId, externalUser.balance);
 
         await state.logPlayerLoginSuccess(partnerId, player.username, 'SESSION_TOKEN', req);
 
