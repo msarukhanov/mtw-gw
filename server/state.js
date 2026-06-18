@@ -257,7 +257,7 @@ const playerMethods = {
             let finalReal = Number(newBalance);
 
             // Вычисляем дельту изменения: если > 0, это выигрыш/депозит (Credit), если < 0, это ставка (Debit)
-            const delta = finalReal - oldReal;
+            // const delta = finalReal - oldReal;
 
             if (delta < 0) {
                 // --- СЦЕНАРИЙ А: Списание (Debit / Ставка) ---
