@@ -74,7 +74,7 @@ async function logInServer(username, gameId, serverId, deviceId) {
         // --- ТВОИ НОВЫЕ ПАРАМЕТРЫ ПРОФИЛЯ ---
         nickname: "NeoGod_" + Math.floor(100 + Math.random() * 900),
         // avatar_icon: "🧙‍♂️", // Emoji или путь к картинке
-        avatar_icon: './assets/images/heroes/heroAvatars/eleniel.webp', // Emoji или путь к картинке
+        avatar_icon: './gacha/assets/images/heroes/heroAvatars/eleniel.webp', // Emoji или путь к картинке
         level: 10,
         exp: 340,
         max_exp: 1000, // Порог опыта для следующего уровня

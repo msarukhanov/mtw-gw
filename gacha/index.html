@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gacha Builder</title>
+    <title>MTWTech Gacha</title>
     <style>
         html, body {
             margin: 0; padding: 0; width: 100vw; height: 100vh;
@@ -136,7 +136,42 @@
             will-change: transform;
         }
 
+        /* Полностью независимая кнопка Fullscreen */
+        .global-fullscreen-btn {
+            position: fixed;
+            bottom: 10px;
+            right: 10px; /* Если правый угол занят баром ресурсов, поменяй на left: 10px */
+            width: 32px;
+            height: 32px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            color: #fff;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 9999; /* Жестко поверх всех окон, диалогов и ифреймов */
+            pointer-events: auto;
+            user-select: none;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .global-fullscreen-btn:hover {
+            background: rgba(0, 0, 0, 0.8);
+            border-color: #ffcc00;
+        }
+
+        .global-fullscreen-btn:active {
+            transform: scale(0.95);
+        }
+
     </style>
+
+    <script src="https://cdn.socket.io/4.8.3/socket.io.min.js"
+            integrity="sha384-kzavj5fiMwLKzzD1f8S7TeoVIEi7uKHvbTA3ueZkrzYq75pNQUiUi6Dy98Q3fxb0"
+            crossorigin="anonymous"></script>
 </head>
 <body>
 <div id="wrapper">

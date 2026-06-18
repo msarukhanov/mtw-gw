@@ -14,6 +14,13 @@
             overscroll-behavior: none;
         }
 
+        body {
+            padding-top: calc(env(safe-area-inset-top));
+            padding-bottom: calc(env(safe-area-inset-bottom));
+            padding-left: calc(env(safe-area-inset-left));
+            padding-right: calc(env(safe-area-inset-right));
+        }
+
         #wrapper {
             position: absolute;
             margin: 0;
@@ -134,6 +141,37 @@
 
         #game-bg, #image-bg {
             will-change: transform;
+        }
+
+        /* Полностью независимая кнопка Fullscreen */
+        .global-fullscreen-btn {
+            position: fixed;
+            bottom: 10px;
+            right: 10px; /* Если правый угол занят баром ресурсов, поменяй на left: 10px */
+            width: 32px;
+            height: 32px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            color: #fff;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 9999; /* Жестко поверх всех окон, диалогов и ифреймов */
+            pointer-events: auto;
+            user-select: none;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .global-fullscreen-btn:hover {
+            background: rgba(0, 0, 0, 0.8);
+            border-color: #ffcc00;
+        }
+
+        .global-fullscreen-btn:active {
+            transform: scale(0.95);
         }
 
     </style>
