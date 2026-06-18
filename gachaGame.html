@@ -7,7 +7,7 @@
     <title>MTWTech Gacha</title>
     <style>
         html, body {
-            margin: 0; padding: 0; width: 100vw; height: 100vh;
+            margin: 0; padding: 0; width: 100dvw; height: 100dvh;
             background-color: #0a0a0a; color: white;
             font-family: Arial, sans-serif; overflow: hidden;
             user-select: none;
@@ -25,8 +25,8 @@
             position: absolute;
             margin: 0;
             padding: 0;
-            width: 100vw;
-            height: 100vh;
+            width: 100dvw;
+            height: 100dvh;
             /* Нативный скролл включается на самом теле страницы, пряча системные полосы */
             overflow: auto;
             scrollbar-width: none;
@@ -41,20 +41,20 @@
             position: absolute;
             top: 0;
             left: 0;
-            height: 100vh;
+            height: 100dvh;
             display: block;
             z-index: 1;
             object-fit: cover;
-            min-width: 100vw;
+            min-width: 100dvw;
         }
 
         #game-bg {
             position: absolute;
             top: 0;
             left: 0;
-            height: 100vh;
+            height: 100dvh;
             z-index: 2;
-            min-width: 100vw;
+            min-width: 100dvw;
             /* Убираем overflow отсюда, контейнер просто повторяет размеры картинки */
         }
 
@@ -68,8 +68,8 @@
             position: fixed;
             top: 0;
             left: 0;
-            width: 100vw;
-            height: 100vh;
+            width: 100dvw;
+            height: 100dvh;
             z-index: 10; /* Сидит строго поверх панорамы */
             pointer-events: none; /* Клики пролетают сквозь пустые зоны */
         }
@@ -112,21 +112,21 @@
                 position: fixed;
                 top: 50%;
                 left: 50%;
-                width: 100vh;
-                height: 100vw;
+                width: 100dvh;
+                height: 100dvw;
                 transform: translate(-50%, -50%) rotate(90deg);
                 transform-origin: center;
             }
             #game-bg {
                 /* В портрете фиксируем ширину под экран, высота скейлится сама */
-                width: 100vh !important;
-                height: 100vw;
+                width: 100dvh !important;
+                height: 100dvw;
                 background-size: cover;
                 background-position: center center;
             }
             #game-ui {
-                width: 100vh;
-                height: 100vw;
+                width: 100dvh;
+                height: 100dvw;
             }
         }
         .pulse { animation: gachaPulse 2s infinite ease-in-out; }
