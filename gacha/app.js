@@ -122,7 +122,7 @@ function initGlobalFullscreen() {
             📺
         </div>
     `;
-    document.body.insertAdjacentHTML('beforeend', btnHTML);
+    document.getElementById('wrapper').insertAdjacentHTML('beforeend', btnHTML);
 
     const fsBtn = document.getElementById('global-fs-button');
 
