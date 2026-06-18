@@ -91,7 +91,7 @@ router.post('/auth/seamless', async (req, res) => {
 
         // Принудительно синхронизируем баланс NeDB с тем, что прислал шлюз
         const freshBalance = externalUser.balance !== undefined ? Number(externalUser.balance) : player.balance;
-        await state.updateBalance(player.username, partnerId, externalUser.balance);
+        // await state.updateBalance(player.username, partnerId, externalUser.balance);
 
         await state.logPlayerLoginSuccess(partnerId, player.username, 'SESSION_TOKEN', req);
 
