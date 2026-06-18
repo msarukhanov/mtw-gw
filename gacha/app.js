@@ -48,6 +48,7 @@ async function initWrapper() {
     }
 
     initTownScrollListeners();
+    initGlobalFullscreen();
 }
 
 const AppActions = {
@@ -106,6 +107,50 @@ screen.orientation.addEventListener("change", () => {
     updateState(Game.gameState);
 });
 
+/**
+ * Инициализирует независимую глобальную кнопку Fullscreen.
+ * Инжектится прямо в body и работает в обход игровых стейтов.
+ */
+function initGlobalFullscreen() {
+    // Защита от дублирования: если кнопка уже создана, ничего не делаем
+    console.log('init fs');
+    if (document.getElementById('global-fs-button')) return;
 
+    // Вживляем кнопку в самый корень документа
+    const btnHTML = `
+        <div id="global-fs-button" class="global-fullscreen-btn" title="Fullscreen">
+            📺
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', btnHTML);
 
+    const fsBtn = document.getElementById('global-fs-button');
+
+    // Функция переключения полноэкранного режима
+    fsBtn.onclick = (e) => {
+        e.stopPropagation(); // Защита от ложных триггеров на фоне
+
+        if (!document.fullscreenElement) {
+            // Если экран не развернут — разворачиваем весь корневой документ
+            document.documentElement.requestFullscreen()
+                .catch(err => {
+                    console.error(`[Fullscreen Error]: ${err.message}`);
+                });
+        } else {
+            // Если уже в фуллскрине — нативно выходим из него
+            document.exitFullscreen();
+        }
+    };
+
+    // Слушатель изменения состояния экрана (меняем иконку)
+    // Нужен для того, чтобы если игрок вышел из фуллскрина кнопкой ESC на клавиатуре,
+    // иконка на нашей кнопке тоже синхронно поменялась обратно
+    document.addEventListener('fullscreenchange', () => {
+        if (document.fullscreenElement) {
+            fsBtn.innerHTML = '🗖'; // Иконка свернутого окна
+        } else {
+            fsBtn.innerHTML = '📺'; // Иконка телевизора/монитора
+        }
+    });
+}
 
