@@ -128,7 +128,7 @@ const gamesConfigDB = {
             landscape: [
                 {
                     id: "screen_main_menu",
-                    bg_image: "./assets/images/main_menu_bg_4.png",
+                    bg_image: "./gacha/assets/images/main_menu_bg_4.png",
                     bg_width: 1200,
                     scrollable: false,
                     active_width: 1000,
@@ -198,7 +198,7 @@ const gamesConfigDB = {
 
 
                         backgroundColor: "rgba(55,55,55,.6)",
-                        // backgroundImage: "url('./assets/images/main_heroes.png')",
+                        // backgroundImage: "url('./gacha/assets/images/main_heroes.png')",
 
                         textColor: "#fff",
                         textSize: "20px",
@@ -217,7 +217,7 @@ const gamesConfigDB = {
                         height: "20%",
 
                         backgroundColor: "rgba(195,55,55,.6)",
-                        // backgroundImage: "url('./assets/images/main_casino.png')",
+                        // backgroundImage: "url('./gacha/assets/images/main_casino.png')",
 
                         textColor: "#fff",
                         textSize: "20px",
@@ -236,7 +236,7 @@ const gamesConfigDB = {
                         height: "16%",
 
                         backgroundColor: "rgba(55,155,55,.6)",
-                        // backgroundImage: "url('./assets/images/main_inventory.png')",
+                        // backgroundImage: "url('./gacha/assets/images/main_inventory.png')",
 
                         textColor: "#fff",
                         textSize: "20px",
@@ -255,7 +255,7 @@ const gamesConfigDB = {
                         height: "16%",
 
                         backgroundColor: "rgba(155,155,55,.6)",
-                        // backgroundImage: "url('./assets/images/main_shop.png')",
+                        // backgroundImage: "url('./gacha/assets/images/main_shop.png')",
 
                         textColor: "#fff",
                         textSize: "20px",
@@ -275,7 +275,7 @@ const gamesConfigDB = {
                         height: "16%",
 
                         backgroundColor: "rgba(0,55,255,.6)",
-                        // backgroundImage: "url('./assets/images/main_gacha.png')",
+                        // backgroundImage: "url('./gacha/assets/images/main_gacha.png')",
 
                         textColor: "#fff",
                         textSize: "20px",
@@ -294,7 +294,7 @@ const gamesConfigDB = {
                         height: "16%",
 
                         backgroundColor: "rgba(0,0,55,.6)",
-                        // backgroundImage: "url('./assets/images/main_temple_power.png')",
+                        // backgroundImage: "url('./gacha/assets/images/main_temple_power.png')",
 
                         textColor: "#fff",
                         textSize: "20px",
@@ -313,7 +313,7 @@ const gamesConfigDB = {
                         height: "16%",
 
                         backgroundColor: "rgba(55,0,55,.6)",
-                        // backgroundImage: "url('./assets/images/main_arena.png')",
+                        // backgroundImage: "url('./gacha/assets/images/main_arena.png')",
 
                         textColor: "#fff",
                         textSize: "20px",
@@ -322,7 +322,7 @@ const gamesConfigDB = {
                 },
                 {
                     id: "screen_server_select",
-                    bg_image: "./assets/images/server_select_bg.png", // Фон самого экрана арены
+                    bg_image: "./gacha/assets/images/server_select_bg.png", // Фон самого экрана арены
                     bg_width: 1000,
                     active_width: 1000,
                 },
@@ -387,7 +387,7 @@ const gamesConfigDB = {
                 },
                 {
                     id: "screen_profile",
-                    bg_image: "./assets/images/backgrounds/profile_bg.png", // Фон окна профиля
+                    bg_image: "./gacha/assets/images/backgrounds/profile_bg.png", // Фон окна профиля
                     bg_width: 1000,
                     active_width: 1000,
 
@@ -415,7 +415,7 @@ const gamesConfigDB = {
                 },
                 {
                     id: "screen_arena",
-                    bg_image: "./assets/images/arena/arena_bg.jpg", // Фон самого экрана арены
+                    bg_image: "./gacha/assets/images/arena/arena_bg.jpg", // Фон самого экрана арены
                     bg_width: 1000,
                     active_width: 1000,
                     // Настраиваемые интерактивные кнопки режимов Арены (прямо как в главном меню)
@@ -430,7 +430,7 @@ const gamesConfigDB = {
                                 width: "35%",
                                 height: "50%",
                                 backgroundColor: "transparent",
-                                backgroundImage: "url('./assets/images/arena/PREMATCH.png')",
+                                backgroundImage: "url('./gacha/assets/images/arena/PREMATCH.png')",
                                 textColor: "#fff",
                                 textSize: "18px",
                                 textPosition: "bottom"
@@ -446,7 +446,7 @@ const gamesConfigDB = {
                                 width: "35%",
                                 height: "50%",
                                 backgroundColor: "transparent",
-                                backgroundImage: "url('./assets/images/arena/LIVE.png')",
+                                backgroundImage: "url('./gacha/assets/images/arena/LIVE.png')",
                                 textColor: "#ffcc00",
                                 textSize: "18px",
                                 textPosition: "bottom"
@@ -798,8 +798,8 @@ const gamesConfigDB = {
                     rarity: "UR",
                     max_level: 200,
 
-                    icon: "./assets/images/heroes/heroAvatars/eleniel.webp",
-                    image: "./assets/images/heroes/heroFullheight/eleniel.png",
+                    icon: "./gacha/assets/images/heroes/heroAvatars/eleniel.webp",
+                    image: "./gacha/assets/images/heroes/heroFullheight/eleniel.png",
                     model: "",
 
                     faction_id: "holy_empire",
@@ -819,12 +819,12 @@ const gamesConfigDB = {
                         {
                             skin_id: "eleniel_skin_default",
                             name_loc: {...BASE_LANGUAGES, ru: "Классический", en: "Default"},
-                            image: "./assets/images/heroes/heroFullheight/eleniel.png"
+                            image: "./gacha/assets/images/heroes/heroFullheight/eleniel.png"
                         },
                         {
                             skin_id: "eleniel_skin_beach",
                             name_loc: {...BASE_LANGUAGES, ru: "Пляжный Повелитель", en: "Beach Lord"},
-                            image: "./assets/images/heroes/heroFullheight/eleniel.png"
+                            image: "./gacha/assets/images/heroes/heroFullheight/eleniel.png"
                         }
                     ],
                     bonds: [
@@ -850,8 +850,8 @@ const gamesConfigDB = {
                     rarity: "SSR",
                     max_level: 100,
 
-                    icon: "./assets/images/heroes/heroAvatars/adelina.webp",
-                    image: "./assets/images/heroes/heroFullheight/adelina.png",
+                    icon: "./gacha/assets/images/heroes/heroAvatars/adelina.webp",
+                    image: "./gacha/assets/images/heroes/heroFullheight/adelina.png",
                     model: "",
 
                     faction_id: "holy_empire",
@@ -871,12 +871,12 @@ const gamesConfigDB = {
                         {
                             skin_id: "adelina_skin_default",
                             name_loc: {...BASE_LANGUAGES, ru: "Классический", en: "Default"},
-                            image: "./assets/images/heroes/heroFullheight/adelina.png"
+                            image: "./gacha/assets/images/heroes/heroFullheight/adelina.png"
                         },
                         {
                             skin_id: "adelina_skin_beach",
                             name_loc: {...BASE_LANGUAGES, ru: "Пляжный Повелитель", en: "Beach Lord"},
-                            image: "./assets/images/heroes/heroFullheight/adelina.png"
+                            image: "./gacha/assets/images/heroes/heroFullheight/adelina.png"
                         }
                     ],
                     bonds: [
@@ -900,8 +900,8 @@ const gamesConfigDB = {
                     rarity: "SSR",
                     max_level: 100,
 
-                    icon: "./assets/images/heroes/heroAvatars/rafaelAfterlife.webp",
-                    image: "./assets/images/heroes/heroFullheight/rafaelAfterlife.png",
+                    icon: "./gacha/assets/images/heroes/heroAvatars/rafaelAfterlife.webp",
+                    image: "./gacha/assets/images/heroes/heroFullheight/rafaelAfterlife.png",
                     model: "",
 
 
@@ -922,7 +922,7 @@ const gamesConfigDB = {
                         {
                             skin_id: "rafaelAfterlife_skin_default",
                             name_loc: {...BASE_LANGUAGES, en: "Default"},
-                            image: "./assets/images/heroes/heroFullheight/rafaelAfterlife.png"
+                            image: "./gacha/assets/images/heroes/heroFullheight/rafaelAfterlife.png"
                         },
                         {
                             skin_id: "rafaelAfterlife_skin_beach",
@@ -961,8 +961,8 @@ const gamesConfigDB = {
                     rarity: "SSR",
                     max_level: 100,
 
-                    icon: "./assets/images/heroes/heroAvatars/marishka.webp",
-                    image: "./assets/images/heroes/heroFullheight/marishka.png",
+                    icon: "./gacha/assets/images/heroes/heroAvatars/marishka.webp",
+                    image: "./gacha/assets/images/heroes/heroFullheight/marishka.png",
                     model: "",
 
 
@@ -983,7 +983,7 @@ const gamesConfigDB = {
                         {
                             skin_id: "marishka_skin_default",
                             name_loc: {...BASE_LANGUAGES, en: "Default"},
-                            image: "./assets/images/heroes/heroFullheight/marishka.png"
+                            image: "./gacha/assets/images/heroes/heroFullheight/marishka.png"
                         },
                         {
                             skin_id: "marishka_skin_beach",
@@ -1013,8 +1013,8 @@ const gamesConfigDB = {
                     rarity: "SSR",
                     max_level: 100,
 
-                    icon: "./assets/images/heroes/heroAvatars/anjeihydra.webp",
-                    image: "./assets/images/heroes/heroFullheight/anjeihydra.png",
+                    icon: "./gacha/assets/images/heroes/heroAvatars/anjeihydra.webp",
+                    image: "./gacha/assets/images/heroes/heroFullheight/anjeihydra.png",
                     model: "",
 
 
@@ -1035,7 +1035,7 @@ const gamesConfigDB = {
                         {
                             skin_id: "anjeihydra_skin_default",
                             name_loc: {...BASE_LANGUAGES, en: "Default"},
-                            image: "./assets/images/heroes/heroFullheight/anjeihydra.png"
+                            image: "./gacha/assets/images/heroes/heroFullheight/anjeihydra.png"
                         },
                         {
                             skin_id: "anjeihydra_skin_beach",
@@ -1067,8 +1067,8 @@ const gamesConfigDB = {
                     rarity: "UR",
                     max_level: 100,
 
-                    icon: "./assets/images/heroes/heroAvatars/selena.webp",
-                    image: "./assets/images/heroes/heroFullheight/selena.png",
+                    icon: "./gacha/assets/images/heroes/heroAvatars/selena.webp",
+                    image: "./gacha/assets/images/heroes/heroFullheight/selena.png",
                     model: "",
 
 
@@ -1089,7 +1089,7 @@ const gamesConfigDB = {
                         {
                             skin_id: "selena_skin_default",
                             name_loc: {...BASE_LANGUAGES, en: "Default"},
-                            image: "./assets/images/heroes/heroFullheight/selena.png"
+                            image: "./gacha/assets/images/heroes/heroFullheight/selena.png"
                         },
                         {
                             skin_id: "anjeihydra_skin_beach",
@@ -1128,8 +1128,8 @@ const gamesConfigDB = {
                     platform_id: "web",
                     status: "hot",
 
-                    icon: "./assets/images/games/elvenCrash.jpeg",
-                    banner: "./assets/images/games/elvenCrash.jpeg",
+                    icon: "./gacha/assets/images/games/elvenCrash.jpeg",
+                    banner: "./gacha/assets/images/games/elvenCrash.jpeg",
                 },
                 "elvenHoldem": {
                     ...HERO_PROTOTYPE,
@@ -1141,8 +1141,8 @@ const gamesConfigDB = {
                     platform_id: "web",
                     status: "hot",
 
-                    icon: "./assets/images/games/elvenHoldem.jpeg",
-                    banner: "./assets/images/games/elvenHoldem.jpeg",
+                    icon: "./gacha/assets/images/games/elvenHoldem.jpeg",
+                    banner: "./gacha/assets/images/games/elvenHoldem.jpeg",
                     model: "./assets/models/zeus_spine.json",
                 },
                 "narutoShinobi": {
@@ -1155,8 +1155,8 @@ const gamesConfigDB = {
                     platform_id: "web",
                     status: "hot",
 
-                    icon: "./assets/images/games/naruto_shinobi_slots.jpeg",
-                    banner: "./assets/images/games/naruto_shinobi_slots.jpeg",
+                    icon: "./gacha/assets/images/games/naruto_shinobi_slots.jpeg",
+                    banner: "./gacha/assets/images/games/naruto_shinobi_slots.jpeg",
                     model: "./assets/models/zeus_spine.json",
                 },
 
@@ -1168,8 +1168,8 @@ const gamesConfigDB = {
                     platform_id: "web",
                     status: "",
 
-                    icon: "./assets/images/games/blackjack.jpeg",
-                    banner: "./assets/images/games/blackjack.jpeg"
+                    icon: "./gacha/assets/images/games/blackjack.jpeg",
+                    banner: "./gacha/assets/images/games/blackjack.jpeg"
                 },
                 "crash": {
                     ...HERO_PROTOTYPE,
@@ -1181,8 +1181,8 @@ const gamesConfigDB = {
                     platform_id: "web",
                     status: "",
 
-                    icon: "./assets/images/games/crash.jpeg",
-                    banner: "./assets/images/games/crash.jpeg"
+                    icon: "./gacha/assets/images/games/crash.jpeg",
+                    banner: "./gacha/assets/images/games/crash.jpeg"
                 },
                 "dice": {
                     ...HERO_PROTOTYPE,
@@ -1194,8 +1194,8 @@ const gamesConfigDB = {
                     platform_id: "web",
                     status: "",
 
-                    icon: "./assets/images/games/dice.jpeg",
-                    banner: "./assets/images/games/dice.jpeg"
+                    icon: "./gacha/assets/images/games/dice.jpeg",
+                    banner: "./gacha/assets/images/games/dice.jpeg"
                 },
                 "hilo": {
                     ...HERO_PROTOTYPE,
@@ -1207,8 +1207,8 @@ const gamesConfigDB = {
                     platform_id: "web",
                     status: "",
 
-                    icon: "./assets/images/games/hilo.jpeg",
-                    banner: "./assets/images/games/hilo.jpeg"
+                    icon: "./gacha/assets/images/games/hilo.jpeg",
+                    banner: "./gacha/assets/images/games/hilo.jpeg"
                 },
                 "holdem": {
                     ...HERO_PROTOTYPE,
@@ -1220,8 +1220,8 @@ const gamesConfigDB = {
                     platform_id: "web",
                     status: "",
 
-                    icon: "./assets/images/games/holdem.jpeg",
-                    banner: "./assets/images/games/holdem.jpeg"
+                    icon: "./gacha/assets/images/games/holdem.jpeg",
+                    banner: "./gacha/assets/images/games/holdem.jpeg"
                 },
                 "lottery": {
                     ...HERO_PROTOTYPE,
@@ -1233,8 +1233,8 @@ const gamesConfigDB = {
                     platform_id: "web",
                     status: "",
 
-                    icon: "./assets/images/games/lottery.jpeg",
-                    banner: "./assets/images/games/lottery.jpeg"
+                    icon: "./gacha/assets/images/games/lottery.jpeg",
+                    banner: "./gacha/assets/images/games/lottery.jpeg"
                 },
 
                 "mines": {
@@ -1247,8 +1247,8 @@ const gamesConfigDB = {
                     platform_id: "web",
                     status: "",
 
-                    icon: "./assets/images/games/mines.jpeg",
-                    banner: "./assets/images/games/mines.jpeg"
+                    icon: "./gacha/assets/images/games/mines.jpeg",
+                    banner: "./gacha/assets/images/games/mines.jpeg"
                 },
 
                 "roulette": {
@@ -1261,8 +1261,8 @@ const gamesConfigDB = {
                     platform_id: "web",
                     status: "",
 
-                    icon: "./assets/images/games/roulette.jpeg",
-                    banner: "./assets/images/games/roulette.jpeg"
+                    icon: "./gacha/assets/images/games/roulette.jpeg",
+                    banner: "./gacha/assets/images/games/roulette.jpeg"
                 },
 
                 "scratch": {
@@ -1275,8 +1275,8 @@ const gamesConfigDB = {
                     platform_id: "web",
                     status: "",
 
-                    icon: "./assets/images/games/scratch.jpeg",
-                    banner: "./assets/images/games/scratch.jpeg"
+                    icon: "./gacha/assets/images/games/scratch.jpeg",
+                    banner: "./gacha/assets/images/games/scratch.jpeg"
                 },
 
                 "slots53char": {
@@ -1289,8 +1289,8 @@ const gamesConfigDB = {
                     platform_id: "web",
                     status: "",
 
-                    icon: "./assets/images/games/slots5x3.jpeg",
-                    banner: "./assets/images/games/slots5x3.jpeg",
+                    icon: "./gacha/assets/images/games/slots5x3.jpeg",
+                    banner: "./gacha/assets/images/games/slots5x3.jpeg",
 
                     // embed_url: "https://mtwtech.onrender.com/games/slots5x3char?partnerId=demo_mtwtech&mode=real&character=adelina&fullscreen=true&hidePlayer=true",
                     embed_url: "https://mtwtech.onrender.com/games/slots5x3char?partnerId=demo_mtwtech&mode=real&fullscreen=true&hidePlayer=true",
@@ -1306,8 +1306,8 @@ const gamesConfigDB = {
                     platform_id: "web",
                     status: "",
 
-                    icon: "./assets/images/games/wof.jpeg",
-                    banner: "./assets/images/games/wof.jpeg"
+                    icon: "./gacha/assets/images/games/wof.jpeg",
+                    banner: "./gacha/assets/images/games/wof.jpeg"
                 }
             },
 
@@ -1355,7 +1355,7 @@ const gamesConfigDB = {
                 // Все настройки геометрии и стилей вынесены в конфиг UI
                 window_settings: {
                     display_type: "fullscreen", // fullscreen | helper
-                    bg_image: "url('./assets/images/intro/intro_bg_1.jpg')",
+                    bg_image: "url('./gacha/assets/images/intro/intro_bg_1.jpg')",
                     backgroundColor: "#050505",
 
                     box_width: "80%",
@@ -1380,7 +1380,7 @@ const gamesConfigDB = {
                 },
                 steps: [
                     { speaker_loc_key: "story_author", text_loc_key: "story_step_1", avatar: "" },
-                    { speaker_loc_key: "story_adelina_title", text_loc_key: "story_step_2", avatar: "./assets/images/heroes/heroAvatars/adelina.webp" }
+                    { speaker_loc_key: "story_adelina_title", text_loc_key: "story_step_2", avatar: "./gacha/assets/images/heroes/heroAvatars/adelina.webp" }
                 ]
             },
             "FIRST_MENU": {
@@ -1413,7 +1413,7 @@ const gamesConfigDB = {
                     hint_size: "10px"
                 },
                 steps: [
-                    { speaker_loc_key: "story_adelina_title", text_loc_key: "helper_menu_tutorial", avatar: "./assets/images/heroes/heroAvatars/adelina.webp" }
+                    { speaker_loc_key: "story_adelina_title", text_loc_key: "helper_menu_tutorial", avatar: "./gacha/assets/images/heroes/heroAvatars/adelina.webp" }
                 ]
             },
             "OPEN_HEROES_FIRST_TIME": {
@@ -1444,7 +1444,7 @@ const gamesConfigDB = {
                     hint_size: "10px"
                 },
                 steps: [
-                    { speaker_loc_key: "story_adelina_title", text_loc_key: "helper_heroes_tutorial", avatar: "./assets/images/heroes/heroAvatars/adelina.webp" }
+                    { speaker_loc_key: "story_adelina_title", text_loc_key: "helper_heroes_tutorial", avatar: "./gacha/assets/images/heroes/heroAvatars/adelina.webp" }
                 ]
             }
         },
