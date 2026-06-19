@@ -135,6 +135,7 @@ router.post('/auth', async (req, res) => {
         setTimeout(() => { delete global.activePlayerSessions[sessionId]; }, 24 * 60 * 60 * 1000);
 
         res.json({
+            id: player.id,
             username: player.username,
             partnerId: targetPartnerId,
             balance: player.balance,
