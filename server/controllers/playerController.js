@@ -61,31 +61,112 @@ exports.getUserHistory = async (req, res) => {
         const { username, partnerId } = req;
         const type = req.query.type || 'all'; // 'all', 'bets', 'cashier'
 
-        let queryText = `SELECT category, action_type, description, amount_change::numeric, timestamp 
-                         FROM player_history 
-                         WHERE username = $1 AND partner_id = $2`;
+        // let queryText = `SELECT category, action_type, description, amount_change::numeric, timestamp
+        //                  FROM player_history
+        //                  WHERE username = $1 AND partner_id = $2`;
+        // let queryParams = [username, partnerId];
+        //
+        // // Фильтруем историю на уровне базы данных PostgreSQL
+        // if (type === 'bets') {
+        //     queryText += ` AND category IN ('casino', 'sport')`;
+        // } else if (type === 'cashier') {
+        //     // В cashier попадают депозиты, выводы, промокоды и кэшбэки
+        //     queryText += ` AND category = 'system'`;
+        // }
+        //
+        // queryText += ` ORDER BY timestamp DESC LIMIT 30`; // отдаем последние 30 записей
+        //
+        // const historyRes = await global.pool.query(queryText, queryParams);
+        //
+        // const formattedHistory = historyRes.rows.map(h => ({
+        //     type: h.action_type.toUpperCase(),
+        //     description: h.description,
+        //     amount: Number(h.amount_change),
+        //     date: new Date(h.timestamp).toLocaleDateString('en-US', {
+        //         month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        //     })
+        // }));
+
+        let queryText = '';
         let queryParams = [username, partnerId];
 
-        // Фильтруем историю на уровне базы данных PostgreSQL
         if (type === 'bets') {
-            queryText += ` AND category IN ('casino', 'sport')`;
+            // Запрос для ставок с LEFT JOIN к таблице bets по reference_id
+            queryText = `
+                SELECT 
+                    ph.id AS history_id,
+                    ph.action_type,
+                    ph.description,
+                    ph.amount_change::numeric AS wallet_delta,
+                    ph.timestamp,
+                    b.provider,
+                    b.stake::numeric AS bet_stake,
+                    b.prize::numeric AS bet_prize,
+                    b.status AS bet_status
+                FROM player_history ph
+                LEFT JOIN casino_bets b ON ph.reference_id = b.id
+                WHERE ph.username = $1 
+                  AND ph.partner_id = $2 
+                  AND ph.category IN ('casino', 'sport')
+                ORDER BY ph.timestamp DESC 
+                LIMIT 30;
+            `;
         } else if (type === 'cashier') {
-            // В cashier попадают депозиты, выводы, промокоды и кэшбэки
-            queryText += ` AND category = 'system'`;
+            // Чистый плоский запрос для кассы, использующий B-Tree индекс
+            queryText = `
+                SELECT 
+                    id AS history_id,
+                    action_type,
+                    description,
+                    amount_change::numeric AS wallet_delta,
+                    timestamp
+                FROM player_history
+                WHERE username = $1 
+                  AND partner_id = $2 
+                  AND reference_id IS NULL
+                ORDER BY timestamp DESC 
+                LIMIT 30;
+            `;
+        } else {
+            // Дефолтный запрос для вкладки 'all' (собирает всё подряд без JOIN ради скорости)
+            queryText = `
+                SELECT 
+                    id AS history_id,
+                    action_type,
+                    description,
+                    amount_change::numeric AS wallet_delta,
+                    timestamp
+                FROM player_history
+                WHERE username = $1 AND partner_id = $2
+                ORDER BY timestamp DESC 
+                LIMIT 30;
+            `;
         }
-
-        queryText += ` ORDER BY timestamp DESC LIMIT 30`; // отдаем последние 30 записей
 
         const historyRes = await global.pool.query(queryText, queryParams);
 
-        const formattedHistory = historyRes.rows.map(h => ({
-            type: h.action_type.toUpperCase(),
-            description: h.description,
-            amount: Number(h.amount_change),
-            date: new Date(h.timestamp).toLocaleDateString('en-US', {
-                month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-            })
-        }));
+        // УМНЫЙ МАППИНГ ДАННЫХ ДЛЯ ФРОНТЕНДА
+        const formattedHistory = historyRes.rows.map(h => {
+            const baseData = {
+                id: "tx_" + h.history_id,
+                type: h.action_type.toUpperCase(),
+                description: h.description,
+                amount: Number(h.wallet_delta),
+                timestamp: h.timestamp // Отдаем ISO/Date объект для корректного парсинга на фронте
+            };
+
+            // Если запрашивали ставки, обогащаем объект метриками из таблицы bets
+            if (type === 'bets') {
+                baseData.stake = Number(h.bet_stake || 0);
+                baseData.prize = Number(h.bet_prize || 0);
+                baseData.status = h.bet_status || 'LOSE';
+                baseData.provider = h.provider || 'System';
+            }
+
+            return baseData;
+        });
+
+        return res.json({ success: true, history: formattedHistory });
 
         res.json({ success: true, history: formattedHistory });
     } catch (err) {
