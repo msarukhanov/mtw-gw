@@ -2,7 +2,15 @@ const baseUrl = (location.hostname === 'localhost') ? 'http://localhost:3000' : 
 export const API_URL = baseUrl + '/api/vgb';
 export const SOCKET_URL = baseUrl;
 
-export function t(key, Game, replaceValue = null) {
+export let headers;
+
+import {Game} from './stateManager.js';
+
+export function setHeaders(head) {
+    headers = head;
+}
+
+export function t(key, replaceValue = null) {
     const lang = Game.locale || 'ru';
 
     // Безопасно идем по новому пути: config.localization.ui.[язык].[ключ]
@@ -14,13 +22,13 @@ export function t(key, Game, replaceValue = null) {
     return text;
 }
 
-export function locObj(obj, Game) {
+export function locObj(obj) {
     if (!obj) return '';
     const lang = Game.locale || 'en';
     return obj[lang] || obj['en'] || ''; // Откатываемся на английский, если перевода нет
 }
 
-export function getWindowContentStyle(Game) {
+export function getWindowContentStyle() {
     const settings = Game.config?.ui?.windows_settings || {};
 
     // Пропускаем формулу top через наш applyLayout с авто-оберткой calc()
@@ -93,7 +101,7 @@ export function getFormattedTime(time) {
     return `${hours}:${minutes}`;
 }
 
-export function parseEffectText(effInstance, Game) {
+export function parseEffectText(effInstance) {
     const lang = Game.locale || 'ru';
     const effMeta = Game.config?.mechanics?.effects?.[effInstance.effect_id];
     const rawTemplate = Game.config?.localization?.effects?.[lang]?.[effMeta?.desc_loc_key] || 'Unknown effect';
@@ -108,7 +116,7 @@ export function parseEffectText(effInstance, Game) {
     return text;
 }
 
-export function getHeroRating(hero, Game) {
+export function getHeroRating(hero) {
     const statsMeta = Game.config?.mechanics?.stats || {};
     const prototype = Game.config.catalog?.heroes?.[hero.hero_id];
     if (!prototype) return 0; // Возвращаем 0 вместо строки, чтобы не ломать математику
@@ -169,254 +177,5 @@ export function initTownScrollListeners() {
     });
 }
 
-// Умный менеджер фонов с автоматической первичной центровкой
-// frontend/app.js
 
-export function updateBackground222(state, config) {
-    const wrapper = document.getElementById('wrapper');
-    const bgElement = document.getElementById('game-bg');
-    const bgImg = document.getElementById('image-bg');
-    if (!wrapper || !bgElement || !bgImg || !config || !config.ui) return;
-
-    const orientation = config.orientation || 'landscape';
-    const widgets = config.ui[orientation] || [];
-
-    let screenWidgetId = 'screen_main_menu';
-    if (state === 'SERVER_SELECT') screenWidgetId = 'screen_server_select';
-    else if (state === 'SHOP') screenWidgetId = 'screen_shop';
-    else if (state === 'GACHA') screenWidgetId = 'screen_gacha';
-    else if (state === 'INVENTORY') screenWidgetId = 'screen_inventory';
-    else if (state === 'HEROES') screenWidgetId = 'screen_heroes';
-    else if (state === 'GAMES') screenWidgetId = 'screen_games';
-    else if (state === 'ARENA') screenWidgetId = 'screen_arena';
-    else if (state === 'PROFILE') screenWidgetId = 'screen_profile';
-
-    const screenMeta = widgets.find(w => w.id === screenWidgetId);
-
-    // Безопасная проверка наличия картинки
-    const hasImage = !!(screenMeta && screenMeta.bg_image);
-    bgImg.style.display = hasImage ? 'block' : 'none';
-
-    // Функция сброса в стандартный фолбэк (100% экрана, скролл отключен)
-    const resetToFullscreen = () => {
-        bgImg.style.width = '100dvw';
-        bgImg.style.height = '100dvh';
-        bgElement.style.width = '100dvw';
-        bgElement.style.height = '100dvh';
-    };
-
-    if (hasImage) {
-        // Вешаем колбэк ДО назначения src, чтобы гарантированно поймать загрузку (даже из кэша)
-        bgImg.onload = () => {
-            // Защита: если пока картинка грузилась, игрок уже ушел на другой экран
-            if (bgImg.getAttribute('src') !== screenMeta.bg_image) return;
-
-            const imgWidth = bgImg.naturalWidth;
-            const imgHeight = bgImg.naturalHeight;
-
-            if (!imgWidth || !imgHeight) {
-                resetToFullscreen();
-                return;
-            }
-
-            // Вычисляем реальное соотношение сторон самого файла картинки
-            const imgAspectRatio = imgWidth / imgHeight;
-
-            if (state === 'MAIN_MENU') {
-                if (orientation === 'landscape') {
-                    // --- ЛАНДШАФТ: Высота 100dvh, ширина зависит от пропорций картинки ---
-                    // Вычисляем физическую ширину в пикселях, которую должна занять картинка при высоте 100dvh
-                    const calculatedWidthPx = window.innerHeight * imgAspectRatio;
-
-                    // Переводим пиксели в точный, честныйdvw
-                    const targetVw = (calculatedWidthPx / window.innerWidth) * 100;
-                    const targetWidthStr = `${targetVw}dvw`;
-
-                    bgImg.style.width = targetWidthStr;
-                    bgImg.style.height = '100dvh';
-                    bgElement.style.width = targetWidthStr;
-                    bgElement.style.height = '100dvh';
-
-                    // Центрируем нативный скролл wrapper'а
-                    requestAnimationFrame(() => {
-                        wrapper.scrollTo({
-                            left: (wrapper.scrollWidth - window.innerWidth) / 2,
-                            top: 0,
-                            behavior: 'instant'
-                        });
-                    });
-                } else {
-                    // --- ПОРТРЕТ: Ширина 100dvw, высота зависит от пропорций картинки ---
-                    // Вычисляем физическую высоту в пикселях при ширине 100dvw
-                    const calculatedHeightPx = window.innerWidth / imgAspectRatio;
-
-                    // Переводим пиксели в честный dvh
-                    const targetVh = (calculatedHeightPx / window.innerHeight) * 100;
-                    const targetHeightStr = `${targetVh}dvh`;
-
-                    bgImg.style.width = '100dvw';
-                    bgImg.style.height = targetHeightStr;
-                    bgElement.style.width = '100dvw';
-                    bgElement.style.height = targetHeightStr;
-
-                    // Центрируем нативный скролл по вертикали
-                    requestAnimationFrame(() => {
-                        wrapper.scrollTo({
-                            left: 0,
-                            top: (wrapper.scrollHeight - wrapper.clientHeight) / 2,
-                            behavior: 'instant'
-                        });
-                    });
-                }
-            } else {
-                // Если это не главное меню, а окно — просто растягиваем картинку по экрану
-                resetToFullscreen();
-            }
-        };
-
-        // Запускаем загрузку ассета
-        bgImg.src = screenMeta.bg_image;
-    } else {
-        bgImg.src = '';
-        resetToFullscreen();
-    }
-}
-
-
-export function updateBackground(state, config) {
-    const wrapper = document.getElementById('wrapper');
-    const bgElement = document.getElementById('game-bg');
-    const bgImg = document.getElementById('image-bg');
-    if (!wrapper || !bgElement || !bgImg || !config || !config.ui) return;
-
-    const orientation = config.orientation || 'landscape';
-    const widgets = config.ui[orientation] || [];
-
-    const orientationType = screen.orientation.type;   // e.g., "portrait-primary"
-    const orientationAngle = screen.orientation.angle; // e.g., 0, 90, 180, 270
-    const isLandscape =  orientationType.includes('landscape');
-    const isPortrait =  orientationType.includes('portrait');
-    console.log(`Type: ${orientationType}, Angle: ${orientationAngle}`, isLandscape, isPortrait);
-
-    let screenWidgetId = 'screen_main_menu';
-    if (state === 'GAME_LOGIN') screenWidgetId = 'screen_server_select';
-    else if (state === 'SERVER_SELECT') screenWidgetId = 'screen_server_select';
-    else if (state === 'SHOP') screenWidgetId = 'screen_shop';
-    else if (state === 'GACHA') screenWidgetId = 'screen_gacha';
-    else if (state === 'INVENTORY') screenWidgetId = 'screen_inventory';
-    else if (state === 'HEROES') screenWidgetId = 'screen_heroes';
-    else if (state === 'GAMES') screenWidgetId = 'screen_games';
-    else if (state === 'ARENA') screenWidgetId = 'screen_arena';
-    else if (state === 'PROFILE') screenWidgetId = 'screen_profile';
-
-    const screenMeta = widgets.find(w => w.id === screenWidgetId);
-
-    const hasImage = !!(screenMeta && screenMeta.bg_image);
-    bgImg.style.display = hasImage ? 'block' : 'none';
-
-    // Функция сброса в стандартный фиксированный фолбэк (Строго 1 экран, нативный скролл ОТКЛЮЧЕН)
-    const resetToFullscreen = () => {
-        // bgImg.style.width = '100dvw';
-        // bgImg.style.height = '100dvh';
-        // bgImg.style.objectFit = 'cover'; // Картинка покроет экран без черных полос
-        // bgElement.style.width = '100dvw';
-        // bgElement.style.height = '100dvh';
-
-        // Намертво блокируем нативный скролл на уровне CSS, чтобы экран не люфтил
-
-        console.log(orientation);
-        if (isLandscape) {
-            bgImg.style.width = '100dvw';
-            bgImg.style.height = '100dvh';
-            bgImg.style.objectFit = 'cover'; // Картинка покроет экран без черных полос
-            bgElement.style.width = '100dvw';
-            bgElement.style.height = '100dvh';
-        }
-        else {
-            bgImg.style.width = '100dvh';
-            bgImg.style.height = '100dvw';
-            bgImg.style.objectFit = 'cover'; // Картинка покроет экран без черных полос
-            bgElement.style.width = '100dvh';
-            bgElement.style.height = '100dvw';
-        }
-
-        wrapper.style.overflow = 'hidden';
-    };
-
-    if (hasImage) {
-        bgImg.onload = () => {
-            if (bgImg.getAttribute('src') !== screenMeta.bg_image) return;
-
-            const imgWidth = bgImg.naturalWidth;
-            const imgHeight = bgImg.naturalHeight;
-
-            if (!imgWidth || !imgHeight) {
-                resetToFullscreen();
-                return;
-            }
-
-            const imgAspectRatio = imgWidth / imgHeight;
-
-            // ДИНАМИЧЕСКАЯ ПРОВЕKA: Включаем панораму только в MAIN_MENU и только если в конфиге scrollable === true
-            const isScrollable = screenMeta.scrollable === true;
-
-            if (state === 'MAIN_MENU' && isScrollable) {
-                // Разрешаем нативный скролл браузера для прокрутки панорамы хаба
-                wrapper.style.overflow = 'auto';
-
-                // if (orientation === 'landscape') {
-                if (isLandscape) {
-                    // --- ЛАНДШАФТ ПАНOРАМА ---
-                    const calculatedWidthPx = window.innerHeight * imgAspectRatio;
-                    const targetVw = (calculatedWidthPx / window.innerWidth) * 100;
-                    const targetWidthStr = `${targetVw}dvw`;
-
-                    bgImg.style.width = targetWidthStr;
-                    bgImg.style.height = '100dvh';
-                    bgElement.style.width = targetWidthStr;
-                    bgElement.style.height = '100dvh';
-
-                    requestAnimationFrame(() => {
-                        wrapper.scrollTo({
-                            left: (wrapper.scrollWidth - window.innerWidth) / 2,
-                            top: 0,
-                            behavior: 'instant'
-                        });
-                    });
-                } else {
-                    // --- ПОРТРЕТ ПАНOРАМА ---
-                    const calculatedHeightPx = window.innerWidth / imgAspectRatio;
-                    const targetVh = (calculatedHeightPx / window.innerHeight) * 100;
-                    const targetHeightStr = `${targetVh}dvh`;
-
-                    // bgImg.style.width = '100dvw';
-                    // bgImg.style.height = targetHeightStr;
-                    // bgElement.style.width = '100dvw';
-                    // bgElement.style.height = targetHeightStr;
-
-                    bgImg.style.width = targetHeightStr;
-                    bgImg.style.height = '100dvw';
-                    bgElement.style.width = targetHeightStr;
-                    bgElement.style.height = '100dvw';
-
-                    requestAnimationFrame(() => {
-                        wrapper.scrollTo({
-                            left: 0,
-                            top: (wrapper.scrollHeight - wrapper.clientHeight) / 2,
-                            behavior: 'instant'
-                        });
-                    });
-                }
-            } else {
-                // Если это любое другое окно или в главном меню выключен скролл (scrollable: false)
-                resetToFullscreen();
-            }
-        };
-
-        bgImg.src = screenMeta.bg_image;
-    } else {
-        bgImg.src = '';
-        resetToFullscreen();
-    }
-}
 

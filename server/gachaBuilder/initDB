@@ -1,0 +1,65 @@
+-- Создаем таблицу профилей игроков на серверах
+CREATE TABLE IF NOT EXISTS player_server_profiles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id INT NOT NULL, -- Предполагаем, что в твоей таблице пользователей id имеет тип INT. Если UUID, замени на UUID.
+    server_id VARCHAR(50) NOT NULL,
+    nickname VARCHAR(50) NOT NULL,
+    level INT NOT NULL DEFAULT 1,
+    combat_power INT NOT NULL DEFAULT 0,
+
+    -- Наши динамические корзины
+    resources JSONB NOT NULL DEFAULT '{}'::jsonb,
+    idle_timestamps JSONB NOT NULL DEFAULT '{}'::jsonb,
+    game_data JSONB NOT NULL DEFAULT '{}'::jsonb,
+
+    -- Системные метки времени
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Индекс для предотвращения дубликатов (1 игрок = 1 профиль на 1 сервере)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_server
+ON player_server_profiles (user_id, server_id);
+
+-- Индекс для мгновенного получения списка серверов, где у игрока есть персонаж
+CREATE INDEX IF NOT EXISTS idx_user_servers_list
+ON player_server_profiles (user_id);
+
+-- Индекс для быстрого построения топ-листа (Leaderboard) по боевой силе на конкретном сервере
+CREATE INDEX IF NOT EXISTS idx_server_combat_power
+ON player_server_profiles (server_id, combat_power DESC);
+
+
+CREATE TABLE global_boss_states (
+    game_id VARCHAR(64) NOT NULL,
+    server_id VARCHAR(64) NOT NULL,
+    boss_key VARCHAR(64) NOT NULL,
+    current_hp BIGINT NOT NULL,        -- Текущее оставшееся здоровье босса
+    total_damage_pool JSONB DEFAULT '{}'::jsonb, -- Кто сколько нанес: {"user_id_1": 5500000, "user_id_2": 120000}
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (game_id, server_id, boss_key)
+);
+
+
+CREATE TABLE b2b_pvp_arena_matches (
+    id SERIAL PRIMARY KEY,
+    match_id VARCHAR(100) UNIQUE NOT NULL,
+    partner_id VARCHAR(50) NOT NULL DEFAULT 'demo_mtwtech',
+    game_id VARCHAR(50) NOT NULL,
+    server_id VARCHAR(50) NOT NULL,   -- 🔥 ИСПРАВЛЕНО: Теперь это СТРОКА (VARCHAR), никаких INT!
+    sport VARCHAR(50) DEFAULT '⚔️ Gacha Arena',
+    league VARCHAR(100) NOT NULL,
+    teams JSONB NOT NULL,
+    status VARCHAR(20) DEFAULT 'PREMATCH',
+    minute INT DEFAULT 0,
+    score_home INT DEFAULT 0,
+    score_away INT DEFAULT 0,
+    markets JSONB NOT NULL,
+    ball_zone INT DEFAULT 0,
+    battle_replay JSONB NOT NULL
+);
+
+CREATE INDEX idx_arena_matches_b2b ON b2b_pvp_arena_matches (partner_id, game_id, server_id, status);
+
+ALTER TABLE sports_bets ALTER COLUMN game_id TYPE VARCHAR(100);
+ALTER TABLE sports_bets ALTER COLUMN server_id TYPE VARCHAR(100);

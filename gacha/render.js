@@ -1,20 +1,39 @@
 // frontend/render.js
 
 import { initServerSelectScreen } from './serverSelect.js';
-import { initShopScreen } from './shop.js';
-import { initInventoryScreen } from './inventory.js';
-import { initHeroListScreen } from './heroList.js';
-import {initGameListScreen} from "./gameList.js";
-import { initGachaScreen } from './gacha.js';
-import { initArenaScreen } from './arenaScreen.js';
+
+import { initHeroListScreen } from './scripts/hero/heroList.js';
+import {initHeroViewScreen} from "./scripts/hero/heroView.js";
+
+import {initGameListScreen} from "./scripts/game/gameList.js";
+import { initGachaScreen } from './scripts/gacha/gacha.js';
+
 import {initPlayerProfileScreen} from "./playerProfile.js";
+import {initLeaderboardScreen} from "./leaderboard.js";
+
+// import { initShopScreen } from './scripts/inventory/shop.js';
+import { initShopScreen } from './scripts/shop/shopView.js';
+
+import { initInventoryScreen } from './scripts/inventory/inventory.js';
+import {initCraftScreen} from "./scripts/inventory/craft.js";
+
+import {initArenaScreen} from './scripts/battle/arenaScreen.js';
+import {initPreBattleScreen} from "./scripts/battle/preBattle.js";
+import {initPveCampaignScreen} from "./scripts/battle/pveCampaign.js";
+import {initPveTowerScreen} from "./scripts/battle/pveTower.js";
+import {initPvpArenaScreen} from "./scripts/battle/pvpArena.js";
+import {initBossListScreen} from "./scripts/battle/pveBossList.js"
+
+import {initArenaBettingScreen} from "./scripts/battle/arenaBetting.js";
 
 import { DialogManager } from './dialogManager.js';
 
 import {t, applyLayout, getFormattedTime} from './shared.js'
+import {handleMenuAction, updateState, Game} from "./stateManager.js";
 
 
-function getPlayerBarHTML(Game) {
+
+function getPlayerBarHTML() {
     // if (Game.gameState === 'LOADING' || Game.gameState === 'SERVER_SELECT') return '';
     if (Game.gameState !== 'MAIN_MENU') return '';
 
@@ -48,8 +67,8 @@ function getPlayerBarHTML(Game) {
 
                 <!-- НАСТОЯЩЕЕ СЕРВЕРНОЕ ВРЕМЯ (ПОЛНОСТЬЮ АДАПТИВНОЕ) -->
                 <div style="display: flex; justify-content: space-between; font-size: 10px; color: #aaa; width: 100%;">
-                    <span>${t('profile_server', Game)}: <b style="color:#2196f3;">${Game.player.server_id.toUpperCase()}</b></span>
-                    <span>${t('profile_server_time', Game)}: <b style="color:#ffcc00;">${getFormattedTime(Game.serverTimeOffset)}</b></span>
+                    <span>${t('profile_server')}: <b style="color:#2196f3;">${Game.player.server_id.toUpperCase()}</b></span>
+                    <span>${t('profile_server_time')}: <b style="color:#ffcc00;">${getFormattedTime(Game.serverTimeOffset)}</b></span>
                 </div>
 
             </div>
@@ -57,7 +76,7 @@ function getPlayerBarHTML(Game) {
     `;
 }
 
-function getResourcesBarHTML(Game) {
+function getResourcesBarHTML() {
     // if (Game.gameState === 'LOADING' || Game.gameState === 'SERVER_SELECT') return '';
     if (['LOADING', 'GAME_LOGIN', 'SERVER_SELECT'].includes(Game.gameState)) return '';
 
@@ -75,31 +94,17 @@ function getResourcesBarHTML(Game) {
             <span id="diamond-display" style="color: #00ffff">💎: ${Game.player.resources.diamond}</span>
         </div>
     `;
-
-    // // Генерируем элементы валют динамически на основе справочника из твоего конфига бэка
-    // const resourcesHTML = Object.entries(playerResources).map(([resId, count]) => {
-    //     const meta = configResources[resId];
-    //     // Если автор настроил ресурс в mechanics.resources — берем его иконку, иначе ставим дефолтную сферу
-    //     const icon = meta ? meta.icon : '🔮';
-    //
-    //     return `<span style="margin-right: 15px; font-family: monospace; font-weight: bold;">${icon} ${count}</span>`;
-    // }).join('');
-    //
-    // return `
-    //     <div class="ui-element header-panel" style="${style} display: flex; align-items: center; justify-content: flex-end; padding: 0 15px; box-sizing: border-box; color: #fff; pointer-events: auto;">
-    //         ${resourcesHTML}
-    //     </div>
-    // `;
 }
 
-export function renderGameUI(container, Game, actions) {
+export function renderGameUI() {
+    const container = Game.uiContainer;
     const townBgContainer = document.getElementById('game-bg');
 
     let staticHtml = '';
     let scrollableHtml = '';
 
-    staticHtml += getPlayerBarHTML(Game);
-    staticHtml += getResourcesBarHTML(Game);
+    staticHtml += getPlayerBarHTML();
+    staticHtml += getResourcesBarHTML();
 
     const orientation = Game.config.orientation || 'landscape';
     const widgets = Game.config.ui[orientation] || [];
@@ -117,7 +122,7 @@ export function renderGameUI(container, Game, actions) {
             const color = w.layout?.textColor || '#fff';
 
             // ИСПРАВЛЕНО: Умные стили вывески теперь действительно выталкивают текст ЗА рамки здания (через transform)
-            let labelStyle = `font-size: ${size}; color: ${color}; font-weight: bold; white-space: nowrap; pointer-events: none; z-index: 5;`;
+            let labelStyle = `font-size: ${size}; color: ${color}; font-weight: bold; white-space: normal; word-break: break-word; pointer-events: none; z-index: 5;`;
             let additionalStyle = '';
 
             if (pos === 'top') {
@@ -152,8 +157,8 @@ export function renderGameUI(container, Game, actions) {
     container.innerHTML = staticHtml;
 
     if(Game.gameState === 'MAIN_MENU') {
-        DialogManager.trigger('FIRST_LOGIN', Game, ()=>{
-            DialogManager.trigger('FIRST_MENU', Game);
+        DialogManager.trigger('FIRST_LOGIN', ()=>{
+            DialogManager.trigger('FIRST_MENU');
         });
 
         const screenMeta = widgets.find(w => w.id === 'screen_main_menu') || {};
@@ -196,6 +201,12 @@ export function renderGameUI(container, Game, actions) {
                 }
             }
         }
+
+
+    }
+
+    if(Game.gameState === 'PVE_CAMPAIGN') {
+        // injectIdleChestButton(container, '.screen-content', 'main_loot_claim_at', ()=>{});
     }
 
     if (townBgContainer) {
@@ -205,24 +216,37 @@ export function renderGameUI(container, Game, actions) {
 
 
     // --- РОУТИНГ МОДУЛЬНЫХ ОКОН ---
-    const updateUiCallback = () => renderGameUI(container, Game, actions);
+    const updateUiCallback = () => renderGameUI(container);
 
     // Безопасный Data-Driven маппинг стейтов на функции инициализации экранов
     const screensMap = {
         'GAME_LOGIN': initServerSelectScreen,
         'SERVER_SELECT': initServerSelectScreen,
+        // 'SHOP': initShopScreen,
         'SHOP': initShopScreen,
         'INVENTORY': initInventoryScreen,
         'HEROES': initHeroListScreen, // Вызывает наш новый heroList с сетками и фильтрами
+        'HERO_VIEW': initHeroViewScreen,
         'GACHA': initGachaScreen,
         'GAMES': initGameListScreen,
         'ARENA': initArenaScreen,
-        'PROFILE': initPlayerProfileScreen
+        'PROFILE': initPlayerProfileScreen,
+        'CRAFT': initCraftScreen,
+        'LEADERBOARD': initLeaderboardScreen,
+
+        'PVE_CAMPAIGN': (container, cb) => initPveCampaignScreen(container, cb),
+        'PVE_TOWER': (container, cb) => initPveTowerScreen(container, 'main_tower', cb),
+        // 'PVP_ARENA': initPvpArenaScreen,
+        'PVP_ARENA': initArenaBettingScreen,
+        'PVE_BOSS_LIST': initBossListScreen
     };
 
     const initScreenFn = screensMap[Game.gameState];
     if (initScreenFn) {
-        initScreenFn(container, Game, updateUiCallback);
+        const oldScreen = container.querySelector('.screen-content');
+        if (oldScreen) oldScreen.remove();
+
+        initScreenFn(container, updateUiCallback);
     }
 
     // --- УНИВЕРСАЛЬНАЯ ДЕЛЕГАЦИЯ КЛИКОВ НА ОБА СЛОЯ ---
@@ -232,8 +256,47 @@ export function renderGameUI(container, Game, actions) {
             btn.onclick = (e) => {
                 e.stopPropagation();
                 const action = btn.dataset.uiAction;
-                if (action === 'go_back') actions.changeState('MAIN_MENU');
-                else actions.handleMenuAction(action);
+                if (action === 'go_back') {
+                    const ctx = Game.pveContext || {};
+
+                    // Сценарий 1: Мы находимся на экране боя -> возвращаем на предбатл этого же этапа
+                    if (Game.gameState === 'COMBAT_ARENA') {
+                        // Очищаем старый экран боя из DOM
+                        const oldScreen = container.querySelector('.screen-content');
+                        if (oldScreen) oldScreen.remove();
+
+                        // Меняем стейт через твой нативный метод
+                        updateState('PRE_BATTLE');
+
+                        initPreBattleScreen(container, ctx.stageId, ctx.type, ctx.towerKey, updateUiCallback);
+                    }
+
+                    // Сценарий 2: Мы находимся на подготовке (PRE_BATTLE) -> возвращаем на карту или в башню
+                    else if (Game.gameState === 'PRE_BATTLE') {
+                        const oldScreen = container.querySelector('.screen-content');
+                        if (oldScreen) oldScreen.remove();
+
+                        // Возвращаем строго в тот стейт, из которого зашли (PVE_CAMPAIGN или PVE_TOWER)
+                        const targetState = ctx.previousState || 'MAIN_MENU';
+                        updateState(targetState);
+
+                        if (targetState === 'PVE_CAMPAIGN') {
+                            initPveCampaignScreen(container, updateUiCallback);
+                        } else if (targetState === 'PVE_TOWER') {
+                            initPveTowerScreen(container, ctx.towerKey, updateUiCallback);
+                        } else if (targetState === 'PVP_ARENA') {
+                            initPvpArenaScreen(container, ctx.towerKey, updateUiCallback);
+                        } else if (targetState === 'PVP_BOSS_LIST') {
+                            initBossListScreen(container, ctx.towerKey, updateUiCallback);
+                        }
+                    }
+
+                    // Сценарий 3: Базовый откат в главное лобби для остальных стандартных окон
+                    else {
+                        updateState('MAIN_MENU');
+                    }
+                }
+                else handleMenuAction(action);
             };
         });
     };

@@ -320,6 +320,45 @@ const gamesConfigDB = {
                         textPosition: "bottom"
                     }
                 },
+
+                {
+                    id: "btn_pve_campaign",
+                    type: "button",
+                    label_loc_key: "btn_pve_campaign_label",
+                    action: "open_pve_campaign",
+                    layout: {
+                        top: "43%",
+                        right: "34% + 5px",
+                        width: "12%",
+                        height: "16%",
+
+                        backgroundColor: "rgba(55,0,55,.6)",
+                        // backgroundImage: "url('./gacha/assets/images/main_arena.png')",
+
+                        textColor: "#fff",
+                        textSize: "20px",
+                        textPosition: "bottom"
+                    }
+                },
+                {
+                    id: "btn_pve_tower",
+                    type: "button",
+                    label_loc_key: "btn_pve_tower_label",
+                    action: "open_pve_tower",
+                    layout: {
+                        top: "43%",
+                        right: "34% + 5px",
+                        width: "12%",
+                        height: "16%",
+
+                        backgroundColor: "rgba(55,0,55,.6)",
+                        // backgroundImage: "url('./gacha/assets/images/main_arena.png')",
+
+                        textColor: "#fff",
+                        textSize: "20px",
+                        textPosition: "bottom"
+                    }
+                },
                 {
                     id: "screen_server_select",
                     bg_image: "./gacha/assets/images/server_select_bg.png", // Фон самого экрана арены
@@ -558,6 +597,8 @@ const gamesConfigDB = {
                     "btn_gacha_label": "Summon",
                     "btn_temple_power_label": "Castle of Power",
                     "btn_arena_label": "PvP",
+                    "btn_pve_campaign_label": "Campaign",
+                    "btn_pve_tower_label": "Tower o Gods",
                     "btn_back_label": "✖",
 
                     "profile_vip": "VIP Level",
@@ -1456,14 +1497,14 @@ const gamesConfigDB = {
                 catalog: [
                     {
                         id: "shop_scroll_1",
-                        item_id: "scroll_epic",
+                        itemId: "scroll_epic",
                         cost_gems: 50,
                         amount: 1,
                         title_loc: {...BASE_LANGUAGES, ru: "Свиток Бога (СКИДКА)", en: "God Scroll (SALE)"}
                     },
                     {
                         id: "shop_staff_god",
-                        item_id: "zeus_staff",
+                        itemId: "zeus_staff",
                         cost_gems: 500,
                         amount: 1,
                         title_loc: {...BASE_LANGUAGES, ru: "⚡ Посох Зевса", en: "⚡ Staff of Zeus"}
@@ -1476,14 +1517,14 @@ const gamesConfigDB = {
                 catalog: [
                     {
                         id: "shop_scroll_1",
-                        item_id: "scroll_epic",
+                        itemId: "scroll_epic",
                         cost_gems: 50,
                         amount: 1,
                         title_loc: {...BASE_LANGUAGES, ru: "Свиток Бога (СКИДКА)", en: "God Scroll (SALE)"}
                     },
                     {
                         id: "shop_staff_god",
-                        item_id: "zeus_staff",
+                        itemId: "zeus_staff",
                         cost_gems: 500,
                         amount: 1,
                         title_loc: {...BASE_LANGUAGES, ru: "⚡ Посох Зевса", en: "⚡ Staff of Zeus"}
@@ -1519,7 +1560,7 @@ const gamesConfigDB = {
                 {
                     id: "banner_friendship",
                     banner_type: "friendship",
-                    pool_id: "friendship_pool",
+                    poolId: "friendship_pool",
                     cost_item_id: "currency_friendship_points",
                     cost_amount: 100,
                     pity_threshold: 0,

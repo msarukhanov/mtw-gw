@@ -27,4 +27,12 @@ server.listen(PORT, () => {
 });
 
 
+const { connectRedis } = require('./redisClient');
+const { initLazyWriteTimer } = require('./gachaBuilder/db/lazyWrite');
+
+connectRedis(() => {
+    console.log('[App] Подключение к Redis подтверждено.');
+    initLazyWriteTimer();
+});
+
 

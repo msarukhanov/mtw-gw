@@ -1,29 +1,7 @@
-// frontend/app.js
-
-import { renderGameUI, } from './render.js';
-import { API_URL, updateBackground, initTownScrollListeners } from './shared.js';
-
-const Game = {
-    config: null,
-    player: null,
-    gameState: 'LOADING',
-    gameId: '', serverId: '', deviceId: '',
-    locale: 'en',
-    uiContainer: null,
-    activeShopType: 'basic'
-};
+import { API_URL, initTownScrollListeners, t } from './shared.js';
+import { Game, updateState } from './stateManager.js';
 
 let customConfig;
-
-// Единственная чистая функция локализации для системных нужд ядра
-function t(key, replaceValue = null) {
-    if (!Game.config || !Game.config.localization) return key;
-    let text = Game.config.localization.ui[Game.locale]?.[key] || key;
-    if (replaceValue !== null) {
-        text = text.replace('{value}', replaceValue);
-    }
-    return text;
-}
 
 async function initWrapper() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -51,37 +29,9 @@ async function initWrapper() {
     initGlobalFullscreen();
 }
 
-const AppActions = {
-    changeState: (s) => updateState(s),
-
-    handleMenuAction: (action) => {
-        if (action === 'open_login') updateState('GAME_LOGIN');
-        if (action === 'open_server_select') updateState('SERVER_SELECT');
-        if (action === 'open_shop') updateState('SHOP');
-        if (action === 'open_inventory') updateState('INVENTORY');
-        if (action === 'open_heroes') updateState('HEROES');
-        if (action === 'open_gacha') updateState('GACHA');
-        if (action === 'open_games') updateState('GAMES');
-        if (action === 'open_arena') updateState('ARENA');
-        if (action === 'open_profile') updateState('PROFILE');
-    }
-};
-
-export function updateState(newState) {
-    Game.gameState = newState;
-
-    // Обновляем фон (наша умная нативная прокрутка)
-    updateBackground(newState, Game.config);
-
-    // Передаем в рендер наш СТАБИЛЬНЫЙ объект действий AppActions
-    renderGameUI(Game.uiContainer, Game, AppActions);
-}
-
 window.t = t;
-window.updateState = updateState;
 window.onload = initWrapper;
 window.initWrapper = initWrapper;
-window.updateState = updateState;
 
 window.addEventListener('message', function(event) {
     console.log(event);
@@ -113,7 +63,6 @@ screen.orientation.addEventListener("change", () => {
  */
 function initGlobalFullscreen() {
     // Защита от дублирования: если кнопка уже создана, ничего не делаем
-    console.log('init fs');
     if (document.getElementById('global-fs-button')) return;
 
     // Вживляем кнопку в самый корень документа

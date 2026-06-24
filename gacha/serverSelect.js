@@ -1,17 +1,13 @@
-// serverSelect.js
-import { t, locObj, API_URL, SOCKET_URL } from './shared.js';
+import { t, locObj, API_URL, SOCKET_URL, setHeaders } from './shared.js';
+import { Game, updateState} from './stateManager.js';
+import {connect} from './socket.js';
 
-// Локальный внутренний стейт шагов внутри окна логина
 let HasAccount = false;
 let HasServer = false;
 let CachedUser = null;
 
-// Флаги ручного переключения режимов пользователем
 let IsSelectingServerMode = false;
 
-/**
- * Синхронный опрос LocalStorage устройства
- */
 function checkAuthCache() {
     try {
         const savedMeta = localStorage.getItem('gacha_builder_account_meta');
@@ -43,7 +39,7 @@ function checkAuthCache() {
     }
 }
 
-async function runAuth(loginData, Game, refreshCallback) {
+async function runAuth(loginData, refreshCallback) {
     updateState('LOADING');
     try {
         let devId = Game.deviceId;
@@ -99,13 +95,13 @@ async function runAuth(loginData, Game, refreshCallback) {
 
     } catch (err) {
         console.error(err);
-        alert(t('alert_login_error', Game) || 'Auth Failed');
+        alert(t('alert_login_error') || 'Auth Failed');
         Game.gameState = 'GAME_LOGIN';
         refreshCallback();
     }
 }
 
-async function runFinalGameStart(serverId, Game) {
+async function runFinalGameStart(serverId) {
     updateState('LOADING');
     try {
         const res = await fetch(`${API_URL}/auth/enter`, {
@@ -131,107 +127,91 @@ async function runFinalGameStart(serverId, Game) {
             sessionId: data.sessionId
         }));
 
+        setHeaders({
+            'Content-Type': 'application/json',
+            'x-username': data.username,
+            'x-game-id': Game.gameId,
+            'x-device-id': Game.deviceId,
+            'x-server-id': serverId
+        });
+
         CachedUser = { username: data.username, game_id: Game.gameId, partnerId: data.partnerId, device: Game.deviceId};
 
         Game.player = data;
         Game.sessionId = data.sessionId;
+        Game.serverId = serverId;
+        Game.partnerId = data.partnerId;
         if (data.server_time) Game.serverTimeOffset = data.server_time - Date.now();
-        console.log(io);
-        if (typeof io !== 'undefined') {
-            const socket = io(SOCKET_URL);
-            socket.on('connect', () => {
-                console.log('WS Connect', {
-                    username: data.username,
-                    partnerId: 'demo_mtwtech'
-                });
-                setTimeout(() => {
-                    console.log('🚀 Sending handshake now...');
-                    socket.emit('platform_join', {
-                        username: data.username,
-                        partnerId: 'demo_mtwtech'
-                    });
-                }, 1000);
-            });
-            socket.on('wallet_update', (wsData) => {
-                console.log('⚡ Live WS Wallet Update:', data.balance);
-                updateWallet(wsData);
-            });
-        }
 
-        updateState('MAIN_MENU'); // Входим в игру!
+        connect(data.username, data.username, Game.serverId, Game.partnerId);
+
+        // if (typeof io !== 'undefined') {
+        //     const socket = io(SOCKET_URL);
+        //     socket.on('connect', () => {
+        //         window.io = socket;
+        //         setTimeout(() => {
+        //             console.log('🚀 Sending handshake now...');
+        //             socket.emit('platform_join', {
+        //                 username: data.username,
+        //                 serverId,
+        //                 partnerId: 'demo_mtwtech'
+        //             });
+        //         }, 1000);
+        //     });
+        //     socket.on('wallet_update', (wsData) => {
+        //         console.log('⚡ Live WS Wallet Update:', data.balance);
+        //         updateWallet(wsData);
+        //     });
+        // }
+
+        // updateState('MAIN_MENU'); // Входим в игру!
     } catch (err) {
-        alert(t('alert_login_error', Game));
+        console.log(err);
+        alert(t('alert_login_error'));
         updateState('SERVER_SELECT');
     }
 }
 
 
-function makeLoginHTML(Game) {
+function makeLoginHTML() {
     const orientation = Game.config.orientation || 'landscape';
     const screenMeta = Game.config?.ui?.[orientation]?.find(w => w.id === 'screen_game_login') || {};
     const providers = screenMeta.auth_providers || ["google", "discord"];
     const socialIcons = { google: "🌐", discord: "💬", telegram: "✈" };
 
     return `
-            <h2 style="margin: 0 0 5px 0; font-size: 20px; color: #ffcc00; text-align: center;">${t('login_header', Game)}</h2>
-            <input type="text" id="auth-username" placeholder="${t('login_user_placeholder', Game)}" style="background: #0a0a0a; color: #fff; border: 1px solid #333; padding: 10px; border-radius: 6px; font-size: 13px; width: 100%; box-sizing: border-box;">
-            <input type="password" id="auth-password" placeholder="${t('login_pass_placeholder', Game)}" style="background: #0a0a0a; color: #fff; border: 1px solid #333; padding: 10px; border-radius: 6px; font-size: 13px; width: 100%; box-sizing: border-box;">
-            <button id="btn-submit-auth" style="width: 100%; height: 38px; background: #ffcc00; color: #000; border: none; font-weight: bold; border-radius: 6px; font-size: 13px; cursor: pointer; margin-top: 5px;">${t('login_btn_submit', Game)}</button>
-            <button id="btn-guest-auth" style="width: 100%; height: 30px; background: #111; color: #aaa; border: 1px solid #333; border-radius: 6px; font-size: 12px; cursor: pointer;">${t('login_btn_guest', Game)}</button>
-            <div style="text-align: center; color: #666; font-size: 10px; margin-top: 2px;">${t('login_or_social', Game)}</div>
+            <h2 style="margin: 0 0 5px 0; font-size: 20px; color: #ffcc00; text-align: center;">${t('login_header')}</h2>
+            <input type="text" id="auth-username" placeholder="${t('login_user_placeholder')}" style="background: #0a0a0a; color: #fff; border: 1px solid #333; padding: 10px; border-radius: 6px; font-size: 13px; width: 100%; box-sizing: border-box;">
+            <input type="password" id="auth-password" placeholder="${t('login_pass_placeholder')}" style="background: #0a0a0a; color: #fff; border: 1px solid #333; padding: 10px; border-radius: 6px; font-size: 13px; width: 100%; box-sizing: border-box;">
+            <button id="btn-submit-auth" style="width: 100%; height: 38px; background: #ffcc00; color: #000; border: none; font-weight: bold; border-radius: 6px; font-size: 13px; cursor: pointer; margin-top: 5px;">${t('login_btn_submit')}</button>
+            <button id="btn-guest-auth" style="width: 100%; height: 30px; background: #111; color: #aaa; border: 1px solid #333; border-radius: 6px; font-size: 12px; cursor: pointer;">${t('login_btn_guest')}</button>
+            <div style="text-align: center; color: #666; font-size: 10px; margin-top: 2px;">${t('login_or_social')}</div>
             <div style="display: flex; justify-content: center; gap: 15px;">
                 ${providers.map(pId => `<button class="btn-social-auth ui-element" data-provider="${pId}" style="width: 40px; height: 40px; background: #222; border: 1px solid #444; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer;">${socialIcons[pId] || "🔗"}</button>`).join('')}
             </div>
         `
 }
 
-// function makeServersHTML(Game) {
-//     const servers = Game.config?.servers || [];
-//
-//     return `
-//             <div style="text-align: center; margin-bottom: 5px;">
-//                 <span style="font-size: 11px; color: #aaa; text-transform: uppercase;">${t('server_current_account', Game)}</span>
-//                 <b style="font-size: 16px; color: #ffcc00; display: block; margin-top: 2px;">${CachedUser.username}</b>
-//             </div>
-//             <h3 style="margin: 5px 0 5px 0; font-size: 14px; color: #fff; text-align: center; border-top: 1px solid #222; padding-top: 10px;">${t('server_select_title', Game)}</h3>
-//
-//             <div class="launcher-servers-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto; padding-right: 3px; box-sizing: border-box;">
-//                 ${servers.length === 0
-//         ? `<div style="color:#666; text-align:center; font-size:12px;">No worlds available</div>`
-//         : servers.map(s => {
-//             const serverName = locObj(s.name, Game) || s.id;
-//             let srvColor = s.status === 'hot' ? '#d84315' : (s.status === 'maintenance' ? '#444' : '#1565c0');
-//             return `
-//                             <button class="btn-select-world-node" data-world-id="${s.id}" ${s.status === 'maintenance' ? 'disabled' : ''}
-//                                     style="width: 100%; padding: 8px; background: ${srvColor}; color: #fff; border: none; border-radius: 4px; font-weight: bold; font-size: 12px; cursor: ${s.status === 'maintenance' ? 'not-allowed' : 'pointer'}; ${s.status === 'maintenance' ? 'opacity:0.4;' : ''}">
-//                                 ${serverName} ${s.text ? `(${locObj(s.text, Game)})` : ''}
-//                             </button>
-//                         `;
-//         }).join('')}
-//             </div>
-//     `;
-// }
-
-function makeServersHTML(Game) {
+function makeServersHTML() {
     const servers = Game.config?.servers || [];
 
     return `
             <div style="text-align: center; margin-bottom: 5px;">
-                <span style="font-size: 11px; color: #aaa; text-transform: uppercase;">${t('server_current_account', Game)}</span>
+                <span style="font-size: 11px; color: #aaa; text-transform: uppercase;">${t('server_current_account')}</span>
                 <b style="font-size: 16px; color: #ffcc00; display: block; margin-top: 2px;">${CachedUser.username}</b>
             </div>
-            <h3 style="margin: 5px 0 5px 0; font-size: 14px; color: #fff; text-align: center; border-top: 1px solid #222; padding-top: 10px;">${t('server_select_title', Game)}</h3>
+            <h3 style="margin: 5px 0 5px 0; font-size: 14px; color: #fff; text-align: center; border-top: 1px solid #222; padding-top: 10px;">${t('server_select_title')}</h3>
             
             <div class="launcher-servers-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto; padding-right: 3px; box-sizing: border-box; margin-bottom: 5px;">
                 ${servers.length === 0
         ? `<div style="color:#666; text-align:center; font-size:12px;">No worlds available</div>`
         : servers.map(s => {
-            const serverName = locObj(s.name, Game) || s.id;
+            const serverName = locObj(s.name) || s.id;
             let srvColor = s.status === 'hot' ? '#d84315' : (s.status === 'maintenance' ? '#444' : '#1565c0');
             return `
                             <button class="btn-select-world-node" data-world-id="${s.id}" ${s.status === 'maintenance' ? 'disabled' : ''}
                                     style="width: 100%; padding: 8px; background: ${srvColor}; color: #fff; border: none; border-radius: 4px; font-weight: bold; font-size: 12px; cursor: ${s.status === 'maintenance' ? 'not-allowed' : 'pointer'}; ${s.status === 'maintenance' ? 'opacity:0.4;' : ''}">
-                                ${serverName} ${s.text ? `(${locObj(s.text, Game)})` : ''}
+                                ${serverName} ${s.text ? `(${locObj(s.text)})` : ''}
                             </button>
                         `;
         }).join('')}
@@ -240,46 +220,46 @@ function makeServersHTML(Game) {
             <!-- ДОБАВЛЕНО: Кнопка Назад из локализации в самом низу списка -->
             <button id="btn-launcher-back-to-menu" 
                     style="width: 100%; height: 28px; background: #222; color: #aaa; border: 1px solid #444; font-weight: bold; border-radius: 4px; font-size: 11px; cursor: pointer; margin-top: 5px;">
-                ${t('btn_server_back_label', Game) || 'Back'}
+                ${t('btn_server_back_label') || 'Back'}
             </button>
     `;
 }
 
 
-function makeFastLoginHTML(Game) {
+function makeFastLoginHTML() {
 
     return `
-        <h2 style="margin: 0 0 5px 0; font-size: 18px; color: #ffcc00; text-align: center; text-transform: uppercase; letter-spacing: 0.5px;">${t('server_current_account', Game)}</h2>
+        <h2 style="margin: 0 0 5px 0; font-size: 18px; color: #ffcc00; text-align: center; text-transform: uppercase; letter-spacing: 0.5px;">${t('server_current_account')}</h2>
         
         <div style="text-align: center; margin: 5px 0;">
             <b style="font-size: 22px; color: #fff; display: block; margin-bottom: 2px;">${CachedUser.username}</b>
         </div>
 
         <div style="background: rgba(255,255,255,0.02); border: 1px solid #222; padding: 10px; border-radius: 6px; text-align: center;">
-            <span style="font-size: 11px; color: #888; display: block; text-transform: uppercase;">${t('profile_server', Game)}</span>
+            <span style="font-size: 11px; color: #888; display: block; text-transform: uppercase;">${t('profile_server')}</span>
             <b style="font-size: 15px; color: #2196f3; font-family: monospace; display: block; margin-top: 2px;">${CachedUser.server_id}</b>
         </div>
 
         <div style="display: flex; flex-direction: column; width: 100%; gap: 8px; margin-top: 5px;">
             <!-- Кнопка: СТАРТ -->
             <button id="btn-launcher-start" style="width: 100%; height: 42px; background: #4caf50; color: #fff; border: none; font-weight: bold; border-radius: 6px; font-size: 15px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">
-                ${t('login_btn_enter', Game) || 'START'}
+                ${t('login_btn_enter') || 'START'}
             </button>
             
             <!-- Кнопка: Выбрать сервер -->
             <button id="btn-launcher-goto-servers" style="width: 100%; height: 34px; background: #1565c0; color: #fff; border: none; font-weight: bold; border-radius: 6px; font-size: 12px; cursor: pointer;">
-                ${t('server_select_title', Game)}
+                ${t('server_select_title')}
             </button>
             
             <!-- Кнопка: Сменить учетную запись -->
             <button id="btn-launcher-logout" style="width: 100%; height: 26px; background: #111; color: #ef4444; border: 1px solid #ef4444; font-weight: bold; border-radius: 4px; font-size: 11px; cursor: pointer;">
-                ${t('login_btn_change', Game)}
+                ${t('login_btn_change')}
             </button>
         </div>
     `
 }
 
-export function getServerSelectHTML(Game) {
+export function getServerSelectHTML() {
     checkAuthCache();
 
     console.log('[HAS]:', {HasAccount, HasServer, CachedUser});
@@ -296,22 +276,22 @@ export function getServerSelectHTML(Game) {
     let contentHTML;
 
     if (!HasAccount) {
-        contentHTML = makeLoginHTML(Game);
+        contentHTML = makeLoginHTML();
     }
     // else if (IsSelectingServerMode || !HasServer) {
     else if (IsSelectingServerMode) {
         Game.deviceId = CachedUser.device_id;
-        contentHTML = makeServersHTML(Game);
+        contentHTML = makeServersHTML();
     }
     else {
         Game.deviceId = CachedUser.device_id;
-        contentHTML = makeFastLoginHTML(Game);
+        contentHTML = makeFastLoginHTML();
     }
 
     return boxWrapperStart + contentHTML + boxWrapperEnd;
 }
 
-export function initServerSelectScreen(container, Game, updateUiCallback) {
+export function initServerSelectScreen(container, updateUiCallback) {
     const refreshScreen = () => {
         container.innerHTML = '';
 
@@ -337,16 +317,16 @@ export function initServerSelectScreen(container, Game, updateUiCallback) {
             const u = container.querySelector('#auth-username').value;
             const p = container.querySelector('#auth-password').value;
             if (!u.trim() || !p.trim()) return;
-            runAuth({ type: "credentials", username: u, password: p }, Game, refreshScreen);
+            runAuth({ type: "credentials", username: u, password: p }, refreshScreen);
         };
 
         container.querySelector('#btn-guest-auth').onclick = (e) => {
             e.stopPropagation();
-            runAuth({ type: "guest" }, Game, refreshScreen);
+            runAuth({ type: "guest" }, refreshScreen);
         };
 
         container.querySelectorAll('.btn-social-auth').forEach(b => {
-            b.onclick = (e) => { e.stopPropagation(); runAuth({ type: "oauth", provider: b.dataset.provider }, Game, refreshScreen); };
+            b.onclick = (e) => { e.stopPropagation(); runAuth({ type: "oauth", provider: b.dataset.provider }, refreshScreen); };
         });
     };
 
@@ -389,7 +369,7 @@ export function initServerSelectScreen(container, Game, updateUiCallback) {
         container.querySelector('#btn-launcher-start').onclick = (e) => {
             e.stopPropagation();
             if(CachedUser.server_id) {
-                runFinalGameStart(CachedUser.server_id, Game);
+                runFinalGameStart(CachedUser.server_id);
             }
         };
 
@@ -421,17 +401,12 @@ export function initServerSelectScreen(container, Game, updateUiCallback) {
     refreshScreen();
 }
 
-
-function updateWallet(data) {
-
-    const walletDisplay = document.getElementById('gold-display');
-    const bonusDisplay = document.getElementById('diamond-display');
-
-    if (data.balance !== undefined) {
-        const formattedBal = data.currency  + ': ' + data.realBalance;
-        const formattedBonus = '💎: ' + data.bonusBalance;
+window.updateResources = function(resources) {
+    if (resources) Game.player.resources = resources;
+    if (resources.gold) {
+        const walletDisplay = document.getElementById('gold-display');
+        const formattedBal = '💰: ' + resources.gold;
 
         if (walletDisplay) walletDisplay.innerText = formattedBal;
-        if (bonusDisplay) bonusDisplay.innerText = formattedBonus;
     }
-}
+};

@@ -1,11 +1,134 @@
 // playerProfile.js
 
-// Импортируем locObj и t из shared, если они еще не импортированы наверх
-import { t, locObj } from './shared.js';
+import { t, locObj, headers, API_URL, getWindowContentStyle } from './shared.js';
+import {Game} from "./stateManager.js";
+
+// 1. СЕТЕВОЙ МЕТОД (Исправлены заголовки и безопасное извлечение истории)
+export async function getPlayerHistory(type) {
+    try {
+        const res = await fetch(`${API_URL}/auth/history`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    partnerId: Game.player?.partnerId || 'demo_mtwtech',
+                    sessionId: Game.player?.sessionId || localStorage.getItem('gacha_builder_account_token'),
+                    username: Game.player?.username,
+                    type
+                })
+        });
+
+        const data = await res.json();
+        if (!res.ok || data.error) throw new Error(data.error || 'History error');
+
+        // Наш бэкенд возвращает историю, забираем массив (например, data.transactions или сам data)
+        return Array.isArray(data) ? data : (data.history || []);
+    } catch (err) {
+        console.error(err);
+        return { error: true, message: err.message };
+    }
+}
+
+// 2. СИНХРОННАЯ ФУНКЦИЯ ГЕНЕРАЦИИ СКЕЛЕТА (ИСПРАВЛЕНО: убран await)
+function getTransactionsTabHTML() {
+    const orientation = Game.config.orientation || 'landscape';
+    const screenSettings = Game.config?.ui?.[orientation]?.find(w => w.id === 'screen_profile') || {};
+    const profileLayout = screenSettings.profile_layout || {};
+    const fields = profileLayout.transaction_fields || [];
+
+    // Генерируем шапку таблицы из твоего конфига админки
+    let thHTML = fields.map(f => `
+        <th style="padding: 10px; text-align: left; font-size: 11px; color: #aaa; text-transform: uppercase; border-bottom: 2px solid #333; font-weight: bold;">
+            ${t(f.label_loc_key)}
+        </th>
+    `).join('');
+
+    return `
+        <div class="profile-tab-transactions" style="width: 100%; height: 100%; display: flex; flex-direction: column;">
+            <div style="flex: 1; overflow-y: auto; border: 1px solid #333; border-radius: 6px; background: rgba(0,0,0,0.2);">
+                <table style="width: 100%; border-collapse: collapse; font-family: sans-serif;">
+                    <thead>
+                        <tr style="background: #111;">${thHTML}</tr>
+                    </thead>
+                    <!-- Сюда временно ставим лоадер с colspan на всю ширину колонок -->
+                    <tbody class="transactions-tbody-container">
+                        <tr>
+                            <td colspan="${fields.length}" style="padding: 30px; text-align: center; color: #aaa; font-size: 13px;">
+                                ⏳ ${Game.locale === 'ru' ? 'Загрузка истории транзакций...' : 'Loading transactions history...'}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+}
+
+// 3. АСИНХРОННАЯ ФУНКЦИЯ ЗАПОЛНЕНИЯ ДАННЫХ (Твой динамический цикл обработки типов полей)
+async function loadAndRenderTransactions(tbodyContainer) {
+    const orientation = Game.config.orientation || 'landscape';
+    const screenSettings = Game.config?.ui?.[orientation]?.find(w => w.id === 'screen_profile') || {};
+    const profileLayout = screenSettings.profile_layout || {};
+    const fields = profileLayout.transaction_fields || [];
+
+    // Запускаем сетевой запрос к истории
+    const txHistory = await getPlayerHistory('cashier');
+
+    if (txHistory.error || !Array.isArray(txHistory) || txHistory.length === 0) {
+        tbodyContainer.innerHTML = `<tr><td colspan="${fields.length}" style="padding: 20px; text-align: center; color: #666; font-size: 12px;">Нет записей о транзакциях</td></tr>`;
+        return;
+    }
+
+    let rowsHTML = '';
+
+    txHistory.forEach(tx => {
+        rowsHTML += `<tr style="border-bottom: 1px solid #222; background: rgba(255,255,255,0.01);">`;
+
+        fields.forEach(f => {
+            let value = tx[f.id];
+            let cellStyle = `padding: 10px; font-size: 12px; color: #fff; white-space: nowrap;`;
+
+            if (f.type === 'date') {
+                const date = new Date(value);
+                value = date.toLocaleDateString(Game.locale || 'ru') + ' ' + date.toLocaleTimeString(Game.locale || 'ru', {hour: '2-digit', minute:'2-digit'});
+                cellStyle += `font-family: monospace; color: #888;`;
+            }
+            else if (f.type === 'loc_string') {
+                let packMeta = null;
+                Object.values(Game.config?.catalog?.items || {}).forEach(item => {
+                    if (item.id === value) packMeta = item;
+                });
+                if (!packMeta) {
+                    const allShops = Object.values(Game.config?.shops || {});
+                    for (let shop of allShops) {
+                        const found = shop.catalog?.find(item => item.id === value || item.itemId === value);
+                        if (found) { packMeta = found; break; }
+                    }
+                }
+                value = packMeta ? locObj(packMeta.title_loc) : value;
+            }
+            else if (f.type === 'number') {
+                value = `<span style="color: #ffcc00; font-weight: bold; font-family: monospace;">💎 ${value}</span>`;
+            }
+            else if (f.type === 'string' && f.id === 'status') {
+                const isSuccess = value === 'success';
+                cellStyle += `font-weight: bold;`;
+                value = `<span style="color: ${isSuccess ? '#4ade80' : '#ef4444'}; background: ${isSuccess ? 'rgba(74,222,128,0.1)' : 'rgba(239,68,68,0.1)'}; padding: 2px 6px; border-radius: 4px; font-size: 10px;">${value.toUpperCase()}</span>`;
+            }
+
+            rowsHTML += `<td style="${cellStyle}">${value}</td>`;
+        });
+
+        rowsHTML += `</tr>`;
+    });
+
+    // Точечно заменяем лоадер на готовую пачку строк
+    tbodyContainer.innerHTML = rowsHTML;
+}
+
 
 let CurrentProfileTab = 'main';
 // Добавляем локальную функцию генерации контента для таба "main"
-function getMainProfileHTML(Game) {
+function getMainProfileHTML() {
     const p = Game.player;
 
     // Расчет процента опыта для прогресс-бара
@@ -20,7 +143,7 @@ function getMainProfileHTML(Game) {
         const proto = Game.config.catalog?.heroes?.[hero.hero_id];
         if (!proto) return '';
         const isCurrent = p.active_home_hero === hero.instance_id;
-        return `<option value="${hero.instance_id}" ${isCurrent ? 'selected' : ''}>${locObj(proto.title_loc, Game)}</option>`;
+        return `<option value="${hero.instance_id}" ${isCurrent ? 'selected' : ''}>${locObj(proto.title_loc)}</option>`;
     }).join('');
 
     return `
@@ -38,17 +161,17 @@ function getMainProfileHTML(Game) {
                 <!-- Кнопки быстрой кастомизации -->
                 <div style="display: flex; flex-direction: column; gap: 5px;">
                     <button id="btn-change-avatar" style="padding: 4px 8px; background: #222; color: #ffcc00; border: 1px solid #ffcc00; border-radius: 4px; font-size: 11px; cursor: pointer;">
-                        ⚙️ ${t('profile_change_avatar', Game)}
+                        ⚙️ ${t('profile_change_avatar')}
                     </button>
                     <button id="btn-change-frame" style="padding: 4px 8px; background: #222; color: #ffcc00; border: 1px solid #ffcc00; border-radius: 4px; font-size: 11px; cursor: pointer;">
-                        🖼️ ${t('profile_change_frame', Game)}
+                        🖼️ ${t('profile_change_frame')}
                     </button>
                 </div>
                 
                 <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 5px;">
-                    <label style="font-size: 11px; color: #aaa;">${t('btn_set_home_hero', Game) || 'Компаньон на главном экране'}</label>
+                    <label style="font-size: 11px; color: #aaa;">${t('btn_set_home_hero') || 'Компаньон на главном экране'}</label>
                     <select id="profile-companion-select" style="background: #111; color: #fff; border: 1px solid #444; padding: 6px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; width: 100%; pointer-events: auto; cursor: pointer;">
-                        ${companionOptionsHTML || `<option disabled>${t('inventory_empty', Game)}</option>`}
+                        ${companionOptionsHTML || `<option disabled>${t('inventory_empty')}</option>`}
                     </select>
                 </div>
             </div>
@@ -56,11 +179,11 @@ function getMainProfileHTML(Game) {
             <!-- Информационный блок (Никнейм и Уровень) -->
             <div style="display: flex; flex-direction: column; gap: 10px; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 6px; border: 1px solid #333;">
                 <div style="display: flex; flex-direction: column; gap: 4px;">
-                    <label style="font-size: 11px; color: #aaa;">${t('profile_nickname_label', Game)}</label>
+                    <label style="font-size: 11px; color: #aaa;">${t('profile_nickname_label')}</label>
                     <div style="display: flex; gap: 10px; align-items: center;">
                         <input type="text" id="profile-nickname-input" value="${p.nickname || ''}" style="background: #111; color: #fff; border: 1px solid #444; padding: 6px 10px; border-radius: 4px; font-size: 13px; font-weight: bold; width: 60%;">
                         <button id="btn-save-profile" style="padding: 6px 12px; background: #ffcc00; color: #000; border: none; font-weight: bold; border-radius: 4px; font-size: 12px; cursor: pointer;">
-                            ${t('profile_save_btn', Game)}
+                            ${t('profile_save_btn')}
                         </button>
                     </div>
                 </div>
@@ -68,7 +191,7 @@ function getMainProfileHTML(Game) {
                 <!-- Прогресс Уровня -->
                 <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 5px;">
                     <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: bold;">
-                        <span style="color: #ffcc00;">${t('heroes_lvl', Game)} ${p.level || 1}</span>
+                        <span style="color: #ffcc00;">${t('heroes_lvl')} ${p.level || 1}</span>
                         <span style="color: #aaa; font-family: monospace;">${p.exp || 0} / ${p.max_exp || 1000}</span>
                     </div>
                     <!-- Нативный HTML5 прогресс-бар -->
@@ -83,7 +206,7 @@ function getMainProfileHTML(Game) {
 }
 
 // Вызывается, когда CurrentProfileTab === 'achievements'
-function getAchievementsTabHTML(Game) {
+function getAchievementsTabHTML() {
     const playerAchievements = Game.player?.achievements || [];
     const metaList = Game.config?.catalog?.achievements_meta || {};
 
@@ -114,8 +237,8 @@ function getAchievementsTabHTML(Game) {
                 <span style="font-size:24px; user-select:none;">${meta.icon || '🏅'}</span>
                 
                 <div style="flex:1; display:flex; flex-direction:column; gap:3px; min-width:0;">
-                    <b style="font-size:13px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${locObj(meta.title_loc, Game)}</b>
-                    <span style="font-size:11px; color:#aaa; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${locObj(meta.desc_loc, Game)}</span>
+                    <b style="font-size:13px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${locObj(meta.title_loc)}</b>
+                    <span style="font-size:11px; color:#aaa; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${locObj(meta.desc_loc)}</span>
                     
                     <!-- Мини прогресс-бар -->
                     <div style="width:100%; height:4px; background:#111; border-radius:2px; overflow:hidden; margin-top:3px;">
@@ -143,160 +266,19 @@ function getAchievementsTabHTML(Game) {
     `;
 }
 
-// Вызывается, когда CurrentProfileTab === 'transactions'
-function getTransactionsTabHTML(Game) {
-    const orientation = Game.config.orientation || 'landscape';
-    const screenSettings = Game.config?.ui?.[orientation]?.find(w => w.id === 'screen_profile') || {};
-    const profileLayout = screenSettings.profile_layout || {};
-
-    // Считываем конфигурацию колонок таблицы из твоего конфига!
-    const fields = profileLayout.transaction_fields || [];
-    // Сырые данные игрока из стейта getOrCreatePlayer
-    const txHistory = Game.player?.transactions || [];
-
-    // Генерируем шапку таблицы на основе локализованных ключей из конфига
-    let thHTML = fields.map(f => `
-        <th style="padding: 10px; text-align: left; font-size: 11px; color: #aaa; text-transform: uppercase; border-bottom: 2px solid #333; font-weight: bold;">
-            ${t(f.label_loc_key, Game)}
-        </th>
-    `).join('');
-
-    // Генерируем строки таблицы динамически сопоставляя типы данных
-    let rowsHTML = '';
-
-    if (txHistory.length === 0) {
-        rowsHTML = `<tr><td colspan="${fields.length}" style="padding: 20px; text-align: center; color: #666; font-size: 12px;">Нет записей о транзакциях</td></tr>`;
-    } else {
-        txHistory.forEach(tx => {
-            rowsHTML += `<tr style="border-bottom: 1px solid #222; background: rgba(255,255,255,0.01);">`;
-
-            fields.forEach(f => {
-                let value = tx[f.id];
-                let cellStyle = `padding: 10px; font-size: 12px; color: #fff; white-space: nowrap;`;
-
-                // Умный рендеринг ячейки в зависимости от типа поля в конфиге
-                if (f.type === 'date') {
-                    // Используем встроенный нативный метод форматирования даты
-                    const date = new Date(value);
-                    value = date.toLocaleDateString(Game.locale || 'ru') + ' ' + date.toLocaleTimeString(Game.locale || 'ru', {hour: '2-digit', minute:'2-digit'});
-                    cellStyle += `font-family: monospace; color: #888;`;
-                }
-                else if (f.type === 'loc_string') {
-                    // Ищем описание купленного товара (пака) в магазинах или каталоге
-                    // У тебя в shops basic/vip есть товары с названиями. Ищем мета-данные пака:
-                    let packMeta = null;
-                    Object.values(Game.config?.catalog?.items || {}).forEach(item => {
-                        if (item.id === value) packMeta = item;
-                    });
-                    // Проверяем также каталоги магазинов, если пак лежит там
-                    if (!packMeta) {
-                        const allShops = Object.values(Game.config?.shops || {});
-                        for (let shop of allShops) {
-                            const found = shop.catalog?.find(item => item.id === value || item.item_id === value);
-                            if (found) { packMeta = found; break; }
-                        }
-                    }
-                    value = packMeta ? locObj(packMeta.title_loc, Game) : value;
-                }
-                else if (f.type === 'number') {
-                    value = `<span style="color: #ffcc00; font-weight: bold; font-family: monospace;">💎 ${value}</span>`;
-                }
-                else if (f.type === 'string' && f.id === 'status') {
-                    // Подсвечиваем статус транзакции графическим бейджем
-                    const isSuccess = value === 'success';
-                    cellStyle += `font-weight: bold;`;
-                    value = `<span style="color: ${isSuccess ? '#4ade80' : '#ef4444'}; background: ${isSuccess ? 'rgba(74,222,128,0.1)' : 'rgba(239,68,68,0.1)'}; padding: 2px 6px; border-radius: 4px; font-size: 10px;">${value.toUpperCase()}</span>`;
-                }
-
-                rowsHTML += `<td style="${cellStyle}">${value}</td>`;
-            });
-
-            rowsHTML += `</tr>`;
-        });
-    }
-
-    return `
-        <div class="profile-tab-transactions" style="width: 100%; height: 100%; display: flex; flex-direction: column;">
-            <div style="flex: 1; overflow-y: auto; border: 1px solid #333; border-radius: 6px; background: rgba(0,0,0,0.2);">
-                <table style="width: 100%; border-collapse: collapse; font-family: sans-serif;">
-                    <thead>
-                        <tr style="background: #111;">${thHTML}</tr>
-                    </thead>
-                    <tbody>
-                        ${rowsHTML}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    `;
-}
-
 // Вызывается, когда CurrentProfileTab === 'match_history'
-function getMatchHistoryTabHTML(Game) {
+function getMatchHistoryTabHTML() {
     const orientation = Game.config.orientation || 'landscape';
     const screenSettings = Game.config?.ui?.[orientation]?.find(w => w.id === 'screen_profile') || {};
     const profileLayout = screenSettings.profile_layout || {};
-
-    // Считываем конфигурацию колонок таблицы из твоего конфига!
     const fields = profileLayout.match_history_fields || [];
-    // Сырые данные из стейта игрока (из твоей функции getOrCreatePlayer)
-    const matches = Game.player?.match_history || [];
 
-    // Генерируем заголовки колонок таблицы на основе локализованных ключей
+    // Шапка таблицы
     let thHTML = fields.map(f => `
         <th style="padding: 10px; text-align: left; font-size: 11px; color: #aaa; text-transform: uppercase; border-bottom: 2px solid #333; font-weight: bold;">
-            ${t(f.label_loc_key, Game)}
+            ${t(f.label_loc_key)}
         </th>
     `).join('');
-
-    // Строим строки таблицы динамически сопоставляя типы данных
-    let rowsHTML = '';
-
-    if (matches.length === 0) {
-        rowsHTML = `<tr><td colspan="${fields.length}" style="padding: 20px; text-align: center; color: #666; font-size: 12px;">История игр пуста</td></tr>`;
-    } else {
-        matches.forEach(m => {
-            rowsHTML += `<tr style="border-bottom: 1px solid #222; background: rgba(255,255,255,0.01);">`;
-
-            fields.forEach(f => {
-                let value = m[f.id];
-                let cellStyle = `padding: 10px; font-size: 12px; color: #fff; white-space: nowrap;`;
-
-                // Умный Data-Driven рендеринг ячейки в зависимости от типа поля в конфиге
-                if (f.type === 'date') {
-                    const date = new Date(value);
-                    value = date.toLocaleDateString(Game.locale || 'ru') + ' ' + date.toLocaleTimeString(Game.locale || 'ru', {hour: '2-digit', minute:'2-digit'});
-                    cellStyle += `font-family: monospace; color: #888;`;
-                }
-                else if (f.type === 'loc_string') {
-                    // Находим игру в каталоге, чтобы вытащить её мультиязычное название
-                    const gameMeta = Game.config?.catalog?.games?.[value];
-                    value = gameMeta ? locObj(gameMeta.title_loc, Game) : value;
-                }
-                else if (f.type === 'badge') {
-                    // Графический бейдж для Win / Lose (Пункт 4 твоего ТЗ)
-                    const isWin = value === 'win';
-                    const badgeColor = isWin ? '#4ade80' : '#ef4444';
-                    const badgeBg = isWin ? 'rgba(74,222,128,0.1)' : 'rgba(239,68,68,0.1)';
-                    value = `<span style="color: ${badgeColor}; background: ${badgeBg}; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 10px;">${value.toUpperCase()}</span>`;
-                }
-                else if (f.type === 'resource') {
-                    // Награда: вытаскиваем иконку ресурса из mechanics.resources по его id
-                    const rewardData = m[f.id] || {}; // { resource: "gold", count: 1500 }
-                    const resMeta = Game.config?.mechanics?.resources?.[rewardData.resource];
-                    const resIcon = resMeta ? resMeta.icon : '🔮';
-
-                    value = `<div style="display: flex; align-items: center; gap: 4px; font-family: monospace; color: #ffcc00; font-weight: bold;">
-                        <span>${resIcon}</span> <span>+${rewardData.count || 0}</span>
-                    </div>`;
-                }
-
-                rowsHTML += `<td style="${cellStyle}">${value}</td>`;
-            });
-
-            rowsHTML += `</tr>`;
-        });
-    }
 
     return `
         <div class="profile-tab-match-history" style="width: 100%; height: 100%; display: flex; flex-direction: column;">
@@ -305,30 +287,91 @@ function getMatchHistoryTabHTML(Game) {
                     <thead>
                         <tr style="background: #111;">${thHTML}</tr>
                     </thead>
-                    <tbody>
-                        ${rowsHTML}
+                    <tbody class="match-history-tbody-container">
+                        <!-- Сюда мгновенно встает заглушка, которая за секунду подменится на реальные данные -->
                     </tbody>
                 </table>
             </div>
         </div>
     `;
 }
+async function loadAndRenderMatchHistory(tbodyContainer) {
+    const orientation = Game.config.orientation || 'landscape';
+    const screenSettings = Game.config?.ui?.[orientation]?.find(w => w.id === 'screen_profile') || {};
+    const profileLayout = screenSettings.profile_layout || {};
+    const fields = profileLayout.match_history_fields || [];
+
+    // ИСПРАВЛЕНО: Безопасное чтение истории матчей из вложенного объекта game_data
+    // const matches = Game.player?.game_data?.match_history || Game.player?.match_history || [];
+
+    const matches = await getPlayerHistory('bets');
+
+    if (!matches || matches.error || !Array.isArray(matches) || matches.length === 0) {
+        tbodyContainer.innerHTML = `<tr><td colspan="${fields.length}" style="padding: 20px; text-align: center; color: #666; font-size: 12px;">История игр пуста</td></tr>`;
+        return;
+    }
+
+    let rowsHTML = '';
+
+    matches.forEach(m => {
+        rowsHTML += `<tr style="border-bottom: 1px solid #222; background: rgba(255,255,255,0.01);">`;
+
+        fields.forEach(f => {
+            let value = m[f.id];
+            let cellStyle = `padding: 10px; font-size: 12px; color: #fff; white-space: nowrap;`;
+
+            if (f.type === 'date') {
+                const date = new Date(value);
+                value = date.toLocaleDateString(Game.locale || 'ru') + ' ' + date.toLocaleTimeString(Game.locale || 'ru', {hour: '2-digit', minute:'2-digit'});
+                cellStyle += `font-family: monospace; color: #888;`;
+            }
+            else if (f.type === 'loc_string') {
+                const gameMeta = Game.config?.catalog?.games?.[value];
+                value = gameMeta ? locObj(gameMeta.title_loc) : value;
+            }
+            else if (f.type === 'badge') {
+                const isWin = value === 'win';
+                const badgeColor = isWin ? '#4ade80' : '#ef4444';
+                const badgeBg = isWin ? 'rgba(74,222,128,0.1)' : 'rgba(239,68,68,0.1)';
+                value = `<span style="color: ${badgeColor}; background: ${badgeBg}; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 10px;">${value.toUpperCase()}</span>`;
+            }
+            else if (f.type === 'resource') {
+                const rewardData = m[f.id] || {};
+                const resMeta = Game.config?.mechanics?.resources?.[rewardData.resource];
+                const resIcon = resMeta ? resMeta.icon : '🔮';
+
+                value = `
+                        <div style="display: flex; align-items: center; gap: 4px; font-family: monospace; color: #ffcc00; font-weight: bold;">
+                            <span>${resIcon}</span> <span>+${rewardData.count || 0}</span>
+                        </div>
+                    `;
+            }
+
+            rowsHTML += `<td style="${cellStyle}">${value}</td>`;
+        });
+
+        rowsHTML += `</tr>`;
+    });
+
+    tbodyContainer.innerHTML = rowsHTML;
+}
+
 
 // Вызывается, когда CurrentProfileTab === 'promo'
-function getPromoTabHTML(Game) {
+function getPromoTabHTML() {
     const p = Game.player;
 
     return `
         <div class="profile-tab-promo" style="display: flex; flex-direction: column; gap: 20px; width: 100%; color: #fff; font-family: sans-serif;">
-            <h4 style="margin: 0; font-size: 14px; color: #ffcc00; text-transform: uppercase;">${t('promo_title', Game)}</h4>
+            <h4 style="margin: 0; font-size: 14px; color: #ffcc00; text-transform: uppercase;">${t('promo_title')}</h4>
             
             <!-- БЛОК А: Промокод (Свитки/Гемы) -->
             <div style="display: flex; flex-direction: column; gap: 6px; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 6px; border: 1px solid #333;">
                 <div style="display: flex; gap: 10px; align-items: center; pointer-events: auto;">
-                    <input type="text" id="input-promo-code" placeholder="${t('promo_input_placeholder', Game)}" 
+                    <input type="text" id="input-promo-code" placeholder="${t('promo_input_placeholder')}" 
                         style="background: #111; color: #fff; border: 1px solid #444; padding: 8px 12px; border-radius: 4px; font-size: 12px; flex: 1;">
                     <button id="btn-submit-promo" style="padding: 8px 16px; background: #ffcc00; color: #000; border: none; font-weight: bold; border-radius: 4px; font-size: 12px; cursor: pointer;">
-                        ${t('promo_btn_activate', Game)}
+                        ${t('promo_btn_activate')}
                     </button>
                 </div>
             </div>
@@ -337,14 +380,14 @@ function getPromoTabHTML(Game) {
             <div style="display: flex; flex-direction: column; gap: 6px; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 6px; border: 1px solid #333;">
                 <div style="display: flex; gap: 10px; align-items: center; pointer-events: auto;">
                     <!-- Если инвайт уже применен ранее, блокируем поле для повторного ввода -->
-                    <input type="text" id="input-invite-code" placeholder="${t('invite_input_placeholder', Game)}" 
+                    <input type="text" id="input-invite-code" placeholder="${t('invite_input_placeholder')}" 
                         value="${p.linked_invite_id || ''}" 
                         ${p.linked_invite_id ? 'disabled' : ''} 
                         style="background: #111; color: #fff; border: 1px solid #444; padding: 8px 12px; border-radius: 4px; font-size: 12px; flex: 1; ${p.linked_invite_id ? 'color: #666; border-color: #222;' : ''}">
                     
                     <button id="btn-submit-invite" ${p.linked_invite_id ? 'disabled' : ''} 
                         style="padding: 8px 16px; background: ${p.linked_invite_id ? '#333' : '#ffcc00'}; color: ${p.linked_invite_id ? '#666' : '#000'}; border: none; font-weight: bold; border-radius: 4px; font-size: 12px; cursor: ${p.linked_invite_id ? 'not-allowed' : 'pointer'};">
-                        ${p.linked_invite_id ? '✔' : t('invite_btn_link', Game)}
+                        ${p.linked_invite_id ? '✔' : t('invite_btn_link')}
                     </button>
                 </div>
             </div>
@@ -353,7 +396,7 @@ function getPromoTabHTML(Game) {
 }
 
 // Вызывается, когда CurrentProfileTab === 'social_bind'
-function getSocialBindTabHTML(Game) {
+function getSocialBindTabHTML() {
     const orientation = Game.config.orientation || 'landscape';
     const screenSettings = Game.config?.ui?.[orientation]?.find(w => w.id === 'screen_profile') || {};
     const profileLayout = screenSettings.profile_layout || {};
@@ -377,13 +420,13 @@ function getSocialBindTabHTML(Game) {
         let btnHTML = '';
 
         if (isLinked) {
-            statusText = t('social_status_linked', Game).replace('{value}', linkedValue);
+            statusText = t('social_status_linked').replace('{value}', linkedValue);
             btnHTML = `<button style="padding: 6px 12px; background: #333; color: #666; border: none; border-radius: 4px; font-size: 11px; cursor: not-allowed;" disabled>✔</button>`;
         } else {
-            statusText = `<span style="color: #666;">${t('social_status_empty', Game)}</span>`;
+            statusText = `<span style="color: #666;">${t('social_status_empty')}</span>`;
             btnHTML = `
                 <button class="btn-bind-platform" data-platform="${platformId}" style="padding: 6px 12px; background: #ffcc00; color: #000; border: none; font-weight: bold; border-radius: 4px; font-size: 11px; cursor: pointer; pointer-events: auto;">
-                    ${t('social_btn_bind', Game)}
+                    ${t('social_btn_bind')}
                 </button>
             `;
         }
@@ -404,8 +447,8 @@ function getSocialBindTabHTML(Game) {
 
     return `
         <div class="profile-tab-social" style="display: flex; flex-direction: column; width: 100%; height: 100%;">
-            <h4 style="margin: 0 0 4px 0; font-size: 14px; color: #ffcc00; text-transform: uppercase;">${t('social_title', Game)}</h4>
-            <p style="margin: 0 0 15px 0; font-size: 11px; color: #aaa; line-height: 1.4;">${t('social_desc', Game)}</p>
+            <h4 style="margin: 0 0 4px 0; font-size: 14px; color: #ffcc00; text-transform: uppercase;">${t('social_title')}</h4>
+            <p style="margin: 0 0 15px 0; font-size: 11px; color: #aaa; line-height: 1.4;">${t('social_desc')}</p>
             <div style="flex: 1; overflow-y: auto;">
                 ${listHtml}
             </div>
@@ -415,14 +458,14 @@ function getSocialBindTabHTML(Game) {
 
 
 // Модифицируем внутренний метод отрисовки табов в playerProfile.js
-export function initPlayerProfileScreen(container, Game, updateUiCallback) {
+export function initPlayerProfileScreen(container, updateUiCallback) {
     let contentWrapper = container.querySelector('.screen-content-profile');
 
     if (!contentWrapper) {
         contentWrapper = document.createElement('div');
         contentWrapper.className = 'screen-content screen-content-profile ui-element';
         import('./shared.js').then(m => {
-            contentWrapper.style.cssText = m.getWindowContentStyle(Game) + " display: flex; flex-direction: row; box-sizing: border-box; top: 45px; height: calc(100% - 45px);";
+            contentWrapper.style.cssText = m.getWindowContentStyle() + " display: flex; flex-direction: row; box-sizing: border-box; top: 45px; height: calc(100% - 45px);";
         });
         container.appendChild(contentWrapper);
     }
@@ -431,34 +474,44 @@ export function initPlayerProfileScreen(container, Game, updateUiCallback) {
         const rightContainer = contentWrapper.querySelector('.profile-content-container');
         if (!rightContainer) return;
 
+        console.log(CurrentProfileTab);
+
         if (CurrentProfileTab === 'main') {
-            rightContainer.innerHTML = getMainProfileHTML(Game);
+            rightContainer.innerHTML = getMainProfileHTML();
             attachMainTabEvents();
         }
         else if (CurrentProfileTab === 'achievements') {
-            rightContainer.innerHTML = getAchievementsTabHTML(Game);
+            rightContainer.innerHTML = getAchievementsTabHTML();
             attachAchievementsEvents();
         }
         else if (CurrentProfileTab === 'transactions') {
-            rightContainer.innerHTML = getTransactionsTabHTML(Game);
+            rightContainer.innerHTML = getTransactionsTabHTML();
+            const tbodyContainer = rightContainer.querySelector('.transactions-tbody-container');
+            if (tbodyContainer) {
+                loadAndRenderTransactions(tbodyContainer);
+            }
         }
-        else if (CurrentProfileTab === 'match_history') {
-            rightContainer.innerHTML = getMatchHistoryTabHTML(Game);
-            // Так как это таблица логов, дополнительных интерактивных слушателей сюда вешать не нужно.
+        else if (CurrentProfileTab === 'match_history') { // или как называется вкладка истории
+            rightContainer.innerHTML = getMatchHistoryTabHTML();
+
+            const tbodyContainer = rightContainer.querySelector('.match-history-tbody-container');
+            if (tbodyContainer) {
+                loadAndRenderMatchHistory(tbodyContainer);
+            }
         }
         else if (CurrentProfileTab === 'promo') {
-            rightContainer.innerHTML = getPromoTabHTML(Game);
+            rightContainer.innerHTML = getPromoTabHTML();
             attachPromoTabEvents();
         }
 // ДОБАВЛЕНО: Рендер привязок соцсетей (Шаг 6)
         else if (CurrentProfileTab === 'social_bind') {
-            rightContainer.innerHTML = getSocialBindTabHTML(Game);
+            rightContainer.innerHTML = getSocialBindTabHTML();
             attachSocialBindEvents();
         }
         else {
             // Оставляем временные текстовые заглушки для остальных табов (будем наполнять дальше)
             rightContainer.innerHTML = `
-                <h3 style="margin: 0 0 15px 0; font-size: 20px;">${t(`tab_profile_${CurrentProfileTab}`, Game)}</h3>
+                <h3 style="margin: 0 0 15px 0; font-size: 20px;">${t(`tab_profile_${CurrentProfileTab}`)}</h3>
                 <p style="color: #aaa; font-size: 13px;">Контент вкладки "${CurrentProfileTab}" готовится к отрисовке...</p>
             `;
         }
@@ -502,7 +555,7 @@ export function initPlayerProfileScreen(container, Game, updateUiCallback) {
                 // Временное изменение стейта на клиенте (пока не прикрутим роут на NodeJS)
                 Game.player.nickname = newName;
                 updateUiCallback(); // Обновляем бары общего интерфейса, где пишется имя
-                alert(t('alert_equip_success', Game));
+                alert(t('alert_equip_success'));
             };
         }
 
@@ -532,10 +585,10 @@ export function initPlayerProfileScreen(container, Game, updateUiCallback) {
                     // Начисляем 500 алмазов прямо в твой стейт resources.diamond
                     Game.player.resources.diamond = (Game.player.resources.diamond || 0) + 500;
                     updateUiCallback(); // Синхронно обновляем верхний бар ресурсов на экране
-                    alert(t('alert_promo_success', Game));
+                    alert(t('alert_promo_success'));
                     contentWrapper.querySelector('#input-promo-code').value = '';
                 } else {
-                    alert(t('alert_login_error', Game) || "Invalid Code!");
+                    alert(t('alert_login_error') || "Invalid Code!");
                 }
             };
         }
@@ -553,7 +606,7 @@ export function initPlayerProfileScreen(container, Game, updateUiCallback) {
 
                 // Перерисовываем таб контента (поле задизейблится, кнопка сменится на галочку)
                 refreshActiveTabContent();
-                alert(t('alert_invite_success', Game));
+                alert(t('alert_invite_success'));
             };
         }
     };
@@ -591,8 +644,8 @@ export function initPlayerProfileScreen(container, Game, updateUiCallback) {
         return `
                     <button class="btn-profile-tab" data-tab-id="${tabKey}" 
                         style="width: 100%; height: 32px; background: ${isActive ? '#ffcc00' : '#111'}; color: ${isActive ? '#000' : '#fff'}; border: 1px solid ${isActive ? '#ffcc00' : '#444'}; border-radius: 4px; font-weight: bold; font-size: 11px; text-align: center; cursor: pointer; padding: 0;"
-                        title="${t(`tab_profile_${tabKey}`, Game)}">
-                        ${t(`tab_profile_${tabKey}`, Game)}
+                        title="${t(`tab_profile_${tabKey}`)}">
+                        ${t(`tab_profile_${tabKey}`)}
                     </button>
                 `;
     }).join('')}
