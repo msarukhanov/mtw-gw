@@ -23,13 +23,12 @@ import {initPveCampaignScreen} from "./scripts/battle/pveCampaign.js";
 import {initPveTowerScreen} from "./scripts/battle/pveTower.js";
 import {initPvpArenaScreen} from "./scripts/battle/pvpArena.js";
 import {initBossListScreen} from "./scripts/battle/pveBossList.js"
-
 import {initArenaBettingScreen} from "./scripts/battle/arenaBetting.js";
 
 import { DialogManager } from './dialogManager.js';
 
 import {t, applyLayout, getFormattedTime} from './shared.js'
-import {handleMenuAction, updateState, Game} from "./stateManager.js";
+import {handleMenuAction, screenOfState, updateState, Game} from "./stateManager.js";
 
 
 
@@ -109,10 +108,13 @@ export function renderGameUI() {
     const orientation = Game.config.orientation || 'landscape';
     const widgets = Game.config.ui[orientation] || [];
 
+    const screenSettings = Game.config.ui[orientation].find(w => w.id === screenOfState(Game.gameState)) || {};
+    const screenWidgets = screenSettings.widgets || null;
+
     widgets.forEach(w => {
         if (w.type === 'button') {
             // ИСПРАВЛЕНО: Починен синтаксический краш (убрана лишняя скобка)
-            if (w.onlyInWindows && ['MAIN_MENU', 'GAME_LOGIN', 'SERVER_SELECT'].includes(Game.gameState)) return;
+            if (w.onlyInWindows && ['LOADING', 'MAIN_MENU', 'GAME_LOGIN', 'SERVER_SELECT'].includes(Game.gameState)) return;
             if (!w.onlyInWindows && w.action.startsWith('open_') && Game.gameState !== 'MAIN_MENU') return;
 
             const label = Game.config?.localization?.ui?.[Game.locale]?.[w.label_loc_key] || w.label || '';
@@ -153,6 +155,47 @@ export function renderGameUI() {
             }
         }
     });
+
+    // if(screenWidgets) {
+    //     screenWidgets.forEach(w => {
+    //         if (w.type === 'button') {
+    //             const label = Game.config?.localization?.ui?.[Game.locale]?.[w.label_loc_key] || w.label || '';
+    //
+    //             const pos = w.layout?.textPosition || 'center';
+    //             const size = w.layout?.textSize || '16px';
+    //             const color = w.layout?.textColor || '#fff';
+    //
+    //             // ИСПРАВЛЕНО: Умные стили вывески теперь действительно выталкивают текст ЗА рамки здания (через transform)
+    //             let labelStyle = `font-size: ${size}; color: ${color}; font-weight: bold; white-space: normal; word-break: break-word; pointer-events: none; z-index: 5;`;
+    //             let additionalStyle = '';
+    //
+    //             if (pos === 'top') {
+    //                 labelStyle += 'top: 0;'; // Вывеска НАД крышей здания
+    //             } else if (pos === 'bottom') {
+    //                 labelStyle += 'bottom: 0;'; // Вывеска ПОД фундаментом здания
+    //             } else {
+    //                 labelStyle += 'top: 50%;'; // По центру строения
+    //             }
+    //             if (w.id === 'btn_back') {
+    //                 additionalStyle += 'z-index: 100;';
+    //             }
+    //
+    //             const buttonHtml = `
+    //                 <button class="btn ${w.id} ui-element ${w.layout?.animation || ''}"
+    //                         style="${applyLayout(w.layout)} ${additionalStyle}"
+    //                         data-ui-action="${w.action}">
+    //                     <span style="${labelStyle}">${label}</span>
+    //                 </button>
+    //             `;
+    //
+    //             if (w.id === 'btn_back') {
+    //                 staticHtml += buttonHtml;
+    //             } else {
+    //                 scrollableHtml += buttonHtml;
+    //             }
+    //         }
+    //     });
+    // }
 
     container.innerHTML = staticHtml;
 
@@ -201,19 +244,11 @@ export function renderGameUI() {
                 }
             }
         }
-
-
-    }
-
-    if(Game.gameState === 'PVE_CAMPAIGN') {
-        // injectIdleChestButton(container, '.screen-content', 'main_loot_claim_at', ()=>{});
     }
 
     if (townBgContainer) {
         townBgContainer.innerHTML = scrollableHtml;
     }
-
-
 
     // --- РОУТИНГ МОДУЛЬНЫХ ОКОН ---
     const updateUiCallback = () => renderGameUI(container);
@@ -236,8 +271,8 @@ export function renderGameUI() {
 
         'PVE_CAMPAIGN': (container, cb) => initPveCampaignScreen(container, cb),
         'PVE_TOWER': (container, cb) => initPveTowerScreen(container, 'main_tower', cb),
-        // 'PVP_ARENA': initPvpArenaScreen,
-        'PVP_ARENA': initArenaBettingScreen,
+        'PVP_ARENA': initPvpArenaScreen,
+        'BETS': initArenaBettingScreen,
         'PVE_BOSS_LIST': initBossListScreen
     };
 
@@ -285,12 +320,11 @@ export function renderGameUI() {
                         } else if (targetState === 'PVE_TOWER') {
                             initPveTowerScreen(container, ctx.towerKey, updateUiCallback);
                         } else if (targetState === 'PVP_ARENA') {
-                            initPvpArenaScreen(container, ctx.towerKey, updateUiCallback);
+                            initPvpArenaScreen(container, updateUiCallback);
                         } else if (targetState === 'PVP_BOSS_LIST') {
                             initBossListScreen(container, ctx.towerKey, updateUiCallback);
                         }
                     }
-
                     // Сценарий 3: Базовый откат в главное лобби для остальных стандартных окон
                     else {
                         updateState('MAIN_MENU');

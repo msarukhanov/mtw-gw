@@ -689,9 +689,9 @@ async function getArenaOpponents(userId, serverId) {
 
             // Перемешиваем и берем первые 5 штук
             const selectedIds = filteredIds.sort(() => 0.5 - Math.random()).slice(0, 5);
+            const opponentsData = [];
 
             if (selectedIds.length > 0) {
-                const opponentsData = [];
                 for (const oppId of selectedIds) {
                     const oppKey = `p:${serverId}:${oppId}`;
                     const cachedData = await redisClient.get(oppKey);
@@ -707,8 +707,12 @@ async function getArenaOpponents(userId, serverId) {
                         });
                     }
                 }
-                if (opponentsData.length > 0) return opponentsData;
+
+                return {
+                    pvp_opponents: opponentsData
+                }
             }
+
         } catch (cacheErr) {
             console.warn('[BattleDB:GetOpponents] Сбой Redis ZSET, падаю в Postgres Fallback:', cacheErr);
         }
@@ -720,18 +724,20 @@ async function getArenaOpponents(userId, serverId) {
         const query = `
             SELECT user_id, nickname, level, combat_power, game_data
             FROM player_server_profiles 
-            WHERE server_id = $1 AND user_id != $2
+            WHERE server_id = $1 AND id != $2
             LIMIT 5;
         `;
         const { rows } = await global.pool.query(query, [serverId, userId]);
 
-        return rows.map(opp => ({
-            user_id: opp.user_id,
-            nickname: opp.nickname,
-            level: opp.level,
-            combat_power: opp.combat_power,
-            heroes: opp.game_data?.heroes || []
-    }));
+        return {
+            pvp_opponents: rows.map(opp => ({
+                user_id: opp.user_id,
+                nickname: opp.nickname,
+                level: opp.level,
+                combat_power: opp.combat_power,
+                heroes: opp.game_data?.heroes || []
+            }))
+        }
     } catch (e) {
         console.error("[Fallback PvP GetOpponents Error]:", e);
         return { error: true, message: e.message };

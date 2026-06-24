@@ -4,6 +4,8 @@ import { showRewardsPopup } from './scripts/inventory/inventoryPopup.js';
 import {renderGameUI} from "./render.js";
 
 import {initCombatArenaScreen} from "./scripts/battle/combatArena.js";
+import {initPvpArenaScreen} from "./scripts/battle/pvpArena.js";
+import {initLeaderboardScreen} from "./leaderboard.js";
 
 window.socket = null;
 
@@ -91,13 +93,13 @@ export function connect(username, serverId, partnerId) {
                 if(data.arena_rating) {
                     Game.player.resources.arena_rating = data.arena_rating;
                     if(Game.gameState === 'PVP_ARENA') {
-                        renderGameUI();
+                        initPvpArenaScreen(Game.uiContainer, renderGameUI);
                     }
                 }
                 if(data.pvp_opponents) {
                     Game.pvp_opponents = data.pvp_opponents;
                     if(Game.gameState === 'PVP_ARENA') {
-                        renderGameUI();
+                        initPvpArenaScreen(Game.uiContainer, renderGameUI);
                     }
                 }
                 break;
@@ -140,7 +142,8 @@ export function connect(username, serverId, partnerId) {
 
                     // Если игрок сейчас физически находится на экране Лидерборда — мгновенно перерисовываем UI!
                     if (Game.gameState === 'LEADERBOARD') {
-                        renderGameUI();
+                        // renderGameUI();
+                        initLeaderboardScreen(Game.uiContainer, renderGameUI);
                     }
                 }
                 break;

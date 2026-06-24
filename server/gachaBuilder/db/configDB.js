@@ -421,31 +421,12 @@ const gamesConfigDB = {
                         textPosition: "bottom"
                     }
                 },
-                // {
-                //     id: "btn_arena",
-                //     type: "button",
-                //     label_loc_key: "btn_arena_label",
-                //     action: "open_arena",
-                //     layout: {
-                //         top: "43%",
-                //         right: "34% + 5px",
-                //         width: "12%",
-                //         height: "16%",
-                //
-                //         backgroundColor: "rgba(55,0,55,.6)",
-                //         // backgroundImage: "url('./gacha/assets/images/main_arena.png')",
-                //
-                //         textColor: "#fff",
-                //         textSize: "20px",
-                //         textPosition: "bottom"
-                //     }
-                // },
 
                 {
                     id: "btn_arena",
                     type: "button",
                     label_loc_key: "btn_arena_label",
-                    action: "open_pvp_arena",
+                    action: "open_arena",
                     layout: {
                         top: "43%",
                         right: "34% + 5px",
@@ -460,6 +441,44 @@ const gamesConfigDB = {
                         textPosition: "bottom"
                     }
                 },
+                // {
+                //     id: "btn_pvp",
+                //     type: "button",
+                //     label_loc_key: "btn_pvp_label",
+                //     action: "open_pvp_arena",
+                //     layout: {
+                //         top: "43%",
+                //         right: "34% + 5px",
+                //         width: "12%",
+                //         height: "16%",
+                //
+                //         backgroundColor: "rgba(55,0,55,.6)",
+                //         // backgroundImage: "url('./gacha/assets/images/main_arena.png')",
+                //
+                //         textColor: "#fff",
+                //         textSize: "20px",
+                //         textPosition: "bottom"
+                //     }
+                // },
+                // {
+                //     id: "btn_bets",
+                //     type: "button",
+                //     label_loc_key: "btn_bets_label",
+                //     action: "open_bets",
+                //     layout: {
+                //         top: "78%",
+                //         right: "34% + 5px",
+                //         width: "12%",
+                //         height: "16%",
+                //
+                //         backgroundColor: "rgba(55,0,55,.6)",
+                //         // backgroundImage: "url('./gacha/assets/images/main_arena.png')",
+                //
+                //         textColor: "#fff",
+                //         textSize: "20px",
+                //         textPosition: "bottom"
+                //     }
+                // },
 
                 {
                     id: "btn_boss",
@@ -581,7 +600,7 @@ const gamesConfigDB = {
 
                 {
                     id: "screen_gacha",
-                    bg_image: "./gacha/assets/images/bg/summon_altar_bg.png",
+                    bg_image: "./gacha/assets/images/summon_altar_bg.png",
                     bg_width: 1000,
                     active_width: 1000,
                     list_settings: {
@@ -653,7 +672,7 @@ const gamesConfigDB = {
                 },
                 {
                     id: "screen_profile",
-                    bg_image: "./gacha/assets/images/backgrounds/profile_bg.png", // Фон окна профиля
+                    bg_image: "./gacha/assets/images/profile_bg.png", // Фон окна профиля
                     bg_width: 1000,
                     active_width: 1000,
 
@@ -697,11 +716,52 @@ const gamesConfigDB = {
                     bg_width: 1000,
                     active_width: 1000,
                     // Настраиваемые интерактивные кнопки режимов Арены (прямо как в главном меню)
-                    arena_widgets: [
+                    widgets: [
+                        // {
+                        //     id: "btn_arena",
+                        //     type: "button",
+                        //     label_loc_key: "btn_arena_label",
+                        //     action: "open_pvp_arena",
+                        //     layout: {
+                        //         top: "43%",
+                        //         right: "34% + 5px",
+                        //         width: "12%",
+                        //         height: "16%",
+                        //
+                        //         backgroundColor: "rgba(55,0,55,.6)",
+                        //         // backgroundImage: "url('./gacha/assets/images/main_arena.png')",
+                        //
+                        //         textColor: "#fff",
+                        //         textSize: "20px",
+                        //         textPosition: "bottom"
+                        //     }
+                        // },
+                        // {
+                        //     id: "btn_bets",
+                        //     type: "button",
+                        //     label_loc_key: "btn_bets_label",
+                        //     action: "open_bets",
+                        //     layout: {
+                        //         top: "78%",
+                        //         right: "34% + 5px",
+                        //         width: "12%",
+                        //         height: "16%",
+                        //
+                        //         backgroundColor: "rgba(55,0,55,.6)",
+                        //         // backgroundImage: "url('./gacha/assets/images/main_arena.png')",
+                        //
+                        //         textColor: "#fff",
+                        //         textSize: "20px",
+                        //         textPosition: "bottom"
+                        //     }
+                        // },
+
+
                         {
-                            id: "PREMATCH",
-                            label_loc_key: "arena_standard_title",
-                            arena_type_id: "PREMATCH", // Ссылка на правила из каталога
+                            id: "btn_arena",
+                            type: "button",
+                            label_loc_key: "btn_arena_label",
+                            action: "open_pvp_arena",
                             layout: {
                                 top: "50%",
                                 left: "25%",
@@ -710,14 +770,15 @@ const gamesConfigDB = {
                                 backgroundColor: "transparent",
                                 backgroundImage: "url('./gacha/assets/images/arena/PREMATCH.png')",
                                 textColor: "#fff",
-                                textSize: "18px",
+                                textSize: "24px",
                                 textPosition: "bottom"
                             }
                         },
                         {
-                            id: "LIVE",
-                            label_loc_key: "arena_event_title",
-                            arena_type_id: "LIVE",
+                            id: "btn_bets",
+                            type: "button",
+                            label_loc_key: "btn_bets_label",
+                            action: "open_bets",
                             layout: {
                                 top: "50%",
                                 left: "75%",
@@ -725,11 +786,47 @@ const gamesConfigDB = {
                                 height: "50%",
                                 backgroundColor: "transparent",
                                 backgroundImage: "url('./gacha/assets/images/arena/LIVE.png')",
-                                textColor: "#ffcc00",
-                                textSize: "18px",
+                                // textColor: "#ffcc00",
+                                textColor: "#fff",
+                                textSize: "24px",
                                 textPosition: "bottom"
                             }
                         }
+                    ],
+
+                    arena_widgets: [
+                        // {
+                        //     id: "PREMATCH",
+                        //     label_loc_key: "arena_standard_title",
+                        //     arena_type_id: "PREMATCH", // Ссылка на правила из каталога
+                        //     layout: {
+                        //         top: "50%",
+                        //         left: "25%",
+                        //         width: "35%",
+                        //         height: "50%",
+                        //         backgroundColor: "transparent",
+                        //         backgroundImage: "url('./gacha/assets/images/arena/PREMATCH.png')",
+                        //         textColor: "#fff",
+                        //         textSize: "18px",
+                        //         textPosition: "bottom"
+                        //     }
+                        // },
+                        // {
+                        //     id: "LIVE",
+                        //     label_loc_key: "arena_event_title",
+                        //     arena_type_id: "LIVE",
+                        //     layout: {
+                        //         top: "50%",
+                        //         left: "75%",
+                        //         width: "35%",
+                        //         height: "50%",
+                        //         backgroundColor: "transparent",
+                        //         backgroundImage: "url('./gacha/assets/images/arena/LIVE.png')",
+                        //         textColor: "#ffcc00",
+                        //         textSize: "18px",
+                        //         textPosition: "bottom"
+                        //     }
+                        // }
                     ]
                 },
 
@@ -1049,7 +1146,9 @@ const gamesConfigDB = {
                     "btn_inventory_label": "Treasury",
                     "btn_gacha_label": "Summon",
                     "btn_temple_power_label": "Castle of Power",
-                    "btn_arena_label": "PvP",
+                    "btn_arena_label": "Arena",
+                    "btn_pvp_label": "PvP",
+                    "btn_bets_label": "Bets",
                     "btn_pve_boss_label": "BOSS",
                     "btn_pve_campaign_label": "Campaign",
                     "btn_pve_tower_label": "Tower o Gods",

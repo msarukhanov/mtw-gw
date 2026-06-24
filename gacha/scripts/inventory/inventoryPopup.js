@@ -166,7 +166,7 @@ export function showRewardsPopup222(rewardsGained, onCloseCallback) {
         </style>
     `;
 
-    document.body.insertAdjacentHTML('beforeend', popupHTML);
+    document.getElementById('game-ui').insertAdjacentHTML('beforeend', popupHTML);
 
     const overlay = document.getElementById('inventory-rewards-popup-overlay');
     const modalContainer = overlay.querySelector('div');

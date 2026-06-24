@@ -824,7 +824,6 @@ async function getServerLeaderboard(serverId, userId, sortBy = 'combat_power', l
     // ------------------------------------------------------------------------
     // ЭШЕЛОН 1: РЕАКТИВНЫЙ REDIS ZSET ЛИДЕРБОРД (0 МИЛЛИСЕКУНД БЕЗ НАГРУЗКИ НА CPU)
     // ------------------------------------------------------------------------
-    const { redisClient } = require('./redisClient');
     if (redisClient.isOpen && redisClient.isReady) {
         try {
             // Динамический ключ под выбранный тип топа (lb:world_01:combat_power или lb:world_01:level)

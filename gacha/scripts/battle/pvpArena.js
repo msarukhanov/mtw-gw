@@ -81,7 +81,7 @@ export async function initPvpArenaScreen(container, updateUiCallback) {
                     towerKey: null,
                     opponentName: opponentName,
                     enemyHeroes: selectedOpponent?.heroes || [] // Передаем его ростер для отрисовки на поле подготовки
-            };
+                };
 
                 Game.gameState = 'PRE_BATTLE';
 

@@ -8,7 +8,7 @@ export function getArenaScreenHTML() {
 
     // Находим мета-данные экрана арены в конфиге
     const screenSettings = Game.config?.ui?.[orientation]?.find(w => w.id === 'screen_arena') || {};
-    const arenaWidgets = screenSettings.arena_widgets || [];
+    const arenaWidgets = screenSettings.widgets || [];
 
     let widgetsHtml = '';
 
@@ -30,11 +30,12 @@ export function getArenaScreenHTML() {
             labelStyle += 'top: 50%; transform: translate(-50%, -50%);';
         }
 
-        // Рендерим интерактивную кнопку режима арены
+        // Рендерим интерактивную кнопку режима арены  data-arena-type-id="${w.arena_type_id}"
         widgetsHtml += `
             <button class="btn ui-element arena-mode-clickable" 
                     style="${applyLayout(w.layout)}" 
-                    data-arena-type-id="${w.arena_type_id}">
+                    data-ui-action="${w.action}"
+                   >
                 <span style="${labelStyle}">${label}</span>
             </button>
         `;

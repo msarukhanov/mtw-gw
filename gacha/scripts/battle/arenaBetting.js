@@ -29,7 +29,7 @@ export function getArenaBettingHTML() {
                         <button id="arenaTogglePrematchBtn" style="flex:1; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; transition: all 0.2s;"> Prematch </button>
                     </div>
                     <div id="arenaSidebarMenuList" style="display: flex; flex-direction: column; gap: 6px; overflow-y: auto; flex: 1;"></div>
-                    <button id="btnBackToArenaMenu" style="width: 100%; background: #2d1b4e; color: #fff; border: none; padding: 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">⬅ ${t('back_to_arena', 'Back')}</button>
+                  
                 </div>
 
                 <!-- Central Content -->
@@ -46,7 +46,7 @@ export function getArenaBettingHTML() {
 export async function initArenaBettingScreen(container, updateUiCallback) {
     activeLiveMatchId = null;
 
-    container.innerHTML = '';
+    // container.innerHTML = '';
     container.insertAdjacentHTML('beforeend', getArenaBettingHTML());
 
     const liveBtn = container.querySelector('#arenaToggleLiveBtn');
@@ -140,11 +140,11 @@ export async function initArenaBettingScreen(container, updateUiCallback) {
 
 
 
-    container.querySelector('#btnBackToArenaMenu').onclick = () => {
-        container.innerHTML = '';
-        const { initPvpArenaScreen } = require('./pvpArena.js');
-        initPvpArenaScreen(container, updateUiCallback);
-    };
+    // container.querySelector('#btnBackToArenaMenu').onclick = () => {
+    //     container.innerHTML = '';
+    //     const { initPvpArenaScreen } = require('./pvpArena.js');
+    //     initPvpArenaScreen(container, updateUiCallback);
+    // };
 
     function renderScreen() {
         renderSidebar();
