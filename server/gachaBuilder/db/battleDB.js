@@ -703,13 +703,15 @@ async function getArenaOpponents(userId, serverId) {
                             nickname: opp.nickname,
                             level: opp.level,
                             combat_power: opp.combat_power,
+                            arena_rating: opp.resources?.arena_rating || 1000,
                             heroes: opp.heroes || [] // Герои из развернутого плоского объекта
                         });
                     }
                 }
-
-                return {
-                    pvp_opponents: opponentsData
+                if(opponentsData.length) {
+                    return {
+                        pvp_opponents: opponentsData
+                    }
                 }
             }
 
@@ -856,11 +858,67 @@ async function processBossBattle(userId, serverId, gameId, gameConfig, bossKey) 
                 }
             }
 
-            // Запускаем общую бизнес-логику симуляции боя
-            const simPayload = runBossSimulation(player, bossMeta, bossCurrentHp, gameConfig, bossKey);
-            if (simPayload.error) return simPayload;
 
-            const { battleResult, totalDamageDealtToBoss, nextBossHp } = simPayload;
+            const playerHeroIds = player.teams?.pve_main || [];
+            if (playerHeroIds.length === 0) {
+                return { error: "Ваш атакующий отряд пуст!" };
+            }
+
+            const playerTeamStats = [];
+            playerHeroIds.forEach(instId => {
+                const heroInstance = player.heroes?.find(h => h.instance_id === instId);
+                if (heroInstance) {
+                    let combatStats = { ...getHeroActualStats(heroInstance, { config: gameConfig }) };
+                    const teamBonus = player.team_bonuses?.pve_main;
+                    if (teamBonus) {
+                        if (teamBonus.hp?.endsWith('%')) combatStats.hp *= (1 + parseFloat(teamBonus.hp) / 100);
+                        if (teamBonus.atk?.endsWith('%')) combatStats.atk *= (1 + parseFloat(teamBonus.atk) / 100);
+                    }
+                    playerTeamStats.push(combatStats);
+                }
+            });
+
+            // 3. СБОРКА ХАРАКТЕРИСТИК БОССА (Босс — это один огромный юнит на стороне врага)
+            const bossProto = gameConfig.catalog?.heroes?.[bossMeta.hero_id];
+            if (!bossProto) {
+                return { error: "Прототип персонажа босса не найден в каталоге" };
+            }
+
+            // Генерируем виртуальный слепок босса с накрученным уровнем
+            const virtualBossHero = {
+                hero_id: bossMeta.hero_id,
+                level: bossMeta.level || 1,
+                stars: bossProto.base_stars || 1,
+                equipped: {}
+            };
+            let bossStats = { ...getHeroActualStats(virtualBossHero, { config: gameConfig }) };
+
+            // Перезаписываем его здоровье реальным текущим остатком из базы данных!
+            bossStats.hp = bossCurrentHp;
+            bossStats.position = 2; // Сажаем по центру в средний ряд врага
+
+            const enemyTeamStats = [bossStats];
+
+            // 4. ЗАПУСК НАШЕГО СТАБИЛЬНОГО СИМУЛЯТОРА БОЯ (Вариант А)
+            const battleResult = await simulatePvEBattle(playerTeamStats, enemyTeamStats, gameConfig);
+
+            // Считаем, сколько суммарного урона отряд игрока успел нанести боссу до своей смерти
+            let totalDamageDealtToBoss = 0;
+            battleResult.replay.forEach(round => {
+                round.actions.forEach(act => {
+                    if (act.attacker_id.startsWith('p') && act.target_id === 'e_0') {
+                        totalDamageDealtToBoss += Number(act.damage);
+                    }
+                });
+            });
+
+            // Корректируем урон, чтобы не вычесть больше, чем у босса было здоровья
+            if (totalDamageDealtToBoss > bossCurrentHp) {
+                totalDamageDealtToBoss = bossCurrentHp;
+            }
+
+            // Вычисляем новое здоровье босса после атаки
+            const nextBossHp = bossCurrentHp - totalDamageDealtToBoss;
 
             // Сохранение прогресса здоровья босса в Редисе
             if (bossMeta.boss_type === 'server' || bossMeta.boss_type === 'guild') {

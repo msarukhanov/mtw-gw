@@ -394,8 +394,6 @@ async function summonGacha(userId, serverId, gameId, bannerId, count = 1, player
 
     const banner = gachaConfig?.banners?.find(b => b.id === bannerId);
     if (!banner) return { error: true, message: `Banner "${bannerId}" not found` };
-
-    console.log(gachaConfig?.pools, banner);
     const pool = gachaConfig?.pools?.[banner.poolId];
     if (!pool) return { error: true, message: `Pool "${banner.poolId}" not found` };
 
