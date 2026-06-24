@@ -25,6 +25,7 @@ const menuActions = {
     open_pve_tower: 'PVE_TOWER',
     open_pve_boss_list: 'PVE_BOSS_LIST',
     open_pvp_arena: 'PVP_ARENA',
+    open_bets: 'BETS',
     open_profile: 'PROFILE',
     open_craft: 'CRAFT',
     open_leaderboard: 'LEADERBOARD'
@@ -41,6 +42,8 @@ const stateScreens = {
     HERO_VIEW: 'screen_hero',
     GAMES: 'screen_games',
     ARENA: 'screen_arena',
+    PVP_ARENA: 'screen_pvp_arena',
+    BETS: 'screen_bets',
     PVE_CAMPAIGN: 'screen_pve_campaign',
     PVE_TOWER: 'screen_pve_tower',
     PVE_BOSS_LIST: 'screen_pve_boss',
@@ -65,6 +68,10 @@ export function handleMenuAction(action) {
     if(menuActions[action]) {
         updateState(menuActions[action])
     }
+}
+
+export function screenOfState(state) {
+    return stateScreens[state];
 }
 
 export function updateBackground(state) {
