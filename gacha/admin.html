@@ -18,6 +18,8 @@
     <link rel="stylesheet" href="./styles/admin.css">
 
     <script src="./static/config.js"></script>
+    <script src="./scripts/admin/importExport.js"></script>
+    <script src="./scripts/admin/cascadeFunc.js"></script>
     <script src="./scripts/admin/arena.js"></script>
     <script src="./scripts/admin/dialogs.js"></script>
     <script src="./scripts/admin/games.js"></script>
@@ -32,34 +34,109 @@
     <script src="./scripts/admin/dictionaries.js"></script>
     <script src="./scripts/admin/mechanics.js"></script>
     <script src="./scripts/admin/profile.js"></script>
+    <script src="./scripts/admin/social.js"></script>
+    <script src="./scripts/admin/quests.js"></script>
+    <script src="./scripts/admin/battle_passes.js"></script>
+    <script src="./scripts/admin/bounty_board.js"></script>
+    <script src="./scripts/admin/limited_offers.js"></script>
     <script src="./scripts/admin/servers.js"></script>
     <script src="./scripts/admin/ui.js"></script>
 
 </head>
 <body>
 
+<!--<aside>-->
+    <!--<div class="logo-area"><a href="#" class="logo">MTW<span>TECH</span></a></div>-->
+    <!--<ul class="nav-links">-->
+        <!--<li class="nav-item active" onclick="switchView('general')">⚙️ General & Servers</li>-->
+        <!--<li class="nav-item" onclick="switchView('dictionaries')">🗂️ Core Dictionaries</li>-->
+        <!--<li class="nav-item" onclick="switchView('mechanics')">🔮 Mechanics & Stats</li>-->
+        <!--<li class="nav-item" onclick="switchView('ui-layouts')">📱 UI Screens & Layouts</li>-->
+        <!--<li class="nav-item" onclick="switchView('localization')">🌍 Localization</li>-->
+
+        <!--<li class="nav-item" onclick="switchView('profile')">👤 Profile Setup</li>-->
+        <!--<li class="nav-item" onclick="switchView('social')">🤝 Social & Guild Hub</li>-->
+        <!--<li class="nav-item" onclick="switchView('quests')">📋 Mission & Quest Boards</li>-->
+        <!--<li class="nav-item" onclick="switchView('bp')">🎟️ Battle Pass Seasons</li>-->
+        <!--<li class="nav-item" onclick="switchView('bounty')">🦅 Bounty Board Dispatches</li>-->
+        <!--<li class="nav-item" onclick="switchView('offers')">⚡ Flash Sales & Promo</li>-->
+
+        <!--<li class="nav-item" onclick="switchView('heroes')">🦸 Heroes Database</li>-->
+        <!--<li class="nav-item" onclick="switchView('items')">🎒 Items & Equipment</li>-->
+        <!--<li class="nav-item" onclick="switchView('shops')">🏪 Stores & Loot Pools</li>-->
+        <!--<li class="nav-item" onclick="switchView('gacha')">🎰 Gacha Gates & Rates</li>-->
+        <!--<li class="nav-item" onclick="switchView('campaign')">🚩 PVE Campaign Progress</li>-->
+        <!--<li class="nav-item" onclick="switchView('towers')">🪜 PVE Towers Setup</li>-->
+        <!--<li class="nav-item" onclick="switchView('bosses')">👹 PVE Raid Bosses</li>-->
+        <!--<li class="nav-item" onclick="switchView('games')">🎮 Games Catalog</li>-->
+        <!--<li class="nav-item" onclick="switchView('arena')">🏆 Arena Setup</li>-->
+        <!--<li class="nav-item" onclick="switchView('dialogs')">💬 Dialogs</li>-->
+        <!---->
+        <!---->
+    <!--</ul>-->
+<!--</aside>-->
+
 <aside>
     <div class="logo-area"><a href="#" class="logo">MTW<span>TECH</span></a></div>
     <ul class="nav-links">
-        <li class="nav-item active" onclick="switchView('general')">⚙️ General & Servers</li>
-        <li class="nav-item" onclick="switchView('dictionaries')">🗂️ Core Dictionaries</li>
-        <li class="nav-item" onclick="switchView('mechanics')">🔮 Mechanics & Stats</li>
-        <li class="nav-item" onclick="switchView('ui-layouts')">📱 UI Screens & Layouts</li>
-        <li class="nav-item" onclick="switchView('localization')">🌍 Localization</li>
-        <li class="nav-item" onclick="switchView('profile')">👤 Profile Setup</li>
-        <li class="nav-item" onclick="switchView('heroes')">🦸 Heroes Database</li>
-        <li class="nav-item" onclick="switchView('items')">🎒 Items & Equipment</li>
-        <li class="nav-item" onclick="switchView('shops')">🏪 Stores & Loot Pools</li>
-        <li class="nav-item" onclick="switchView('gacha')">🎰 Gacha Gates & Rates</li>
-        <li class="nav-item" onclick="switchView('campaign')">🚩 PVE Campaign Progress</li>
-        <li class="nav-item" onclick="switchView('towers')">🪜 PVE Towers Setup</li>
-        <li class="nav-item" onclick="switchView('bosses')">👹 PVE Raid Bosses</li>
-        <li class="nav-item" onclick="switchView('games')">🎮 Games Catalog</li>
-        <li class="nav-item" onclick="switchView('arena')">🏆 Arena Setup</li>
-        <li class="nav-item" onclick="switchView('dialogs')">💬 Dialogs</li>
-        <!--<li class="nav-item" onclick="switchView('export')">📦 JSON Export</li>-->
+
+        <!-- CATEGORY 1: SYSTEM CORE -->
+        <li class="nav-category-header active" onclick="toggleNavCategory('cat-core', this)">
+            <span>⚙️ System Core</span>
+            <span class="category-arrow">🔽</span>
+        </li>
+        <div id="cat-core" class="nav-category-content" style="display: block;">
+            <li class="nav-item active" onclick="switchView('general')">⚙️ General & Servers</li>
+            <li class="nav-item" onclick="switchView('dictionaries')">🗂️ Core Dictionaries</li>
+            <li class="nav-item" onclick="switchView('mechanics')">🔮 Mechanics & Stats</li>
+            <li class="nav-item" onclick="switchView('ui-layouts')">📱 UI Screens & Layouts</li>
+            <li class="nav-item" onclick="switchView('localization')">🌍 Localization</li>
+        </div>
+
+        <!-- CATEGORY 2: DEEP GAME DATABASE -->
+        <li class="nav-category-header" onclick="toggleNavCategory('cat-db', this)">
+            <span>📦 Game Database</span>
+            <span class="category-arrow">▶</span>
+        </li>
+        <div id="cat-db" class="nav-category-content" style="display: none;">
+            <li class="nav-item" onclick="switchView('heroes')">🦸 Heroes Database</li>
+            <li class="nav-item" onclick="switchView('items')">🎒 Items & Equipment</li>
+            <li class="nav-item" onclick="switchView('games')">🎮 Games Catalog</li>
+            <li class="nav-item" onclick="switchView('dialogs')">💬 Dialogs</li>
+        </div>
+
+        <!-- CATEGORY 3: MONETIZATION & LIVEOPS -->
+        <li class="nav-category-header" onclick="toggleNavCategory('cat-liveops', this)">
+            <span>💎 LiveOps & Revenue</span>
+            <span class="category-arrow">▶</span>
+        </li>
+        <div id="cat-liveops" class="nav-category-content" style="display: none;">
+            <li class="nav-item" onclick="switchView('shops')">🏪 Stores & Loot Pools</li>
+            <li class="nav-item" onclick="switchView('gacha')">🎰 Gacha Gates & Rates</li>
+            <li class="nav-item" onclick="switchView('bp')">🎟️ Battle Pass Seasons</li>
+            <li class="nav-item" onclick="switchView('offers')">⚡ Flash Sales & Promo</li>
+        </div>
+
+        <!-- CATEGORY 4: PLAYER SYSTEMS & ACTIVITIES -->
+        <li class="nav-category-header" onclick="toggleNavCategory('cat-player', this)">
+            <span>🎮 Player Systems</span>
+            <span class="category-arrow">▶</span>
+        </li>
+        <div id="cat-player" class="nav-category-content" style="display: none;">
+            <li class="nav-item" onclick="switchView('profile')">👤 Profile Setup</li>
+            <li class="nav-item" onclick="switchView('social')">🤝 Social & Guild Hub</li>
+            <li class="nav-item" onclick="switchView('quests')">📋 Mission & Quest Boards</li>
+            <li class="nav-item" onclick="switchView('bounty')">🦅 Bounty Board Dispatches</li>
+            <li class="nav-item" onclick="switchView('campaign')">🚩 PVE Campaign Progress</li>
+            <li class="nav-item" onclick="switchView('towers')">🪜 PVE Towers Setup</li>
+            <li class="nav-item" onclick="switchView('bosses')">👹 PVE Raid Bosses</li>
+            <li class="nav-item" onclick="switchView('arena')">🏆 Arena Setup</li>
+        </div>
+
     </ul>
 </aside>
+
+
 
 <main>
     <header>
@@ -386,6 +463,99 @@
             </div>
         </div>
 
+        <!-- --- SCREEN: SOCIAL & GUILD HUB MATRIX --- -->
+        <div id="view-social" class="view-panel">
+            <!-- Двухъярусные табы управления социалкой -->
+            <div class="tabs-header" style="margin-bottom: 15px;">
+                <button class="tab-btn active" onclick="switchSocialTab('friends', event)">🤝 Friends Systems</button>
+                <button class="tab-btn" onclick="switchSocialTab('guilds', event)">🛡️ Guild Hierarchy Core</button>
+            </div>
+
+            <!-- Стандартный CRUD-контейнер для сайдбара и редактора -->
+            <div class="crud-container" style="height: calc(100vh - 200px);">
+                <div class="crud-sidebar">
+                    <div class="crud-sidebar-header">
+                        <span class="card-title" id="social-sidebar-title">Friend System</span>
+                        <!-- Кнопка скрыта через JS внутри social.js, так как работаем с синглтонами -->
+                        <button class="primary" style="padding: 4px 8px; font-size: 11px;">+ Add</button>
+                    </div>
+                    <ul class="crud-list" id="social-list"></ul>
+                </div>
+                <div class="crud-editor" id="social-editor"></div>
+            </div>
+        </div>
+
+        <!-- --- SCREEN: MISSIONS & QUESTS ENGINE --- -->
+        <div id="view-quests" class="view-panel">
+            <div class="tabs-header" style="margin-bottom: 15px;">
+                <button class="tab-btn active" onclick="switchQuestTab('daily', event)">☀️ Daily Missions</button>
+                <button class="tab-btn" onclick="switchQuestTab('weekly', event)">🌙 Weekly Progression</button>
+            </div>
+            <div class="crud-container" style="height: calc(100vh - 200px);">
+                <div class="crud-sidebar">
+                    <div class="crud-sidebar-header">
+                        <span class="card-title" id="quests-sidebar-title">Daily Mission Board</span>
+                        <button class="primary" style="padding: 4px 8px; font-size: 11px;">+ Add</button>
+                    </div>
+                    <ul class="crud-list" id="quests-list"></ul>
+                </div>
+                <div class="crud-editor" id="quests-editor"></div>
+            </div>
+        </div>
+
+        <!-- --- SCREEN: MULTIPLE BATTLE PASSES ENGINE --- -->
+        <div id="view-bp" class="view-panel">
+            <!-- У БП одна подвкладка, так как они организованы по объектному каталогу аналогично предметам -->
+            <div class="tabs-header" style="margin-bottom: 15px;">
+                <button class="tab-btn active">🎟️ Battle Pass Catalog Sandbox</button>
+            </div>
+            <div class="crud-container" style="height: calc(100vh - 200px);">
+                <div class="crud-sidebar">
+                    <div class="crud-sidebar-header">
+                        <span class="card-title">Seasonal Passes</span>
+                        <button class="primary" style="padding: 4px 8px; font-size: 11px;" onclick="createNewBattlePass()">+ Add</button>
+                    </div>
+                    <ul class="crud-list" id="bp-list"></ul>
+                </div>
+                <div class="crud-editor" id="bp-editor"></div>
+            </div>
+        </div>
+
+        <!-- --- SCREEN: BOUNTY BOARD AFK DISPATCHES --- -->
+        <div id="view-bounty" class="view-panel">
+            <div class="tabs-header" style="margin-bottom: 15px;">
+                <button class="tab-btn active">🦅 Bounty Expeditions Core Master</button>
+            </div>
+            <div class="crud-container" style="height: calc(100vh - 200px);">
+                <div class="crud-sidebar">
+                    <div class="crud-sidebar-header">
+                        <span class="card-title">Expedition Framework</span>
+                        <button class="primary" style="padding: 4px 8px; font-size: 11px;">+ Add</button>
+                    </div>
+                    <ul class="crud-list" id="bounty-list"></ul>
+                </div>
+                <div class="crud-editor" id="bounty-editor"></div>
+            </div>
+        </div>
+
+        <!-- --- SCREEN: LIMITED TIME FLASHSALES & PROMO OFFERS --- -->
+        <div id="view-offers" class="view-panel">
+            <div class="tabs-header" style="margin-bottom: 15px;">
+                <button class="tab-btn active">⚡ LiveOps Marketing Campaign Hub</button>
+            </div>
+            <div class="crud-container" style="height: calc(100vh - 200px);">
+                <div class="crud-sidebar">
+                    <div class="crud-sidebar-header">
+                        <span class="card-title">Active Offers</span>
+                        <button class="primary" style="padding: 4px 8px; font-size: 11px;" onclick="createNewLimitedOffer()">+ Add</button>
+                    </div>
+                    <ul class="crud-list" id="offers-list"></ul>
+                </div>
+                <div class="crud-editor" id="offers-editor"></div>
+            </div>
+        </div>
+
+
     </div>
 </main>
 
@@ -400,580 +570,6 @@
         game: null,
         dialog: null
     };
-
-    function cascadeRenameKey(type, oldKey, newKey) {
-        if (!newKey || oldKey === newKey) return;
-
-        if (type === 'hero') {
-            // 1. Обновляем узы/связи (Bonds) у ВСЕХ остальных персонажей игры
-            Object.keys(target.catalog?.heroes || {}).forEach(hk => {
-                const hero = target.catalog.heroes[hk];
-                if (hero.bonds) {
-                    hero.bonds.forEach(bond => {
-                        if (bond.target_hero_id === oldKey) {
-                            bond.target_hero_id = newKey;
-                        }
-                    });
-                }
-            });
-
-            // 2. Обновляем Гачу (Gacha Drop Pools) — заменяем ID в тирах распределения
-            if (target.gacha && target.gacha.pools) {
-                Object.keys(target.gacha.pools).forEach(poolKey => {
-                    const pool = target.gacha.pools[poolKey];
-                    if (pool.heroes) {
-                        Object.keys(pool.heroes).forEach(rarity => {
-                            if (Array.isArray(pool.heroes[rarity])) {
-                                target.gacha.pools[poolKey].heroes[rarity] = pool.heroes[rarity].map(h => h === oldKey ? newKey : h);
-                            }
-                        });
-                    }
-                    // Обновляем ключ в матрице повышенного шанса (Rate Up)
-                    if (pool.rate_up && pool.rate_up[oldKey] !== undefined) {
-                        pool.rate_up[newKey] = pool.rate_up[oldKey];
-                        delete pool.rate_up[oldKey];
-                    }
-                });
-            }
-
-            // 3. Обновляем PVE Кампанию (pve_campaign) — меняем ID в отрядах противников
-            if (target.pve_campaign && target.pve_campaign.stages) {
-                Object.keys(target.pve_campaign.stages).forEach(stageKey => {
-                    const stage = target.pve_campaign.stages[stageKey];
-                    if (Array.isArray(stage.enemies)) {
-                        stage.enemies.forEach(enemy => {
-                            if (enemy.hero_id === oldKey) {
-                                enemy.hero_id = newKey;
-                            }
-                        });
-                    }
-                });
-            }
-
-            // 4. Обновляем PVE Башни (pve_towers) — меняем ID на всех этажах всех башен
-            if (target.pve_towers) {
-                Object.keys(target.pve_towers).forEach(towerKey => {
-                    const tower = target.pve_towers[towerKey];
-                    if (tower.floors) {
-                        Object.keys(tower.floors).forEach(floorKey => {
-                            const floor = tower.floors[floorKey];
-                            if (Array.isArray(floor.enemies)) {
-                                floor.enemies.forEach(enemy => {
-                                    if (enemy.hero_id === oldKey) {
-                                        enemy.hero_id = newKey;
-                                    }
-                                });
-                            }
-                        });
-                    }
-                });
-            }
-
-            // 5. Обновляем PVE Боссов (pve_bosses) — перезаписываем ссылку на шаблон моба
-            if (target.pve_bosses) {
-                Object.keys(target.pve_bosses).forEach(bossKey => {
-                    if (target.pve_bosses[bossKey].hero_id === oldKey) {
-                        target.pve_bosses[bossKey].hero_id = newKey;
-                    }
-                });
-            }
-        }
-
-        // --- КАСКАДНОЕ ПЕРЕИМЕНОВАНИЕ ДЛЯ ПРЕДМЕТОВ (ITEM) ---
-        else if (type === 'item') {
-            // 1. Обновляем привязку к сигнатурному оружию у героев
-            Object.keys(target.catalog?.heroes || {}).forEach(hk => {
-                if (target.catalog.heroes[hk].personal_item_id === oldKey) {
-                    target.catalog.heroes[hk].personal_item_id = newKey;
-                }
-            });
-
-            // 2. Обновляем таблицы дропа сундуков (Drop Tables) у других предметов
-            Object.keys(target.catalog?.items || {}).forEach(iKey => {
-                const item = target.catalog.items[iKey];
-                if (item.drop_table) {
-                    item.drop_table.forEach(drop => {
-                        if (drop.type === 'item' && drop.id === oldKey) {
-                            drop.id = newKey;
-                        }
-                    });
-                }
-            });
-
-            // 3. Обновляем витрины статичных магазинов (Shops Market Slots)
-            if (target.catalog?.shops) {
-                Object.keys(target.catalog.shops).forEach(shopKey => {
-                    const shop = target.catalog.shops[shopKey];
-                    if (shop.slots) {
-                        shop.slots.forEach(slot => {
-                            if (slot.is_random === false && slot.itemId === oldKey) {
-                                slot.itemId = newKey;
-                            }
-                        });
-                    }
-                });
-            }
-
-            // 4. Обновляем случайные пулы магазинов (Shop Pools Content)
-            if (target.catalog?.shop_pools) {
-                Object.keys(target.catalog.shop_pools).forEach(poolKey => {
-                    target.catalog.shop_pools[poolKey].forEach(item => {
-                        if (item.item_type === 'item' && item.itemId === oldKey) {
-                            item.itemId = newKey;
-                        }
-                    });
-                });
-            }
-
-            // 5. Обновляем рецепты крафта (Recipes Matrix)
-            if (target.catalog?.recipes) {
-                Object.keys(target.catalog.recipes).forEach(recKey => {
-                    const recipe = target.catalog.recipes[recKey];
-                    // Если предмет был результатом крафта — меняем itemId
-                    if (recipe.result && recipe.result.itemId === oldKey) {
-                        recipe.result.itemId = newKey;
-                    }
-                    // Если он выступал ингредиентом — переносим объём на новый ключ свойства
-                    if (recipe.ingredients && recipe.ingredients[oldKey] !== undefined) {
-                        recipe.ingredients[newKey] = recipe.ingredients[oldKey];
-                        delete recipe.ingredients[oldKey];
-                    }
-                });
-            }
-
-            // 6. Обновляем награды этапов кампании (rewards.items)
-            if (target.pve_campaign && target.pve_campaign.stages) {
-                Object.keys(target.pve_campaign.stages).forEach(stageKey => {
-                    const stage = target.pve_campaign.stages[stageKey];
-                    if (stage.rewards && Array.isArray(stage.rewards.items)) {
-                        stage.rewards.items.forEach(rew => {
-                            if (rew.itemId === oldKey) {
-                                rew.itemId = newKey;
-                            }
-                        });
-                    }
-                });
-            }
-
-            // 7. Обновляем награды этажей башен (rewards.items)
-            if (target.pve_towers) {
-                Object.keys(target.pve_towers).forEach(towerKey => {
-                    const tower = target.pve_towers[towerKey];
-                    if (tower.floors) {
-                        Object.keys(tower.floors).forEach(floorKey => {
-                            const floor = tower.floors[floorKey];
-                            if (floor.rewards && Array.isArray(floor.rewards.items)) {
-                                floor.rewards.items.forEach(rew => {
-                                    if (rew.itemId === oldKey) {
-                                        rew.itemId = newKey;
-                                    }
-                                });
-                            }
-                        });
-                    }
-                });
-            }
-        }if (type === 'hero') {
-            // 1. Обновляем узы/связи (Bonds) у ВСЕХ остальных персонажей игры
-            Object.keys(target.catalog?.heroes || {}).forEach(hk => {
-                const hero = target.catalog.heroes[hk];
-                if (hero.bonds) {
-                    hero.bonds.forEach(bond => {
-                        if (bond.target_hero_id === oldKey) {
-                            bond.target_hero_id = newKey;
-                        }
-                    });
-                }
-            });
-
-            // 2. Обновляем Гачу (Gacha Drop Pools) — заменяем ID в тирах распределения
-            if (target.gacha && target.gacha.pools) {
-                Object.keys(target.gacha.pools).forEach(poolKey => {
-                    const pool = target.gacha.pools[poolKey];
-                    if (pool.heroes) {
-                        Object.keys(pool.heroes).forEach(rarity => {
-                            if (Array.isArray(pool.heroes[rarity])) {
-                                target.gacha.pools[poolKey].heroes[rarity] = pool.heroes[rarity].map(h => h === oldKey ? newKey : h);
-                            }
-                        });
-                    }
-                    // Обновляем ключ в матрице повышенного шанса (Rate Up)
-                    if (pool.rate_up && pool.rate_up[oldKey] !== undefined) {
-                        pool.rate_up[newKey] = pool.rate_up[oldKey];
-                        delete pool.rate_up[oldKey];
-                    }
-                });
-            }
-
-            // 3. Обновляем PVE Кампанию (pve_campaign) — меняем ID в отрядах противников
-            if (target.pve_campaign && target.pve_campaign.stages) {
-                Object.keys(target.pve_campaign.stages).forEach(stageKey => {
-                    const stage = target.pve_campaign.stages[stageKey];
-                    if (Array.isArray(stage.enemies)) {
-                        stage.enemies.forEach(enemy => {
-                            if (enemy.hero_id === oldKey) {
-                                enemy.hero_id = newKey;
-                            }
-                        });
-                    }
-                });
-            }
-
-            // 4. Обновляем PVE Башни (pve_towers) — меняем ID на всех этажах всех башен
-            if (target.pve_towers) {
-                Object.keys(target.pve_towers).forEach(towerKey => {
-                    const tower = target.pve_towers[towerKey];
-                    if (tower.floors) {
-                        Object.keys(tower.floors).forEach(floorKey => {
-                            const floor = tower.floors[floorKey];
-                            if (Array.isArray(floor.enemies)) {
-                                floor.enemies.forEach(enemy => {
-                                    if (enemy.hero_id === oldKey) {
-                                        enemy.hero_id = newKey;
-                                    }
-                                });
-                            }
-                        });
-                    }
-                });
-            }
-
-            // 5. Обновляем PVE Боссов (pve_bosses) — перезаписываем ссылку на шаблон моба
-            if (target.pve_bosses) {
-                Object.keys(target.pve_bosses).forEach(bossKey => {
-                    if (target.pve_bosses[bossKey].hero_id === oldKey) {
-                        target.pve_bosses[bossKey].hero_id = newKey;
-                    }
-                });
-            }
-        }
-        if (type === 'item') {
-            // 1. Обновляем привязку к сигнатурному оружию у героев
-            Object.keys(target.catalog?.heroes || {}).forEach(hk => {
-                if (target.catalog.heroes[hk].personal_item_id === oldKey) {
-                    target.catalog.heroes[hk].personal_item_id = newKey;
-                }
-            });
-
-            // 2. Обновляем таблицы дропа сундуков (Drop Tables) у других предметов
-            Object.keys(target.catalog?.items || {}).forEach(iKey => {
-                const item = target.catalog.items[iKey];
-                if (item.drop_table) {
-                    item.drop_table.forEach(drop => {
-                        if (drop.type === 'item' && drop.id === oldKey) {
-                            drop.id = newKey;
-                        }
-                    });
-                }
-            });
-
-            // 3. Обновляем витрины статичных магазинов (Shops Market Slots)
-            if (target.catalog?.shops) {
-                Object.keys(target.catalog.shops).forEach(shopKey => {
-                    const shop = target.catalog.shops[shopKey];
-                    if (shop.slots) {
-                        shop.slots.forEach(slot => {
-                            if (slot.is_random === false && slot.itemId === oldKey) {
-                                slot.itemId = newKey;
-                            }
-                        });
-                    }
-                });
-            }
-
-            // 4. Обновляем случайные пулы магазинов (Shop Pools Content)
-            if (target.catalog?.shop_pools) {
-                Object.keys(target.catalog.shop_pools).forEach(poolKey => {
-                    target.catalog.shop_pools[poolKey].forEach(item => {
-                        if (item.item_type === 'item' && item.itemId === oldKey) {
-                            item.itemId = newKey;
-                        }
-                    });
-                });
-            }
-
-            // 5. Обновляем рецепты крафта (Recipes Matrix)
-            if (target.catalog?.recipes) {
-                Object.keys(target.catalog.recipes).forEach(recKey => {
-                    const recipe = target.catalog.recipes[recKey];
-                    // Если предмет был результатом крафта — меняем itemId
-                    if (recipe.result && recipe.result.itemId === oldKey) {
-                        recipe.result.itemId = newKey;
-                    }
-                    // Если он выступал ингредиентом — переносим объём на новый ключ свойства
-                    if (recipe.ingredients && recipe.ingredients[oldKey] !== undefined) {
-                        recipe.ingredients[newKey] = recipe.ingredients[oldKey];
-                        delete recipe.ingredients[oldKey];
-                    }
-                });
-            }
-
-            // 6. Обновляем награды этапов кампании (rewards.items)
-            if (target.pve_campaign && target.pve_campaign.stages) {
-                Object.keys(target.pve_campaign.stages).forEach(stageKey => {
-                    const stage = target.pve_campaign.stages[stageKey];
-                    if (stage.rewards && Array.isArray(stage.rewards.items)) {
-                        stage.rewards.items.forEach(rew => {
-                            if (rew.itemId === oldKey) {
-                                rew.itemId = newKey;
-                            }
-                        });
-                    }
-                });
-            }
-
-            // 7. Обновляем награды этажей башен (rewards.items)
-            if (target.pve_towers) {
-                Object.keys(target.pve_towers).forEach(towerKey => {
-                    const tower = target.pve_towers[towerKey];
-                    if (tower.floors) {
-                        Object.keys(tower.floors).forEach(floorKey => {
-                            const floor = tower.floors[floorKey];
-                            if (floor.rewards && Array.isArray(floor.rewards.items)) {
-                                floor.rewards.items.forEach(rew => {
-                                    if (rew.itemId === oldKey) {
-                                        rew.itemId = newKey;
-                                    }
-                                });
-                            }
-                        });
-                    }
-                });
-            }
-        }
-        if (type === 'faction') {
-            Object.keys(target.catalog.heroes).forEach(hKey => {
-                if (target.catalog.heroes[hKey].faction_id === oldKey) {
-                    target.catalog.heroes[hKey].faction_id = newKey;
-                }
-            });
-        }
-        if (type === 'class') {
-            Object.keys(target.catalog.heroes).forEach(hKey => {
-                if (target.catalog.heroes[hKey].class_id === oldKey) {
-                    target.catalog.heroes[hKey].class_id = newKey;
-                }
-            });
-        }
-        if (type === 'skill') {
-            Object.keys(target.catalog.heroes).forEach(hKey => {
-                if (target.catalog.heroes[hKey].skills) {
-                    target.catalog.heroes[hKey].skills = target.catalog.heroes[hKey].skills.map(s => s === oldKey ? newKey : s);
-                }
-            });
-        }
-        if (type === 'element') {
-            Object.keys(target.catalog.heroes).forEach(hKey => {
-                if (target.catalog.heroes[hKey].element_id === oldKey) {
-                    target.catalog.heroes[hKey].element_id = newKey;
-                }
-            });
-        }
-        if (type === 'game') {
-            target.ui.landscape.forEach(screen => {
-                if (screen.id === 'screen_profile' && screen.profile_layout && screen.profile_layout.match_history_fields) {
-                    // Если где-то в истории зашит ID как статическая строка, переименовываем его
-                }
-            });
-        }
-    }
-
-    function cascadeDeleteKey(type, deletedKey) {
-        if (type === 'hero') {
-            // 1. Чистим связи (Bonds) у ВСЕХ остальных героев каталога
-            Object.keys(target.catalog?.heroes || {}).forEach(hk => {
-                const hero = target.catalog.heroes[hk];
-                if (hero.bonds) {
-                    target.catalog.heroes[hk].bonds = hero.bonds.filter(bond => bond.target_hero_id !== key);
-                }
-            });
-
-            // 2. Чистим Гачу (Gacha Drop Pools) — убираем героя из массивов распределения по редкостям
-            if (target.gacha && target.gacha.pools) {
-                Object.keys(target.gacha.pools).forEach(poolKey => {
-                    const pool = target.gacha.pools[poolKey];
-                    if (pool.heroes) {
-                        Object.keys(pool.heroes).forEach(rarity => {
-                            if (Array.isArray(pool.heroes[rarity])) {
-                                target.gacha.pools[poolKey].heroes[rarity] = pool.heroes[rarity].filter(h => h !== key);
-                            }
-                        });
-                    }
-                    // Убираем героя из матрицы повышенного шанса (Rate Up), если он там был
-                    if (pool.rate_up && pool.rate_up[key] !== undefined) {
-                        delete target.gacha.pools[poolKey].rate_up[key];
-                    }
-                });
-            }
-
-            // 3. Чистим PVE Кампанию (pve_campaign) — вырезаем героя из волн противников
-            if (target.pve_campaign && target.pve_campaign.stages) {
-                Object.keys(target.pve_campaign.stages).forEach(stageKey => {
-                    const stage = target.pve_campaign.stages[stageKey];
-                    if (Array.isArray(stage.enemies)) {
-                        target.pve_campaign.stages[stageKey].enemies = stage.enemies.filter(enemy => enemy.hero_id !== key);
-                    }
-                });
-            }
-
-            // 4. Чистим PVE Башни (pve_towers) — вырезаем героя из отрядов на всех этажах всех башен
-            if (target.pve_towers) {
-                Object.keys(target.pve_towers).forEach(towerKey => {
-                    const tower = target.pve_towers[towerKey];
-                    if (tower.floors) {
-                        Object.keys(tower.floors).forEach(floorKey => {
-                            const floor = tower.floors[floorKey];
-                            if (Array.isArray(floor.enemies)) {
-                                target.pve_towers[towerKey].floors[floorKey].enemies = floor.enemies.filter(enemy => enemy.hero_id !== key);
-                            }
-                        });
-                    }
-                });
-            }
-
-            // 5. Чистим PVE Боссов (pve_bosses) — если босс был привязан к этому герою, обнуляем ссылку
-            if (target.pve_bosses) {
-                Object.keys(target.pve_bosses).forEach(bossKey => {
-                    if (target.pve_bosses[bossKey].hero_id === key) {
-                        target.pve_bosses[bossKey].hero_id = ""; // Сбрасываем шаблон, админ выберет замену
-                    }
-                });
-            }
-        }
-        if (type === 'item') {
-            // 1. Удаляем привязку к сигнатурному оружию у героев
-            Object.keys(target.catalog?.heroes || {}).forEach(hk => {
-                if (target.catalog.heroes[hk].personal_item_id === key) {
-                    target.catalog.heroes[hk].personal_item_id = "";
-                }
-            });
-
-            // 2. Чистим сундуки (Drop Tables) — если другой сундук содержал этот предмет, убираем его из лута
-            Object.keys(target.catalog?.items || {}).forEach(iKey => {
-                const item = target.catalog.items[iKey];
-                if (item.drop_table) {
-                    target.catalog.items[iKey].drop_table = item.drop_table.filter(drop => !(drop.type === 'item' && drop.id === key));
-                }
-            });
-
-            // 3. Чистим слоты статичных магазинов (Shops Market)
-            if (target.catalog?.shops) {
-                Object.keys(target.catalog.shops).forEach(shopKey => {
-                    const shop = target.catalog.shops[shopKey];
-                    if (shop.slots) {
-                        target.catalog.shops[shopKey].slots = shop.slots.filter(slot => !(slot.is_random === false && slot.itemId === key));
-                    }
-                });
-            }
-
-            // 4. Чистим случайные пулы магазинов (Shop Pools)
-            if (target.catalog?.shop_pools) {
-                Object.keys(target.catalog.shop_pools).forEach(poolKey => {
-                    target.catalog.shop_pools[poolKey] = target.catalog.shop_pools[poolKey].filter(item => !(item.item_type === 'item' && item.itemId === key));
-                });
-            }
-
-            // 5. Чистим рецепты крафта (Recipes) — удаляем сам рецепт этого предмета ИЛИ убираем его из ингредиентов у других предметов
-            if (target.catalog?.recipes) {
-                Object.keys(target.catalog.recipes).forEach(recKey => {
-                    const recipe = target.catalog.recipes[recKey];
-                    // Если этот предмет был результатом крафта — сносим рецепт целиком
-                    if (recipe.result && recipe.result.itemId === key) {
-                        delete target.catalog.recipes[recKey];
-                    }
-                    // Если он был ингредиентом — удаляем свойство из объекта ingredients
-                    else if (recipe.ingredients && recipe.ingredients[key] !== undefined) {
-                        delete target.catalog.recipes[recKey].ingredients[key];
-                    }
-                });
-            }
-
-            // 6. Чистим награды этапов кампании (rewards.items)
-            if (target.pve_campaign && target.pve_campaign.stages) {
-                Object.keys(target.pve_campaign.stages).forEach(stageKey => {
-                    const stage = target.pve_campaign.stages[stageKey];
-                    if (stage.rewards && Array.isArray(stage.rewards.items)) {
-                        target.pve_campaign.stages[stageKey].rewards.items = stage.rewards.items.filter(rew => rew.itemId !== key);
-                    }
-                });
-            }
-
-            // 7. Чистим награды этажей башен (rewards.items)
-            if (target.pve_towers) {
-                Object.keys(target.pve_towers).forEach(towerKey => {
-                    const tower = target.pve_towers[towerKey];
-                    if (tower.floors) {
-                        Object.keys(tower.floors).forEach(floorKey => {
-                            const floor = tower.floors[floorKey];
-                            if (floor.rewards && Array.isArray(floor.rewards.items)) {
-                                target.pve_towers[towerKey].floors[floorKey].rewards.items = floor.rewards.items.filter(rew => rew.itemId !== key);
-                            }
-                        });
-                    }
-                });
-            }
-        }
-        if (type === 'dialog') {
-            target.ui.landscape.forEach(screen => {
-                if (screen.action === `open_dialog_${deletedKey}`) screen.action = "";
-            });
-        }
-        if (type === 'faction') {
-            Object.keys(target.catalog.heroes).forEach(hKey => {
-                if (target.catalog.heroes[hKey].faction_id === deletedKey) target.catalog.heroes[hKey].faction_id = "";
-            });
-        }
-        if (type === 'class') {
-            Object.keys(target.catalog.heroes).forEach(hKey => {
-                if (target.catalog.heroes[hKey].class_id === deletedKey) target.catalog.heroes[hKey].class_id = "";
-            });
-        }
-        if (type === 'skill') {
-            Object.keys(target.catalog.heroes).forEach(hKey => {
-                if (target.catalog.heroes[hKey].skills) {
-                    target.catalog.heroes[hKey].skills = target.catalog.heroes[hKey].skills.filter(s => s !== deletedKey);
-                }
-            });
-        }
-        if (type === 'element') {
-            Object.keys(target.catalog.heroes).forEach(hKey => {
-                if (target.catalog.heroes[hKey].element_id === deletedKey) target.catalog.heroes[hKey].element_id = "";
-            });
-        }
-        if (type === 'game') {
-            // При удалении игры зачищаем ссылки, если они используются в триггерах экранов
-            target.ui.landscape.forEach(screen => {
-                if (screen.action === `open_game_${deletedKey}`) {
-                    screen.action = "";
-                }
-            });
-        }
-    }
-
-    function isKeyDuplicate(section, newKey, oldKey) {
-        if (newKey === oldKey) return false;
-
-        if (section === 'hero' && target.catalog.heroes[newKey]) return true;
-        if (section === 'item' && target.catalog.items[newKey]) return true;
-        if (section === 'resource' && target.mechanics.resources[newKey]) return true;
-        if (section === 'dialog' && target.dialogs[newKey]) return true;
-
-        return false;
-    }
-
-    function generateLocInputs(locObject, basePathString) {
-        if (!locObject) return '<p style="color:var(--text-muted); font-size:11px;">Localization missing</p>';
-
-        return target.languages.map(lang => {
-            if (locObject[lang] === undefined) locObject[lang] = "";
-            return `
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:5px;">
-                <span class="badge" style="width:30px; text-align:center;">${lang.toUpperCase()}</span>
-                <input type="text" value="${locObject[lang] || ''}" oninput="${basePathString}['${lang}'] = this.value">
-            </div>
-        `;
-        }).join('');
-    }
 
     function switchView(viewId) {
         document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
@@ -995,6 +591,10 @@
             'towers': 'PVE Tower Stages Workflow, Enemy Composition & Progression Rewards Specs',
             'bosses': 'PVE Server & Guild Raid Boss Parameters, Scaled Damage Threshold Tiers & Reset Timers Specs',
             'arena': 'PVP Arena Matchmaking Formulas, Elo Scaling Ranks Ladder, Gladiator Market & Meta Ban Roster',
+            'social': 'MMO Social Layer: Friends, Hearts Gifting & Guild Infrastructure Master Control',
+            'quests': 'Quest Ops Engine: Daily & Weekly Task Pools, Milestone Activity Brackets & Progress Chest Rewards Maps',
+            'bounty': 'Bounty Board System: Probability Mission Rarity Brackets, Hero Class/Element Deployment Constraints & Idle Rewards Matrices',
+            'offers': 'LiveOps Marketing Node: Temporary In-App Purchases Sales, Contextual Triggered Pop-up Windows & Custom Screen Layouts',
             'dialogs': 'Dialog Tutorials',
             'export': 'Raw JSON Export'
         };
@@ -1002,124 +602,47 @@
         if(viewId === 'export') renderRawJson();
     }
 
-    function updateGlobalField(key, val) {
-        target[key] = val;
-    }
+    // Функция ручного открытия/закрытия папок в сайдбаре
+    function toggleNavCategory(categoryId, headerElem) {
+        const content = document.getElementById(categoryId);
+        if (!content) return;
 
-    function updateWinSettings(key, val) {
-        target.ui.windows_settings[key] = val;
-    }
+        const arrow = headerElem.querySelector('.category-arrow');
+        const isHidden = content.style.display === 'none';
 
-
-
-    function deleteResource(key) {
-        delete target.mechanics.resources[key];
-        state.resource = null;
-        document.getElementById('resource-editor').innerHTML = '';
-        renderResources();
-    }
-
-    function renameResourceKey(oldKey, newKey) {
-        if (!newKey || oldKey === newKey) return;
-
-        if (isKeyDuplicate('resource', newKey, oldKey)) {
-            alert(`Error: Resource key "${newKey}" already exists!`);
-            renderResources();
-            selectResource(oldKey);
-            return;
-        }
-
-        target.mechanics.resources[newKey] = target.mechanics.resources[oldKey];
-        delete target.mechanics.resources[oldKey];
-
-        if (state.resource === oldKey) state.resource = newKey;
-        renderResources();
-        selectResource(newKey);
-    }
-
-    function downloadConfigJson() {
-        try {
-            const jsonString = JSON.stringify(gamesConfigDB, null, 4);
-            const blob = new Blob([jsonString], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = "gamesConfigDB.json";
-
-            document.body.appendChild(link);
-            link.click();
-
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-        } catch (error) {
-            alert("Failed to export configuration data.");
+        if (isHidden) {
+            content.style.display = 'block';
+            if (arrow) arrow.innerText = '🔽';
+        } else {
+            content.style.display = 'none';
+            if (arrow) arrow.innerText = '▶';
         }
     }
 
-    function triggerImportClick() {
-        document.getElementById("import-file-input").click();
-    }
+    // Модификация твоей функции switchView (добавь авто-раскрытие папок при кликах)
+    const originalSwitchView = window.switchView;
+    window.switchView = function(viewId) {
+        // Вызываем оригинальный метод переключения экранов, который у тебя уже написан
+        if (typeof originalSwitchView === 'function') {
+            originalSwitchView(viewId);
+        }
 
-    function handleConfigImport(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const parsedJson = JSON.parse(e.target.result);
-
-                if (!parsedJson || typeof parsedJson !== 'object') {
-                    throw new Error("Invalid structure.");
+        // Автоматически находим, в какой категории лежит выбранный viewId, и раскрываем её
+        const item = document.querySelector(`.nav-item[onclick*="'${viewId}'"]`);
+        if (item) {
+            const parentCategory = item.parentElement;
+            if (parentCategory && parentCategory.classList.contains('nav-category-content')) {
+                if (parentCategory.style.display === 'none') {
+                    // Находим заголовок, который стоит прямо перед этим контейнером, и симулируем клик
+                    const header = parentCategory.previousElementSibling;
+                    if (header && header.classList.contains('nav-category-header')) {
+                        toggleNavCategory(parentCategory.id, header);
+                    }
                 }
-                if (!parsedJson.game_combat_stars) {
-                    throw new Error("Missing critical root criteria 'game_combat_stars'.");
-                }
-
-                gamesConfigDB = parsedJson;
-
-                // Намертво перепривязываем указатель на новую базу данных
-                window.target = gamesConfigDB.game_combat_stars;
-
-                // Полный сброс состояний выбранных элементов, чтобы избежать битых ссылок
-                state.server = null;
-                state.resource = null;
-                state.ui = null;
-                state.hero = null;
-                state.item = null;
-                state.dialog = null;
-                stateMechKey = null;
-                stateUiWidgetIdx = null;
-                stateLocKey = null;
-
-                // Тотальная принудительная перезагрузка всех интерфейсов админки
-                initFormValues();
-                renderServers();
-                switchMechTab(currentMechSection);
-                switchUiOrientation(currentUiOrientation);
-                switchLocCategory(currentLocCategory);
-                renderProfileEditor();
-                renderHeroes();
-                renderItems();
-                renderDialogs();
-
-                // Зачищаем инпут, чтобы можно было загрузить тот же файл повторно после правок
-                event.target.value = "";
-                alert("Configuration file successfully imported and synchronised!");
-
-            } catch (error) {
-                alert("Configuration Import Failed: " + error.message);
-                event.target.value = "";
             }
-        };
-        reader.readAsText(file);
-    }
+        }
+    };
 
-    function initFormValues() {
-        document.getElementById('gen-orientation').value = target.orientation;
-        document.getElementById('gen-default-lang').value = target.default_lang;
-    }
 
     window.onload = function() {
         initFormValues();
@@ -1136,9 +659,23 @@
         switchCampaignTab('stages');
         switchTowerSubTab('towers');
         switchArenaTab('rules');
+        switchSocialTab('friends');
+        switchQuestTab('daily');
+        renderBountyBoardSidebar();
+        renderOffersList();
+        renderBattlePassesList();
         renderBossesList();
         renderDialogs();
         renderGames();
+
+        const ed = document.getElementById('bp-editor');
+        if (ed) ed.innerHTML = '';
+
+        const ed2 = document.getElementById('bounty-editor');
+        if (ed2) ed2.innerHTML = '';
+
+        const ed3 = document.getElementById('offers-editor');
+        if (ed3) ed3.innerHTML = '';
     };
 </script>
 </body>

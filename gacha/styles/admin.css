@@ -349,3 +349,34 @@ input:focus, select:focus, textarea:focus {
     background-color: var(--border-color);
     color: var(--text-muted);
 }
+
+.nav-category-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 800;
+    color: #535375;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 14px 20px 6px 20px;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.2s;
+    margin-top: 8px;
+}
+.nav-category-header:hover {
+    color: #4ecca3;
+}
+.category-arrow {
+    font-size: 9px;
+    color: #3b3b54;
+    transition: color 0.2s;
+}
+.nav-category-header:hover .category-arrow {
+    color: #4ecca3;
+}
+/* Слегка сдвигаем вложенные элементы вправо для красивой иерархии */
+.nav-category-content .nav-item {
+    padding-left: 30px !important;
+}
