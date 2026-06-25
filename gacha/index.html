@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZCG Studio - Zero-Code Gacha & AI VirtualArena Engine</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MDAgNTAwIj4KPHJlY3Qgd2lkdGg9IjUwMCIgaGVpZ2h0PSI1MDAiIGZpbGw9IiMxMjEyMTIiIHJ4PSI0MCIvPgo8dGV4dCB4PSI1MCUiIHk9IjQ1JSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IidKZXRCcmFpbnMgTW9ubycsICdGaXJhIENvZGUnLCAnTW9udHNlcnJhdCcsIHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSI5MDAiPgo8dHNwYW4geD0iNTAlIiBkeT0iMCIgZm9udC1zaXplPSIxMjUiIGZpbGw9IiNmZjVhNWYiIHRleHRMZW5ndGg9IjM2MCIgbGVuZ3RoQWRqdXN0PSJzcGFjaW5nQW5kR2x5cGhzIj5NVFc8L3RzcGFuPgo8dHNwYW4geD0iNTAlIiBkeT0iMTE1IiBmb250LXNpemU9IjExNSIgZmlsbD0iIzRlY2NhMyIgdGV4dExlbmd0aD0iMzYwIiBsZW5ndGhBZGp1c3Q9InNwYWNpbmdBbmRHbHlwaHMiPlRFQ0g8L3RzcGFuPgo8L3RleHQ+Cjwvc3ZnPg==">
+    <meta name="description" content="Deploy autonomous Gacha RPG ecosystems with live AI-driven VirtualArena matches, token betting systems, and socket-driven animated companions. B2B software by MTWTech.">
+    <meta name="keywords" content="game builder, virtual arena, gacha engine, no-code game dev, eSports simulation, websocket companion, MTWTech, ZCG Studio">
+
+    <meta http-equiv="content-language" content="en-US">
+    <!-- Open Graph for Corporate & Venture Sharing -->
+    <meta property="og:title" content="ZCG Studio - Zero-Code Gacha & AI VirtualArena Engine">
+    <meta property="og:description" content="SaaS gaming engine featuring autonomous live esports simulation, token-based reward betting, and real-time socket-connected active companions. Ready-made retention ecosystem.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://mtwtech.onrender.com/ogpreview.png">
+
+    <style>
+        /* --- CORE DESIGN SYSTEM & BASE RESET --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #070714;
+            color: #fff;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        a { color: inherit; text-decoration: none; }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* --- HEADER & NAVIGATION --- */
+        header {
+            background: rgba(18, 18, 44, 0.85);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #25254d;
+            position: fixed;
+            top: 0; left: 0; width: 100%;
+            z-index: 100;
+        }
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 80px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: 900;
+            color: #4ecca3;
+            text-shadow: 0 0 10px rgba(78, 204, 163, 0.3);
+            letter-spacing: 1px;
+        }
+        .logo span { color: #e94560; }
+        nav { display: flex; gap: 30px; }
+        nav a {
+            font-size: 15px;
+            font-weight: 600;
+            color: #8a8ab0;
+            transition: color 0.3s;
+        }
+        nav a:hover { color: #4ecca3; }
+
+        .cta-header-btn {
+            background: linear-gradient(135deg, #e94560, #951c30);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            box-shadow: 0 4px 15px rgba(233, 69, 96, 0.3);
+            transition: transform 0.2s;
+            cursor: pointer;
+            border: none;
+            color: #fff;
+        }
+        .cta-header-btn:hover { transform: scale(1.03); }
+
+        main { padding-top: 80px; }
+
+        /* --- HERO PRESENTATION --- */
+        .hero {
+            padding: 100px 0 60px 0;
+            text-align: center;
+            background: radial-gradient(circle at 50% 30%, rgba(233, 69, 96, 0.1) 0%, transparent 60%);
+        }
+        .hero h1 {
+            font-size: 48px;
+            font-weight: 900;
+            margin-bottom: 20px;
+            letter-spacing: -1px;
+            line-height: 1.2;
+        }
+        .hero h1 span {
+            color: #4ecca3;
+            text-shadow: 0 0 15px rgba(78, 204, 163, 0.2);
+        }
+        .hero p {
+            font-size: 18px;
+            color: #8a8ab0;
+            max-width: 750px;
+            margin: 0 auto 35px auto;
+        }
+        .hero-btns { display: flex; justify-content: center; gap: 20px; }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4ecca3, #2b9371);
+            color: #12122c;
+            padding: 15px 35px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 6px 20px rgba(78, 204, 163, 0.3);
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+        .btn-primary:hover { transform: scale(1.03); }
+
+        .btn-secondary {
+            background: rgba(78, 204, 163, 0.03); /* Едва заметный мятный тон */
+            border: 2px solid rgba(78, 204, 163, 0.2); /* Полупрозрачная технологичная рамка */
+            color: #4ecca3; /* Текст в цвет рамки */
+            padding: 14px 33px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 16px;
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            display: inline-block;
+            cursor: pointer;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(78, 204, 163, 0.08); /* Чуть плотнее при наведении */
+            border-color: #4ecca3; /* Рамка загорается ярче */
+            color: #fff; /* Текст становится белым */
+            box-shadow: 0 0 20px rgba(78, 204, 163, 0.2); /* Мягкое неоновое свечение */
+            transform: translateY(-2px); /* Легкий интерактивный подъем */
+        }
+
+        .btn-secondary:active {
+            transform: translateY(1px); /* Физика клика */
+        }
+
+
+        /* --- B2B UNIQUE ARCHITECTURE FEATURES --- */
+        .features { padding: 60px 0; background: #101026; border-top: 1px solid #1f1f45; border-bottom: 1px solid #1f1f45;}
+        .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
+        .feature-card {
+            background: #161638;
+            padding: 25px;
+            border-radius: 16px;
+            border: 1px solid #25254d;
+        }
+        .feature-card h3 { color: #4ecca3; margin-bottom: 10px; font-size: 18px; font-weight: 700; }
+        .feature-card p { color: #8a8ab0; font-size: 14px; }
+
+        /* --- INTERACTIVE SIMULATOR FRAME MATRIX --- */
+        .games-section { padding: 60px 0; text-align: center; }
+        .games-section h2 { font-size: 32px; margin-bottom: 15px; font-weight: 800; }
+        .games-section h2 span { color: #e94560; }
+        .section-desc { color: #8a8ab0; margin-bottom: 40px; font-size: 16px; max-width: 650px; margin-left: auto; margin-right: auto; }
+
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .game-item {
+            background: linear-gradient(145deg, #12122c, #1a1a3a);
+            border: 1px solid #25254d;
+            border-radius: 20px;
+            padding: 30px 20px;
+            transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            text-align: left;
+        }
+        .game-item:hover {
+            transform: translateY(-8px);
+            border-color: #e94560;
+            box-shadow: 0 10px 25px rgba(233, 69, 96, 0.2);
+        }
+        .game-icon { font-size: 44px; margin-bottom: 15px; display: inline-block; }
+        .game-item h3 { font-size: 18px; margin-bottom: 8px; font-weight: 700; }
+        .game-item p { font-size: 13px; color: #8a8ab0; }
+
+        .game-badge {
+            position: absolute;
+            top: 12px; right: 12px;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 5px;
+            text-transform: uppercase;
+        }
+        .badge-instant { background: rgba(78, 204, 163, 0.15); color: #4ecca3; }
+        .badge-live { background: rgba(233, 69, 96, 0.15); color: #e94560; }
+
+        /* --- INTERACTIVE CONTROL TABS --- */
+        .demo-tab-btn {
+            background: #161638;
+            border: 1px solid #25254d;
+            color: #8a8ab0;
+            padding: 10px 24px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.2s;
+            margin: 0 5px;
+        }
+        .demo-tab-btn:hover {
+            border-color: #4ecca3;
+            color: #fff;
+        }
+        .demo-tab-btn.active {
+            background: linear-gradient(135deg, #4ecca3, #2b9371);
+            color: #12122c;
+            border-color: #4ecca3;
+            box-shadow: 0 0 15px rgba(78, 204, 163, 0.4);
+        }
+
+        /* --- CONTACT & REQUEST DEMO LEAD FORM --- */
+        .contact-section { padding: 80px 0; background: #101026; border-top: 1px solid #1f1f45; text-align: center; }
+        .contact-card {
+            max-width: 500px;
+            margin: 0 auto;
+            background: linear-gradient(145deg, #12122c, #1a1a3a);
+            padding: 35px;
+            border-radius: 24px;
+            border: 2px solid #25254d;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+        }
+        .form-group { text-align: left; margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 13px; color: #8a8ab0; margin-bottom: 6px; font-weight: 600; }
+        .form-input {
+            width: 100%; padding: 14px; background: #070714; border: 1px solid #25254d;
+            border-radius: 10px; color: #fff; font-size: 15px; outline: none; transition: border-color 0.3s;
+        }
+        .form-input:focus { border-color: #4ecca3; }
+
+        .submit-btn {
+            width: 100%; padding: 16px; background: linear-gradient(135deg, #4ecca3, #2b9371);
+            border: none; color: #12122c; font-size: 16px; font-weight: bold; border-radius: 12px;
+            cursor: pointer; box-shadow: 0 5px 15px rgba(78, 204, 163, 0.3); transition: transform 0.2s;
+        }
+        .submit-btn:active { transform: scale(0.98); }
+
+        /* --- PREMIUM B2B DEMO CALL OUT --- */
+        .b2b-demo-action {
+            text-align: center;
+            margin: 10px 0 40px 0;
+        }
+        .btn-launch-demo {
+            background: linear-gradient(135deg, #00f5d4 0%, #00bbf9 100%) !important;
+            border: 2px solid #00f5d4 !important;
+            color: #0d1117 !important;
+            padding: 16px 40px !important;
+            border-radius: 30px !important;
+            font-size: 16px !important;
+            font-weight: 900 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 1.5px !important;
+            cursor: pointer !important;
+            box-shadow: 0 0 20px rgba(0, 245, 212, 0.4) !important;
+            transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1) !important;
+            outline: none !important;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        /* Анимация пульсации и наведения на десктопе */
+        .btn-launch-demo:hover {
+            transform: translateY(-4px) scale(1.03) !important;
+            box-shadow: 0 0 35px rgba(0, 245, 212, 0.8) !important;
+            background: linear-gradient(135deg, #33f7dd 0%, #33ccff 100%) !important;
+            border-color: #33f7dd !important;
+        }
+
+        /* Эффект клика */
+        .btn-launch-demo:active {
+            transform: translateY(1px) scale(0.98) !important;
+            box-shadow: 0 0 15px rgba(0, 245, 212, 0.5) !important;
+        }
+
+        /* Пульсирующая неоновая точка рядом с текстом (эффект LIVE системы) */
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #0d1117;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse-dot 1.5s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            50% { transform: scale(1.3); opacity: 1; }
+            100% { transform: scale(0.8); opacity: 0.5; }
+        }
+
+        /* --- CORPORATE FOOTER --- */
+        footer {
+            background: #09091a;
+            border-top: 1px solid #1f1f45;
+            padding: 40px 0;
+            font-size: 14px;
+            color: #535375;
+        }
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .footer-links { display: flex; gap: 20px; }
+        .footer-links a:hover { color: #8a8ab0; }
+
+        /* --- SCREEN SIZE ADAPTATION (MEDIA QUERIES) --- */
+        @media (max-width: 992px) {
+            .games-grid { grid-template-columns: repeat(2, 1fr); }
+            .features-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 600px) {
+            .games-grid { grid-template-columns: repeat(1, 1fr); }
+            .hero h1 { font-size: 32px; }
+            nav, .cta-header-btn { display: none; }
+            .hero-btns { flex-direction: column; gap: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="container header-content">
+        <div class="logo">ZCG<span>Studio</span></div>
+        <nav>
+            <a href="#features">Core Value</a>
+            <a href="#modules">Architecture</a>
+            <a href="#virtualarena">VirtualArena</a>
+            <a href="#contact">Contact</a>
+        </nav>
+        <button class="cta-header-btn" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'});">Request B2B Demo</button>
+    </div>
+</header>
+
+<main>
+    <section class="hero" style="position: relative; overflow: hidden; background: #070714; padding: 120px 0 100px 0;">
+        <!-- Холст для фоновой графики матрицы данных -->
+        <canvas id="heroBannerCanvas" style="position: absolute; top:0; left:0; width:100%; height:100%; z-index:1; pointer-events:none; opacity: 0.35;"></canvas>
+
+        <div class="container" style="position: relative; z-index: 5;">
+            <h1>No-Code Gacha Architecture.<br><span>Turnkey VirtualArena Core.</span></h1>
+            <p>Deploy a complete mobile RPG gaming backend in record hours. ZCG Studio by MTWTech provides an interactive database suite coupled with an autonomous live esports betting loop and real-time socket-connected companions to exponentially amplify player retention.</p>
+            <div class="hero-btns">
+                <button class="btn-primary" onclick="document.getElementById('virtualarena').scrollIntoView({behavior:'smooth'});">Launch Live Simulator</button>
+                <button class="btn-secondary" onclick="document.getElementById('features').scrollIntoView({behavior:'smooth'});">Explore Features</button>
+            </div>
+        </div>
+    </section>
+    <!--<section class="hero">-->
+        <!--<div class="container">-->
+            <!--<h1>No-Code Gacha Architecture.<br><span>Turnkey VirtualArena Core.</span></h1>-->
+            <!--<p>Deploy a complete mobile RPG gaming backend in record hours. ZCG Studio by MTWTech provides an interactive database suite coupled with an autonomous live esports betting loop and real-time socket-connected companions to exponentially amplify player retention.</p>-->
+            <!--<div class="hero-btns">-->
+                <!--<button class="btn-primary" onclick="document.getElementById('virtualarena').scrollIntoView({behavior:'smooth'});">Launch Live Simulator</button>-->
+                <!--<button class="btn-secondary" onclick="document.getElementById('features').scrollIntoView({behavior:'smooth'});">Explore Features</button>-->
+            <!--</div>-->
+        <!--</div>-->
+    <!--</section>-->
+    <!-- --- SECTION 1: CORE VALUE PROPOSITION --- -->
+    <section id="features" class="features">
+        <div class="container">
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h3>Monopoly on No-Code RPGs</h3>
+                    <p>While generic no-code tools are built for basic SaaS web applications, ZCG Studio is the market's only specialized blueprint engine for Gacha RPG loops, containing dedicated database schemas for game variables.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Cascade Structural Safety</h3>
+                    <p>Eliminate human configuration error. Our structural dependency layer features real-time cascading keys. Renaming or deleting an asset instantly updates all drop pools, recipes, shop slots, and enemy waves.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Turnkey Retention Loops</h3>
+                    <p>ZCG Studio doesn't just build configurations—it deploys operational infrastructure. Plug your client directly into our pre-built modules for immediate synchronization via a secure postMessage/WebSocket architecture.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- --- SECTION 2: ARCHITECTURE ENGINE MODULES --- -->
+    <!-- --- SECTION 2: EXPANDED ARCHITECTURE ENGINE MODULES --- -->
+    <section id="modules" class="games-section">
+        <div class="container">
+            <h2>Engine <span>Architecture Modules</span></h2>
+            <p class="section-desc">ZCG Studio delivers a fully integrated, cloud-optimized backend infrastructure out of the box. Every submodule is cross-linked via our strict dependency layer and exposed via a unified, exportable JSON schema ready for live production deployment.</p>
+
+            <div class="games-grid">
+                <!-- MODULE 1: CORE DICTIONARIES -->
+                <div class="game-item">
+                    <span class="game-badge badge-instant">Core</span>
+                    <div class="game-icon">🗂️</div>
+                    <h3>Dynamic Dictionaries & Core Math</h3>
+                    <p>Establish your game's metadata foundation. Granular configuration maps for character stats, combat attribute matrices, faction alliances, character classes, active skill triggers, and elements affinity tables with absolute Hex color styling selectors.</p>
+                </div>
+
+                <!-- MODULE 2: REVENUE ENGINE (GACHA) -->
+                <div class="game-item">
+                    <span class="game-badge badge-instant">Revenue</span>
+                    <div class="game-icon">🎰</div>
+                    <h3>Deep Gacha & Probability Brackets</h3>
+                    <p>Control monetization with surgical precision. Deploy standard, friendship, or time-limited event banners with customized pull costs. Features advanced algorithmic drop distribution, precise character rate-ups, newbie milestone brackets, and highly secure dual-phase cyclic loop pity thresholds (First Draw & Repetitive loop Pity counters).</p>
+                </div>
+
+                <!-- MODULE 3: BALANCING & PROGRESSION MATRIX -->
+                <div class="game-item">
+                    <span class="game-badge badge-instant">Economy</span>
+                    <div class="game-icon">📈</div>
+                    <h3>Progression Scalers & Craft Economy</h3>
+                    <p>Automate non-linear progression loops. Fine-tune global team field constraints, scaling level up math, signature weapon material matrices, and gacha ascension formulas. Seamlessly design complex equipment crafting recipes with strict validation for required item ingredients and currency fabrication costs.</p>
+                </div>
+
+                <!-- MODULE 4: PVE CAMPAIGN MAPPER -->
+                <div class="game-item">
+                    <span class="game-badge badge-live">PVE Content</span>
+                    <div class="game-icon">🚩</div>
+                    <h3>PVE Campaign Absolute Mapping</h3>
+                    <p>Graph player progression visually. Map infinite sequential stages with customized absolute (X/Y) vector coordinates on the frontend grid canvas. Orchestrate scalable enemy wave slots (positions, level scales, star promotions), milestone clear loot pools, and incremental passive AFK economy bonuses per hour.</p>
+                </div>
+
+                <!-- MODULE 5: TIME-LIMITED STOREFRONTS -->
+                <div class="game-item">
+                    <span class="game-badge badge-live">Monetization</span>
+                    <div class="game-icon">🏪</div>
+                    <h3>Smart Storefronts & Loot Pools</h3>
+                    <p>Drive continuous engagement with live operations. Configure static cash shops (USD purchases), VIP-restricted vendors, or dynamic daily markets with automated reset intervals. Link individual item slots to complex random generation loot pools controlled by customized probability drops, drop item weights, and account purchase limits.</p>
+                </div>
+
+                <!-- MODULE 6: COMPREHENSIVE PROGRESSION TOWERS -->
+                <div class="game-item">
+                    <span class="game-badge badge-live">PVE Content</span>
+                    <div class="game-icon">🪜</div>
+                    <h3>Endless PVE Trial Towers Engine</h3>
+                    <p>Deploy specialized vertical challenge content instantly. Features an independent multi-tower catalog architecture containing dynamic infinite floors, segmented enemy team battle formations, fixed progression currency bounds, and probabilistic loot drop structures with exact item percentage calculators.</p>
+                </div>
+
+                <!-- MODULE 7: CO-OP & SERVER RAID BOSSES -->
+                <div class="game-item">
+                    <span class="game-badge badge-live">Live Ops</span>
+                    <div class="game-icon">👹</div>
+                    <h3>Server-Wide Raid Boss Infrastructure</h3>
+                    <p>Unify your server audience with massive PvE encounters. Design massive boss challenges (Solo, Guild, or Global Server-Wide Bosses) linked directly to target hero visual assets. Supports massive multi-million health point scaling matrices, automated cron schedules for instant reset loops, and a scaled tier payout distribution model rewarding users based on precise damage dealt thresholds.</p>
+                </div>
+
+                <!-- MODULE 8: AUTOMATED PVP ARENA -->
+                <div class="game-item">
+                    <span class="game-badge badge-live">PVP System</span>
+                    <div class="game-icon">🏆</div>
+                    <h3>Automated Elo Matchmaking Arena</h3>
+                    <p>A ready-to-use competitive PvP framework. Set entry limits, daily pass consumption, and mandatory defensive squad rules. Features an algorithmic matchmaking engine using balanced Elo rating gains, automated anti-deadlock bot matching injection thresholds, infinite ladder leagues, specialized gladiator coin markets, and dynamic weekly meta bans or class buff scalars.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- --- SECTION 3: THE VIRTUALARENA PHONE SIMULATOR (KILLING FEATURE) --- -->
+    <section id="virtualarena" class="games-section" style="background: radial-gradient(circle at 50% 80%, rgba(0, 245, 212, 0.05) 0%, transparent 50%);">
+        <div class="container">
+            <h2>Autonomous <span>VirtualArena Ecosystem</span></h2>
+            <p class="section-desc">Our flagship killing retention feature. A 24/7 AI esports stream simulation that engages players in zero-friction token wagering loops while socket companions visually narrate real-time combat data.</p>
+
+            <div style="margin-bottom: 25px;">
+                <button class="demo-tab-btn active" id="btn-tab-broadcast" onclick="switchSimulatorMode('broadcast')">🎮 Live Battle Stream</button>
+                <button class="demo-tab-btn" id="btn-tab-companion" onclick="switchSimulatorMode('companion')">💬 Socket Companion Overlay</button>
+            </div>
+
+            <div class="phone-mockup" style="position: relative; width: 100%; max-width: 760px; height: 430px; background: #000; margin: 0 auto; border-radius: 36px; border: 12px solid #161638; box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 30px rgba(78, 204, 163, 0.15); overflow: hidden; margin-top: 20px;">
+
+                <!-- ЧЁЛКА ПЕРЕНЕСЕНА НА ЛЕВУЮ СТОРОНУ -->
+                <div class="phone-notch" style="position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 20px; height: 140px; background: #161638; border-top-right-radius: 12px; border-bottom-right-radius: 12px; z-index: 10;"></div>
+
+                <!-- Контейнер для твоей картинки или айфрейма -->
+                <div id="arena-frame-container" style="width: 100%; height: 100%; position: relative; background: #070714; padding-left: 10px;">
+
+                    <!-- Твой iframe (когда поднимешь сервер, просто укажи src) -->
+                    <!-- <iframe id="demoIframeSport" src="" style="width: 100%; height: 100%; border: none; background: #0d0d1a;"></iframe> -->
+
+                    <!-- Заглушка под скриншот (аккуратно вписана в ландшафтные границы экрана) -->
+                    <div style="width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(circle, #161638 0%, #070714 100%); padding: 20px; text-align: center;">
+                        <span style="font-size: 48px; margin-bottom: 10px; animation: pulse-dot 2s infinite;">⚔️</span>
+                        <span style="font-size: 14px; color: #4ecca3; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; display: block;">VirtualArena Landscape View</span>
+                        <span style="font-size: 11px; color: #535375; margin-top: 5px; display: block;">[ Insert your game landscape &lt;iframe&gt; or &lt;img&gt; screenshot here ]</span>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- --- PREMIUM B2B ACTION CALLOUT --- -->
+    <section class="b2b-demo-action">
+        <div class="container">
+            <a href="#contact" class="btn-launch-demo">
+                <span class="live-dot"></span>
+                <span>Request Full Enterprise Access</span>
+            </a>
+        </div>
+    </section>
+
+    <!-- LEAD GENERATION CONTACT FORM -->
+    <section id="contact" class="contact-section">
+        <div class="container">
+            <div class="contact-card">
+                <h3 style="font-size:24px; margin-bottom:8px; font-weight:800; color:#fff;">Request Corporate Access</h3>
+                <p style="font-size:14px; color:#8a8ab0; margin-bottom:25px;">Connect with MTWTech to integrate ZCG Studio zero-code game engine components into your product framework.</p>
+
+                <form id="leadForm">
+                    <div class="form-group">
+                        <label>Studio/Company Corporate Name</label>
+                        <input type="text" id="leadCompany" class="form-input" placeholder="e.g. ZeroCode Games Inc." required>
+                    </div>
+                    <div class="form-group">
+                        <label>Professional Operations Email</label>
+                        <input type="email" id="leadEmail" class="form-input" placeholder="name@studio.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Telegram Handle or Contact ID</label>
+                        <input type="text" id="leadTelegram" class="form-input" placeholder="e.g. @mtw_tech_b2b" required>
+                    </div>
+                    <button type="submit" class="submit-btn" style="margin-top:10px;">Schedule Architectural Demo</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- --- LEAD GENERATION CONTACT FORM --- -->
+    <!--<section id="contact" class="contact-section">-->
+        <!--<div class="container">-->
+            <!--<div class="contact-card">-->
+                <!--<h3 style="font-size: 24px; margin-bottom: 8px; font-weight: 800; color: #fff;">Request Corporate Access</h3>-->
+                <!--<p style="font-size: 14px; color: #8a8ab0; margin-bottom: 25px;">Connect with MTWTech to integrate ZCG Studio zero-code game engine components into your product framework.</p>-->
+
+                <!--<form onsubmit="event.preventDefault(); alert('Demo parameters received! MTWTech framework representatives will connect via secure corporate protocols within business hours.');">-->
+                    <!--<div class="form-group">-->
+                        <!--<label>Studio/Company Corporate Name</label>-->
+                        <!--<input type="text" class="form-input" placeholder="e.g. ZeroCode Games Inc." required>-->
+                    <!--</div>-->
+                    <!--<div class="form-group">-->
+                        <!--<label>Professional Operations Email</label>-->
+                        <!--<input type="email" class="form-input" placeholder="name@studio.com" required>-->
+                    <!--</div>-->
+                    <!--<div class="form-group">-->
+                        <!--<label>Target Framework Deployment Model</label>-->
+                        <!--<input type="text" class="form-input" placeholder="e.g. Mobile RPG / Custom Gacha Meta Node" required>-->
+                    <!--</div>-->
+                    <!--<button type="submit" class="submit-btn" style="margin-top: 10px;">Schedule Architectural Demo</button>-->
+                <!--</form>-->
+            <!--</div>-->
+        <!--</div>-->
+    <!--</section>-->
+</main>
+
+<footer>
+    <div class="container footer-content">
+        <div>&copy; 2026 MTWTech. All corporate rights reserved. Powering ZCG Studio (Zero Code Games Engine).</div>
+        <div class="footer-links">
+            <a href="#features">Value</a>
+            <a href="#modules">Architecture</a>
+            <a href="#virtualarena">VirtualArena</a>
+        </div>
+    </div>
+</footer>
+
+<script>
+    // --- 🚀 ASYNCHRONOUS B2B LEAD SUBMISSION ENGINE ---
+    const leadForm = document.getElementById('leadForm');
+    if (leadForm) {
+        leadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const leadData = {
+                company: document.getElementById('leadCompany').value,
+                email: document.getElementById('leadEmail').value,
+                contact: document.getElementById('leadTelegram').value
+            };
+
+            try {
+                // Отправляем структурированные лид-данные на ваш Node.js бэкенд
+                const response = await fetch('http://localhost:3000/api/admin/leads', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(leadData)
+                });
+
+                if (response.ok) {
+                    alert('Thank you! Our framework integration manager will contact you within 24 hours via secure corporate channels.');
+                    leadForm.reset();
+                } else {
+                    alert('Failed to send lead request metrics. Please check server status and try again.');
+                }
+            } catch (err) {
+                console.error("Lead submission critical error:", err);
+                alert('Backend server connection timeout error.');
+            }
+        });
+    }
+
+    // --- 🪐 BACKGROUND DATA-MATRIX PARTICLES ANIMATION (CANVAS) ---
+    const bannerCanvas = document.getElementById('heroBannerCanvas');
+    if (bannerCanvas) {
+        const bCtx = bannerCanvas.getContext('2d');
+        let particles = [];
+
+        function resizeBanner() {
+            bannerCanvas.width = bannerCanvas.parentElement.clientWidth;
+            bannerCanvas.height = bannerCanvas.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resizeBanner);
+        resizeBanner();
+
+        // Генерируем массив светящихся частиц экосистемы ZCG
+        for (let i = 0; i < 45; i++) {
+            particles.push({
+                x: Math.random() * bannerCanvas.width,
+                y: Math.random() * bannerCanvas.height,
+                radius: Math.random() * 2 + 1,
+                speedY: Math.random() * 0.35 + 0.1, // Плавный полет вверх
+                color: Math.random() > 0.4 ? '#4ecca3' : '#e94560' // Мятный неон и Красный неон
+            });
+        }
+
+        function animateBanner() {
+            bCtx.clearRect(0, 0, bannerCanvas.width, bannerCanvas.height);
+
+            particles.forEach(p => {
+                p.y -= p.speedY; // Движение снизу вверх
+                if (p.y < 0) {
+                    p.y = bannerCanvas.height;
+                    p.x = Math.random() * bannerCanvas.width; // Рандомим X при перезапуске снизу
+                }
+
+                bCtx.fillStyle = p.color;
+                bCtx.shadowBlur = 8; // Легкое неоновое свечение вокруг каждой точки
+                bCtx.shadowColor = p.color;
+
+                bCtx.beginPath();
+                bCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                bCtx.fill();
+            });
+
+            bCtx.shadowBlur = 0; // Сбрасываем тень для оптимизации рендеринга
+            requestAnimationFrame(animateBanner);
+        }
+        animateBanner();
+    }
+
+</script>
+
+</body>
+</html>
