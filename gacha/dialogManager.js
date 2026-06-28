@@ -84,7 +84,7 @@ export const DialogManager = {
 
         let overlayStyle = `
             position: fixed; ${sizes}
-            background: ${ws.bg_image ? (ws.bg_image.includes('url') ? ws.bg_image : `url('${ws.bg_image}')`) : (ws.backgroundColor || 'transparent')};
+            background: ${ws.backgroundImage ? (ws.backgroundImage.includes('url') ? ws.backgroundImage : `url('${ws.backgroundImage}')`) : (ws.backgroundColor || 'transparent')};
             background-size: cover; background-position: center; z-index: 200; box-sizing: border-box;
         `;
 

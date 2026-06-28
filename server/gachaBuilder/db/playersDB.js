@@ -183,21 +183,6 @@ async function logInServer(username, gameId, serverId, deviceId) {
             ...playerProfile.game_data // Разворачиваем тяжелые массивы (heroes, inventory) наружу
         };
 
-        // if (redisClient.isOpen && redisClient.isReady) {
-        //     const redisPlayerKey = `p:${serverId}:${gameId}:${deviceId}`;
-        //     const leaderboardKey = `lb:${serverId}:arena`;
-        //     const currentRating = finalPlayerObject.resources?.arena_rating || 1000;
-        //
-        //     // 1. Прогреваем кэш сессии игрока в RAM
-        //     await redisClient.setEx(redisPlayerKey, 1200, JSON.stringify(finalPlayerObject));
-        //
-        //     // 2. Сразу пушим его актуальный pvp-рейтинг в глобальный Лидерборд Редиса
-        //     await redisClient.zAdd(leaderboardKey, {
-        //         score: parseInt(currentRating),
-        //         value: String(finalPlayerObject.id) // Передаем UUID строки
-        //     });
-        // }
-
         if (redisClient.isOpen && redisClient.isReady) {
             // ФИКС КЛЮЧА: Строго привязываем к серверу и юзернейму
             const redisPlayerKey = `p:${serverId}:${playerProfile.id}`;

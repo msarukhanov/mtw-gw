@@ -184,7 +184,7 @@
 //                 </select>
 //             </div>
 //
-//             <div class="form-group full-width"><label>Static Background Artwork Asset</label><input type="text" value="${item.bg_image || ''}" oninput="target.ui['${currentUiOrientation}'][${idx}].bg_image = this.value"></div>
+//             <div class="form-group full-width"><label>Static Background Artwork Asset</label><input type="text" value="${item.backgroundImage || ''}" oninput="target.ui['${currentUiOrientation}'][${idx}].backgroundImage = this.value"></div>
 //         </div>
 //         ${nestedStructuresHtml}
 //     `;
@@ -389,7 +389,7 @@ function selectUiScreen(idx) {
             </div>
             <div class="form-group full-width">
                 <label>Background Texture Artwork Asset Path</label>
-                <input type="text" value="${screen.bg_image || ''}" oninput="target.ui.landscape[${idx}].bg_image = this.value; sendUpdateToPreview();">
+                <input type="text" value="${screen.backgroundImage || ''}" oninput="target.ui.landscape[${idx}].backgroundImage = this.value; sendUpdateToPreview();">
             </div>
         </div>
 
@@ -593,7 +593,7 @@ function renderUiSubInspectors(idx, screen) {
                 <div class="sub-section-title">Post-Battle Summary Window Popup</div>
                 <div class="form-grid">
                     <div class="form-group"><label>Display Frame Mode</label><input type="text" value="${brw.display_type}" oninput="target.ui.landscape[${idx}].battle_result_window.display_type = this.value;"></div>
-                    <div class="form-group"><label>Backdrop Texture Path</label><input type="text" value="${brw.bg_image}" oninput="target.ui.landscape[${idx}].battle_result_window.bg_image = this.value; sendUpdateToPreview();"></div>
+                    <div class="form-group"><label>Backdrop Texture Path</label><input type="text" value="${brw.backgroundImage}" oninput="target.ui.landscape[${idx}].battle_result_window.backgroundImage = this.value; sendUpdateToPreview();"></div>
                     <div class="form-group"><label>MVP Ribbon Badge Hex</label><input type="text" value="${brw.mvp_badge_color}" oninput="target.ui.landscape[${idx}].battle_result_window.mvp_badge_color = this.value; sendUpdateToPreview();"></div>
                     <div class="form-group"><label>MVP Hero Sprite Animation ID</label><input type="text" value="${brw.mvp_animation}" oninput="target.ui.landscape[${idx}].battle_result_window.mvp_animation = this.value; sendUpdateToPreview();"></div>
                     <div class="form-group full-width"><label>Window Tabs Sequence (Comma-separated array)</label>
@@ -682,8 +682,8 @@ function renderUiScreenButtonsCrud(screenIdx, screen) {
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>bg_image / Fallback</label>
-                            <input type="text" value="${btn.bg_image || ''}" oninput="target.ui.landscape[${screenIdx}].widgets[${bIdx}].bg_image = this.value; sendUpdateToPreview();" style="font-size:11px; padding:4px;">
+                            <label>backgroundImage / Fallback</label>
+                            <input type="text" value="${btn.backgroundImage || ''}" oninput="target.ui.landscape[${screenIdx}].widgets[${bIdx}].backgroundImage = this.value; sendUpdateToPreview();" style="font-size:11px; padding:4px;">
                         </div>
                     </div>
 
@@ -819,8 +819,8 @@ function renderSingleWidgetForm(screenIdx, bIdx, btn) {
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Direct Component bg_image (Fallback)</label>
-                    <input type="text" value="${btn.bg_image || ''}" oninput="target.ui.landscape[${screenIdx}].widgets[${bIdx}].bg_image = this.value; sendUpdateToPreview();">
+                    <label>Direct Component backgroundImage (Fallback)</label>
+                    <input type="text" value="${btn.backgroundImage || ''}" oninput="target.ui.landscape[${screenIdx}].widgets[${bIdx}].backgroundImage = this.value; sendUpdateToPreview();">
                 </div>
             </div>
 

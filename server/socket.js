@@ -93,7 +93,7 @@ function init(server) {
 
         socket.on('player_request', async (req) => {
             try {
-                const { username, deviceId, gameId, serverId, partnerId, type, method, data } = req;
+                const { userId, username, deviceId, gameId, serverId, partnerId, type, method, data } = req;
                 // Защищенный sessionKey, привязанный к b2b-домену партнера
                 const sessionKey = `${activePartnerId}_${serverId}_${username}`;
 
@@ -103,9 +103,7 @@ function init(server) {
                 }
 
                 let playerRaw;
-                // ИСПРАВЛЕНО: Ключ в Редисе должен точно совпадать с твоей b2b-структурой `p:${serverId}:${gameId}:${deviceId}`
-                // const redisKey = `p:${serverId}:${gameId}:${deviceId}`;
-                const redisKey = `p:${serverId}:${username}`;
+                const redisKey = `p:${serverId}:${userId}`;
 
                 if (redisClient.isOpen && redisClient.isReady) {
                     try {
@@ -119,13 +117,17 @@ function init(server) {
                     socket.emit('player_update', {
                         error: true,
                         msg: 'Invalid player profile cache or session expired.',
-                        username, deviceId, gameId, serverId, partnerId, type, method
+                        username, deviceId, userId, gameId, serverId, partnerId, type, method
                     });
                     return;
                 }
 
                 // Парсим плоский объект игрока из строки Редиса
                 let playerObj = JSON.parse(playerRaw);
+
+                socket.playerId = playerObj.id;
+                socket.serverId = serverId;
+                socket.partnerId = partnerId;
 
                 const controllersMap = {
                     'auth': './gachaBuilder/controllers/authController',
@@ -137,6 +139,13 @@ function init(server) {
                     'items': './gachaBuilder/controllers/itemsController',
                     'player': './gachaBuilder/controllers/playerController',
                     'shop': './gachaBuilder/controllers/shopController',
+
+                    'friends': './gachaBuilder/controllers/friendsController',
+                    'guilds': './gachaBuilder/controllers/guildsController',
+                    'offers': './gachaBuilder/controllers/offersController',
+                    'quests': './gachaBuilder/controllers/questsController',
+                    'battlePass': './gachaBuilder/controllers/battlePassController',
+                    'bounty': './gachaBuilder/controllers/bountyController',
                 };
 
                 if (!controllersMap[type]) {
@@ -159,10 +168,11 @@ function init(server) {
                     player: {
                         id: playerObj.id, // Наш UUID из базы Постгреса
                         serverId: serverId,
-                        gameId: gameId,
-                        username: username,
-                        deviceId: deviceId,
-                        partnerId: activePartnerId
+                        gameId,
+                        userId,
+                        username,
+                        deviceId,
+                        activePartnerId
                     },
                     query: { ...data },
                     body: { ...data }
@@ -208,9 +218,8 @@ function init(server) {
                                 pvp_opponents: backendResponse.opponents || backendResponse.pvp_opponents || []
                         };
                         }
-                        // ДОБАВЛЕНО: Маппинг ответа глобального лидерборда под сокет-событие фронтенда!
                         else if (type === 'game') {
-                            updateType = 'leaderboard'; // Твой будущий case 'leaderboard' на клиенте
+                            updateType = 'leaderboard';
                             responseData = {
                                 leaderboard: backendResponse.leaderboard || [],
                                 my_rank: backendResponse.myRank || null
@@ -227,11 +236,9 @@ function init(server) {
                         }
                         else if (type === 'shop') {
                             updateType = 'shop';
-                            // responseData = backendResponse;
                             responseData = {
                                 resources: backendResponse.state || {},
-                                state: backendResponse.state || {},
-
+                                state: backendResponse.state || {}
                             };
                         }
                         else if (type === 'boss') {
@@ -240,8 +247,53 @@ function init(server) {
                                 boss_list: backendResponse.statuses || backendResponse.boss_list || {}
                             };
                         }
+                        else if (type === 'friends') {
+                            updateType = 'friends';
+                            responseData = {
+                                friends: backendResponse.friends || null,
+                                friend_requests: backendResponse.friend_requests || null,
+                                friend_recommendations: backendResponse.friend_recommendations || null,
+                                blacklist: backendResponse.blacklist || []
+                            };
+                        }
+                        else if (type === 'guilds') {
+                            updateType = 'guilds';
+                            responseData = {
+                                active_guild: backendResponse.members ? backendResponse : (backendResponse.active_guild || null),
+                                guilds_search_list: backendResponse.guilds || [],
+                                guild_incoming_requests: backendResponse.requests || []
+                            };
+                        }
+                        else if (type === 'offers') {
+                            updateType = 'offers';
+                            responseData = {
+                                active_offers: backendResponse.active_offers || []
+                            };
+                        }
+                        else if (type === 'battlePass') {
+                            updateType = 'battlePass';
+                            responseData = {
+                                battle_passes: backendResponse.battle_passes || {}
+                            };
+                        }
+                        else if (type === 'bounty') {
+                            updateType = 'bounty';
+                            responseData = {
+                                bounty_missions: backendResponse.bounty_missions || []
+                            };
+                        }
+                        else if (type === 'quests') {
+                            updateType = 'quests';
+                            responseData = {
+                                quests: backendResponse.quests || {},
+                                daily_login: backendResponse.daily_login || {}
+                            };
+                        }
+                        else if (type === 'player') {
+                            updateType = 'player';
+                            responseData = backendResponse;
+                        }
                         else {
-                            // Для 'items', 'player', 'heroes', 'gacha'
                             responseData = {
                                 resources: actualResources,
                                 inventory: actualInventory

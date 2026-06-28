@@ -233,9 +233,8 @@ function init(server) {
                                 pvp_opponents: backendResponse.opponents || backendResponse.pvp_opponents || []
                             };
                         }
-                        // ДОБАВЛЕНО: Маппинг ответа глобального лидерборда под сокет-событие фронтенда!
                         else if (type === 'game') {
-                            updateType = 'leaderboard'; // Твой будущий case 'leaderboard' на клиенте
+                            updateType = 'leaderboard';
                             responseData = {
                                 leaderboard: backendResponse.leaderboard || [],
                                 my_rank: backendResponse.myRank || null
@@ -252,11 +251,9 @@ function init(server) {
                         }
                         else if (type === 'shop') {
                             updateType = 'shop';
-                            // responseData = backendResponse;
                             responseData = {
                                 resources: backendResponse.state || {},
-                                state: backendResponse.state || {},
-
+                                state: backendResponse.state || {}
                             };
                         }
                         else if (type === 'boss') {
@@ -306,6 +303,10 @@ function init(server) {
                                 quests: backendResponse.quests || {},
                                 daily_login: backendResponse.daily_login || {}
                             };
+                        }
+                        else if (type === 'player') {
+                            updateType = 'player';
+                            responseData = backendResponse;
                         }
                         else {
                             responseData = {

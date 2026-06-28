@@ -53,7 +53,7 @@ export function showRewardsPopup(rewardsGained, onCloseCallback) {
             borderColor = rarityColors[heroMeta.rarity || 'SSR'] || '#ffcc00';
 
             // Берем путь к файлу портрета (поддерживаем и avatar_icon, и icon)
-            const imgUrl = heroMeta.icon || './gacha/assets/images/heroes/heroAvatars/eleniel.webp';
+            const imgUrl = heroMeta.icon || './assets/images/heroes/heroAvatars/eleniel.webp';
             iconHtml = `
                 <img src="${imgUrl}" alt="${name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 4px;" onerror="this.style.display='none'; this.parentElement.innerHTML='⚔️'">
             `;

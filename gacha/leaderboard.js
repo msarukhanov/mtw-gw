@@ -305,7 +305,7 @@ export function getLeaderboardHTML() {
     // --- 3. ПРАВАЯ КОЛОНКА: СТАТИСТИКА РАНГА ТЕКУЩЕГО ИГРОКА ---
     const myProfile = Game.player || {};
     const myScore = isPower ? `⚔️ ${myProfile.combat_power || 0}` : `Lv.${myProfile.level || 1}`;
-    const myAvatar = myProfile.avatar_icon || './gacha/assets/images/heroes/heroAvatars/eleniel.webp';
+    const myAvatar = myProfile.avatar_icon || './assets/images/heroes/heroAvatars/eleniel.webp';
 
     const detailsPanelHTML = `
         <div class="lb-details-panel" style="width: ${detailsWidth}; height: 100%; background: #111111; border-left: 1px solid #222; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 15px; box-sizing: border-box; flex-shrink: 0; pointer-events: auto;">
@@ -317,7 +317,7 @@ export function getLeaderboardHTML() {
                 
                 <!-- Большая круглая рамка аватара игрока -->
                 <div style="width: 72px; height: 72px; border-radius: 50%; border: 2px solid #ffcc00; box-shadow: 0 0 15px rgba(255,204,0,0.2); position: relative; overflow: hidden; background: #222; width: 72px; height: 72px;">
-                    <img src="${myAvatar}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='./gacha/assets/images/heroes/heroAvatars/eleniel.webp'">
+                    <img src="${myAvatar}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='./assets/images/heroes/heroAvatars/eleniel.webp'">
                 </div>
                 
                 <b style="font-size: 14px; color: #fff; width: 100%; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
@@ -347,9 +347,6 @@ export function getLeaderboardHTML() {
     `;
 }
 
-/**
- * ИНИЦИАЛИЗАЦИЯ И СВЯЗЫВАНИЕ ИНТЕРФЕЙСА ЛИДЕРБОРДА
- */
 export function initLeaderboardScreen(container, updateUiCallback) {
     const isReload = !!container.querySelector('.screen-content');
     if(!isReload) {
@@ -374,21 +371,16 @@ export function initLeaderboardScreen(container, updateUiCallback) {
         btn.onclick = () => {
             const selectedSort = btn.dataset.sort;
 
-            // Если игрок кликнул на уже активную вкладку — ничего не делаем
             if (LeaderboardState.currentSort === selectedSort) return;
 
-            // Переключаем локальный стейт сортировки
             LeaderboardState.currentSort = selectedSort;
 
-            // Делаем асинхронный сокет-выстрел на бэкенд по нашей новой схеме
             sendSocket('game', 'getLeaderboard', {
                 sortBy: selectedSort,
                 limit: 100
             });
-
-            // Реактивно перерисовываем экран. Когда сокет вернет ответ 'leaderboard',
-            // глобальный слушатель запишет данные в Game и вызовет эту функцию еще раз, обновив цифры!
-            initLeaderboardScreen(container, updateUiCallback);
+            //
+            // initLeaderboardScreen(container, updateUiCallback);
         };
     });
 }

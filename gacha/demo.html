@@ -227,13 +227,67 @@
     <script src="https://cdn.socket.io/4.8.3/socket.io.min.js"
             integrity="sha384-kzavj5fiMwLKzzD1f8S7TeoVIEi7uKHvbTA3ueZkrzYq75pNQUiUi6Dy98Q3fxb0"
             crossorigin="anonymous"></script>
+
+    <script type="module" src="https://cdnjs.cloudflare.com/ajax/libs/model-viewer/4.3.1/model-viewer.min.js" integrity="sha512-eiMZ5eI6RgXc/tIDc8xhBiCSnLhWM2rcv5ELxBlJCzO8cLLI+om8LStJXzZ4flfucOSaqzzwlNdlmeDYr6ARUg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
 <div id="wrapper">
     <img id="image-bg">
     <div id="game-bg"></div>
     <div id="game-ui"></div>
+
 </div>
+
+<!--<div id="loading-wrapper" style="width: 100dvw; height: 100dvh; top: 0; left: 0;position:fixed;z-index:100;-->
+    <!--background: url('./assets/images/main_menu_bg_2.png');-->
+    <!--background-size: cover;-->
+<!--">-->
+    <!--<model-viewer-->
+        <!--id="elf"-->
+        <!--src="./assets/glb/elfik.glb"-->
+        <!--autoplay-->
+        <!--shadow-intensity="1"-->
+        <!--interaction-prompt="none"-->
+
+        <!--style="-->
+            <!--width: 100dvw;-->
+            <!--height: 50dvh;-->
+            <!--top: 50dvh; left: 0;-->
+            <!--position:fixed; z-index:100;-->
+            <!--pointer-events: none;-->
+        <!--">-->
+    <!--</model-viewer>-->
+    <!---->
+    <!---->
+<!--</div>-->
+
+<div id="loading-wrapper" style="
+    width: 100dvw;
+    height: 100dvh;
+    top: 0; left: 0;
+    position: fixed;
+    z-index: 100;
+    background: url('./assets/images/main_menu_bg_2.png') center / cover no-repeat;
+    transition: opacity 0.4s ease;
+">
+    <model-viewer
+            id="elf"
+            src="./assets/glb/elfik.glb"
+            autoplay
+            loop
+            shadow-intensity="1"
+            interaction-prompt="none"
+            style="
+            width: 100%;
+            height: 50%;
+            position: absolute;
+            bottom: 0; left: 0;
+            pointer-events: none;
+        ">
+    </model-viewer>
+</div>
+
+
 
 <script type="module" src="./app.js"></script>
 </body>

@@ -103,6 +103,7 @@ async function runAuth(loginData, refreshCallback) {
 
 async function runFinalGameStart(serverId) {
     updateState('LOADING');
+    window.loaderControl.start();
     try {
         const res = await fetch(`${API_URL}/auth/enter`, {
             method: 'POST',
@@ -138,12 +139,13 @@ async function runFinalGameStart(serverId) {
         CachedUser = { username: data.username, game_id: Game.gameId, partnerId: data.partnerId, device: Game.deviceId};
 
         Game.player = data;
+        Game.userId = data.id;
         Game.sessionId = data.sessionId;
         Game.serverId = serverId;
         Game.partnerId = data.partnerId;
         if (data.server_time) Game.serverTimeOffset = data.server_time - Date.now();
 
-        connect(data.username, data.username, Game.serverId, Game.partnerId);
+        connect(data.id, data.username, Game.serverId, Game.partnerId);
 
         // if (typeof io !== 'undefined') {
         //     const socket = io(SOCKET_URL);
@@ -261,10 +263,6 @@ function makeFastLoginHTML() {
 
 export function getServerSelectHTML() {
     checkAuthCache();
-
-    console.log('[HAS]:', {HasAccount, HasServer, CachedUser});
-
-
 
     // Базовый контейнер-обертка окна (Одинаковый по стилю для всех фаз)
     let boxWrapperStart = `

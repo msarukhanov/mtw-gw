@@ -1,4 +1,34 @@
 import { renderGameUI } from './render.js';
+import { initServerSelectScreen } from './serverSelect.js';
+
+import { initHeroListScreen } from './scripts/hero/heroList.js';
+import {initHeroViewScreen} from "./scripts/hero/heroView.js";
+
+import {initGameListScreen} from "./scripts/game/gameList.js";
+import { initGachaScreen } from './scripts/gacha/gacha.js';
+
+import {initPlayerProfileScreen} from "./playerProfile.js";
+import {initLeaderboardScreen} from "./leaderboard.js";
+
+import { initShopScreen } from './scripts/shop/shopView.js';
+
+import { initInventoryScreen } from './scripts/inventory/inventory.js';
+import {initCraftScreen} from "./scripts/inventory/craft.js";
+
+import {initArenaScreen} from './scripts/battle/arenaScreen.js';
+import {initPreBattleScreen} from "./scripts/battle/preBattle.js";
+import {initPveCampaignScreen} from "./scripts/battle/pveCampaign.js";
+import {initPveTowerScreen} from "./scripts/battle/pveTower.js";
+import {initPvpArenaScreen} from "./scripts/battle/pvpArena.js";
+import {initBossListScreen} from "./scripts/battle/pveBossList.js"
+import {initArenaBettingScreen} from "./scripts/battle/arenaBetting.js";
+
+import {initFriendsScreen} from "./scripts/social/friends.js";
+import {initGuildsScreen} from "./scripts/social/guilds.js";
+import {initOffersScreen, destroyOffersScreen} from "./scripts/offers/offersScreen.js";
+import {initBattlePassScreen} from "./scripts/game/battlePass.js";
+import {initBountyScreen, destroyBountyScreen} from "./scripts/game/bountyScreen.js";
+import {initQuestsScreen} from "./scripts/game/questsScreen.js";
 
 export const Game = {
     config: null,
@@ -28,7 +58,14 @@ const menuActions = {
     open_bets: 'BETS',
     open_profile: 'PROFILE',
     open_craft: 'CRAFT',
-    open_leaderboard: 'LEADERBOARD'
+    open_leaderboard: 'LEADERBOARD',
+
+    open_friends: 'FRIENDS',
+    open_guild: 'GUILD',
+    open_limited_offers: 'LIMITED_OFFERS',
+    open_battle_pass: 'BATTLE_PASS',
+    open_bounty: 'BOUNTY',
+    open_quests: 'QUESTS',
 };
 
 const stateScreens = {
@@ -49,10 +86,43 @@ const stateScreens = {
     PVE_BOSS_LIST: 'screen_pve_boss',
     PROFILE: 'screen_profile',
     CRAFT: 'screen_craft',
-    LEADERBOARD: 'screen_leaderboard'
+    LEADERBOARD: 'screen_leaderboard',
+
+    FRIENDS: 'screen_friends',
+    GUILD: 'screen_guild',
+    LIMITED_OFFERS: 'screen_limited_offers',
+    BATTLE_PASS: 'screen_battle_pass',
+    BOUNTY: 'screen_bounty',
+    QUESTS: 'screen_quests',
 };
 
-window.Game = Game;
+export const stateActions = {
+    'GAME_LOGIN': initServerSelectScreen,
+    'SERVER_SELECT': initServerSelectScreen,
+    'SHOP': initShopScreen,
+    'INVENTORY': initInventoryScreen,
+    'HEROES': initHeroListScreen,
+    'HERO_VIEW': initHeroViewScreen,
+    'GACHA': initGachaScreen,
+    'GAMES': initGameListScreen,
+    'ARENA': initArenaScreen,
+    'PROFILE': initPlayerProfileScreen,
+    'CRAFT': initCraftScreen,
+    'LEADERBOARD': initLeaderboardScreen,
+
+    'PVE_CAMPAIGN': (container, cb) => initPveCampaignScreen(container, cb),
+    'PVE_TOWER': (container, cb) => initPveTowerScreen(container, 'main_tower', cb),
+    'PVP_ARENA': initPvpArenaScreen,
+    'BETS': initArenaBettingScreen,
+    'PVE_BOSS_LIST': initBossListScreen,
+
+    'FRIENDS': initFriendsScreen,
+    'GUILD': initGuildsScreen,
+    'LIMITED_OFFERS': initOffersScreen,
+    'BATTLE_PASS': initBattlePassScreen,
+    'BOUNTY': initBountyScreen,
+    'QUESTS': initQuestsScreen,
+};
 
 export function updateState(newState) {
     Game.gameState = newState;
@@ -93,20 +163,11 @@ export function updateBackground(state) {
 
     const screenMeta = widgets.find(w => w.id === screenWidgetId);
 
-    const hasImage = !!(screenMeta && screenMeta.bg_image);
+    const hasImage = !!(screenMeta && screenMeta.backgroundImage);
     bgImg.style.display = hasImage ? 'block' : 'none';
 
     // Функция сброса в стандартный фиксированный фолбэк (Строго 1 экран, нативный скролл ОТКЛЮЧЕН)
     const resetToFullscreen = () => {
-        // bgImg.style.width = '100dvw';
-        // bgImg.style.height = '100dvh';
-        // bgImg.style.objectFit = 'cover'; // Картинка покроет экран без черных полос
-        // bgElement.style.width = '100dvw';
-        // bgElement.style.height = '100dvh';
-
-        // Намертво блокируем нативный скролл на уровне CSS, чтобы экран не люфтил
-
-        console.log(orientation);
         if (isLandscape) {
             bgImg.style.width = '100dvw';
             bgImg.style.height = '100dvh';
@@ -127,7 +188,7 @@ export function updateBackground(state) {
 
     if (hasImage) {
         bgImg.onload = () => {
-            if (bgImg.getAttribute('src') !== screenMeta.bg_image) return;
+            if (bgImg.getAttribute('src') !== screenMeta.backgroundImage) return;
 
             const imgWidth = bgImg.naturalWidth;
             const imgHeight = bgImg.naturalHeight;
@@ -139,7 +200,6 @@ export function updateBackground(state) {
 
             const imgAspectRatio = imgWidth / imgHeight;
 
-            // ДИНАМИЧЕСКАЯ ПРОВЕKA: Включаем панораму только в MAIN_MENU и только если в конфиге scrollable === true
             const isScrollable = screenMeta.scrollable === true;
 
             if (state === 'MAIN_MENU' && isScrollable) {
@@ -171,11 +231,6 @@ export function updateBackground(state) {
                     const targetVh = (calculatedHeightPx / window.innerHeight) * 100;
                     const targetHeightStr = `${targetVh}dvh`;
 
-                    // bgImg.style.width = '100dvw';
-                    // bgImg.style.height = targetHeightStr;
-                    // bgElement.style.width = '100dvw';
-                    // bgElement.style.height = targetHeightStr;
-
                     bgImg.style.width = targetHeightStr;
                     bgImg.style.height = '100dvw';
                     bgElement.style.width = targetHeightStr;
@@ -195,9 +250,14 @@ export function updateBackground(state) {
             }
         };
 
-        bgImg.src = screenMeta.bg_image;
-    } else {
+        bgImg.src = screenMeta.backgroundImage;
+    }
+    else {
         bgImg.src = '';
         resetToFullscreen();
     }
 }
+
+
+window.updateState = updateState;
+window.Game = Game;

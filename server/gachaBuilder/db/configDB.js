@@ -223,21 +223,21 @@ const gamesConfigDB = {
             landscape: [
                 {
                     id: "screen_game_login",
-                    bg_image: "./assets/images/server_select_bg.png",
+                    backgroundImage: "./assets/images/server_select_bg.png",
                     scrollable: false,
                     // Конфиг поддерживаемых соцсетей для формы авторизации
                     auth_providers: ["google", "discord", "telegram"]
                 },
                 {
                     id: "screen_server_select",
-                    bg_image: "./assets/images/server_select_bg.png",
+                    backgroundImage: "./assets/images/server_select_bg.png",
                     scrollable: false,
                     bg_width: 1000,
                     active_width: 1000,
                 },
                 {
                     id: "screen_main_menu",
-                    bg_image: "./assets/images/main_menu_bg_4.png",
+                    backgroundImage: "./assets/images/main_menu_bg_4.png",
                     bg_width: 1200,
                     scrollable: false,
                     active_width: 1000,
@@ -337,7 +337,7 @@ const gamesConfigDB = {
                             id: "btn_missions",
                             type: "button",
                             label_loc_key: "btn_missions_label",
-                            action: "open_quest",
+                            action: "open_",
                             layout: {
                                 top: "240px",
                                 left: "25px + 5px",
@@ -808,7 +808,7 @@ const gamesConfigDB = {
 
                 {
                     id: "screen_heroes",
-                    bg_image: "",
+                    backgroundImage: "",
                     bg_width: 1000,
                     active_width: 1000,
                     list_settings: {
@@ -824,7 +824,7 @@ const gamesConfigDB = {
                 },
                 {
                     id: "screen_hero_view",
-                    bg_image: "./assets/images/screen_hero.png",
+                    backgroundImage: "./assets/images/screen_hero.png",
                     bg_width: 1000,
                     active_width: 1000,
                     // Вот правильное место для Data-Driven структуры блоков интерфейса!
@@ -833,7 +833,7 @@ const gamesConfigDB = {
                 },
                 {
                     id: "screen_hero",
-                    bg_image: "./assets/images/screen_hero.png",
+                    backgroundImage: "./assets/images/screen_hero.png",
                     bg_width: 1000,
                     active_width: 1000,
 
@@ -850,7 +850,7 @@ const gamesConfigDB = {
                 },
                 {
                     id: "screen_leaderboard",
-                    bg_image: "./assets/images/leaderboard_bg.jpg",
+                    backgroundImage: "./assets/images/leaderboard_bg.jpg",
                     bg_width: 1000,
                     active_width: 1000,
                     list_settings: {
@@ -867,7 +867,7 @@ const gamesConfigDB = {
 
                 {
                     id: "screen_gacha",
-                    bg_image: "./assets/images/summon_altar_bg.png",
+                    backgroundImage: "./assets/images/summon_altar_bg.png",
                     bg_width: 1000,
                     active_width: 1000,
                     list_settings: {
@@ -883,7 +883,7 @@ const gamesConfigDB = {
                 },
                 {
                     id: "screen_games",
-                    bg_image: "",
+                    backgroundImage: "",
                     bg_width: 1000,
                     active_width: 1000,
                     list_settings: {
@@ -911,7 +911,7 @@ const gamesConfigDB = {
                 },
                 {
                     id: "screen_shop",
-                    bg_image: "",
+                    backgroundImage: "",
                     bg_width: 1000,
                     active_width: 1000,
                     list_settings: {
@@ -939,7 +939,7 @@ const gamesConfigDB = {
                 },
                 {
                     id: "screen_profile",
-                    bg_image: "./assets/images/profile_bg.png", // Фон окна профиля
+                    backgroundImage: "./assets/images/profile_bg.png", // Фон окна профиля
                     bg_width: 1000,
                     active_width: 1000,
 
@@ -979,7 +979,7 @@ const gamesConfigDB = {
                 },
                 {
                     id: "screen_arena",
-                    bg_image: "./assets/images/arena/arena_bg.jpg", // Фон самого экрана арены
+                    backgroundImage: "./assets/images/arena/arena_bg.jpg", // Фон самого экрана арены
                     bg_width: 1000,
                     active_width: 1000,
                     // Настраиваемые интерактивные кнопки режимов Арены (прямо как в главном меню)
@@ -1099,7 +1099,7 @@ const gamesConfigDB = {
 
                 {
                     id: "screen_inventory",
-                    bg_image: "./assets/images/screen_inventory.png",
+                    backgroundImage: "./assets/images/screen_inventory.png",
                     bg_width: 1000,
                     active_width: 1000,
                     list_settings: {
@@ -1115,7 +1115,7 @@ const gamesConfigDB = {
                 },
                 {
                     id: "screen_craft",
-                    bg_image: "",
+                    backgroundImage: "",
                     bg_width: 1000,
                     active_width: 1000,
                     list_settings: {
@@ -1133,20 +1133,20 @@ const gamesConfigDB = {
 
                 {
                     id: "screen_pvp_arena",
-                    bg_image: "./assets/images/arena/arena_bg.jpg", // Фон самого экрана арены
+                    backgroundImage: "./assets/images/arena/arena_bg.jpg", // Фон самого экрана арены
                     bg_width: 1000,
                     active_width: 1000,
                 },
 
                 {
                     id: "screen_pve_boss_list",
-                    bg_image: "./assets/images/arena/arena_bg.jpg", // Фон самого экрана арены
+                    backgroundImage: "./assets/images/arena/arena_bg.jpg", // Фон самого экрана арены
                     bg_width: 1000,
                     active_width: 1000,
                 },
                 {
                     id: "screen_pve_campaign",
-                    bg_image: "./assets/images/pve/campaign_bg_1.png",
+                    backgroundImage: "./assets/images/pve/campaign_bg_1.png",
                     scrollable: true, // Карта кампании может скроллиться вбок или вниз
                     active_width: 1000, // Растянутая ширина под скролл
                     fullscreen: true,
@@ -1193,7 +1193,7 @@ const gamesConfigDB = {
                 },
                 {
                     id: "screen_pve_tower",
-                    bg_image: "./assets/images/pve/tower_inside_bg.jpg",
+                    backgroundImage: "./assets/images/pve/tower_inside_bg.jpg",
                     scrollable: true,
                     fullscreen: true,
                     orientation: "portrait_allowed", // Башни часто удобно скроллить вертикально
@@ -1213,7 +1213,7 @@ const gamesConfigDB = {
                 },
                 {
                     id: "screen_pre_battle",
-                    bg_image: "./assets/images/pve/pre_battle_blur.jpg",
+                    backgroundImage: "./assets/images/pve/pre_battle_blur.jpg",
                     scrollable: false,
                     fullscreen: true,
 
@@ -1245,7 +1245,7 @@ const gamesConfigDB = {
                 },
                 {
                     id: "screen_combat_arena",
-                    bg_image: "./assets/images/pve/battleground_1.jpg",
+                    backgroundImage: "./assets/images/pve/battleground_1.jpg",
                     scrollable: false,
                     fullscreen: true,
                     // Конфигурация слоёв рендеринга для фронтенд-клиента
@@ -1280,7 +1280,7 @@ const gamesConfigDB = {
 
                     battle_result_window: {
                         display_type: "fullscreen_overlay",
-                        bg_image: "./assets/images/battle/victory_screen_bg.jpg",
+                        backgroundImage: "./assets/images/battle/victory_screen_bg.jpg",
                         mvp_badge_color: "#ffcc00",
                         mvp_animation: "hero_combat_idle",
 
@@ -1299,7 +1299,7 @@ const gamesConfigDB = {
 
                 {
                     id: "screen_friends",
-                    bg_image: "./assets/images/screen_friends.png",
+                    backgroundImage: "./assets/images/screen_friends.png",
                     scrollable: true,
                     fullscreen: true,
                     view_layout: ["tabs_menu", "friends_list", "search_bar"],
@@ -1307,7 +1307,7 @@ const gamesConfigDB = {
                 },
                 {
                     id: "screen_guild_hub",
-                    bg_image: "./assets/images/ui/guild_castle_bg.jpg",
+                    backgroundImage: "./assets/images/ui/guild_castle_bg.jpg",
                     scrollable: false,
                     fullscreen: true,
                     view_layout: ["guild_info_bar", "guild_buildings_grid", "chat_overlay"],
@@ -1315,7 +1315,7 @@ const gamesConfigDB = {
                 },
                 {
                     id: "screen_quest_board",
-                    bg_image: "./assets/images/ui/quests_scroll_bg.png",
+                    backgroundImage: "./assets/images/ui/quests_scroll_bg.png",
                     scrollable: true,
                     fullscreen: false,
                     view_layout: ["milestone_progress_bar", "tasks_vertical_stack"],
@@ -1323,7 +1323,7 @@ const gamesConfigDB = {
                 },
                 {
                     id: "screen_battle_pass",
-                    bg_image: "./assets/images/ui/bp_cyber_bg.jpg",
+                    backgroundImage: "./assets/images/ui/bp_cyber_bg.jpg",
                     scrollable: true,
                     fullscreen: true,
                     view_layout: ["level_milestone_track", "rewards_dual_grid", "premium_buy_banner"],
@@ -1331,7 +1331,7 @@ const gamesConfigDB = {
                 },
                 {
                     id: "screen_bounty_board",
-                    bg_image: "./assets/images/ui/bounty_tavern_bg.png",
+                    backgroundImage: "./assets/images/ui/bounty_tavern_bg.png",
                     scrollable: true,
                     fullscreen: false,
                     view_layout: ["active_dispatches_bar", "available_missions_list"],
@@ -1339,7 +1339,7 @@ const gamesConfigDB = {
                 },
                 {
                     id: "screen_promo_selena",
-                    bg_image: "./assets/images/ui/promo_selena_banner.jpg", // Уникальный фон под акцию
+                    backgroundImage: "./assets/images/ui/promo_selena_banner.jpg", // Уникальный фон под акцию
                     scrollable: false,
                     fullscreen: true,
                     view_layout: ["countdown_timer_widget", "big_promo_artwork", "buy_now_gold_button"],
@@ -2705,7 +2705,7 @@ const gamesConfigDB = {
                 // Все настройки геометрии и стилей вынесены в конфиг UI
                 window_settings: {
                     display_type: "fullscreen", // fullscreen | helper
-                    bg_image: "url('./assets/images/intro/intro_bg_1.jpg')",
+                    backgroundImage: "url('./assets/images/intro/intro_bg_1.jpg')",
                     backgroundColor: "#050505",
 
                     box_width: "80%",
@@ -2737,7 +2737,7 @@ const gamesConfigDB = {
                 // Все настройки геометрии и стилей вынесены в конфиг UI
                 window_settings: {
                     display_type: "helper", // fullscreen | helper
-                    bg_image: "none",
+                    backgroundImage: "none",
                     backgroundColor: "transparent",
 
 
@@ -2769,7 +2769,7 @@ const gamesConfigDB = {
             "OPEN_HEROES_FIRST_TIME": {
                 window_settings: {
                     display_type: "helper",
-                    bg_image: "none",
+                    backgroundImage: "none",
                     backgroundColor: "transparent",
 
                     box_width: "350px",
@@ -3538,7 +3538,7 @@ module.exports = {gamesConfigDB};
 //         landscape: [
 //             {
 //                 id: "screen_main_menu",
-//                 bg_image: "./assets/images/main_menu_bg_1.png",
+//                 backgroundImage: "./assets/images/main_menu_bg_1.png",
 //                 bg_width: 1200,
 //                 scrollable: true,
 //                 active_width: 1000,
@@ -3731,13 +3731,13 @@ module.exports = {gamesConfigDB};
 //             },
 //             {
 //                 id: "screen_server_select",
-//                 bg_image: "./assets/images/server_select_bg.png", // Фон самого экрана арены
+//                 backgroundImage: "./assets/images/server_select_bg.png", // Фон самого экрана арены
 //                 bg_width: 1000,
 //                 active_width: 1000,
 //             },
 //             {
 //                 id: "screen_heroes",
-//                 bg_image: "",
+//                 backgroundImage: "",
 //                 bg_width: 1000,
 //                 active_width: 1000,
 //                 list_settings: {
@@ -3753,7 +3753,7 @@ module.exports = {gamesConfigDB};
 //             },
 //             {
 //                 id: "screen_hero_view",
-//                 bg_image: "",
+//                 backgroundImage: "",
 //                 bg_width: 1000,
 //                 active_width: 1000,
 //                 // Вот правильное место для Data-Driven структуры блоков интерфейса!
@@ -3762,7 +3762,7 @@ module.exports = {gamesConfigDB};
 //             },
 //             {
 //                 id: "screen_games",
-//                 bg_image: "",
+//                 backgroundImage: "",
 //                 bg_width: 1000,
 //                 active_width: 1000,
 //                 list_settings: {
@@ -3790,13 +3790,13 @@ module.exports = {gamesConfigDB};
 //             },
 //             {
 //                 id: "screen_shop",
-//                 bg_image: "",
+//                 backgroundImage: "",
 //                 bg_width: 1000,
 //                 active_width: 1000,
 //             },
 //             {
 //                 id: "screen_profile",
-//                 bg_image: "./assets/images/backgrounds/profile_bg.png", // Фон окна профиля
+//                 backgroundImage: "./assets/images/backgrounds/profile_bg.png", // Фон окна профиля
 //                 bg_width: 1000,
 //                 active_width: 1000,
 //
@@ -3824,7 +3824,7 @@ module.exports = {gamesConfigDB};
 //             },
 //             {
 //                 id: "screen_arena",
-//                 bg_image: "./assets/images/arena/arena_bg.jpg", // Фон самого экрана арены
+//                 backgroundImage: "./assets/images/arena/arena_bg.jpg", // Фон самого экрана арены
 //                 bg_width: 1000,
 //                 active_width: 1000,
 //                 // Настраиваемые интерактивные кнопки режимов Арены (прямо как в главном меню)
@@ -4762,7 +4762,7 @@ module.exports = {gamesConfigDB};
 //             // Все настройки геометрии и стилей вынесены в конфиг UI
 //             window_settings: {
 //                 display_type: "fullscreen", // fullscreen | helper
-//                     bg_image: "url('./assets/images/intro/intro_bg_1.jpg')",
+//                     backgroundImage: "url('./assets/images/intro/intro_bg_1.jpg')",
 //                     backgroundColor: "#050505",
 //
 //                     box_width: "80%",
@@ -4794,7 +4794,7 @@ module.exports = {gamesConfigDB};
 //             // Все настройки геометрии и стилей вынесены в конфиг UI
 //             window_settings: {
 //                 display_type: "helper", // fullscreen | helper
-//                     bg_image: "none",
+//                     backgroundImage: "none",
 //                     backgroundColor: "transparent",
 //
 //
@@ -4826,7 +4826,7 @@ module.exports = {gamesConfigDB};
 //         "OPEN_HEROES_FIRST_TIME": {
 //             window_settings: {
 //                 display_type: "helper",
-//                     bg_image: "none",
+//                     backgroundImage: "none",
 //                     backgroundColor: "transparent",
 //
 //                     box_width: "350px",
@@ -5129,19 +5129,19 @@ module.exports = {gamesConfigDB};
 //
 //             {
 //                 id: "screen_main_menu",
-//                 bg_image: "./assets/images/bg224.webp",
+//                 backgroundImage: "./assets/images/bg224.webp",
 //                 bg_width: 1200,
 //                 active_width: 1000,
 //             },
 //             {
 //                 id: "screen_shop",
-//                 bg_image: "",
+//                 backgroundImage: "",
 //                 bg_width: 1000,
 //                 active_width: 1000,
 //             },
 //             {
 //                 id: "screen_shop",
-//                 bg_image: "",
+//                 backgroundImage: "",
 //                 bg_width: 1000,
 //                 active_width: 1000,
 //             },

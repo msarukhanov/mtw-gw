@@ -48,7 +48,7 @@ export function getTowerHTML(container, towerKey = 'main_tower') {
     });
 
     return `
-        <div class="screen-content ui-element" style="${getWindowContentStyle()} box-sizing: border-box; top: 45px; height: calc(100% - 45px); overflow-y: auto; overflow-x: hidden; background-image: url('${screenSettings.bg_image}'); background-size: cover; background-position: center; padding: 15px 0;">
+        <div class="screen-content ui-element" style="${getWindowContentStyle()} box-sizing: border-box; top: 45px; height: calc(100% - 45px); overflow-y: auto; overflow-x: hidden; background-image: url('${screenSettings.backgroundImage}'); background-size: cover; background-position: center; padding: 15px 0;">
             <div class="tower-stack-container" style="display: flex; flex-direction: column; gap: ${listSettings.gap || '10px'}; width: 100%;">
                 ${floorsHTML}
             </div>

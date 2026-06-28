@@ -238,7 +238,7 @@ export function getCombatArenaHTML(battleResult, stageId, type, towerKey = null)
     `;
 
     return `
-        <div class="screen-content ui-element" style="${getWindowContentStyle()} box-sizing: border-box; top: 5px; height: calc(100% - 10px); position: relative; background-image: url('${screenSettings.bg_image}'); background-size: cover; background-position: center; overflow: hidden;z-index: 21;">
+        <div class="screen-content ui-element" style="${getWindowContentStyle()} box-sizing: border-box; top: 5px; height: calc(100% - 10px); position: relative; background-image: url('${screenSettings.backgroundImage}'); background-size: cover; background-position: center; overflow: hidden;z-index: 21;">
             <div id="combat-layer-characters" style="position: absolute; width: 100%; height: 100%; display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 20px; padding: 0 20px; box-sizing: border-box; z-index: ${layers.characters?.zIndex || 3};">
                 
                 <!-- ЛЕВАЯ ПОЛОВИНА: ОТРИСОВКА ОТРЯДА ИГРОКА (Back -> Mid -> Front) -->

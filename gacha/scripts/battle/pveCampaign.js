@@ -62,7 +62,7 @@ export function getCampaignHTML() {
     const scrollWidth = screenSettings.active_width ? `${screenSettings.active_width}px` : '100%';
 
     return `
-        <div class="screen-content ui-element" style="${getWindowContentStyle()} box-sizing: border-box; top: 5px; height: calc(100% - 10px); overflow-x: auto; overflow-y: hidden; background-image: url('${screenSettings.bg_image}'); background-size: cover; background-position: center;z-index: 21">
+        <div class="screen-content ui-element" style="${getWindowContentStyle()} box-sizing: border-box; top: 5px; height: calc(100% - 10px); overflow-x: auto; overflow-y: hidden; background-image: url('${screenSettings.backgroundImage}'); background-size: cover; background-position: center;z-index: 21">
             <div class="campaign-map-scroll-container" style="width: ${scrollWidth}; height: 100%; position: relative;">
                 ${nodesHTML}
                 ${idleChestHTML}

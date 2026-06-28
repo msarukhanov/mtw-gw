@@ -103,7 +103,7 @@ function selectDialog(key) {
             </div>
             <div class="form-group"><label>Box Outer Width</label><input type="text" value="${d.window_settings?.box_width || ''}" oninput="target.dialogs['${key}'].window_settings.box_width = this.value"></div>
             <div class="form-group"><label>Box Outer Height</label><input type="text" value="${d.window_settings?.box_height || ''}" oninput="target.dialogs['${key}'].window_settings.box_height = this.value"></div>
-            <div class="form-group full-width"><label>Global Backdrop Texture Image</label><input type="text" value="${d.window_settings?.bg_image || ''}" oninput="target.dialogs['${key}'].window_settings.bg_image = this.value"></div>
+            <div class="form-group full-width"><label>Global Backdrop Texture Image</label><input type="text" value="${d.window_settings?.backgroundImage || ''}" oninput="target.dialogs['${key}'].window_settings.backgroundImage = this.value"></div>
         </div>
 
         <div style="margin-top:25px;">

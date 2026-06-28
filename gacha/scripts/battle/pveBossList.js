@@ -42,7 +42,7 @@ function generateBossCardsHTML() {
 
     Object.entries(bossesConfig).forEach(([bossKey, boss]) => {
         const proto = Game.config.catalog?.heroes?.[boss.hero_id];
-        const bossIcon = proto?.image || proto?.icon || './gacha/assets/images/heroes/heroAvatars/eleniel.webp';
+        const bossIcon = proto?.image || proto?.icon || './assets/images/heroes/heroAvatars/eleniel.webp';
         const bossTitle = locObj(boss.title_loc) || boss.title_loc?.en || bossKey;
 
         // ИСПРАВЛЕНО: Полностью in-memory вычисление текущего HP без fetch-задержек

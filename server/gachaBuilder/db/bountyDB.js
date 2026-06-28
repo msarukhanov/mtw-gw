@@ -299,7 +299,6 @@ exports.dispatchHeroesToExpedition = async function(userId, serverId, gameId, in
     } catch (e) { await client.query('ROLLBACK'); return { error: true, message: e.message }; } finally { client.release(); }
 };
 
-
 // --- 3. СБОР НАГРАД ЗАВЕРШЕННОЙ ЭКСПЕДИЦИИ ---
 // --- 3. СБОР НАГРАД ЗАВЕРШЕННОЙ ЭКСПЕДИЦИИ (ПРЯМАЯ ОЧИСТКА И ФОЛЛБЭК) ---
 exports.claimBountyReward = async function(userId, serverId, gameId, instanceId) {

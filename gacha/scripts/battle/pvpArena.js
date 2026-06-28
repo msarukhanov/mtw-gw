@@ -8,7 +8,7 @@ export function getPvpArenaHTML() {
     const screenSettings = Game.config?.ui?.[orientation]?.find(w => w.id === 'screen_arena') || {};
 
     return `
-        <div class="screen-content ui-element" style="${getWindowContentStyle()} box-sizing: border-box; top: 5px; height: calc(100% - 10px); background-image: url('${screenSettings.bg_image || ''}'); background-size: cover; background-position: center; display: flex; flex-direction: column; padding: 20px; background-color: #120b1e;">
+        <div class="screen-content ui-element" style="${getWindowContentStyle()} box-sizing: border-box; top: 5px; height: calc(100% - 10px); background-image: url('${screenSettings.backgroundImage || ''}'); background-size: cover; background-position: center; display: flex; flex-direction: column; padding: 20px; background-color: #120b1e;">
             
             <!-- Заголовок Арены -->
             <div style="color: #ffcc00; font-size: 18px; font-weight: bold; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; display: flex; justify-content: space-between; align-items: center; width: 100%;">

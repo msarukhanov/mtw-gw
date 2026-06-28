@@ -7,15 +7,32 @@ import {initCombatArenaScreen} from "./scripts/battle/combatArena.js";
 import {initPvpArenaScreen} from "./scripts/battle/pvpArena.js";
 import {initLeaderboardScreen} from "./leaderboard.js";
 
+import {initFriendsScreen} from "./scripts/social/friends.js";
+import {initGuildsScreen} from "./scripts/social/guilds.js";
+import {initOffersScreen} from "./scripts/offers/offersScreen.js";
+import {initBattlePassScreen} from "./scripts/game/battlePass.js";
+import {initBountyScreen} from "./scripts/game/bountyScreen.js";
+import {initQuestsScreen} from "./scripts/game/questsScreen.js";
+
 window.socket = null;
 
-export function connect(username, serverId, partnerId) {
+const connectStates = {
+    friend: false,
+    guild: false,
+    bounty: false,
+    battlePass: false,
+    quests: false,
+    offers: false,
+};
+
+export function connect(userId, username, serverId, partnerId) {
     const socket = io(SOCKET_URL);
     socket.on('connect', () => {
         window.io = socket;
         setTimeout(() => {
             console.log('🚀 Sending handshake now...');
             socket.emit('platform_join', {
+                userId,
                 username,
                 serverId,
                 partnerId
@@ -25,7 +42,8 @@ export function connect(username, serverId, partnerId) {
 
     socket.on('platform_join', (upd)=>{
         console.log(upd);
-        updateState('MAIN_MENU');
+        sendSocket('player', 'getFullDataPack', {});
+        // updateState('MAIN_MENU');
     });
 
     socket.on('player_update', (upd)=>{
@@ -136,15 +154,119 @@ export function connect(username, serverId, partnerId) {
                 break;
             case 'leaderboard':
                 if (data) {
-                    // Записываем прилетевший топ-100 и ранг игрока в глобальный стейт Game
                     Game.leaderboard = data.leaderboard || [];
                     Game.my_rank = data.my_rank || null;
 
-                    // Если игрок сейчас физически находится на экране Лидерборда — мгновенно перерисовываем UI!
                     if (Game.gameState === 'LEADERBOARD') {
-                        // renderGameUI();
                         initLeaderboardScreen(Game.uiContainer, renderGameUI);
                     }
+                }
+                break;
+
+            case 'friends':
+                if (data) {
+                    if(data.friends) {
+                        Game.friends = data.friends || [];
+                    }
+                    if(data.friend_requests) {
+                        Game.friend_requests = data.friend_requests || [];
+                    }
+                    if(data.friend_recommendations) {
+                        Game.friend_recommendations = data.friend_recommendations || [];
+                    }
+                    if(data.blacklist) {
+                        Game.blacklist = data.blacklist || [];
+                    }
+
+                    if (Game.gameState === 'FRIENDS') {
+                        initFriendsScreen(Game.uiContainer, renderGameUI);
+                    }
+                }
+                break;
+            case 'guilds':
+                if (data) {
+                    Game.active_guild = data.active_guild || null;
+                    Game.guilds_search_list = data.guilds_search_list || [];
+                    Game.guild_incoming_requests = data.guild_incoming_requests || [];
+
+                    if (Game.active_guild && Game.player) {
+                        Game.player.guild_id = Game.active_guild.id;
+                    } else if (!Game.active_guild && Game.player) {
+                        Game.player.guild_id = null;
+                    }
+
+                    if (Game.gameState === 'GUILD') {
+                        initGuildsScreen(Game.uiContainer, renderGameUI);
+                    }
+                }
+                break;
+            case 'offers':
+                if (data) {
+                    Game.active_offers = data.active_offers || [];
+
+                    // Если у игрока открыт стейт акций или промо-ивента — мгновенно перерисовываем
+                    if (Game.gameState === 'LIMITED_OFFERS') {
+                        initOffersScreen(Game.uiContainer, renderGameUI);
+                    }
+                }
+                break;
+            case 'battlePass':
+                if (data) {
+                    Game.battle_passes = data.battle_passes || {};
+
+                    if (Game.gameState === 'BATTLE_PASS') {
+                        initBattlePassScreen(Game.uiContainer, renderGameUI);
+                    }
+                }
+                break;
+            case 'bounty':
+                if (data) {
+                    Game.bounty_missions = data.bounty_missions || [];
+
+                    if (Game.gameState === 'BOUNTY') {
+                        initBountyScreen(Game.uiContainer, renderGameUI);
+                    }
+                }
+                break;
+            case 'quests':
+                if (data) {
+                    Game.quests = data.quests || {};
+                    // БАГ: Сюда забыли дописать сохранение данных календаря!
+                    Game.daily_login = data.daily_login || {};
+
+                    if (Game.gameState === 'QUESTS') {
+                        initQuestsScreen(Game.uiContainer, renderGameUI);
+                    }
+                }
+                break;
+
+            case 'player':
+                if (data) {
+                    Game.active_guild = data.active_guild || null;
+                    Game.guilds_search_list = data.guilds_search_list || [];
+                    Game.guild_incoming_requests = data.guild_incoming_requests || [];
+
+                    if (Game.active_guild && Game.player) {
+                        Game.player.guild_id = Game.active_guild.id;
+                    } else if (!Game.active_guild && Game.player) {
+                        Game.player.guild_id = null;
+                    }
+                    Game.active_guild = data.active_guild || null;
+
+                    if (Game.active_guild && Game.player) {
+                        Game.player.guild_id = Game.active_guild.id;
+                    } else if (!Game.active_guild && Game.player) {
+                        Game.player.guild_id = null;
+                    }
+
+                    Game.active_offers = data.active_offers || [];
+                    Game.battle_passes = data.battle_passes || {};
+                    Game.bounty_missions = data.bounty_missions || [];
+                    Game.quests = data.quests || {};
+                    Game.daily_login = data.daily_login || {};
+
+                    updateState('MAIN_MENU');
+                    window.loaderControl.end();
                 }
                 break;
         }
@@ -181,6 +303,7 @@ export function sendSocket(type, method, data) {
         type, //грубо говоря контроллер
         method, // грубо говоря метод контроллера
         data,
+        userId: Game.userId,
         username: Game.player.username,
         deviceId: Game.deviceId,
         serverId: Game.serverId,
