@@ -1,5 +1,7 @@
 const { gamesConfigDB } = require('../db/configDB');
 const gachaDB = require('../db/gachaDB'); // Наш файл со всеми SQL-функциями
+const questsDB = require('../db/questsDB');
+
 
 exports.summon = async function (req, res) {
     try {
@@ -25,6 +27,8 @@ exports.summon = async function (req, res) {
             activeCount,
             activeWishlist
         );
+
+        const questResult = await questsDB.incrementQuestTask(userId, serverId, gameId, 'gacha_summon', activeCount);
 
         // Если база вернула ошибку (не хватило алмазов, превышен лимит и т.д.)
         if (result.error) {

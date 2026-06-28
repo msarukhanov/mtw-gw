@@ -1,7 +1,7 @@
 const { gamesConfigDB } = require('../db/configDB');
 const virtualArena = require('../battles/virtualArena');
 const battleDB = require('../db/battleDB');
-
+const questsDB = require('../db/questsDB');
 
 exports.pve = async function (req, res) {
     try {
@@ -24,6 +24,21 @@ exports.pve = async function (req, res) {
         );
 
         if (result.error) return res.status(400).json({ error: result.message });
+
+        switch (type) {
+            case 'campaign':
+                await questsDB.incrementQuestTask(userId, serverId, gameId, 'fight_campaign_stage', 1);
+                break;
+            case 'tower':
+                await questsDB.incrementQuestTask(userId, serverId, gameId, 'fight_tower_floor', 1);
+                break;
+        }
+        //
+        // if(result.win) {
+        //
+        // }
+
+
         return res.json(result);
 
     } catch (e) {
@@ -54,6 +69,9 @@ exports.pvp = async function (req, res) {
         );
 
         if (result.error) return res.status(400).json({ error: result.message });
+
+        await questsDB.incrementQuestTask(userId, serverId, gameId, 'fight_pvp_battle', 1);
+
         return res.json(result);
 
     } catch (e) {
@@ -117,6 +135,18 @@ exports.boss = async function (req, res) {
         );
 
         if (result.error) return res.status(400).json({ error: result.message });
+
+        // switch (type) {
+        //     case 'campaign':
+        //         await questsDB.incrementQuestTask(userId, serverId, gameId, 'fight_campaign_stage', 1);
+        //         break;
+        //     case 'tower':
+        //         await questsDB.incrementQuestTask(userId, serverId, gameId, 'fight_tower_floor', 1);
+        //         break;
+        // }
+
+        await questsDB.incrementQuestTask(userId, serverId, gameId, 'fight_boss_fight', 1);
+
         return res.json(result);
 
     } catch (e) {

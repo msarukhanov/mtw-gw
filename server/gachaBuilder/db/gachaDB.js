@@ -799,7 +799,7 @@ async function finalizeGachaInRAM(userId, serverId, gameId, player, resources, i
     player.resources = resources;
 
     // Сохраняем в Редис и помечаем dirty
-    await Cache.setPlayer(userId, serverId, player);
+    await Cache.setPlayer(player);
 
     // Пересчитываем силу
     const newPower = await recalculateAndSaveCombatPower(userId, serverId, gameId);

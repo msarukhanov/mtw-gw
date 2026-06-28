@@ -175,7 +175,7 @@ async function processPvEBattle(userId, serverId, gameConfig, type, stage, tower
             player.resources = currentResources;
 
             // Записываем обновленного плоского игрока в Редис. Lazy Write сбросит его в БД.
-            await Cache.setPlayer(userId, serverId, player);
+            await Cache.setPlayer(player);
 
             // Возвращаем ответ строго по твоему формату Express-контроллера
             return {
@@ -962,7 +962,7 @@ async function processBossBattle(userId, serverId, gameId, gameConfig, bossKey) 
             }
 
             // Фиксируем изменения игрока в Редисе. Lazy Write сбросит профиль в БД.
-            await Cache.setPlayer(userId, serverId, player);
+            await Cache.setPlayer(player);
 
             return {
                 success: true,
@@ -1083,7 +1083,7 @@ async function processBossBattle(userId, serverId, gameId, gameConfig, bossKey) 
         }
 
         // Фиксируем изменения игрока в Редисе. Lazy Write сбросит профиль в БД.
-        await Cache.setPlayer(userId, serverId, player);
+        await Cache.setPlayer(player);
 
         return {
             success: true,

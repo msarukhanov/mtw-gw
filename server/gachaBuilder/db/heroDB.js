@@ -231,14 +231,14 @@ async function levelUpHero(userId, serverId, gameId, heroInstId, levelsToUp = 1)
             player.resources = resources;
 
             // Сначала сохраняем стейт в Редис, чтобы калькулятор боевой силы мог прочитать новый уровень
-            await Cache.setPlayer(userId, serverId, player);
+            await Cache.setPlayer(player);
 
             // Пересчитываем боевую силу. Метод recalculate должен уметь работать по гибридной схеме!
             const newPower = await recalculateAndSaveCombatPower(userId, serverId, gameId);
 
             // Синхронизируем новую силу в кэше и обновляем ZSET Лидерборд силы Арены
             player.combat_power = newPower;
-            await redisClient.setEx(`p:${serverId}:${userId}`, 1200, JSON.stringify(player));
+            await Cache.setPlayer(player);
             await redisClient.zAdd(`lb:${serverId}:combat_power`, { score: parseInt(newPower), value: String(userId) });
 
             // Собираем game_data структуру обратно, чтобы твой готовый фронтенд получил то, что ждет
@@ -502,14 +502,14 @@ async function consumeHero(userId, serverId, gameId, heroInstId, recycleResource
             }
 
             // Сохраняем промежуточное состояние, чтобы калькулятор силы прочитал актуальный ростер
-            await Cache.setPlayer(userId, serverId, player);
+            await Cache.setPlayer(player);
 
             // Пересчитываем БР в памяти
             const newPower = await recalculateAndSaveCombatPower(userId, serverId, gameId);
 
             // Синхронизируем новую силу в кэше и обновляем ZSET Лидерборд силы
             player.combat_power = newPower;
-            await redisClient.setEx(`p:${serverId}:${userId}`, 1200, JSON.stringify(player));
+            await Cache.setPlayer(player);
             await redisClient.zAdd(`lb:${serverId}:combat_power`, { score: parseInt(newPower), value: String(userId) });
 
             // Собираем game_data структуру обратно под ожидания твоего фронтенда
@@ -835,14 +835,14 @@ async function upgradeHeroStars(userId, serverId, gameId, heroInstId, fodderInst
             player.resources = resources;
 
             // Сохраняем стейт в Редис для пересчета силы
-            await Cache.setPlayer(userId, serverId, player);
+            await Cache.setPlayer(player);
 
             // Пересчитываем БР
             const newPower = await recalculateAndSaveCombatPower(userId, serverId, gameId);
 
             // Синхронизируем новую силу в кэше и обновляем ZSET Лидерборд силы
             player.combat_power = newPower;
-            await redisClient.setEx(`p:${serverId}:${userId}`, 1200, JSON.stringify(player));
+            await Cache.setPlayer(player);
             await redisClient.zAdd(`lb:${serverId}:combat_power`, { score: parseInt(newPower), value: String(userId) });
 
             // Собираем game_data структуру обратно под ожидания твоего фронтенда
@@ -1091,14 +1091,14 @@ async function upgradePersonalItem(userId, serverId, gameId, heroInstId) {
             player.inventory = inventory;
 
             // Сохраняем стейт в Редис для пересчета силы
-            await Cache.setPlayer(userId, serverId, player);
+            await Cache.setPlayer(player);
 
             // Пересчитываем БР
             const newPower = await recalculateAndSaveCombatPower(userId, serverId, gameId);
 
             // Синхронизируем новую силу в кэше и обновляем ZSET Лидерборд силы
             player.combat_power = newPower;
-            await redisClient.setEx(`p:${serverId}:${userId}`, 1200, JSON.stringify(player));
+            await Cache.setPlayer(player);
             await redisClient.zAdd(`lb:${serverId}:combat_power`, { score: parseInt(newPower), value: String(userId) });
 
             // Собираем game_data структуру обратно под ожидания твоего фронтенда
@@ -1326,7 +1326,7 @@ async function changeHeroSkin(userId, serverId, heroInstId, skinId) {
             player.heroes = heroes;
 
             // Сохраняем в Редис. Фоновую силу тут пересчитывать не нужно (скины косметические)
-            await Cache.setPlayer(userId, serverId, player);
+            await Cache.setPlayer(player);
 
             const rootFields = ['id', 'user_id', 'server_id', 'nickname', 'level', 'combat_power', 'resources', 'idle_timestamps'];
             const returnedGameData = {};
@@ -1441,13 +1441,13 @@ async function manageHeroPet(userId, serverId, gameId, heroInstId, petId = null,
             player.inventory = inventory;
 
             // Синхронизируем стейт перед пересчетом силы
-            await Cache.setPlayer(userId, serverId, player);
+            await Cache.setPlayer(player);
 
             // Пересчитываем силу в RAM
             const newPower = await recalculateAndSaveCombatPower(userId, serverId, gameId);
 
             player.combat_power = newPower;
-            await redisClient.setEx(`p:${serverId}:${userId}`, 1200, JSON.stringify(player));
+            await Cache.setPlayer(player);
             await redisClient.zAdd(`lb:${serverId}:combat_power`, { score: parseInt(newPower), value: String(userId) });
 
             const rootFields = ['id', 'user_id', 'server_id', 'nickname', 'level', 'combat_power', 'resources', 'idle_timestamps'];
@@ -1687,7 +1687,7 @@ async function savePlayerTeam(userId, serverId, gameId, teamKey, heroInstIds = [
             player.team_bonuses[teamKey] = activeFactionBonus;
 
             // Записываем обновленный плоский профиль обратно в Редис. Lazy Write сам скинет изменения в Postgres
-            await Cache.setPlayer(userId, serverId, player);
+            await Cache.setPlayer(player);
 
             // Возвращаем плоскую структуру один в один с форматом logInServer под ожидания твоего фронтенда
             return {

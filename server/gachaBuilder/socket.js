@@ -33,10 +33,12 @@ function init(server) {
         let domainRoomKey = null;
         let currentUserName = null;
         let activePartnerId = null;
+        let activeServerId = null;
+        let redisKey = null;
 
         // Игрок шлет ТОЛЬКО свой username (или токен), больше ничего передавать не нужно!
         socket.on('platform_join', async (data) => {
-            const { username, serverId } = data;
+            const { userId, username, serverId } = data;
             if (!username) return socket.emit('error', { message: 'Username is required to map network gateway socket node.' });
 
             try {
@@ -56,7 +58,7 @@ function init(server) {
                 currentUserName = username;
 
                 // 1. Изолированная комната обновлений игрока (например: demo_mtwtech_world01_Марк)
-                sessionRoomKey = `${activePartnerId}_${serverId}_${username}`;
+                sessionRoomKey = `${activePartnerId}_${serverId}_${userId}`;
                 socket.join(sessionRoomKey);
 
                 // 2. Общая брендовая комната всего домена (точки заменяем на _, чтобы не ломать селекторы Socket.io)
@@ -67,16 +69,29 @@ function init(server) {
                 // 3. Фиксируем статус "Онлайн" в оперативной памяти Node.js
                 global.onlinePlayers[sessionRoomKey] = socket.id;
 
-                console.log(`✅ [Socket Mapped] Игрок "${username}" успешно заперт в комнатах: [${sessionRoomKey}] и [${domainRoomKey}]. PartnerID: ${activePartnerId}`);
+                console.log(`✅ [Socket Mapped] Игрок "${username}" "${userId}" успешно заперт в комнатах: [${sessionRoomKey}] и [${domainRoomKey}]. PartnerID: ${activePartnerId}`);
 
                 if (!global.onlineByDomains[clientDomain]) global.onlineByDomains[clientDomain] = [];
                 if (!global.onlineByDomains[clientDomain].includes(username)) {
                     global.onlineByDomains[clientDomain].push(username);
                 }
 
+                activeServerId = serverId;
+
                 socket.emit('platform_join', {
                     key: sessionRoomKey
-                })
+                });
+
+                redisKey = `p:${serverId}:${userId}`;
+                if (redisClient.isOpen && redisClient.isReady) {
+                    try {
+                        const playerRaw = await redisClient.get(redisKey);
+                        let playerObj = JSON.parse(playerRaw);
+                        redisClient.sAdd('online_players:' + serverId, userId);
+                    } catch (err) {
+                        console.error("[Socket Router Redis Error]:", err.message);
+                    }
+                }
             } catch (dbErr) {
                 console.error("❌ [Socket DB Error] Не удалось сопоставить домен в Postgres:", dbErr.message);
             }
@@ -93,7 +108,7 @@ function init(server) {
 
         socket.on('player_request', async (req) => {
             try {
-                const { username, deviceId, gameId, serverId, partnerId, type, method, data } = req;
+                const { userId, username, deviceId, gameId, serverId, partnerId, type, method, data } = req;
                 // Защищенный sessionKey, привязанный к b2b-домену партнера
                 const sessionKey = `${activePartnerId}_${serverId}_${username}`;
 
@@ -103,9 +118,7 @@ function init(server) {
                 }
 
                 let playerRaw;
-                // ИСПРАВЛЕНО: Ключ в Редисе должен точно совпадать с твоей b2b-структурой `p:${serverId}:${gameId}:${deviceId}`
-                // const redisKey = `p:${serverId}:${gameId}:${deviceId}`;
-                const redisKey = `p:${serverId}:${username}`;
+                const redisKey = `p:${serverId}:${userId}`;
 
                 if (redisClient.isOpen && redisClient.isReady) {
                     try {
@@ -119,13 +132,17 @@ function init(server) {
                     socket.emit('player_update', {
                         error: true,
                         msg: 'Invalid player profile cache or session expired.',
-                        username, deviceId, gameId, serverId, partnerId, type, method
+                        username, deviceId, userId, gameId, serverId, partnerId, type, method
                     });
                     return;
                 }
 
                 // Парсим плоский объект игрока из строки Редиса
                 let playerObj = JSON.parse(playerRaw);
+
+                socket.playerId = playerObj.id;
+                socket.serverId = serverId;
+                socket.partnerId = partnerId;
 
                 const controllersMap = {
                     'auth': './controllers/authController',
@@ -137,6 +154,13 @@ function init(server) {
                     'items': './controllers/itemsController',
                     'player': './controllers/playerController',
                     'shop': './controllers/shopController',
+
+                    'friends': './controllers/friendsController',
+                    'guilds': './controllers/guildsController',
+                    'offers': './controllers/offersController',
+                    'quests': './controllers/questsController',
+                    'battlePass': './controllers/battlePassController',
+                    'bounty': './controllers/bountyController',
                 };
 
                 if (!controllersMap[type]) {
@@ -159,10 +183,11 @@ function init(server) {
                     player: {
                         id: playerObj.id, // Наш UUID из базы Постгреса
                         serverId: serverId,
-                        gameId: gameId,
-                        username: username,
-                        deviceId: deviceId,
-                        partnerId: activePartnerId
+                        gameId,
+                        userId,
+                        username,
+                        deviceId,
+                        activePartnerId
                     },
                     query: { ...data },
                     body: { ...data }
@@ -240,8 +265,49 @@ function init(server) {
                                 boss_list: backendResponse.statuses || backendResponse.boss_list || {}
                             };
                         }
+                        else if (type === 'friends') {
+                            updateType = 'friends';
+                            responseData = {
+                                friends: backendResponse.friends || null,
+                                friend_requests: backendResponse.friend_requests || null,
+                                friend_recommendations: backendResponse.friend_recommendations || null,
+                                blacklist: backendResponse.blacklist || []
+                            };
+                        }
+                        else if (type === 'guilds') {
+                            updateType = 'guilds';
+                            responseData = {
+                                active_guild: backendResponse.members ? backendResponse : (backendResponse.active_guild || null),
+                                guilds_search_list: backendResponse.guilds || [],
+                                guild_incoming_requests: backendResponse.requests || []
+                            };
+                        }
+                        else if (type === 'offers') {
+                            updateType = 'offers';
+                            responseData = {
+                                active_offers: backendResponse.active_offers || []
+                            };
+                        }
+                        else if (type === 'battlePass') {
+                            updateType = 'battlePass';
+                            responseData = {
+                                battle_passes: backendResponse.battle_passes || {}
+                            };
+                        }
+                        else if (type === 'bounty') {
+                            updateType = 'bounty';
+                            responseData = {
+                                bounty_missions: backendResponse.bounty_missions || []
+                            };
+                        }
+                        else if (type === 'quests') {
+                            updateType = 'quests';
+                            responseData = {
+                                quests: backendResponse.quests || {},
+                                daily_login: backendResponse.daily_login || {}
+                            };
+                        }
                         else {
-                            // Для 'items', 'player', 'heroes', 'gacha'
                             responseData = {
                                 resources: actualResources,
                                 inventory: actualInventory
@@ -280,7 +346,7 @@ function init(server) {
         }); // Конец слушателя player_request
 
         // 3. АВТОМАТИЧЕСКАЯ ОЧИСТКА ПАМЯТИ ПРИ ОТКЛЮЧЕНИИ УСТРОЙСТВА
-        socket.on('disconnect', () => {
+        socket.on('disconnect', async () => { // Убираем аргумент socket из колбэка, он доступен из замыкания
             if (sessionRoomKey && global.onlinePlayers[sessionRoomKey]) {
                 delete global.onlinePlayers[sessionRoomKey];
             }
@@ -291,8 +357,29 @@ function init(server) {
                     delete global.onlineByDomains[clientDomain];
                 }
             }
+
+            if (redisClient.isOpen && redisClient.isReady) {
+                try {
+                    // Безопасное чтение данных
+                    const playerRaw = await redisClient.get(redisKey);
+
+                    if (playerRaw) {
+                        const playerObj = JSON.parse(playerRaw);
+                        const splitKey = redisKey.split(":");
+                        const targetServerId = splitKey[1] || activeServerId;
+
+                        await redisClient.sRem('online_players:' + targetServerId, String(playerObj.id));
+                    } else {
+                        console.warn(`[Socket Disconnect]: Ключ ${redisKey} не найден в Redis при отключении.`);
+                    }
+                } catch (err) {
+                    console.error("[Socket Router Redis Disconnect Error]:", err.message);
+                }
+            }
+
             console.log(`🔴 [Socket Disconnected] Устройство игрока ${currentUserName} покинуло сеть домена ${clientDomain}`);
         });
+
     });
 
     global.io = io;

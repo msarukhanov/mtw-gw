@@ -52,7 +52,7 @@ async function equipItem(userId, serverId, gameId, heroInstId, itemId, slotId) {
             player.inventory = inventory;
 
             // Сохраняем промежуточный стейт в Редис, чтобы калькулятор силы прочитал обновленный шмот
-            await Cache.setPlayer(userId, serverId, player);
+            await Cache.setPlayer(player);
 
             // ИСПРАВЛЕНО: Принудительный автопересчет боевой силы аккаунта после экипировки
             const { recalculateAndSaveCombatPower } = require('./heroDB');
@@ -60,7 +60,7 @@ async function equipItem(userId, serverId, gameId, heroInstId, itemId, slotId) {
 
             // Синхронизируем новую силу в кэше и обновляем ZSET Лидерборд силы Арены
             player.combat_power = newPower;
-            await redisClient.setEx(`p:${serverId}:${userId}`, 1200, JSON.stringify(player));
+            await Cache.setPlayer(player);
             await redisClient.zAdd(`lb:${serverId}:combat_power`, { score: parseInt(newPower), value: String(userId) });
 
             // Собираем структуру game_data обратно под ожидания фронтенда
@@ -209,13 +209,12 @@ async function autoEquipHero(userId, serverId, gameId, heroInstId) {
                 player.heroes = heroes;
                 player.inventory = inventory;
 
-                await Cache.setPlayer(userId, serverId, player);
+                await Cache.setPlayer(player);
 
                 const { recalculateAndSaveCombatPower } = require('./heroDB');
                 const newPower = await recalculateAndSaveCombatPower(userId, serverId, gameId);
 
                 player.combat_power = newPower;
-                await redisClient.setEx(`p:${serverId}:${userId}`, 1200, JSON.stringify(player));
                 await redisClient.zAdd(`lb:${serverId}:combat_power`, { score: parseInt(newPower), value: String(userId) });
 
                 // Сборка game_data под фронтенд
@@ -355,7 +354,7 @@ async function craftItem(userId, serverId, recipeId, count = 1, recipesCatalog) 
             player.inventory[resultItemId] = (player.inventory[resultItemId] || 0) + count;
 
             player.resources = resources;
-            await Cache.setPlayer(userId, serverId, player);
+            await Cache.setPlayer(player);
 
             return { success: true, crafted_item: resultItemId, crafted_count: count, resources, game_data: player };
 
@@ -440,7 +439,7 @@ async function sellItem(userId, serverId, itemId, count = 1, itemsCatalog) {
             resources.gold = (parseInt(resources.gold) || 0) + goldGained;
 
             player.resources = resources;
-            await Cache.setPlayer(userId, serverId, player);
+            await Cache.setPlayer(player);
 
             return { success: true, resources, game_data: player };
 
@@ -562,7 +561,7 @@ async function autoCraftItem(userId, serverId, recipeId, count = 1, recipesCatal
             player.resources = resources;
 
             // Сохраняем стейт в Редис
-            await Cache.setPlayer(userId, serverId, player);
+            await Cache.setPlayer(player);
 
             return {
                 success: true,
@@ -688,7 +687,7 @@ async function useItemChest(userId, serverId, itemId, count = 1, chestCatalog) {
             }
 
             player.resources = resources;
-            await Cache.setPlayer(userId, serverId, player);
+            await Cache.setPlayer(player);
 
             return { success: true, rewardsGained, resources, game_data: player };
 

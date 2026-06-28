@@ -5,7 +5,6 @@ const axios = require('axios');
 const isDemo = true;
 const demoUrl = (isDemo ? 'https://mtw-gw.onrender.com' : 'http://localhost:3000') + '/api/auth';
 
-const {pool} = global;
 const {gamesConfigDB} = require('./configDB');
 const { redisClient } = require('../../redisClient');
 const {getCurrentIdleRate} = require('./_shared');
@@ -201,7 +200,7 @@ async function logInServer(username, gameId, serverId, deviceId) {
 
         if (redisClient.isOpen && redisClient.isReady) {
             // ФИКС КЛЮЧА: Строго привязываем к серверу и юзернейму
-            const redisPlayerKey = `p:${serverId}:${username}`;
+            const redisPlayerKey = `p:${serverId}:${playerProfile.id}`;
             const leaderboardKey = `lb:${serverId}:arena`;
             const currentRating = finalPlayerObject.resources?.arena_rating || 1000;
 
@@ -389,7 +388,7 @@ async function updatePlayerResources(userId, serverId, resourceChanges) {
                 });
 
                 // Сохраняем в кэш и помечаем грязным для LazyWrite
-                await Cache.setPlayer(userId, serverId, player);
+                await Cache.setPlayer(player);
                 return player.resources;
             }
         } catch (cacheErr) {
@@ -669,7 +668,7 @@ async function getPendingIdleRewards(userId, serverId, gameId, idleKey) {
 /**
  * 4. ФАКТИЧЕСКИЙ СБОР АЙДЛ-НАГРАД В БАЗУ (Гибридный метод)
  */
-async function claimIdleRewards(username, serverId, gameId, deviceId, idleKey) {
+async function claimIdleRewards(userId, serverId, gameId, deviceId, idleKey) {
     const GameConfig = gamesConfigDB[gameId];
     if (!GameConfig || !GameConfig.mechanics.idle || !GameConfig.mechanics.idle[idleKey]) {
         return { error: true, message: "Config not found" };
@@ -684,7 +683,7 @@ async function claimIdleRewards(username, serverId, gameId, deviceId, idleKey) {
         try {
             // Поскольку игрок уже прошел мидлвейр, его сессия p:${serverId}:${gameId}:${deviceId} горячая в RAM.
             // Нам не нужно заново вызывать getOrCreatePlayer через сеть!
-            const redisPlayerKey = `p:${serverId}:${gameId}:${deviceId}`;
+            const redisPlayerKey = `p:${serverId}:${userId}`;
             const cachedData = await redisClient.get(redisPlayerKey);
 
             if (cachedData) {
@@ -718,12 +717,7 @@ async function claimIdleRewards(username, serverId, gameId, deviceId, idleKey) {
                     player.resources[key] = (parseInt(player.resources[key]) || 0) + value;
                 });
 
-                // Пушим обновленный объект обратно в Редис. Lazy Write сбросит изменения в Postgres по колонкам.
-                // Так как у нас ключ привязан к девайсу, мы используем прямой метод записи
-                await redisClient.setEx(redisPlayerKey, 1200, JSON.stringify(player));
-                // Помечаем UUID игрока грязным для фонового демона lazyWrite
-                const { markPlayerDirty } = require('./lazyWrite');
-                await markPlayerDirty(player.id, serverId);
+                await Cache.setPlayer(player.id, serverId, player);
 
                 return {
                     gained: rewardsToGive,
@@ -739,7 +733,7 @@ async function claimIdleRewards(username, serverId, gameId, deviceId, idleKey) {
     // ------------------------------------------------------------------------
     // ЭШЕЛОН 2: ТВОЙ СТАРЫЙ SQL FALLBACK (ТРАНЗАКЦИЯ И ПОЛНЫЙ АПДЕЙТ В СУБД)
     // ------------------------------------------------------------------------
-    let apiSessionData = {}, userId;
+    let apiSessionData = {};
     try {
         const apiResponse = await getOrCreatePlayer(username, '', gameId, deviceId);
         if (apiResponse && !apiResponse.error) {
@@ -821,9 +815,6 @@ async function getServerLeaderboard(serverId, userId, sortBy = 'combat_power', l
     const validSortColumns = ['combat_power', 'level'];
     if (!validSortColumns.includes(sortBy)) sortBy = 'combat_power';
 
-    // ------------------------------------------------------------------------
-    // ЭШЕЛОН 1: РЕАКТИВНЫЙ REDIS ZSET ЛИДЕРБОРД (0 МИЛЛИСЕКУНД БЕЗ НАГРУЗКИ НА CPU)
-    // ------------------------------------------------------------------------
     if (redisClient.isOpen && redisClient.isReady) {
         try {
             // Динамический ключ под выбранный тип топа (lb:world_01:combat_power или lb:world_01:level)
@@ -884,9 +875,7 @@ async function getServerLeaderboard(serverId, userId, sortBy = 'combat_power', l
             console.warn('[PlayersDB:Leaderboard] Сбой Redis ZSET, падаю в Postgres Fallback:', cacheErr);
         }
     }
-    // ------------------------------------------------------------------------
-    // ЭШЕЛОН 2: ТВОЙ СТАРЫЙ ОРИГИНАЛЬНЫЙ SQL FALLBACK (ОКОННЫЕ ФУНКЦИИ СУБД)
-    // ------------------------------------------------------------------------
+
     const leaderboardQuery = `
         SELECT 
             id as user_id, 
@@ -1193,7 +1182,7 @@ async function saveViewedDialog(userId, serverId, dialogId) {
                 }
 
                 // Записываем обновленный плоский профиль обратно в Редис
-                await Cache.setPlayer(userId, serverId, player);
+                await Cache.setPlayer(player);
 
                 // Имитируем возвращаемую структуру под твой фронтенд
                 // Наш lazyWrite при фоновом апдейте сам запакует все лишнее обратно в game_data

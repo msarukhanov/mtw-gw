@@ -424,7 +424,7 @@ async function getOrGenerateShopState(userId, serverId, shopId, shopConfig, shop
                 player.shops_state = player.shopsState; // Синхронизируем оба написания key
 
                 // Пишем в Редис и взводим dirty-флаг для lazyWrite
-                await Cache.setPlayer(userId, serverId, player);
+                await Cache.setPlayer(player);
             }
 
             return { success: true, state: currentShopState };
@@ -524,7 +524,7 @@ async function refreshShopManual(userId, serverId, shopId, shopConfig, shopPools
             player.shops_state = player.shopsState;
             player.resources = resources;
 
-            await Cache.setPlayer(userId, serverId, player);
+            await Cache.setPlayer(player);
 
             return { success: true, resources: player.resources, state: newShowcase };
 
@@ -643,7 +643,7 @@ async function purchaseItemVirtual(userId, serverId, shopId, slotId, partnerId, 
             player.shops_state = player.shopsState;
             player.resources = resources;
 
-            await Cache.setPlayer(userId, serverId, player);
+            await Cache.setPlayer(player);
 
             const rewardReport = {
                 resources: slotItem.item_type === 'resource' ? { [slotItem.itemId]: slotItem.amount } : {},
@@ -797,7 +797,7 @@ async function purchaseItemCashFake(userId, serverId, shopId, slotId, partnerId,
             player.shops_state = player.shopsState;
             player.resources = resources;
 
-            await Cache.setPlayer(userId, serverId, player);
+            await Cache.setPlayer(player);
 
             // ДОБАВЛЕНО: Явный отчет о дельте для сокетного роутера и донатного поп-апа!
             const rewardReport = {

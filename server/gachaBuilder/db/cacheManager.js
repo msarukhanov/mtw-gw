@@ -1,14 +1,11 @@
 const { redisClient } = require('../../redisClient');
 const { markPlayerDirty } = require('./lazyWrite');
 
-const PLAYER_TTL_SECONDS = 1200; // 20 минут
+// const PLAYER_TTL_SECONDS = 1200; // 20 минут
+const PLAYER_TTL_SECONDS = 120000; // 2000 минут
 
-// function getPlayerKey(userId, serverId) {
-//     return `p:${serverId}:${userId}`;
-// }
-
-function getPlayerKey(username, serverId) {
-    return `p:${serverId}:${username}`;
+function getPlayerKey(userId, serverId) {
+    return `p:${serverId}:${userId}`;
 }
 
 /**
@@ -87,16 +84,14 @@ async function getPlayer(userIdOrName, serverId) {
 /**
  * Запись измененного плоского игрока в Редис + пометка dirty
  */
-async function setPlayer(userIdOrName, serverId, playerProfile) {
-    // Гарантируем, что имя пользователя всегда на месте
-    const username = playerProfile.username || playerProfile.nickname;
-    const key = getPlayerKey(username, serverId);
+async function setPlayer(player) {
+
+    const key = getPlayerKey(player.id, player.server_id);
 
     if (redisClient.isOpen && redisClient.isReady) {
         try {
-            await redisClient.setEx(key, PLAYER_TTL_SECONDS, JSON.stringify(playerProfile));
-            // Передаем UUID строки для демона lazyWrite
-            await markPlayerDirty(playerProfile.id, serverId);
+            await redisClient.setEx(key, PLAYER_TTL_SECONDS, JSON.stringify(player));
+            await markPlayerDirty(player.id, player.server_id);
             return true;
         } catch (err) {
             console.error('[CacheManager:Set] Ошибка записи в Redis:', err);

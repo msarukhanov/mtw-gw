@@ -72,6 +72,16 @@ const gamesConfigDB = {
                     title_loc: { ...BASE_LANGUAGES, ru: "Дружба", en: "Friendship" },
                     desc_loc: { ...BASE_LANGUAGES, ru: "Жетоны дружбы.", en: "Friendship badges." }
                 },
+                "arena_coin": {
+                    icon: "🔮",
+                    title_loc: { ...BASE_LANGUAGES, ru: "Жетоны арены", en: "Arena coin" },
+                    desc_loc: { ...BASE_LANGUAGES, ru: "Жетоны арены.", en: "Arena coin." }
+                },
+                "guild_coin": {
+                    icon: "🔮",
+                    title_loc: { ...BASE_LANGUAGES, ru: "Жетоны гильдии", en: "Guild coin" },
+                    desc_loc: { ...BASE_LANGUAGES, ru: "Жетоны гильдии.", en: "Guild coin." }
+                }
             },
 
             // 2. Твои оригинальные характеристики с весами для формулы расчета Боевого Рейтинга (БР)
@@ -237,7 +247,303 @@ const gamesConfigDB = {
                         height: "100%",
                         zIndex: 3,
                         animation: "idle_pulse"
-                    }
+                    },
+                    widgets: [
+                        {
+                            id: "btn_heroes",
+                            type: "button",
+                            label_loc_key: "btn_heroes_label",
+                            action: "open_heroes",
+                            layout: {
+                                bottom: "45px",
+                                left: "50% + 35px + 5px",
+                                width: "60px",
+                                height: "60px",
+                                shape: 'circle',
+                                // backgroundColor: "rgba(55,55,55,.6)",
+                                backgroundImage: "url('./assets/icons/heroes.png')",
+
+                                textColor: "#fff",
+                                textSize: "12px",
+                                textPosition: "bottom",
+                                textBG: "rgba(0, 0, 0, .5)"
+                            }
+                        },
+                        {
+                            id: "btn_inventory",
+                            type: "button",
+                            label_loc_key: "btn_inventory_label",
+                            action: "open_inventory",
+                            layout: {
+                                bottom: "45px",
+                                left: "50% - 35px + 5px",
+                                width: "60px",
+                                height: "60px",
+                                shape: 'circle',
+                                // backgroundColor: "rgba(55,55,55,.6)",
+                                backgroundImage: "url('./assets/icons/inventory.png')",
+
+                                textColor: "#fff",
+                                textSize: "12px",
+                                textPosition: "bottom",
+                                textBG: "rgba(0, 0, 0, .5)"
+                            }
+                        },
+
+
+                        {
+                            id: "btn_friends",
+                            type: "button",
+                            label_loc_key: "btn_friends_label",
+                            action: "open_friends",
+                            layout: {
+                                top: "120px",
+                                left: "25px + 5px",
+                                width: "50px",
+                                height: "50px",
+                                shape: 'circle',
+
+                                // backgroundColor: "rgba(0,0,55,.6)",
+                                backgroundImage: "url('./assets/icons/friends.png')",
+
+                                textColor: "#fff",
+                                textSize: "12px",
+                                textPosition: "bottom",
+                                textBG: "rgba(0, 0, 0, .5)"
+                            }
+                        },
+                        {
+                            id: "btn_leaderboard",
+                            type: "button",
+                            label_loc_key: "btn_leaderboard_label",
+                            action: "open_leaderboard",
+                            layout: {
+                                top: "180px",
+                                left: "25px + 5px",
+                                width: "50px",
+                                height: "50px",
+                                shape: 'circle',
+
+                                // backgroundColor: "rgba(0,0,55,.6)",
+                                backgroundImage: "url('./assets/icons/leaderboard.png')",
+
+                                textColor: "#fff",
+                                textSize: "12px",
+                                textPosition: "bottom",
+                                textBG: "rgba(0, 0, 0, .5)"
+                            }
+                        },
+                        {
+                            id: "btn_missions",
+                            type: "button",
+                            label_loc_key: "btn_missions_label",
+                            action: "open_quest",
+                            layout: {
+                                top: "240px",
+                                left: "25px + 5px",
+                                width: "50px",
+                                height: "50px",
+                                shape: 'circle',
+
+                                // backgroundColor: "rgba(0,0,55,.6)",
+                                backgroundImage: "url('./assets/icons/missions.png')",
+
+                                textColor: "#fff",
+                                textSize: "12px",
+                                textPosition: "bottom",
+                                textBG: "rgba(0, 0, 0, .5)"
+                            }
+                        },
+                        {
+                            id: "btn_bounty",
+                            type: "button",
+                            label_loc_key: "btn_bounty_label",
+                            action: "open_bounty",
+                            layout: {
+                                top: "300px",
+                                left: "25px + 5px",
+                                width: "50px",
+                                height: "50px",
+                                shape: 'circle',
+
+                                // backgroundColor: "rgba(0,0,55,.6)",
+                                backgroundImage: "url('./assets/icons/bounty.png')",
+
+                                textColor: "#fff",
+                                textSize: "12px",
+                                textPosition: "bottom",
+                                textBG: "rgba(0, 0, 0, .5)"
+                            }
+                        },
+
+
+
+
+
+
+                        {
+                            id: "btn_games",
+                            type: "button",
+                            label_loc_key: "btn_games_label",
+                            action: "open_games",
+                            layout: {
+                                top: "85% - 5px",
+                                right: "25% + 5px",
+                                width: "16dvh",
+                                height: "20dvh",
+
+                                // backgroundColor: "rgba(55,0,55,.6)",
+                                backgroundImage: "url('./assets/icons/games.png')",
+
+                                textColor: "#fff",
+                                textSize: "14px",
+                                textPosition: "bottom",
+                                textBG: "rgba(0, 0, 0, .5)"
+                            }
+                        },
+                        {
+                            id: "btn_shop",
+                            type: "button",
+                            label_loc_key: "btn_shop_label",
+                            action: "open_shop",
+                            layout: {
+                                top: "54%",
+                                right: "28% + 5px",
+                                width: "16dvh",
+                                height: "20dvh",
+
+                                // backgroundColor: "rgba(55,0,55,.6)",
+                                backgroundImage: "url('./assets/icons/shop.png')",
+
+                                textColor: "#fff",
+                                textSize: "14px",
+                                textPosition: "bottom",
+                                textBG: "rgba(0, 0, 0, .5)"
+                            }
+                        },
+                        {
+                            id: "btn_gacha",
+                            type: "button",
+                            label_loc_key: "btn_gacha_label",
+                            action: "open_gacha",
+                            layout: {
+                                top: "65%",
+                                right: "10% + 5px",
+                                width: "16dvh",
+                                height: "20dvh",
+
+                                // backgroundColor: "rgba(55,0,55,.6)",
+                                backgroundImage: "url('./assets/icons/summon.png')",
+
+                                textColor: "#fff",
+                                textSize: "14px",
+                                textPosition: "bottom",
+                                textBG: "rgba(0, 0, 0, .5)"
+                            }
+                        },
+
+                        {
+                            id: "btn_guild",
+                            type: "button",
+                            label_loc_key: "btn_guild_label",
+                            action: "open_guild",
+                            layout: {
+                                top: "43%",
+                                right: "18% + 5px",
+                                width: "16dvh",
+                                height: "20dvh",
+
+                                // backgroundColor: "rgba(55,0,55,.6)",
+                                backgroundImage: "url('./assets/icons/guild.png')",
+
+                                textColor: "#fff",
+                                textSize: "14px",
+                                textPosition: "bottom",
+                                textBG: "rgba(0, 0, 0, .5)"
+                            }
+                        },
+
+                        {
+                            id: "btn_arena",
+                            type: "button",
+                            label_loc_key: "btn_arena_label",
+                            action: "open_arena",
+                            layout: {
+                                top: "64%",
+                                right: "41% + 5px",
+                                width: "16dvh",
+                                height: "20dvh",
+
+                                // backgroundColor: "rgba(55,0,55,.6)",
+                                backgroundImage: "url('./assets/icons/arena.png')",
+
+                                textColor: "#fff",
+                                textSize: "14px",
+                                textPosition: "bottom",
+                                textBG: "rgba(0, 0, 0, .5)"
+                            }
+                        },
+                        {
+                            id: "btn_pve_campaign",
+                            type: "button",
+                            label_loc_key: "btn_pve_campaign_label",
+                            action: "open_pve_campaign",
+                            layout: {
+                                bottom: "10% + 10px",
+                                right: "8% + 10px",
+                                width: "16dvh",
+                                height: "20dvh",
+
+                                // backgroundColor: "rgba(55,0,155,.6)",
+                                backgroundImage: "url('./assets/icons/campaign.png')",
+
+                                textColor: "#fff",
+                                textSize: "14px",
+                                textPosition: "bottom",
+                                textBG: "rgba(0, 0, 0, .5)"
+                            }
+                        },
+                        {
+                            id: "btn_pve_tower",
+                            type: "button",
+                            label_loc_key: "btn_pve_tower_label",
+                            action: "open_pve_tower",
+                            layout: {
+                                bottom: "61% - 10dvh",
+                                right: "56% + 5px",
+                                width: "16dvh",
+                                height: "20dvh",
+
+                                // backgroundColor: "rgba(255,140,155,.6)",
+                                backgroundImage: "url('./assets/icons/tower.png')",
+
+                                textColor: "#fff",
+                                textSize: "14px",
+                                textPosition: "bottom",
+                                textBG: "rgba(0, 0, 0, .5)"
+                            }
+                        },
+                        {
+                            id: "btn_boss",
+                            type: "button",
+                            label_loc_key: "btn_pve_boss_label",
+                            action: "open_pve_boss_list",
+                            layout: {
+                                top: "25%",
+                                right: "43% + 5px",
+                                width: "16dvh",
+                                height: "20dvh",
+
+                                // backgroundColor: "rgba(105,0,105,.6)",
+                                backgroundImage: "url('./assets/icons/hydra.png')",
+
+                                textColor: "#fff",
+                                textSize: "14px",
+                                textPosition: "bottom",
+                                textBG: "rgba(0, 0, 0, .5)"
+                            }
+                        },
+                    ]
                 },
                 {
                     id: "player_bar",
@@ -283,6 +589,7 @@ const gamesConfigDB = {
                         textSize: "30px",
                     }
                 },
+
                 {
                     id: "btn_idle",
                     type: "button",
@@ -402,10 +709,10 @@ const gamesConfigDB = {
                     }
                 },
                 {
-                    id: "btn_temple_power",
+                    id: "btn_leaderboard",
                     type: "button",
-                    label_loc_key: "btn_temple_power_label",
-                    // action: "open_temple_power",
+                    label_loc_key: "btn_leaderboard_label",
+                    // action: "open_leaderboard",
                     action: "open_leaderboard",
                     layout: {
                         top: "61%",
@@ -414,14 +721,13 @@ const gamesConfigDB = {
                         height: "16%",
 
                         backgroundColor: "rgba(0,0,55,.6)",
-                        // backgroundImage: "url('./assets/images/main_temple_power.png')",
+                        // backgroundImage: "url('./assets/images/main_leaderboard.png')",
 
                         textColor: "#fff",
                         textSize: "20px",
                         textPosition: "bottom"
                     }
                 },
-
                 {
                     id: "btn_arena",
                     type: "button",
@@ -441,44 +747,6 @@ const gamesConfigDB = {
                         textPosition: "bottom"
                     }
                 },
-                // {
-                //     id: "btn_pvp",
-                //     type: "button",
-                //     label_loc_key: "btn_pvp_label",
-                //     action: "open_pvp_arena",
-                //     layout: {
-                //         top: "43%",
-                //         right: "34% + 5px",
-                //         width: "12%",
-                //         height: "16%",
-                //
-                //         backgroundColor: "rgba(55,0,55,.6)",
-                //         // backgroundImage: "url('./assets/images/main_arena.png')",
-                //
-                //         textColor: "#fff",
-                //         textSize: "20px",
-                //         textPosition: "bottom"
-                //     }
-                // },
-                // {
-                //     id: "btn_bets",
-                //     type: "button",
-                //     label_loc_key: "btn_bets_label",
-                //     action: "open_bets",
-                //     layout: {
-                //         top: "78%",
-                //         right: "34% + 5px",
-                //         width: "12%",
-                //         height: "16%",
-                //
-                //         backgroundColor: "rgba(55,0,55,.6)",
-                //         // backgroundImage: "url('./assets/images/main_arena.png')",
-                //
-                //         textColor: "#fff",
-                //         textSize: "20px",
-                //         textPosition: "bottom"
-                //     }
-                // },
 
                 {
                     id: "btn_boss",
@@ -499,7 +767,6 @@ const gamesConfigDB = {
                         textPosition: "bottom"
                     }
                 },
-
                 {
                     id: "btn_pve_campaign",
                     type: "button",
@@ -863,15 +1130,14 @@ const gamesConfigDB = {
                     }
                 },
 
-                // =========================================================================
-                // ЭКРАН КЛАССИЧЕСКОЙ PvE КАМПАНИИ
-                // =========================================================================
+
                 {
                     id: "screen_pvp_arena",
                     bg_image: "./assets/images/arena/arena_bg.jpg", // Фон самого экрана арены
                     bg_width: 1000,
                     active_width: 1000,
                 },
+
                 {
                     id: "screen_pve_boss_list",
                     bg_image: "./assets/images/arena/arena_bg.jpg", // Фон самого экрана арены
@@ -1031,6 +1297,54 @@ const gamesConfigDB = {
                 },
 
 
+                {
+                    id: "screen_friends",
+                    bg_image: "./assets/images/screen_friends.png",
+                    scrollable: true,
+                    fullscreen: true,
+                    view_layout: ["tabs_menu", "friends_list", "search_bar"],
+                    menu_tabs: ["friends_active", "pending_requests", "add_by_uid"]
+                },
+                {
+                    id: "screen_guild_hub",
+                    bg_image: "./assets/images/ui/guild_castle_bg.jpg",
+                    scrollable: false,
+                    fullscreen: true,
+                    view_layout: ["guild_info_bar", "guild_buildings_grid", "chat_overlay"],
+                    menu_tabs: ["main_hall", "donations", "treasury_shop", "raid_hall"]
+                },
+                {
+                    id: "screen_quest_board",
+                    bg_image: "./assets/images/ui/quests_scroll_bg.png",
+                    scrollable: true,
+                    fullscreen: false,
+                    view_layout: ["milestone_progress_bar", "tasks_vertical_stack"],
+                    menu_tabs: ["daily_tasks", "weekly_tasks"]
+                },
+                {
+                    id: "screen_battle_pass",
+                    bg_image: "./assets/images/ui/bp_cyber_bg.jpg",
+                    scrollable: true,
+                    fullscreen: true,
+                    view_layout: ["level_milestone_track", "rewards_dual_grid", "premium_buy_banner"],
+                    menu_tabs: ["rewards_ladder", "seasonal_challenges"]
+                },
+                {
+                    id: "screen_bounty_board",
+                    bg_image: "./assets/images/ui/bounty_tavern_bg.png",
+                    scrollable: true,
+                    fullscreen: false,
+                    view_layout: ["active_dispatches_bar", "available_missions_list"],
+                    menu_tabs: ["dispatch_quests", "dispatch_history"]
+                },
+                {
+                    id: "screen_promo_selena",
+                    bg_image: "./assets/images/ui/promo_selena_banner.jpg", // Уникальный фон под акцию
+                    scrollable: false,
+                    fullscreen: true,
+                    view_layout: ["countdown_timer_widget", "big_promo_artwork", "buy_now_gold_button"],
+                    menu_tabs: ["limited_bundle_info", "event_rules_terms"]
+                }
             ]
         },
 
@@ -1043,7 +1357,7 @@ const gamesConfigDB = {
                     "btn_games_label": "Games of Luck",
                     "btn_inventory_label": "Сокровищница",
                     "btn_gacha_label": "Призыв Богов",
-                    "btn_temple_power_label": "Замок мощи",
+                    "btn_leaderboard_label": "Замок мощи",
                     "btn_arena_label": "PvP",
                     "btn_back_label": "✖",
 
@@ -1142,16 +1456,20 @@ const gamesConfigDB = {
                     "game_title": "⚡ Combat Stars: Age of Gods",
                     "btn_shop_label": "Shop",
                     "btn_heroes_label": "Heroes",
-                    "btn_games_label": "Games of Luck",
+                    "btn_games_label": "Games",
                     "btn_inventory_label": "Treasury",
                     "btn_gacha_label": "Summon",
-                    "btn_temple_power_label": "Castle of Power",
+                    "btn_leaderboard_label": "Rating",
+                    "btn_friends_label": "Friends",
+                    "btn_bounty_label": "Bounty",
+                    "btn_guild_label": "Guild",
+                    "btn_missions_label": "Missions",
                     "btn_arena_label": "Arena",
                     "btn_pvp_label": "PvP",
                     "btn_bets_label": "Bets",
                     "btn_pve_boss_label": "BOSS",
                     "btn_pve_campaign_label": "Campaign",
-                    "btn_pve_tower_label": "Tower o Gods",
+                    "btn_pve_tower_label": "Tower of Gods",
                     "btn_start_battle_label": "FIGHT",
                     "btn_back_label": "✖",
 
@@ -1283,7 +1601,160 @@ const gamesConfigDB = {
                     "Рецепт не найден": "Recipe not found",
                     "Профиль не найден": "Player profile not found",
                     "Недостаточно золота для автокрафта. Суммарно нужно: ": "Insufficient gold for auto-craft. Total needed: ",
-                    "Недостаточно базового материала: ": "Missing base material: "
+                    "Недостаточно базового материала: ": "Missing base material: ",
+
+
+                    "fr_social_hub": "Social Hub",
+                    "fr_my_friends": "My Friends",
+                    "fr_requests": "Requests",
+                    "fr_find_players": "Find Players",
+                    "fr_blacklist": "Blacklist",
+                    "fr_social_registry": "Social Registry Matrix",
+                    "fr_level_short": "Lv.",
+                    "fr_combat_power": "Power",
+
+                    // Статусы онлайна
+                    "fr_status_online": "Online",
+                    "fr_status_offline": "Offline",
+
+                    // Состояния пустых списков (Fallbacks)
+                    "fr_no_friends": "Your friends list is empty...",
+                    "fr_no_requests": "No inbound friend requests...",
+                    "fr_no_recommendations": "No recommendations found...",
+                    "fr_blacklist_empty": "Blacklist clear.",
+                    "fr_blocked_user_fallback": "Blocked User",
+
+                    // Кнопки взаимодействия
+                    "fr_btn_heart_gift": "❤️ Gift",
+                    "fr_btn_heart_sent": "Sent ✓",
+                    "fr_btn_remove": "Remove",
+                    "fr_btn_accept": "Accept",
+                    "fr_btn_decline": "Decline",
+                    "fr_btn_send_request": "Send Request",
+                    "fr_btn_block": "Block",
+                    "fr_btn_unblock": "Unblock",
+
+                    // СИСТЕМНЫЕ СЕРВЕРНЫЕ УВЕДОМЛЕНИЯ И ОШИБКИ (На будущее)
+                    "fr_err_self_add": "You cannot add yourself as a friend",
+                    "fr_err_already_friends": "This user is already in your friends list",
+                    "fr_err_list_full": "Your friends list is full",
+                    "fr_err_target_full": "Target player's friends list is full",
+                    "fr_err_profile_not_found": "Player profile not found",
+                    "fr_err_heart_already_sent": "You have already sent a heart to this friend today",
+                    "fr_msg_request_sent": "Friend request successfully sent!",
+                    "fr_msg_friend_added": "Friend successfully added!",
+                    "fr_msg_friend_removed": "Friend removed from your registry",
+                    "fr_msg_user_blocked": "User moved to blacklist",
+                    "fr_msg_user_unblocked": "User removed from blacklist",
+
+                    "g_search": "Search Guilds",
+                    "g_create": "Found Guild",
+                    "g_roster": "Guild Roster",
+                    "g_tributes": "Tributes",
+                    "g_treasury": "Treasury",
+                    "g_requests": "Applications",
+                    "g_alliance_panel": "Guild Operations Command",
+                    "g_level_short": "Lv.",
+
+                    // Экран Создания
+                    "g_establish_title": "Establish New Guild Node",
+                    "g_signature_label": "Guild Name Signature",
+                    "g_btn_create_cost": "Create Clan (500 Diamonds)",
+                    "g_err_empty_name": "Please enter a valid guild name",
+
+                    // Ранги участников
+                    "g_rank_leader": "👑 Leader",
+                    "g_rank_officer": "⚔️ Officer",
+                    "g_rank_member": "🛡️ Member",
+
+                    // Заглушки пустых списков (Fallbacks)
+                    "g_no_guilds": "No active guilds found on this server...",
+                    "g_no_tributes": "No donation tributes configured...",
+                    "g_no_treasury": "Guild Treasury is currently empty...",
+                    "g_no_requests": "No pending application requests...",
+
+                    // Кнопки интерфейса и действий
+                    "g_btn_join": "Join Clan",
+                    "g_btn_cost": "Cost:",
+                    "g_btn_sold_out": "Sold Out",
+                    "g_btn_accept": "Accept",
+                    "g_btn_decline": "Decline",
+                    "g_btn_leave": "Leave Guild",
+                    "g_btn_kick": "Kick",
+                    "g_btn_disband": "Disband Guild",
+
+                    // ПЕРСПЕКТИВНЫЕ КЛЮЧИ (Для серверных алертов)
+                    "g_err_already_in_guild": "You are already a member of a guild",
+                    "g_err_insufficient_funds": "Insufficient resources to complete this action",
+                    "g_err_guild_full": "This guild has reached its maximum member capacity",
+                    "g_err_low_level": "Your level is too low to apply for this guild",
+                    "g_err_low_power": "Your combat power does not meet requirements",
+                    "g_err_already_applied": "Your application to this guild is already pending",
+                    "g_err_no_permissions": "You do not have permission to perform this command",
+                    "g_err_leader_leave_block": "The Leader cannot leave the guild. Transfer leadership or disband it instead",
+                    "g_msg_guild_created": "Guild successfully registered on the server!",
+                    "g_msg_applied": "Application sent to guild officers",
+                    "g_msg_tribute_success": "Tribute accepted! Guild experience increased",
+
+
+                    "bp_seasons_catalog": "Available Seasons",
+                    "bp_your_level": "Your Level",
+                    "bp_premium_active": "PREMIUM ACTIVE",
+                    "bp_unlock_premium": "Unlock Premium",
+                    "bp_btn_claim_all": "Claim All",
+                    "bp_btn_claim": "Claim",
+                    "bp_claimed": "Claimed",
+                    "bp_track_free": "Free Track",
+                    "bp_rank": "Rank",
+                    "bp_track_premium": "Premium Track",
+                    "bp_no_levels": "No levels mapped.",
+                    "bp_empty_slot": "Empty slot",
+                    "bp_skin_reward": "Skin: {skin}",
+                    "res_gold": "Gold",
+                    "res_diamond": "Diamonds",
+                    "item_hero_shard_generic": "Hero Shards",
+                    "item_scroll_event": "Event Scroll",
+
+                    "off_no_active": "No limited-time flash sales active right now...",
+                    "off_live_deals": "Limited LiveOps Special Offers",
+                    "off_badge_discount": "SALE!",
+                    "res_usd": "USD",
+                    "res_exp": "XP",
+                    "item_scroll_epic": "Epic Scroll",
+                    "item_knight_armor": "Knight Armor",
+                    "item_gold_ring": "Gold Ring",
+
+                    "q_boards_hub": "Mission Boards",
+                    "q_daily_board": "Daily Tasks",
+                    "q_weekly_board": "Weekly Progress",
+                    "q_calendar_tab": "Daily Login",
+                    "q_calendar_day": "Day",
+                    "q_calendar_title": "Monthly Calendar",
+                    "q_calendar_desc": "Log in every day to claim exclusive free rewards!",
+                    "q_calendar_claimed": "Claimed",
+                    "q_calendar_btn_claim": "Claim Reward",
+                    "q_tracker_title": "Activity Milestones Tracker",
+                    "q_no_missions": "No missions assigned to this board node.",
+                    "q_task_payout": "Payout",
+                    "q_pts_short": "PTS",
+                    "q_registry_title": "Operations Registry Task Orders",
+                    "res_arena_coin": "Arena Coins",
+
+                    "bb_no_missions": "No contracts generated. Use refresh button below.",
+                    "bb_dispatch": "Dispatch",
+                    "bb_claim": "Claim",
+                    "bb_req": "Req",
+                    "bb_rewards": "Rewards",
+                    "bb_dispatch_center": "Bounty Board Dispatch Center",
+                    "bb_btn_refresh": "Refresh",
+                    "bb_alert_no_heroes": "Not enough free heroes! Required",
+                    "class_tank": "Tank",
+                    "class_support": "Support",
+                    "class_dps": "DPS",
+                    "elem_light": "Light",
+                    "elem_ice": "Ice",
+                    "elem_blood": "Blood",
+
                 }
             },
             stats: {
@@ -1450,7 +1921,6 @@ const gamesConfigDB = {
                 }
             },
             shops: {
-                // Магазин 1: Случайный, с лимитами, авто-сбросом и платным рефрешем
                 random_market: {
                     title_loc: { ru: "Рынок Удачи", en: "Fortune Market" },
                     order: 1,
@@ -1474,7 +1944,7 @@ const gamesConfigDB = {
                         { slotId: "rnd_slot_10", is_random: true, poolId: "pool_expensive_goods", buy_limit: 1 }
                     ]
                 },
-                // Магазин 2: Не случайный, статичный, с ограничением по VIP уровню
+
                 vip_shop: {
                     title_loc: { ru: "VIP Магазин", en: "VIP Shop" },
                     order: 2,
@@ -1502,7 +1972,7 @@ const gamesConfigDB = {
                         }
                     ]
                 },
-                // Магазин 3: Демо-магазин за реальные деньги ($)
+
                 cash_shop: {
                     title_loc: { ru: "Премиум Бандлы", en: "Premium Bundles" },
                     order: 3,
@@ -1526,6 +1996,53 @@ const gamesConfigDB = {
                             amount: 50,
                             cost: { resource: "usd", amount: 19.99 },
                             buy_limit: 5
+                        }
+                    ]
+                },
+
+                guild_shop: {
+                    title_loc: { ru: "Магазин Альянса", en: "Guild Treasury" },
+                    slots: [
+                        {
+                            slotId: "guild_slot_1",
+                            itemId: "hero_shard_generic",
+                            amount: 5,
+                            cost: { resource: "guild_coin", amount: 200 },
+                            buy_limit: 10
+                        },
+                        {
+                            slotId: "guild_slot_2",
+                            itemId: "scroll_epic",
+                            amount: 1,
+                            cost: { resource: "guild_coin", amount: 500 },
+                            buy_limit: 2
+                        }
+                    ]
+                },
+
+                arena_shop: {
+                    title_loc: { ru: "Магазин Гладиаторов", en: "Gladiator Market" },
+                    slots: [
+                        {
+                            slotId: "arena_slot_1",
+                            itemId: "hero_shard_generic",
+                            amount: 10,
+                            cost: { resource: "arena_coin", amount: 500 },
+                            buy_limit: 5
+                        },
+                        {
+                            slotId: "arena_slot_2",
+                            itemId: "scroll_epic",
+                            amount: 1,
+                            cost: { resource: "arena_coin", amount: 300 },
+                            buy_limit: 3
+                        },
+                        {
+                            slotId: "arena_slot_3",
+                            itemId: "zeus_staff",
+                            amount: 1,
+                            cost: { resource: "arena_coin", amount: 10000 },
+                            buy_limit: 1
                         }
                     ]
                 }
@@ -1867,7 +2384,6 @@ const gamesConfigDB = {
                     personal_item_id: "zeus_staff",
                     extra_inventory_slots: ["amulet"]
                 },
-
 
                 "selena": {
                     title_loc: {...BASE_LANGUAGES, en: "Anjei \"Hydra\""},
@@ -2665,18 +3181,271 @@ const gamesConfigDB = {
                 },
                 banned_heroes: [] // Сюда можно закинуть ID имбовых героев, которых сервер заблокирует для этого сезона
             },
+        },
 
-            // Выделенный магазин Арены (Arena Shop)
-            shop: {
-                title_loc: { ru: "Магазин Гладиаторов", en: "Gladiator Market" },
-                currency_resource_id: "arena_coin", // Валюта, за которую покупаем шмот
-                slots: [
-                    { slotId: "arena_slot_1", itemId: "hero_shard_generic", amount: 10, cost: 500, buy_limit: 5 },
-                    { slotId: "arena_slot_2", itemId: "scroll_epic", amount: 1, cost: 300, buy_limit: 3 },
-                    { slotId: "arena_slot_3", itemId: "zeus_staff", amount: 1, cost: 10000, buy_limit: 1 }
+        social: {
+            friend_system: {
+                max_friends_limit: 50,
+                max_pending_requests: 20,
+                daily_gift_resource_id: "currency_friendship_points",
+                daily_gift_amount: 10,
+                max_daily_received_gifts: 30
+            },
+
+            guild_system: {
+                creation_cost: { resource: "diamond", amount: 500 },
+                max_guild_level: 10,
+                level_caps: {
+                    "1": { max_members: 20, max_officers: 2 },
+                    "2": { max_members: 25, max_officers: 3 },
+                    "5": { max_members: 40, max_officers: 5 },
+                    "10": { max_members: 50, max_officers: 6 }
+                },
+
+                donation_modes: {
+                    "gold_tribute": {
+                        cost: { resource: "gold", amount: 10000 },
+                        rewards: { guild_exp: 100, guild_coin: 50 }
+                    },
+                    "diamond_tribute": {
+                        cost: { resource: "diamond", amount: 100 },
+                        rewards: { guild_exp: 500, guild_coin: 300 }
+                    }
+                },
+                ranks_permissions: {
+                    "leader":  ["view_roster", "donate", "kick_member", "change_rank", "manage_requests", "disband_guild", "transfer_leadership"],
+                    "officer": ["view_roster", "donate", "kick_member", "manage_requests"], // Не может менять ранги других офицеров и распускать
+                    "member":  ["view_roster", "donate"] // Просто участник
+                }
+            }
+        },
+
+        quests: {
+            // Ежедневные квесты с механикой накопительных сундуков (Battle Pass Style)
+            daily: {
+                milestones: [
+                    { points_required: 20, rewards: { resources: { gold: 1000 } } },
+                    { points_required: 60, rewards: { resources: { gold: 3000, diamond: 20 } } },
+                    { points_required: 100, rewards: { resources: { diamond: 50, scroll_epic: 1 } } }
+                ],
+                task_pool: {
+                    "task_d_1": {
+                        type: "clear_campaign_stage",
+                        target_count: 3,
+                        points_reward: 20,
+                        title_loc: { ru: "Военный поход", en: "Campaign Striker" },
+                        rewards: { resources: { exp: 500 } }
+                    },
+                    "task_d_2": {
+                        type: "gacha_summon",
+                        target_count: 1,
+                        points_reward: 10,
+                        title_loc: { ru: "Призыв судьбы", en: "Gate Summoner" },
+                        rewards: { resources: { gold: 500 } }
+                    },
+                    "task_d_3": {
+                        type: "arena_battle",
+                        target_count: 2,
+                        points_reward: 20,
+                        title_loc: { ru: "Гладиатор дня", en: "Arena Contender" },
+                        rewards: { resources: { arena_coin: 10 } }
+                    }
+                }
+            },
+
+            // Еженедельные квесты с повышенными наградами
+            weekly: {
+                milestones: [
+                    { points_required: 100, rewards: { resources: { diamond: 100 } } },
+                    { points_required: 300, rewards: { resources: { diamond: 300, scroll_epic: 3 } } }
+                ],
+                task_pool: {
+                    "task_w_1": {
+                        type: "clear_tower_floors",
+                        target_count: 5,
+                        points_reward: 50,
+                        title_loc: { ru: "Покоритель башен", en: "Tower Climber" }
+                    },
+                    "task_w_2": {
+                        type: "guild_donate",
+                        target_count: 5,
+                        points_reward: 30,
+                        title_loc: { ru: "Щедрый меценат", en: "Guild Supporter" }
+                    },
+                    "task_w_3": {
+                        type: "kill_raid_boss",
+                        target_count: 3,
+                        points_reward: 60,
+                        title_loc: { ru: "Истребитель гигантов", en: "Titan Slayer" }
+                    }
+                }
+            },
+
+            daily_login_calendars: {
+                "standard_monthly": {
+                    reset_type: "daily_server_time", // Сбрасывается по времени сервера
+                    rewards: [
+                        { day: 1, resources: { gold: 1000 } },
+                        { day: 2, items: [{ itemId: "scroll_event", amount: 1 }] },
+                        // ... до 30 дней
+                    ]
+                }
+            }
+        },
+
+        battle_passes: {
+            "bp_standard_season_1": {
+                title_loc: { ru: "Сезонный Пропуск Гладиатора", en: "Gladiator Season Pass" },
+                points_item_id: "currency_bp_exp_standard",   // У каждого БП может быть своя валюта опыта
+                points_per_level: 100,
+                max_levels: 50,
+                premium_unlock_cost: { resource: "usd", amount: 9.99 },
+                levels_matrix: [
+                    {
+                        level: 1,
+                        free_rewards: { resources: { gold: 5000 } },
+                        premium_rewards: { resources: { gold: 20000, diamond: 100 } }
+                    },
+                    {
+                        level: 50,
+                        free_rewards: { resources: { diamond: 500 } },
+                        premium_rewards: { items: [{ itemId: "hero_shard_generic", amount: 50 }] }
+                    }
+                ]
+            },
+            "bp_selena_blood_event": {
+                title_loc: { ru: "Пропуск Жрицы Крови", en: "Blood Priestess Event Pass" },
+                points_item_id: "currency_bp_exp_event",      // Ивентовый опыт (например, падает только с ивент-босса)
+                points_per_level: 200,
+                max_levels: 20,
+                premium_unlock_cost: { resource: "diamond", amount: 2000 }, // Можно разблокировать за внутриигровую премиум-валюту
+                levels_matrix: [
+                    {
+                        level: 1,
+                        free_rewards: { resources: { diamond: 50 } },
+                        premium_rewards: { items: [{ itemId: "scroll_event", amount: 2 }] }
+                    },
+                    {
+                        level: 20,
+                        free_rewards: { items: [{ itemId: "scroll_event", amount: 1 }] },
+                        premium_rewards: { skins: [{ hero_id: "selena", skin_id: "selena_skin_beach" }] }
+                    }
                 ]
             }
-        }
+        },
+
+        bounty_board: {
+            max_daily_dispatched_missions: 8,
+            refresh_cost: { resource: "diamond", amount: 10 },
+
+            // МАТРИЦА ШАНСОВ: С какой вероятностью сгенерируется миссия определенного грейда (Сумма = 100%)
+            mission_generation_rates: {
+                "R": 60,       // Rare миссии (шанс 60%)
+                "SR": 30,      // Epic миссии (шанс 30%)
+                "SSR": 9,      // Legendary миссии (шанс 9%)
+                "UR": 1        // Mythic миссии (шанс 1%)
+            },
+
+            // Пулы готовых шаблонов миссий, откуда сервер будет выдергивать задания на основе весов выше
+            mission_pool: {
+                "bounty_rare_gold": {
+                    rarity: "R",
+                    duration_ms: 14400000, // 4 часа
+                    requirements: { min_hero_level: 50, required_class_id: "tank", required_element_id: "light", slots_count: 2 },
+                    rewards: { resources: { gold: 15000 } }
+                },
+                "bounty_epic_scroll": {
+                    rarity: "SR",
+                    duration_ms: 28800000, // 8 часов
+                    requirements: { min_hero_level: 100, required_class_id: "support", required_element_id: "ice", slots_count: 3 },
+                    rewards: { items: [{ itemId: "scroll_epic", amount: 1 }] }
+                },
+                "bounty_legend_diamonds": {
+                    rarity: "SSR",
+                    duration_ms: 43200000, // 12 часов
+                    requirements: { min_hero_level: 150, required_class_id: "dps", required_element_id: "blood", slots_count: 4 },
+                    rewards: { resources: { diamond: 150 } }
+                }
+            }
+        },
+
+        limited_offers: {
+            // 1. ГЛОБАЛЬНЫЕ СИСТЕМНЫЕ НАСТРОЙКИ
+            settings: {
+                max_simultaneous_triggered_offers: 2, // Лимит: сколько триггерных окон может висеть у игрока одновременно, чтобы не спамить
+                global_discount_badge_color: "#ffeb3b" // Цвет плашки со скидкой на UI
+            },
+
+            // 2. КАТАЛОГ ВСЕХ АКЦИЙ И ОФФЕРОВ
+            offers_pool: {
+                // Оффер типа 1: Календарный ивентовый экран под конкретное событие
+                "offer_selena_release": {
+                    title_loc: { ru: "⚡ Дар Кровавой Жрицы", en: "⚡ Blood Priestess Payout" },
+                    desc_loc: { ru: "Эксклюзивные наборы в честь выхода Селены!", en: "Limited bundles celebrating Selena's descent!" },
+
+                    offer_type: "scheduled",          // Тип акции: по расписанию
+                    start_epoch: 1767225600,          // Время старта (например, 1 января 2026)
+                    end_epoch: 1800000000,            // Время окончания (через 7 дней)
+
+                    ui_mode: "custom_screen",         // Отрендерит полноценный экран (использует screen_id ниже)
+                    linked_ui_screen_id: "screen_promo_selena", // Ссылка на экран из target.ui.landscape
+
+                    cost: { resource: "usd", amount: 29.99 },
+                    old_cost: { resource: "usd", amount: 99.99 }, // Скидка для визуального эффекта (70% OFF)
+                    buy_limit: 1,                     // Можно купить только 1 раз за ивент
+
+                    // Наполнение пака
+                    rewards: {
+                        resources: { diamond: 3000 },
+                        items: [
+                            { itemId: "hero_shard_generic", amount: 50 }, // Гарантирует сборку героя
+                            { itemId: "scroll_event", amount: 10 }
+                        ]
+                    }
+                },
+
+                // Оффер типа 2: Триггерное всплывающее окно (Потеря контроля / Проигрыш)
+                "trigger_boss_defeat_pack": {
+                    title_loc: { ru: "🆘 Набор Возмездия!", en: "🆘 Retaliation Bundle!" },
+                    desc_loc: { ru: "Не сдавайся! Укрепи свой отряд и сокруши босса!", en: "Don't give up! Power up your squad and smash the Titan!" },
+
+                    offer_type: "triggered",          // Тип акции: всплывает по триггеру
+                    trigger_event: "pve_boss_defeat", // Серверный триггер: поражение от босса
+                    available_duration_ms: 7200000,   // Таймер обратного отсчета: оффер исчезнет через 2 часа после появления!
+
+                    ui_mode: "popup_window",          // Обычное всплывающее окно поверх текущего экрана
+                    linked_ui_screen_id: null,
+
+                    cost: { resource: "diamond", amount: 499 }, // Покупка за внутриигровые алмазы со скидкой
+                    buy_limit: 25,
+                    rewards: {
+                        resources: { gold: 100000, exp: 50000 },
+                        items: [ { itemId: "scroll_epic", amount: 3 } ]
+                    }
+                },
+
+                // Оффер типа 3: Триггерное окно на повышение уровня (Milestone Achievement)
+                "trigger_level_50_rush": {
+                    title_loc: { ru: "🎉 Юбилейный Прорыв (Lvl 50)", en: "🎉 Level 50 Milestone Pack" },
+                    desc_loc: { ru: "Поздравляем с 50 уровнем! Спец-цена на мифический шмот!", en: "Congratulations on Level 50! Mythic gear flash sale!" },
+
+                    offer_type: "triggered",
+                    trigger_event: "player_level_up",
+                    trigger_value_threshold: 50,      // Сработает ровно на 50 уровне
+                    available_duration_ms: 86400000,  // Висит ровно 24 часа
+
+                    ui_mode: "popup_window",
+                    cost: { resource: "usd", amount: 4.99 },
+                    buy_limit: 3,                     // Можно купить до 3 раз в течение суток
+                    rewards: {
+                        items: [
+                            { itemId: "knight_armor", amount: 1 },
+                            { itemId: "gold_ring", amount: 1 }
+                        ]
+                    }
+                }
+            }
+        },
     }
 };
 
@@ -2923,10 +3692,10 @@ module.exports = {gamesConfigDB};
 //                 }
 //             },
 //             {
-//                 id: "btn_temple_power",
+//                 id: "btn_leaderboard",
 //                 type: "button",
-//                 label_loc_key: "btn_temple_power_label",
-//                 action: "open_temple_power",
+//                 label_loc_key: "btn_leaderboard_label",
+//                 action: "open_leaderboard",
 //                 layout: {
 //                     top: "40%",
 //                     left: "50%",
@@ -2934,7 +3703,7 @@ module.exports = {gamesConfigDB};
 //                     height: "40%",
 //
 //                     backgroundColor: "transparent",
-//                     backgroundImage: "url('./assets/images/main_temple_power.png')",
+//                     backgroundImage: "url('./assets/images/main_leaderboard.png')",
 //
 //                     textColor: "#fff",
 //                     textSize: "20px",
@@ -3106,7 +3875,7 @@ module.exports = {gamesConfigDB};
 //                     "btn_games_label": "Games of Luck",
 //                     "btn_inventory_label": "Сокровищница",
 //                     "btn_gacha_label": "Призыв Богов",
-//                     "btn_temple_power_label": "Замок мощи",
+//                     "btn_leaderboard_label": "Замок мощи",
 //                     "btn_back_label": "✖",
 //
 //                     "profile_vip": "VIP Уровень",
@@ -3195,7 +3964,7 @@ module.exports = {gamesConfigDB};
 //                     "btn_games_label": "Games of Luck",
 //                     "btn_inventory_label": "Treasury",
 //                     "btn_gacha_label": "God Summon",
-//                     "btn_temple_power_label": "Castle of Power",
+//                     "btn_leaderboard_label": "Castle of Power",
 //                     "btn_back_label": "✖",
 //
 //                     "profile_vip": "VIP Level",
@@ -4387,7 +5156,7 @@ module.exports = {gamesConfigDB};
 //                     "btn_heroes_label": "Пантеон Богов",
 //                     "btn_inventory_label": "Сокровищница",
 //                     "btn_gacha_label": "Призыв Богов",
-//                     "btn_temple_power_label": "Замок мощи",
+//                     "btn_leaderboard_label": "Замок мощи",
 //                     "btn_back_label": "↩️ Назад",
 //
 //                     "profile_vip": "VIP Уровень",
