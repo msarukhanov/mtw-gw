@@ -2036,6 +2036,6 @@ module.exports = {
     upgradePersonalItem,
     changeHeroSkin,
     manageHeroPet,
-    savePlayerTeam
+    savePlayerTeam,
     giveGiftToHero
 };
