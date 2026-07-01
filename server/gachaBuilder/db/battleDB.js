@@ -2,11 +2,11 @@ const { redisClient } = require('../../redisClient');
 const Cache = require('./cacheManager');
 const {gamesConfigDB} = require('./configDB');
 const { getHeroActualStats } = require('./_shared');
-const { simulatePvEBattle } = require('../battles/pve');
+const { simulatePvEBattle, endPvEBattle } = require('../battles/pve');
 
+const crypto = require('crypto'); // Для генерации UUID сессии
 
-
-async function processPvEBattle(userId, serverId, gameConfig, type, stage, towerKey) {
+async function processPvEBattle(userId, serverId, gameConfig, type, stage, towerKey, params = {}) {
     // ------------------------------------------------------------------------
     // ЭШЕЛОН 1: РАБОТА ЧЕРЕЗ REDIS КЭШ (БЫСТРЫЙ ПУТЬ В RAM)
     // ------------------------------------------------------------------------
@@ -71,121 +71,134 @@ async function processPvEBattle(userId, serverId, gameConfig, type, stage, tower
                 return { error: true, message: `Команда для этого режима пуста (Искали ключ: "${teamKey}")` };
             }
 
-            const playerTeamStats = [];
-            for (const instId of playerHeroIds) {
-                const heroInstance = player.heroes?.find(h => h.instance_id === instId);
-                if (heroInstance) {
-                    let rawStats = getHeroActualStats(heroInstance, { config: gameConfig });
-                    let combatStats = { ...rawStats };
+            // const playerTeamStats = [];
+            // const enemyTeamStats = [];
+            const playerUnits = playerHeroIds.map(instId=>(player.heroes?.find(h => h.instance_id === instId)));
+            const enemyUnits = stageConfig.enemies;
 
-                    // Твой фракционный бонус отряда
-                    const teamBonus = player.team_bonuses?.[teamKey];
-                    if (teamBonus) {
-                        if (teamBonus.hp && teamBonus.hp.endsWith('%')) {
-                            combatStats.hp += combatStats.hp * (parseFloat(teamBonus.hp) / 100);
-                        }
-                        if (teamBonus.atk && teamBonus.atk.endsWith('%')) {
-                            combatStats.atk += combatStats.atk * (parseFloat(teamBonus.atk) / 100);
-                        }
-                    }
-                    playerTeamStats.push(combatStats);
-                }
+            if(!playerUnits.length || !enemyUnits.length) {
+                return { error: true, message: `Команда для этого режима пуста (Искали ключ: "${teamKey}")` };
             }
 
-            // --- ТВОЙ ОРИГИНАЛЬНЫЙ СБОР ХАРАКТЕРИСТИК ВРАГОВ ИЗ RAM ---
-            const enemyTeamStats = [];
-            const enemyUnits = stageConfig.enemies || [];
+            const makeTeam = (team) => {
+                const teamStats = [];
+                team.forEach(hero => {
+                    const targetHeroId = hero.hero_id || hero.enemy_id;
+                    const proto = gameConfig.catalog?.heroes?.[targetHeroId];
 
-            enemyUnits.forEach(enemy => {
-                const targetHeroId = enemy.hero_id || enemy.enemy_id;
-                const proto = gameConfig.catalog?.heroes?.[targetHeroId];
-
-                if (proto) {
-                    const virtualEnemy = {
-                        hero_id: targetHeroId,
-                        level: Number(enemy.level) || 1,
-                        stars: Number(enemy.stars) || Number(proto.base_stars) || 1,
-                        equipped: {}
-                    };
-
-                    let stats = getHeroActualStats(virtualEnemy, { config: gameConfig });
-                    if (stats) {
-                        stats.position = enemy.position;
-                        enemyTeamStats.push(stats);
+                    if (proto) {
+                        const virtualEnemy = {
+                            hero_id: targetHeroId,
+                            level: Number(hero.level) || 1,
+                            stars: Number(hero.stars) || Number(proto.base_stars) || 1,
+                            equipped: {}
+                        };
+                        let stats = getHeroActualStats(virtualEnemy, { config: gameConfig });
+                        if (stats) {
+                            stats.position = hero.position;
+                            teamStats.push({...proto, ...hero, ...stats});
+                        }
+                    } else {
+                        console.error(`[PvE БОЙ]: Прототип hero "${targetHeroId}" не найден в каталоге heroes!`);
                     }
-                } else {
-                    console.error(`[PvE БОЙ]: Прототип врага "${targetHeroId}" не найден в каталоге heroes!`);
-                }
-            });
+                });
 
-            if (enemyTeamStats.length === 0) {
+                return teamStats;
+            };
+            const playerTeamStats = makeTeam(playerUnits);
+            const enemyTeamStats = makeTeam(enemyUnits);
+
+            if (playerTeamStats.length === 0 || enemyTeamStats.length === 0) {
                 return { error: true, message: `Ошибка конфигурации этапа: не удалось загрузить ни одного врага для этапа ${stage}` };
             }
 
-            // --- ЗАПУСК ТВОЕГО РОДНОГО СИМУЛЯТОРА БОЯ ---
-            const battleResult = await simulatePvEBattle(playerTeamStats, enemyTeamStats, gameConfig);
+            // for (const instId of playerHeroIds) {
+            //     const heroInstance = player.heroes?.find(h => h.instance_id === instId);
+            //     if (heroInstance) {
+            //         let rawStats = getHeroActualStats(heroInstance, { config: gameConfig });
+            //         let combatStats = { ...rawStats };
+            //
+            //         // Твой фракционный бонус отряда
+            //         const teamBonus = player.team_bonuses?.[teamKey];
+            //         if (teamBonus) {
+            //             if (teamBonus.hp && teamBonus.hp.endsWith('%')) {
+            //                 combatStats.hp += combatStats.hp * (parseFloat(teamBonus.hp) / 100);
+            //             }
+            //             if (teamBonus.atk && teamBonus.atk.endsWith('%')) {
+            //                 combatStats.atk += combatStats.atk * (parseFloat(teamBonus.atk) / 100);
+            //             }
+            //         }
+            //         playerTeamStats.push({...heroInstance, ...combatStats});
+            //     }
+            // }
+            //
+            // // --- ТВОЙ ОРИГИНАЛЬНЫЙ СБОР ХАРАКТЕРИСТИК ВРАГОВ ИЗ RAM ---
+            //
+            //
+            //
+            // enemyUnits.forEach(enemy => {
+            //     const targetHeroId = enemy.hero_id || enemy.enemy_id;
+            //     const proto = gameConfig.catalog?.heroes?.[targetHeroId];
+            //
+            //     if (proto) {
+            //         const virtualEnemy = {
+            //             hero_id: targetHeroId,
+            //             level: Number(enemy.level) || 1,
+            //             stars: Number(enemy.stars) || Number(proto.base_stars) || 1,
+            //             equipped: {}
+            //         };
+            //
+            //         let stats = getHeroActualStats(virtualEnemy, { config: gameConfig });
+            //         if (stats) {
+            //             stats.position = enemy.position;
+            //             enemyTeamStats.push({...enemy, ...stats});
+            //         }
+            //     } else {
+            //         console.error(`[PvE БОЙ]: Прототип врага "${targetHeroId}" не найден в каталоге heroes!`);
+            //     }
+            // });
+            //
+            // if (enemyTeamStats.length === 0) {
+            //     return { error: true, message: `Ошибка конфигурации этапа: не удалось загрузить ни одного врага для этапа ${stage}` };
+            // }
 
-            // --- ТВОЙ ОРИГИНАЛЬНЫЙ МАТЕМАТИЧЕСКИЙ РАСЧЕТ ЛУТА И НАГРАД В RAM ---
-            let rewardReport = { resources: {}, items: {} };
-
-            if (battleResult.win) {
-                // 1. Начисление ресурсов (валют) в RAM объект resources
-                if (stageConfig.rewards?.resources) {
-                    Object.entries(stageConfig.rewards.resources).forEach(([resKey, amount]) => {
-                        currentResources[resKey] = (currentResources[resKey] || 0) + amount;
-                        rewardReport.resources[resKey] = amount;
-                    });
-                }
-
-                // 2. Начисление предметов по шансам в словарный инвентарь в RAM
-                if (stageConfig.rewards?.items) {
-                    if (!player.inventory) player.inventory = {};
-
-                    stageConfig.rewards.items.forEach(drop => {
-                        const chance = drop.chance !== undefined ? drop.chance : 1.0;
-                        if (Math.random() <= chance) {
-                            player.inventory[drop.itemId] = (player.inventory[drop.itemId] || 0) + (drop.amount || 1);
-                            rewardReport.items[drop.itemId] = (rewardReport.items[drop.itemId] || 0) + (drop.amount || 1);
-                        }
-                    });
-                }
-
-                // 3. ТВОЙ ОРИГИНАЛЬНЫЙ СДВИГ ПРОГРЕССА СТРОК В RAM
-                if (type === 'campaign') {
-                    const currentNum = parseInt(stage.split('_')[2]); // stage_1_1 -> 1
-                    const chapterNum = parseInt(stage.split('_')[1]); // stage_1_1 -> 1
-                    const nextStageKey = `stage_${chapterNum}_${currentNum + 1}`;
-
-                    if (gameConfig.pve_campaign?.stages?.[nextStageKey]) {
-                        player.pve_progress.campaign = nextStageKey;
-                    } else {
-                        const nextChapterKey = `stage_${chapterNum + 1}_1`;
-                        if (gameConfig.pve_campaign?.stages?.[nextChapterKey]) {
-                            player.pve_progress.campaign = nextChapterKey;
-                        }
-                    }
-                }
-                else if (type === 'tower') {
-                    const currentFloorNum = parseInt(stage.replace(/^\D+/g, ''));
-                    player.pve_progress.towers[towerKey] = currentFloorNum + 1;
-                }
-            }
-
-            // Синхронизируем все измененные поля обратно в стейт игрока
             player.resources = currentResources;
 
-            // Записываем обновленного плоского игрока в Редис. Lazy Write сбросит его в БД.
+            params = {
+                type,
+                userId,
+                serverId,
+                teamKey,
+                stage,
+                towerKey,
+                isAuto: params.isAuto || false, //true
+                battleId: crypto.randomUUID(),
+                manualAction: null,
+            };
+
+            const battleResult = await simulatePvEBattle(playerTeamStats, enemyTeamStats, gameConfig, params);
+
+            let rewardReport;
+            if(battleResult.end) {
+                rewardReport = rewardReport = await endPvEBattle(battleResult, stageConfig, player, gameConfig, type, stage, towerKey); // мутируем player.resources
+            }
+
             await Cache.setPlayer(player);
 
-            // Возвращаем ответ строго по твоему формату Express-контроллера
             return {
                 success: true,
-                win: battleResult.win,
+                battleId: battleResult.battleId,
+                end: battleResult.end,
+                win: battleResult.end ? battleResult.win: null,
                 replay: battleResult.replay,
-                // rewards: rewardReport,
-                resources: currentResources,
-                pve_progress: player.pve_progress,
-                next_stage: type === 'campaign' ? player.pve_progress.campaign : player.pve_progress.towers[towerKey]
+                turn_list: battleResult.turn_list,
+                currentCharacterId: battleResult.currentCharacterId,
+                currentCharacterInstance: battleResult.currentCharacterInstance,
+                options: battleResult.options,
+                // rewards: battleResult.end ? rewardReport : null,
+                rewardReport: battleResult.end ? rewardReport : null,
+                pve_progress: battleResult.end ? player.pve_progress : null,
+                next_stage: battleResult.end ? (type === 'campaign' ? player.pve_progress.campaign : player.pve_progress.towers[towerKey]) : null
             };
 
         } catch (cacheErr) {
@@ -398,16 +411,7 @@ async function processPvEBattle(userId, serverId, gameConfig, type, stage, tower
     }
 }
 
-
-
-
-/**
- * Обработка PvP боя на Арене (Сначала Redis, ниже Postgres Fallback с защитой от дедлоков)
- */
 async function processPvPBattle(userId, serverId, gameConfig, opponentId) {
-    // ------------------------------------------------------------------------
-    // ЭШЕЛОН 1: РАБОТА ЧЕРЕЗ REDIS КЭШ (СВЕРХБЫСТРЫЙ ПУТЬ В RAM)
-    // ------------------------------------------------------------------------
     if (redisClient.isOpen && redisClient.isReady) {
         try {
             // Достаем из памяти профили обоих игроков за микросекунды
@@ -455,8 +459,12 @@ async function processPvPBattle(userId, serverId, gameConfig, opponentId) {
                 }
             });
 
-            // Запускаем симулятор раундов
-            const battleResult = await simulatePvEBattle(attackerTeamStats, defenderTeamStats, gameConfig);
+            const pvpParams = {
+                isAuto: true,
+                battleId: crypto.randomUUID(),
+            };
+
+            const battleResult = await simulatePvEBattle(attackerTeamStats, defenderTeamStats, gameConfig, pvpParams);
 
             let ratingChange = 15;
             let attackerResources = attacker.resources || {};
@@ -506,7 +514,9 @@ async function processPvPBattle(userId, serverId, gameConfig, opponentId) {
             });
             if (defender.match_history.length > 20) defender.match_history.pop();
 
-            // Сохраняем ОБОИХ игроков в Редис. Lazy Write фоном обновит обе строки в базе за минуту.
+            attacker.resources = attackerResources;
+            defender.resources = defenderResources;
+
             await Cache.setPlayer(userId, serverId, attacker);
             await Cache.setPlayer(opponentId, serverId, defender);
 
@@ -654,12 +664,6 @@ async function processPvPBattle(userId, serverId, gameConfig, opponentId) {
     }
 }
 
-/**
- * Получить список соперников для Арены (Сначала пробуем живых из Redis, иначе Postgres Fallback)
- */
-/**
- * 1. ИСПРАВЛЕНО: Подбор соперников строго по диапазону РЕЙТИНГА (±100 очков) через Redis ZSET
- */
 async function getArenaOpponents(userId, serverId) {
     if (redisClient.isOpen && redisClient.isReady) {
         try {
@@ -746,9 +750,6 @@ async function getArenaOpponents(userId, serverId) {
     }
 }
 
-/**
- * 2. ДОБАВЛЕНО: Быстрое получение ТОП-100 игроков сервера (Лидерборд) за 0 мс
- */
 async function getArenaLeaderboard(serverId) {
     if (redisClient.isOpen && redisClient.isReady) {
         try {
@@ -806,16 +807,10 @@ async function getArenaLeaderboard(serverId) {
     }
 }
 
-/**
- * Обработка боя с Боссом (Сначала Redis, ниже Postgres Fallback с защитой от race conditions)
- */
-async function processBossBattle(userId, serverId, gameId, gameConfig, bossKey) {
+async function processBossBattle(userId, serverId, gameId, gameConfig, bossKey, params = {}) {
     const bossMeta = gameConfig.pve_bosses?.[bossKey];
     if (!bossMeta) return { error: true, message: "Конфигурация босса не найдена" };
 
-    // ------------------------------------------------------------------------
-    // ЭШЕЛОН 1: РАБОТА ЧЕРЕЗ REDIS КЭШ (СВЕРХБЫСТРЫЙ RAM ПУТЬ)
-    // ------------------------------------------------------------------------
     if (redisClient.isOpen && redisClient.isReady) {
         try {
             // 1. Извлекаем профиль атакующего игрока из Редиса
@@ -899,18 +894,38 @@ async function processBossBattle(userId, serverId, gameId, gameConfig, bossKey) 
 
             const enemyTeamStats = [bossStats];
 
-            // 4. ЗАПУСК НАШЕГО СТАБИЛЬНОГО СИМУЛЯТОРА БОЯ (Вариант А)
-            const battleResult = await simulatePvEBattle(playerTeamStats, enemyTeamStats, gameConfig);
+            params = {
+                type: "boss_battle",
+                userId,
+                serverId,
+                boss_type: bossMeta.boss_type,
+                bossKey,
+                isAuto: params.isAuto || true,
+                battleId: crypto.randomUUID(),
+                manualAction: null,
+            };
 
-            // Считаем, сколько суммарного урона отряд игрока успел нанести боссу до своей смерти
+            const battleResult = await simulatePvEBattle(playerTeamStats, enemyTeamStats, gameConfig, params);
+
             let totalDamageDealtToBoss = 0;
-            battleResult.replay.forEach(round => {
-                round.actions.forEach(act => {
-                    if (act.attacker_id.startsWith('p') && act.target_id === 'e_0') {
-                        totalDamageDealtToBoss += Number(act.damage);
-                    }
-                });
+            battleResult.replay.forEach(turn => {
+                // Бежим по массиву под-действий (удары, баффы) внутри конкретного совершенного хода
+                if (turn.sub_actions) {
+                    turn.sub_actions.forEach(act => {
+                        // Проверяем тип sub_action и то, что урон прилетел по ID босса ('e_0')
+                        if (act.type === 'damage' && act.target_id === 'e_0') {
+                            totalDamageDealtToBoss += Number(act.damage || 0);
+                        }
+                    });
+                }
             });
+            // battleResult.replay.forEach(round => {
+            //     round.actions.forEach(act => {
+            //         if (act.attacker_id.startsWith('p') && act.target_id === 'e_0') {
+            //             totalDamageDealtToBoss += Number(act.damage);
+            //         }
+            //     });
+            // });
 
             // Корректируем урон, чтобы не вычесть больше, чем у босса было здоровья
             if (totalDamageDealtToBoss > bossCurrentHp) {
@@ -960,6 +975,8 @@ async function processBossBattle(userId, serverId, gameId, gameConfig, bossKey) 
                     });
                 }
             }
+
+            player.resources = resources;
 
             // Фиксируем изменения игрока в Редисе. Lazy Write сбросит профиль в БД.
             await Cache.setPlayer(player);
@@ -1105,9 +1122,6 @@ async function processBossBattle(userId, serverId, gameId, gameConfig, bossKey) 
     }
 }
 
-/**
- * Получить статусы здоровья боссов сервера (Сначала из Redis, иначе Postgres Fallback)
- */
 async function getBossStatuses(serverId, gameId, gameConfig) {
     const bossesConfig = gameConfig.pve_bosses;
     const statuses = {};
@@ -1195,9 +1209,6 @@ async function getBossStatuses(serverId, gameId, gameConfig) {
         client.release();
     }
 }
-
-
-
 
 module.exports = {
     processPvEBattle,

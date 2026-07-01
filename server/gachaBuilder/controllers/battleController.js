@@ -2,6 +2,7 @@ const { gamesConfigDB } = require('../db/configDB');
 const virtualArena = require('../battles/virtualArena');
 const battleDB = require('../db/battleDB');
 const questsDB = require('../db/questsDB');
+const { handlePlayerTurn } = require('../battles/pve');
 
 exports.pve = async function (req, res) {
     try {
@@ -9,7 +10,7 @@ exports.pve = async function (req, res) {
         const { id: userId, serverId, gameId, username, deviceId } = req.player;
 
         // Из тела запроса берем параметры активности
-        const { type, stage, towerKey } = req.body;
+        const { type, stage, towerKey, params } = req.body;
 
         if (!type || !stage) {
             return res.status(400).json({ error: "Отсутствуют обязательные параметры: type или stage" });
@@ -20,7 +21,7 @@ exports.pve = async function (req, res) {
 
         // Передаем управление в сервисный файл БД
         const result = await battleDB.processPvEBattle(
-            userId, serverId, gameConfig, type, stage, towerKey
+            userId, serverId, gameConfig, type, stage, towerKey, params
         );
 
         if (result.error) return res.status(400).json({ error: result.message });
@@ -33,11 +34,6 @@ exports.pve = async function (req, res) {
                 await questsDB.incrementQuestTask(userId, serverId, gameId, 'fight_tower_floor', 1);
                 break;
         }
-        //
-        // if(result.win) {
-        //
-        // }
-
 
         return res.json(result);
 
@@ -46,6 +42,45 @@ exports.pve = async function (req, res) {
         return res.status(500).json({ error: e.message, msg: '[Battle:PvE] Critical error' });
     }
 };
+
+exports.pveTurn = async function (req, res) {
+    try {
+        // Данные авторизации забираем из мидлвейра auth
+        const { id: userId, serverId, gameId } = req.player;
+
+        // Из тела запроса берем только параметры самого боевого действия
+        const { battleId, reqHeroId, reqSkillId } = req.body;
+
+        // Валидация входных данных для совершения хода
+        if (!battleId || !reqHeroId || !reqSkillId) {
+            return res.status(400).json({
+                error: "Отсутствуют обязательные параметры хода: battleId, reqHeroId или reqSkillId"
+            });
+        }
+
+        const gameConfig = gamesConfigDB[gameId];
+        if (!gameConfig) {
+            return res.status(400).json({ error: "Конфигурация игры не найдена" });
+        }
+
+        // Передаем управление в сервисный слой, который мы написали ранее
+        const result = await handlePlayerTurn(
+            userId, serverId, battleId, reqHeroId, reqSkillId, gameConfig
+        );
+
+        if (result.error) {
+            return res.status(400).json({ error: result.message });
+        }
+
+        // Возвращаем фронтенду ваш утвержденный объект { battle_id, win, end, total_rounds, replay, turn_list }
+        return res.json(result);
+
+    } catch (e) {
+        console.error(e);
+        return res.status(500).json({ error: e.message, msg: '[Battle:PvE:Turn] Critical error' });
+    }
+};
+
 
 exports.pvp = async function (req, res) {
     try {

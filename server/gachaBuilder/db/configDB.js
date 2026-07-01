@@ -15,7 +15,13 @@ const BASE_STATS = {
     "atk": {name_loc_key: "atk", value: 1},
     "crit": {name_loc_key: "crit", value: 1},
     "dodge": {name_loc_key: "dodge", value: 1},
-    "speed": {name_loc_key: "dodge", value: 1}
+    "accuracy": {name_loc_key: "accuracy", value: 1},
+    "speed": {name_loc_key: "speed", value: 1},
+
+    "crit_damage": {name_loc_key: "crit_damage", value: 150},
+    "lifesteal": {name_loc_key: "lifesteal", value: 1},
+    "dmg_reduction": {name_loc_key: "dmg_reduction", value: 0},
+    "energy_gain_mod": {name_loc_key: "energy_gain_mod", value: 100},
 };
 const BASE_EFFECT_STATS = {
     "period": 0,
@@ -84,20 +90,130 @@ const gamesConfigDB = {
                 }
             },
 
+            system_registries: {
+                // Все возможные фазы боя и события, на которые может среагировать навык или пассивка
+                trigger_events: [
+                    { id: "on_battle_start", label_loc: { ru: "Старт боя", en: "Battle Start" } },
+                    { id: "on_turn_pure", label_loc: { ru: "Обычный ход (Базовая атака)", en: "Normal Turn" } },
+                    { id: "on_turn_ultimate", label_loc: { ru: "Ход Ультимейта (При 100% энергии)", en: "Ultimate Turn" } },
+                    { id: "on_damage_taken", label_loc: { ru: "Получение урона", en: "Damage Taken" } },
+                    { id: "on_ally_death", label_loc: { ru: "Смерть союзника", en: "Ally Death" } },
+                    { id: "on_enemy_death", label_loc: { ru: "Смерть врага", en: "Enemy Death" } },
+                    { id: "on_kill", label_loc: { ru: "При убийстве цели", en: "On Killing Blow" } }
+                ],
+
+                // Стороны конфликта (Таргетинг: На кого направлено действие)
+                targeting_sides: [
+                    { id: "self", label_loc: { ru: "На себя", en: "Self" } },
+                    { id: "allies", label_loc: { ru: "Союзники", en: "Allies" } },
+                    { id: "enemies", label_loc: { ru: "Враги", en: "Enemies" } },
+                    { id: "all_battlefield", label_loc: { ru: "Все участники боя", en: "All Entities" } }
+                ],
+
+                // Алгоритмы поиска конкретных целей внутри выбранной стороны (не зависящие от количества линий)
+                targeting_selectors: [
+                    { id: "all", label_loc: { ru: "Все цели на стороне", en: "All Targets" } },
+                    { id: "closest_alive", label_loc: { ru: "Ближайший живой (по линиям 0 -> max)", en: "Closest Alive" } },
+                    { id: "furthest_alive", label_loc: { ru: "Самый дальний живой (по линиям max -> 0)", en: "Furthest Alive" } },
+                    { id: "lowest_hp_percent", label_loc: { ru: "Наименьший % здоровья", en: "Lowest HP %" } },
+                    { id: "lowest_hp_absolute", label_loc: { ru: "Наименьшее текущее HP (в ед.)", en: "Lowest HP Value" } },
+                    { id: "highest_atk", label_loc: { ru: "Цель с самой высокой атакой", en: "Highest ATK" } },
+                    { id: "random", label_loc: { ru: "Случайная цель", en: "Random Target" } }
+                ],
+
+                // Типы действий, которые умеет выполнять боевой движок внутри навыков
+                action_types: [
+                    { id: "deal_damage", label_loc: { ru: "Нанести урон", en: "Deal Damage" } },
+                    { id: "heal", label_loc: { ru: "Вылечить", en: "Heal" } },
+                    { id: "apply_effect", label_loc: { ru: "Наложить эффект (бафф/дебафф)", en: "Apply Effect" } },
+                    { id: "remove_effect", label_loc: { ru: "Снять эффект (диспел)", en: "Remove Effect" } },
+                    { id: "modify_energy", label_loc: { ru: "Изменить энергию (+/-)", en: "Modify Energy" } }
+                ],
+
+                turn_modes: [
+                    { id: "individual_speed", label_loc: { ru: "н", en: "individual_speed" } },
+                    { id: "team_alternating", label_loc: { ru: "", en: "team_alternating" } },
+                ],
+            },
+
             // 2. Твои оригинальные характеристики с весами для формулы расчета Боевого Рейтинга (БР)
+
             stats: {
                 "hp": { ...BASE_STATS.hp, order: 1, icon: "❤️", display: "int", rating_weight: 0.1 },
                 "armor": { ...BASE_STATS.armor, order: 2, icon: "🛡️", display: "int", rating_weight: 1.5 },
                 "atk": { ...BASE_STATS.atk, order: 3, icon: "⚔️", display: "int", rating_weight: 2.0 },
                 "crit": { ...BASE_STATS.crit, order: 4, icon: "🎯", display: "percent", rating_weight: 5.0 },
-                "dodge": { ...BASE_STATS.dodge, order: 5, icon: "💨", display: "percent", rating_weight: 4.0 }
+                "dodge": { ...BASE_STATS.dodge, order: 5, icon: "💨", display: "percent", rating_weight: 4.0 },
+                "accuracy": { ...BASE_STATS.accuracy, order: 6, icon: "👁️", display: "percent", rating_weight: 4.0 },
+                "speed": { ...BASE_STATS.speed, order: 7, icon: "👟", display: "int", rating_weight: 1.0 },
+
+                "crit_damage": { order: 8, icon: "💥", display: "percent", rating_weight: 4.0 },
+                "lifesteal": { order: 9, icon: "🧛", display: "percent", rating_weight: 3.5 },
+                "dmg_reduction": { order: 10, icon: "🛡️", display: "percent", rating_weight: 3.5 },
+                "energy_gain_mod": { order: 11, icon: "⚡", display: "percent", rating_weight: 2.5 }
+            },
+
+            combat_system: {
+                // turn_mode: "individual_speed", //team_alternating
+                turn_mode: "team_alternating", //team_alternating
+
+                round_limits: {
+                    team_alternating: 15,  // Если ходят командами
+                    individual_speed: 150   // Если каждый персонаж ходит отдельно
+                },
+
+                // Параметры для шкалы инициативы (Action Gauge)
+                gauge_config: {
+                    target_value: 100,               // При каком значении шкалы юнит получает ход
+                    tick_multiplier: 0.1             // Скорость заполнения шкалы за один системный такт
+                }
+            },
+
+            combat_formulas: {
+                "hit_chance_formula": "Math.max(5, 100 - (T.dodge - A.accuracy))",
+                "base_damage_formula": "(A.atk * (100 / (100 + T.armor))) * (1 - (T.dmg_reduction / 100))",
+                "crit_damage_formula": "BASE_DMG * (A.crit_damage / 100)",
+
+                "energy_gain_on_kill": "25",
+                "base_energy_gain_on_attack": "20",
+                "base_energy_gain_on_damage_taken": "30",
             },
 
             // 3. Твои оригинальные боевые эффекты
             effects: {
-                "eff_stat_boost_percent": { ...BASE_EFFECT_STATS, polarity: "buff", type: "stat_mod", desc_loc_key: "eff_stat_boost" },
-                "eff_chain_lightning": { ...BASE_EFFECT_STATS, polarity: "buff", type: "trigger", desc_loc_key: "eff_lightning" },
-                "eff_damage_reduction": { ...BASE_EFFECT_STATS, polarity: "buff", type: "stat_mod", desc_loc_key: "eff_shield" }
+                // "eff_stat_boost_percent": { ...BASE_EFFECT_STATS, polarity: "buff", type: "stat_mod", desc_loc_key: "eff_stat_boost" },
+                // "eff_chain_lightning": { ...BASE_EFFECT_STATS, polarity: "buff", type: "trigger", desc_loc_key: "eff_lightning" },
+                // "eff_damage_reduction": { ...BASE_EFFECT_STATS, polarity: "buff", type: "stat_mod", desc_loc_key: "eff_shield" }
+
+                "eff_stat_boost_percent": {
+                    ...BASE_EFFECT_STATS,
+                    polarity: "buff",
+                    type: "stat_mod", // Тип: модификатор статов (обрабатывается при расчете)
+                    desc_loc_key: "eff_stat_boost"
+                },
+                // Дебафф (Периодический урон - ДОТ), срабатывающий в начале хода юнита
+                "eff_poison": {
+                    ...BASE_EFFECT_STATS,
+                    polarity: "debuff",
+                    type: "tick_effect", // Тип: тикающий эффект
+                    trigger_phase: "on_turn_start", // Срабатывает строго в начале хода носителя
+                    desc_loc_key: "eff_poison_desc",
+                    actions: [
+                        {
+                            type: "deal_damage",
+                            // Урон зависит от атаки того, кто НАЛОЖИЛ (Caster)
+                            value_formula: "0.5 * C.atk",
+                            can_crit: false
+                        }
+                    ]
+                },
+                // Эффект контроля (Пропуск хода)
+                "eff_stun": {
+                    ...BASE_EFFECT_STATS,
+                    polarity: "debuff",
+                    type: "control", // Тип: контроль (блокирует действия)
+                    desc_loc_key: "eff_stun_desc"
+                }
             },
 
             // 4. Твои градации редкостей для списков, сортировок и фильтров
@@ -205,12 +321,19 @@ const gamesConfigDB = {
                 }
             },
 
-            combat_formulas: {
-                // Строковые формулы, которые парсит бэкенд. Доступные переменные: ATK, DEF (или ARMOR)
-                damage_formula: "ATK * (100 / (100 + ARMOR))",
-                crit_chance_formula: "ATTACKER_CRIT - DEFENDER_DODGE", // пример кастомной логики
-                crit_multiplier: "2.0"
+            "chat_settings": {
+                "limits": {
+                    "world": 50,
+                    "server": 30,
+                    "guild": 50,
+                    "announcement": 30,
+                    "pm": 30
+                }
+            },
+            "mail_settings": {
+                "auto_delete_days": 30
             }
+
         },
 
         ui: {
@@ -1755,6 +1878,29 @@ const gamesConfigDB = {
                     "elem_ice": "Ice",
                     "elem_blood": "Blood",
 
+
+
+                    "ch_comm_center": "Communication Center",
+                    "ch_tab_world": "World Chat",
+                    "ch_tab_server": "Server Zone",
+                    "ch_tab_guild": "Guild Channel",
+                    "ch_tab_ann": "System Alerts",
+                    "ch_tab_pm": "Secure Whisper",
+                    "ch_no_guild": "You must join a Guild to unlock this subspace frequency.",
+                    "ch_empty_channel": "No encrypted transmissions intercepted on this channel...",
+                    "ch_no_pms": "No active secure private transmissions found.",
+                    "ch_input_placeholder": "Enter secure frequency text (max 200 chars)...",
+                    "ch_btn_send": "Broadcast",
+                    "ch_comms_subspace": "Subspace Comms Terminal V.2",
+
+                    "ml_empty_box": "Your mailbox is empty...",
+                    "ml_select_prompt": "Select a transmission link to read content...",
+                    "ml_attachments": "Attached Payload",
+                    "ml_btn_delete": "Delete",
+                    "ml_btn_claimed": "Claimed ✓",
+                    "ml_btn_claim": "Claim Loot",
+                    "ml_inbox_header": "Inbox Matrix",
+                    "ml_btn_clear_trash": "Clear Clean"
                 }
             },
             stats: {
@@ -2093,17 +2239,129 @@ const gamesConfigDB = {
             },
 
             skills: {
+                // 1. ПАССИВНЫЙ НАВЫК: "Воля Королевы"
                 "queen_will": {
-                    title_loc: {...BASE_LANGUAGES, en: "Queen's Will"},
+                    title_loc: { ...BASE_LANGUAGES, ru: "Воля Королевы", en: "Queen's Will" },
                     icon: "👑",
-                    desc_loc: {...BASE_LANGUAGES, en: "Increases team stats by 10%"}
+                    type: "passive",
+                    trigger: { event: "on_battle_start" },
+                    targeting: { side: "allies", selector: "all" },
+                    levels: [
+                        {
+                            level: 1,
+                            desc_loc: { ...BASE_LANGUAGES, en: "Increases team stats by 10%" },
+                            actions: [
+                                {
+                                    type: "apply_effect",
+                                    effect_id: "eff_stat_boost_percent",
+                                    duration: -1,
+                                    params: {
+                                        stat_id: "atk",
+                                        value_formula: "10"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
                 },
+
+                // 2. АКТИВНЫЙ НАВЫК (Базовая атака): Фиксированный (всего 1 уровень)
+                "basic_strike": {
+                    title_loc: { ...BASE_LANGUAGES, ru: "Быстрый выпад", en: "Quick Strike" },
+                    icon: "⚔️",
+                    type: "active",
+                    trigger: { event: "on_turn_pure" },
+                    targeting: { side: "enemies", selector: "closest_alive" }, // Используем наш новый универсальный селектор вместо фронтлайна
+                    levels: [
+                        {
+                            level: 1,
+                            desc_loc: { ...BASE_LANGUAGES, ru: "Наносит 100% урона ближайшему врагу", en: "Deals 100% damage to the closest enemy" },
+                            actions: [
+                                {
+                                    type: "deal_damage",
+                                    value_formula: "1.0 * A.atk",
+                                    can_crit: true
+                                },
+                                {
+                                    type: "modify_energy",
+                                    targeting: "self",
+                                    value_formula: "GameConfig.mechanics.combat_formulas.base_energy_gain_on_attack"
+                                },
+                                {
+                                    type: "modify_energy",
+                                    targeting: "targets",
+                                    value_formula: "GameConfig.mechanics.combat_formulas.base_energy_gain_on_damage_taken"
+                                }
+                            ]
+                        }
+                    ]
+                },
+
+                // 3. УЛЬТИМЕЙТ (Активный супер-навык): "Карающий Раскат"
                 "thunder_strike": {
-                    title_loc: {...BASE_LANGUAGES, ru: "Карающий Раскат", en: "Thunder Strike"},
+                    title_loc: { ru: "Карающий Раскат", en: "Thunder Strike" },
                     icon: "⚡",
-                    desc_loc: {...BASE_LANGUAGES, ru: "Наносит 200% урона по площади", en: "Deals 200% AoE damage"}
-                },
+                    type: "ultimate",
+                    energy_cost: 100,
+                    trigger: { event: "on_turn_ultimate" },
+                    targeting: {
+                        side: "enemies",
+                        selector: "all" // Универсальный селектор: зацепит всех, независимо от линий
+                    },
+                    // Массив уровней навыка. Индекс в массиве = (уровень_навыка - 1)
+                    levels: [
+                        {
+                            level: 1,
+                            desc_loc: { ru: "Наносит 200% урона по всем врагам.", en: "Deals 200% AoE damage to all enemies." },
+                            actions: [
+                                {
+                                    type: "deal_damage",
+                                    value_formula: "2.0 * A.atk",
+                                    can_crit: true
+                                }
+                            ]
+                        },
+                        {
+                            level: 2,
+                            desc_loc: { ru: "Наносит 220% урона по всем врагам и с шансом 50% накладывает дебафф.", en: "Deals 220% AoE damage and has a 50% chance to apply a debuff." },
+                            actions: [
+                                {
+                                    type: "deal_damage",
+                                    value_formula: "2.2 * A.atk", // Вырос урон
+                                    can_crit: true
+                                },
+                                {
+                                    // На 2 уровне добавилось новое действие (дебафф)
+                                    type: "apply_effect",
+                                    targeting: "targets",
+                                    effect_id: "eff_chain_lightning",
+                                    duration: 2,
+                                    params: { chance: 50 }
+                                }
+                            ]
+                        },
+                        {
+                            level: 3,
+                            desc_loc: { ru: "Наносит 250% урона. Дебафф накладывается гарантированно.", en: "Deals 250% AoE damage. Debuff application is guaranteed." },
+                            actions: [
+                                {
+                                    type: "deal_damage",
+                                    value_formula: "2.5 * A.atk",
+                                    can_crit: true
+                                },
+                                {
+                                    type: "apply_effect",
+                                    targeting: "targets",
+                                    effect_id: "eff_chain_lightning",
+                                    duration: 2,
+                                    params: { chance: 100 } // Стало 100%
+                                }
+                            ]
+                        }
+                    ]
+                }
             },
+
             hero_elements: {
                 "thunder": {title_loc: {...BASE_LANGUAGES, ru: "Молния", en: "Thunder"}, icon: "⚡", color: "#ffeb3b"},
                 "light": {title_loc: {...BASE_LANGUAGES, ru: "Свет", en: "Light"}, icon: "☀️", color: "#fff"},
@@ -2131,11 +2389,15 @@ const gamesConfigDB = {
                     element_id: "❄️",
                     category_ids: ["aoe"],
 
-                    skills: ["queen_will"],
+                    skills: [
+                        { skill_id: "queen_will", level: 1 },
+                        { skill_id: "basic_strike", level: 1 },
+                        { skill_id: "thunder_strike", level: 1 }
+                    ],
                     extra_skills: [],
 
                     base_stats: {"hp": 1000, "atk": 250, "speed": 120},
-                    stats_growth: {"hp": 50, "atk": 25, "speed": 5},
+                    stats_growth: {"hp": 150, "atk": 25, "speed": 5},
                     effects: [],
 
 
@@ -2183,7 +2445,11 @@ const gamesConfigDB = {
                     element_id: "light",
                     category_ids: ["heal"],
 
-                    skills: ["queen_will"],
+                    skills: [
+                        { skill_id: "queen_will", level: 1 },
+                        { skill_id: "basic_strike", level: 1 },
+                        { skill_id: "thunder_strike", level: 1 }
+                    ],
                     extra_skills: [],
 
                     base_stats: {"hp": 500, "atk": 150, "speed": 90},
@@ -2234,7 +2500,11 @@ const gamesConfigDB = {
                     element_id: "thunder",
                     category_ids: ["aoe"],
 
-                    skills: ["skill_thunder_strike"], 
+                    skills: [
+                        { skill_id: "queen_will", level: 1 },
+                        { skill_id: "basic_strike", level: 1 },
+                        { skill_id: "thunder_strike", level: 1 }
+                    ],
                     extra_skills: [], 
 
                     
@@ -2295,7 +2565,11 @@ const gamesConfigDB = {
                     element_id: "thunder",
                     category_ids: ["aoe"],
 
-                    skills: ["skill_thunder_strike"],
+                    skills: [
+                        { skill_id: "queen_will", level: 1 },
+                        { skill_id: "basic_strike", level: 1 },
+                        { skill_id: "thunder_strike", level: 1 }
+                    ],
                     extra_skills: [],
 
 
@@ -2347,12 +2621,17 @@ const gamesConfigDB = {
                     element_id: "thunder",
                     category_ids: ["aoe"],
 
-                    skills: ["skill_thunder_strike"],
+                    skills: [
+                        { skill_id: "queen_will", level: 1 },
+                        { skill_id: "basic_strike", level: 1 },
+                        { skill_id: "thunder_strike", level: 1 }
+                    ],
                     extra_skills: [],
 
 
                     base_stats: {"hp": 500, "atk": 150, "speed": 90},
-                    stats_growth: {"hp": 30, "atk": 12, "speed": 2},
+                    // stats_growth: {"hp": 30, "atk": 12, "speed": 2},
+                    stats_growth: {"hp": 100, "atk": 5, "speed": 2},
                     effects: [],
 
                     skins: [
@@ -2984,11 +3263,11 @@ const gamesConfigDB = {
                     title_loc: { ru: "Глава 1: Начало", en: "Chapter 1.7: The Beginning" },
                     ui_position: { x: "600px", y: "200px" },
                     enemies: [
-                        { hero_id: "anjeihydra", level: 1, stars: 1, position: 1 },
-                        { hero_id: "anjeihydra", level: 1, stars: 1, position: 2 },
-                        { hero_id: "anjeihydra", level: 1, stars: 1, position: 2 },
-                        { hero_id: "anjeihydra", level: 1, stars: 1, position: 3 },
-                        { hero_id: "anjeihydra", level: 1, stars: 1, position: 3 },
+                        { hero_id: "anjeihydra", level: 100, stars: 1, position: 1 },
+                        { hero_id: "anjeihydra", level: 100, stars: 1, position: 2 },
+                        { hero_id: "anjeihydra", level: 100, stars: 1, position: 2 },
+                        { hero_id: "anjeihydra", level: 100, stars: 1, position: 3 },
+                        { hero_id: "anjeihydra", level: 100, stars: 1, position: 3 },
                     ],
                     rewards: {
                         resources: { gold: 500, exp: 200, diamond: 10 },

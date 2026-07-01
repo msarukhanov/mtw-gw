@@ -623,6 +623,71 @@ export function getHeroViewHTML(instanceId, listIds) {
             </div>
         `;
     }
+    // --- ВКЛАДКА 4: АФФИНИТИ / ПРОКАЧКА ДРУЖБЫ И ДОВЕРИЯ ---
+    else if (Game.activeHeroTab === 'affinity') {
+        const affConfig = Game.config?.mechanics?.affinity_settings || { level_costs:, gift_items: {}, max_level: 10 };
+        const currentLevel = hero.affinity_level || 0;
+        const currentExp = hero.affinity_exp || 0;
+        const maxLevel = affConfig.max_level || 10;
+
+        // 1. Вычисляем процент заполнения шкалы прогресса до следующего уровня
+        const nextLevelCost = affConfig.level_costs[currentLevel + 1] || 0;
+        const progressPercent = nextLevelCost > 0 ? Math.min(100, (currentExp / nextLevelCost) * 100) : 100;
+        const progressText = nextLevelCost > 0 ? `${currentExp} / ${nextLevelCost}` : 'MAX LEVEL';
+
+        // 2. Генерируем список подарков, которые сейчас лежат в инвентаре игрока
+        const playerInventory = Game.player?.inventory || {};
+        let giftsListHTML = '';
+
+        Object.entries(affConfig.gift_items || {}).forEach(([itemId, expValue]) => {
+            const itemCount = playerInventory[itemId] || 0;
+            const itemCatalogMeta = Game.config?.catalog?.items?.[itemId] || { icon: '🎁', title_loc: { ru: 'Подарок', en: 'Gift' } };
+            const itemTitle = itemCatalogMeta.title_loc?.[Game.locale || 'en'] || itemCatalogMeta.title_loc?.['en'] || itemId;
+
+            // Рендерим плашку подарка, только если у игрока есть хотя бы 1 штука в инвентаре
+            if (itemCount > 0) {
+                giftsListHTML += `
+                    <div style="display:flex; align-items:center; justify-content:space-between; background:#18181b; border:1px solid #27272a; padding:6px 10px; border-radius:4px; box-sizing:border-box; margin-bottom:6px;">
+                        <div style="display:flex; align-items:center; gap:8px; font-size:12px; min-width:0;">
+                            <span style="font-size:16px; flex-shrink:0;">${itemCatalogMeta.icon || '🎁'}</span>
+                            <div style="display:flex; flex-direction:column; min-width:0; text-align:left;">
+                                <b style="color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${itemTitle}</b>
+                                <span style="font-size:10px; color:#22c55e;">+${expValue} Trust Exp (Have: ${itemCount})</span>
+                            </div>
+                        </div>
+                        <button class="btn-affinity-gift-action" data-item-id="${itemId}" data-hero-id="${instanceId}" style="padding:5px 10px; background:#ffcc00; color:#000; border:none; border-radius:3px; font-weight:bold; font-size:11px; cursor:pointer; pointer-events:auto;">
+                            ${t('btn_give_gift') || '🎁 Give'}
+                        </button>
+                    </div>
+                `;
+            }
+        });
+
+        contentInner = `
+            <h4 style="margin:0 0 10px 0; font-size:14px; border-bottom:1px solid #333; padding-bottom:5px;">${t('tab_affinity') || 'Hero Affinity'}</h4>
+            <div style="display:flex; flex-direction:column; width:100%; height:100%;">
+                
+                <!-- ШКАЛА ИНДИКАТОРА ДРУЖБЫ -->
+                <div style="background:rgba(0,0,0,0.4); border:1px solid #222; padding:10px; border-radius:6px; margin-bottom:12px; box-sizing:border-box;">
+                    <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:bold; margin-bottom:6px;">
+                        <span style="color:#ffcc00;">❤️ ${t('affinity_trust_rank') || 'Trust Rank'}: ${currentLevel} / ${maxLevel}</span>
+                        <span style="color:#aaa; font-family:monospace;">${progressText}</span>
+                    </div>
+                    <div style="width:100%; height:8px; background:#18181b; border:1px solid #27272a; border-radius:4px; overflow:hidden; box-sizing:border-box;">
+                        <div style="width:${progressPercent}%; height:100%; background:linear-gradient(90deg, #ff4081, #ec4899); transition:width 0.3s ease;"></div>
+                    </div>
+                </div>
+
+                <!-- СПИСОК ДОСТУПНЫХ ПОДАРКОВ -->
+                <div style="flex:1; overflow-y:auto; display:flex; flex-direction:column;">
+                    <span style="font-size:10px; color:#666; font-weight:bold; text-transform:uppercase; letter-spacing:0.5px; text-align:left; margin-bottom:6px;">
+                        ${t('affinity_vault_header') || 'Available Gift Matrix'}
+                    </span>
+                    ${giftsListHTML || `<div style="color:#444; text-align:center; padding:20px; font-size:11px; font-style:italic; margin:auto;">${t('affinity_no_gifts') || 'Ваш инвентарь пуст. У вас нет подходящих подарков для этого героя...'}</div>`}
+                </div>
+            </div>
+        `;
+    }
 
 
     // --- ВКЛАДКА 5: БИОГРАФИЯ ---
@@ -958,6 +1023,23 @@ export function initHeroViewScreen(container, updateUiCallback) {
                 manageHeroPet(currentId, null, true, () => {
                     // updateUiCallback();
                     reRender(currentId);
+                });
+            };
+        });
+
+        renderNode.querySelectorAll('.btn-affinity-gift-action').forEach(btn => {
+            btn.onclick = () => {
+                const itemId = btn.dataset.itemId;
+                const heroInstanceId = btn.dataset.heroId;
+
+                // Формируем giftPack — передаем 1 штуку за раз по клику
+                const giftPack = {};
+                giftPack[itemId] = 1;
+
+                // Отправляем пакет намерения строго по роуту 'hero' на метод 'giveGift'
+                sendSocket('hero', 'giveGift', {
+                    heroInstanceId: heroInstanceId,
+                    giftPack: giftPack
                 });
             };
         });

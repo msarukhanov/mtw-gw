@@ -326,7 +326,12 @@ exports.generateDailySchedule = async (partnerId = 'demo_mtwtech', gameId, serve
 
         const marketsData = generateArenaMarkets(homePower, awayPower, 0, 0, 0, partnerId);
 
-        const battleResult = await simulatePvEBattle(home.team, away.team, gameConfig);
+        const pvpParams = {
+            isAuto: true,
+            battleId: matchId,
+        };
+
+        const battleResult = await simulatePvEBattle(home.team, away.team, gameConfig, pvpParams);
 
         await pool.query(
             `INSERT INTO b2b_pvp_arena_matches (match_id, partner_id, game_id, server_id, league, teams, status, minute, score_home, score_away, markets, ball_zone, battle_replay)
@@ -399,8 +404,12 @@ exports.startArenaEngine = (ms = 3000, io = null) => {
                             const homeClone = JSON.parse(JSON.stringify(teamsData._homeRaw));
                             const awayClone = JSON.parse(JSON.stringify(teamsData._awayRaw));
 
+                            const pvpParams = {
+                                isAuto: true,
+                                battleId: crypto.randomUUID(),
+                            };
                             // Запускаем твой реальный пошаговый боевой движок
-                            const simRes = await simulatePvEBattle(homeClone, awayClone, gameConfig);
+                            const simRes = await simulatePvEBattle(homeClone, awayClone, gameConfig, pvpParams);
 
                             // Считаем чистую прибыль платформы в БК при таком сценарии реплея
                             // Доход = Весь банк - Выплата угадавшей стороне

@@ -59,6 +59,24 @@ exports.levelUp = async function (req, res) {
     }
 };
 
+exports.giveGift = async function (req, res) {
+    try {
+        const { id: userId, serverId, gameId } = req.player;
+        // Извлекаем инстанс героя и мапу предметов-подарков из req.body
+        const { heroInstanceId, giftPack } = req.body;
+
+        const result = await affinityDB.giveGiftToHero(
+            userId, serverId, gameId, heroInstanceId, giftPack
+        );
+
+        if (result.error) return res.status(400).json({ error: result.message });
+        return res.json(result);
+    } catch (e) {
+        console.error(e);
+        return res.status(500).json({ error: e.message, msg: '[Heroes:GiveGift] error' });
+    }
+};
+
 // --- ЭВОЛЮЦИЯ ЗВЕЗД ГЕРОЯ ---
 exports.upgradeStars = async function (req, res) {
     try {

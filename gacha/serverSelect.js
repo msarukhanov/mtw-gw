@@ -145,7 +145,7 @@ async function runFinalGameStart(serverId) {
         Game.partnerId = data.partnerId;
         if (data.server_time) Game.serverTimeOffset = data.server_time - Date.now();
 
-        connect(data.id, data.username, Game.serverId, Game.partnerId);
+        connect(data.id, data.username, Game.serverId, Game.gameId, Game.partnerId);
 
         // if (typeof io !== 'undefined') {
         //     const socket = io(SOCKET_URL);

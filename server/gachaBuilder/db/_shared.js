@@ -136,61 +136,6 @@ function getHeroRating(hero, Game) {
     return totalPowerRating;
 }
 
-
-// function getHeroRating(hero, Game) {
-//     const statsMeta = Game.config?.mechanics?.stats || {};
-//     const prototype = Game.config.catalog?.heroes?.[hero.hero_id];
-//     if (!prototype) return 0;
-//
-//     let totalPowerRating = 0;
-//
-//     Object.keys(statsMeta).forEach(statId => {
-//         // 1. Базовые статы и прирост за уровень
-//         const base = prototype.base_stats?.[statId] || 0;
-//         const growth = prototype.stats_growth?.[statId] || 0;
-//         let totalValue = base + (growth * (hero.level || 1));
-//
-//         // 2. УМНОЖИТЕЛЬ ЗВЁЗДНОСТИ (Эволюция): например, каждая звезда дает +10% к статам
-//         // Формула: статы * (1 + (stars - base_stars) * 0.1)
-//         const baseStars = prototype.base_stars || 1;
-//         const starBonusMultiplier = 1 + Math.max(0, (hero.stars || baseStars) - baseStars) * 0.1;
-//         totalValue = totalValue * starBonusMultiplier;
-//
-//         // 3. Статы от обычного надетого оружия / брони
-//         if (hero.equipped) {
-//             Object.entries(hero.equipped).forEach(([slotId, itemId]) => {
-//                 if (itemId && slotId !== 'personal') { // обычный шмот
-//                     const itemConfig = Game.config.catalog?.items?.[itemId];
-//                     if (itemConfig?.stats?.[statId]) {
-//                         totalValue += itemConfig.stats[statId];
-//                     }
-//                 }
-//             });
-//         }
-//
-//         // 4. Статы от Уникального Персонального Предмета
-//         if (hero.personal_item_level && hero.personal_item_level > 0) {
-//             const pItemConfig = Game.config.catalog?.personal_items?.[prototype.personal_item_id];
-//             const statBonusPerItemLevel = pItemConfig?.stats_per_level?.[statId] || 0;
-//             totalValue += statBonusPerItemLevel * hero.personal_item_level;
-//         }
-//
-//         // 5. Статы от закрепленного Питомца
-//         if (hero.pet && hero.pet.level > 0) {
-//             const petConfig = Game.config.catalog?.pets?.[hero.pet.pet_id];
-//             const petBaseStat = petConfig?.base_stats?.[statId] || 0;
-//             const petGrowthStat = petConfig?.stats_growth?.[statId] || 0;
-//             totalValue += petBaseStat + (petGrowthStat * hero.pet.level);
-//         }
-//
-//         // Вес характеристики из метаданных
-//         const weight = statsMeta[statId]?.rating_weight || 0;
-//         totalPowerRating += totalValue * weight;
-//     });
-//
-//     return totalPowerRating;
-// }
-
 function getItemRating(itemId, GameContext) {
     const itemConfig = GameContext.config?.catalog?.items?.[itemId];
     const statsMeta = GameContext.config?.mechanics?.stats || {};

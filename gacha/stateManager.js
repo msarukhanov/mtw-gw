@@ -30,6 +30,9 @@ import {initBattlePassScreen} from "./scripts/game/battlePass.js";
 import {initBountyScreen, destroyBountyScreen} from "./scripts/game/bountyScreen.js";
 import {initQuestsScreen} from "./scripts/game/questsScreen.js";
 
+import {initChatScreen} from "./scripts/social/chat.js";
+import {initMailScreen} from "./scripts/social/mail.js";
+
 export const Game = {
     config: null,
     player: null,
@@ -66,6 +69,9 @@ const menuActions = {
     open_battle_pass: 'BATTLE_PASS',
     open_bounty: 'BOUNTY',
     open_quests: 'QUESTS',
+
+    open_chat: 'CHAT',
+    open_mail: 'MAIL',
 };
 
 const stateScreens = {
@@ -94,6 +100,9 @@ const stateScreens = {
     BATTLE_PASS: 'screen_battle_pass',
     BOUNTY: 'screen_bounty',
     QUESTS: 'screen_quests',
+
+    CHAT: 'screen_chat',
+    MAIL: 'screen_mail',
 };
 
 export const stateActions = {
@@ -122,6 +131,9 @@ export const stateActions = {
     'BATTLE_PASS': initBattlePassScreen,
     'BOUNTY': initBountyScreen,
     'QUESTS': initQuestsScreen,
+
+    'CHAT': initChatScreen,
+    'MAIL': initMailScreen,
 };
 
 export function updateState(newState) {

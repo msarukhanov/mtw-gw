@@ -107,6 +107,16 @@ function init(server) {
 
                 if (redisClient.isOpen && redisClient.isReady) {
                     try {
+
+                        const flooded = await isRateLimited(userId, redisClient);
+                        if (flooded) {
+                            // Мгновенно отбиваем атаку, не нагружая контроллеры и базы данных!
+                            return socket.emit('player_update', {
+                                error: true,
+                                msg: 'Too many requests. Subspace distortion detected.'
+                            });
+                        }
+
                         playerRaw = await redisClient.get(redisKey);
                     } catch (err) {
                         console.error("[Socket Router Redis Error]:", err.message);
@@ -146,6 +156,9 @@ function init(server) {
                     'quests': './gachaBuilder/controllers/questsController',
                     'battlePass': './gachaBuilder/controllers/battlePassController',
                     'bounty': './gachaBuilder/controllers/bountyController',
+
+                    'chat': './controllers/chatController',
+                    'mail': './controllers/mailController',
                 };
 
                 if (!controllersMap[type]) {
@@ -200,7 +213,15 @@ function init(server) {
                         const actualResources = backendResponse.resources || backendResponse.game_data?.resources || playerObj.resources;
                         const actualInventory = backendResponse.inventory || backendResponse.game_data?.inventory || playerObj.inventory;
 
-                        if (type === 'battle') {
+                        if (type === 'chat') {
+                            updateType = 'chat';
+                            responseData = backendResponse;
+                        }
+                        else if (type === 'mail') {
+                            updateType = 'mail';
+                            responseData = backendResponse;
+                        }
+                        else if (type === 'battle') {
                             updateType = 'battle';
                             responseData = backendResponse;
                         }

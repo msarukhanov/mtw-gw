@@ -89,7 +89,6 @@ exports.getInboundRequests = async function(userId, serverId) {
             WHERE id = ANY($1) AND server_id = $2;
         `;
         const { rows } = await global.pool.query(selectQuery, [numericIds, serverId]);
-        console.log(rows);
         return { friend_requests: rows };
     } catch (e) {
         console.error("[FriendsDB:getInboundRequests] Error:", e.message);

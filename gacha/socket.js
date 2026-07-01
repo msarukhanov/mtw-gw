@@ -14,6 +14,9 @@ import {initBattlePassScreen} from "./scripts/game/battlePass.js";
 import {initBountyScreen} from "./scripts/game/bountyScreen.js";
 import {initQuestsScreen} from "./scripts/game/questsScreen.js";
 
+import {initChatScreen} from "./scripts/social/chat.js";
+import {initMailScreen} from "./scripts/social/mail.js";
+
 window.socket = null;
 
 const connectStates = {
@@ -25,7 +28,7 @@ const connectStates = {
     offers: false,
 };
 
-export function connect(userId, username, serverId, partnerId) {
+export function connect(userId, username, serverId, gameId, partnerId) {
     const socket = io(SOCKET_URL);
     socket.on('connect', () => {
         window.io = socket;
@@ -33,6 +36,7 @@ export function connect(userId, username, serverId, partnerId) {
             console.log('🚀 Sending handshake now...');
             socket.emit('platform_join', {
                 userId,
+                gameId,
                 username,
                 serverId,
                 partnerId
@@ -48,7 +52,7 @@ export function connect(userId, username, serverId, partnerId) {
 
     socket.on('player_update', (upd)=>{
         console.log(upd);
-        if(!upd || !upd.type || !upd.data || upd.username !== Game.player.username) return;
+        if(!upd || !upd.type || !upd.data || (upd.username !== Game.player.username && upd.type!=='chat')) return;
 
         const {type, data} = upd;
 
@@ -123,7 +127,9 @@ export function connect(userId, username, serverId, partnerId) {
                 break;
             case 'battle':
                 if (data.replay) {
-                    Game.player.pve_progress = data.pve_progress;
+                    if(data.pve_progress) {
+                        Game.player.pve_progress = data.pve_progress;
+                    }
                     Game.battleResult = data;
                     initCombatArenaScreen(renderGameUI);
                 }
@@ -197,6 +203,129 @@ export function connect(userId, username, serverId, partnerId) {
 
                     if (Game.gameState === 'GUILD') {
                         initGuildsScreen(Game.uiContainer, renderGameUI);
+                    }
+                }
+                break;
+
+            case 'chat':
+                if (data) {
+                    console.log('chat data ==== ', data);
+                    // 1. ПЕРВИЧНАЯ ЗАГРУЗКА (getInitialState)
+                    if (data.chats) {
+                        Game.chats = data.chats;
+                    }
+                    // 2. РЕАЛ-ТАЙМ ОБНОВЛЕНИЕ СООБЩЕНИЯ (saveChatMessage)
+                    else if (data.message && data.channel) {
+                        console.log(data.channel, data.message);
+                        let channel = data.channel;
+                        if (channel === 'announcement') channel = 'announcements';
+
+                        // Если по какой-то причине объекта еще нет в памяти, создаем его
+                        if (!Game.chats) {
+                            Game.chats = { world: [], server: [], announcements: [], guild: null, pm: {} };
+                        }
+
+                        if (channel === 'pm') {
+                            const partnerId = data.chatPartnerId; // Забираем ИД собеседника из прилетевшего data
+                            if (!Game.chats.pm[partnerId]) Game.chats.pm[partnerId] = [];
+
+                            Game.chats.pm[partnerId] = [
+                                ...Game.chats.pm[partnerId],
+                                {
+                                    ...data.message,
+                                    isUnread: data.isUnread !== undefined ? data.isUnread : true
+                                }
+                            ];
+                            if (Game.chats.pm[partnerId].length > 30) Game.chats.pm[partnerId].shift();
+                        }
+                        else {
+                            if (!Game.chats[channel]) Game.chats[channel] = [];
+
+                            Game.chats[channel].push(data.message);
+                            console.log(Game.chats[channel]);
+
+                            // Ограничиваем длину истории локально
+                            if (Game.chats[channel].length > 50) {
+                                Game.chats[channel] = Game.chats[channel].slice(-50);
+                            }
+                        }
+                    }
+
+                    // 3. ПОДТВЕРЖДЕНИЕ ПРОЧТЕНИЯ (markAsRead)
+                    else if (data.lastMessageId) {
+                        let channel = data.channel === 'announcement' ? 'announcements' : data.channel;
+
+                        if (Game.chats && Game.chats[channel]) {
+                            if (channel === 'pm' && data.chatPartnerId) {
+                                const partnerId = data.chatPartnerId;
+                                if (Game.chats.pm[partnerId]) {
+                                    // Пересоздаем массив с измененными флагами прочтения для триггера UI
+                                    Game.chats.pm[partnerId] = Game.chats.pm[partnerId].map(m => ({ ...m, isUnread: false }));
+                                }
+                            } else {
+                                Game.chats[channel] = Game.chats[channel].map(m => ({ ...m, isUnread: false }));
+                            }
+                        }
+                    }
+                    console.log(Game.gameState);
+                    // Если игрок сейчас на экране чата — перерисовываем UI
+                    if (Game.gameState === 'CHAT') {
+                        initChatScreen(Game.uiContainer, renderGameUI);
+                    }
+                }
+                break;
+
+            case 'mail':
+                if (data) {
+                    // А) Стартовая загрузка списка писем при входе/открытии ящика (от getInitialState)
+                    if (data.mail_list) {
+                        // Чтобы запустить реактивность по твоей схеме, пересоздаем массив через спред
+                        Game.player_mail = [...data.mail_list];
+                    }
+
+                    // Б) Уведомление о новом письме в реальном времени (от LiveOps/рассылок)
+                    else if (data.action === 'new_mail_notification') {
+                        // Просто взводим флаг непрочитанной почты для отрисовки красной точки на иконке меню
+                        Game.has_unread_mail = true;
+                    }
+
+                    // В) Письмо успешно прочитано на сервере (от markAsRead)
+                    else if (data.action === 'marked_read_success' && data.mailId) {
+                        if (Game.player_mail) {
+                            Game.player_mail = Game.player_mail.map(m =>
+                                String(m.id) === String(data.mailId) ? { ...m, is_read: true } : m
+                            );
+                        }
+                    }
+
+                    // Г) Награды успешно забраны из письма (от claimReward)
+                    else if (data.action === 'claim_success' && data.mailId) {
+                        if (Game.player_mail) {
+                            Game.player_mail = Game.player_mail.map(m =>
+                                String(m.id) === String(data.mailId) ? { ...m, is_read: true, is_claimed: true } : m
+                            );
+                        }
+                        // Твой роутер на бэке уже положил свежие resources и inventory в корень ответа,
+                        // поэтому они автоматически обновятся в Game через твой базовый слой!
+                    }
+
+                    // Д) Письмо успешно удалено одиночно (от deleteMail)
+                    else if (data.action === 'delete_success' && data.mailId) {
+                        if (Game.player_mail) {
+                            Game.player_mail = Game.player_mail.filter(m => String(m.id) !== String(data.mailId));
+                        }
+                    }
+
+                    // Е) Произошла массовая очистка ящика от мусора (от clearTrashMail)
+                    else if (data.action === 'clear_comb_success') {
+                        // Самый безопасный вариант, чтобы не считать фильтры на фронте —
+                        // запрашиваем у бэкенда чистый свежий список ящика
+                        sendSocket('mail', 'getInitialState', {});
+                    }
+
+                    // Если игрок сейчас физически находится на экране почты — реактивно перерисовываем UI
+                    if (Game.gameState === 'MAIL') {
+                        initMailScreen(Game.uiContainer, renderGameUI);
                     }
                 }
                 break;

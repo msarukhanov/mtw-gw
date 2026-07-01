@@ -361,6 +361,247 @@ function calculateLevelUpCost(currentLevel, levelsToUp, levelCosts) {
 }
 
 
+
+
+
+
+/**
+ * ГЛАВНАЯ: Прокачка дружбы (Аффинити) героя переданными подарками
+ * @param {string} userId - UUID игрока
+ * @param {string} serverId - ID игрового сервера
+ * @param {string} gameId - ID игры
+ * @param {string} heroInstId - Уникальный инстанс-ID героя в JSONB
+ * @param {object} giftPack - Объект списываемых подарков, например: {"gift_ring": 2, "gift_book": 5}
+ */
+async function giveGiftToHero(userId, serverId, gameId, heroInstId, giftPack = {}) {
+    // Валидация входного пакета
+    if (!giftPack || Object.keys(giftPack).length === 0) {
+        return { error: true, message: "Не выбраны предметы для подарка" };
+    }
+
+    const GameConfig = global.gamesConfigDB[gameId];
+    const affinityConfig = GameConfig?.mechanics?.affinity_settings;
+
+    if (!affinityConfig) return { error: true, message: "Конфиг системы Аффинити не найден" };
+
+    // ------------------------------------------------------------------------
+    // ЭШЕЛОН 1: ОПЕРАЦИЯ В СВЕРХБЫСТРОМ REDIS КЭШЕ (0 МИЛЛИСЕКУНД)
+    // ------------------------------------------------------------------------
+    if (global.redisClient.isOpen && global.redisClient.isReady) {
+        try {
+            // Извлекаем плоский объект игрока из Редиса
+            let player = await Cache.getPlayer(userId, serverId);
+            if (!player) throw new Error("Профиль игрока не найден в кэше Redis");
+
+            let inventory = player.inventory || {};
+            let heroes = player.heroes || [];
+
+            // Ищем нужного героя в массиве
+            const hero = heroes.find(h => h.instance_id === heroInstId);
+            if (!hero) return { error: true, message: "Герой не найден" };
+
+            // Инициализируем базовые поля аффинити в карточке героя, если их еще не было
+            if (hero.affinity_level === undefined) hero.affinity_level = 0;
+            if (hero.affinity_exp === undefined) hero.affinity_exp = 0;
+
+            const maxLevelLimit = affinityConfig.max_level || 10;
+            if (hero.affinity_level >= maxLevelLimit) {
+                return { error: true, message: "Достигнут максимальный уровень дружбы с этим героем" };
+            }
+
+            // Проверяем наличие нужного количества подарков в инвентарю игрока
+            for (const [itemId, count] of Object.entries(giftPack)) {
+                const amount = parseInt(count) || 0;
+                if (amount <= 0) return { error: true, message: "Неверное количество предметов" };
+                if ((parseInt(inventory[itemId]) || 0) < amount) {
+                    return { error: true, message: `Недостаточно предметов в инвентаре: ${itemId}` };
+                }
+            }
+
+            // Вызываем изолированную чистую бизнес-логику расчета уровней
+            const { newLevel, newExp } = calculateAffinityUp(
+                hero.affinity_level,
+                hero.affinity_exp,
+                giftPack,
+                affinityConfig
+            );
+
+            // Списываем подарки локально из объекта inventory в RAM
+            Object.entries(giftPack).forEach(([itemId, count]) => {
+                inventory[itemId] = (parseInt(inventory[itemId]) || 0) - (parseInt(count) || 0);
+                if (inventory[itemId] <= 0) delete inventory[itemId]; // Чистим пустые слоты
+            });
+
+            // Записываем новые значения аффинити в объект героя
+            hero.affinity_level = newLevel;
+            hero.affinity_exp = newExp;
+
+            player.heroes = heroes;
+            player.inventory = inventory;
+
+            // Сначала сохраняем стейт в Редис, чтобы калькулятор боевой силы мог прочитать новые статы (если аффинити дает бафф)
+            await Cache.setPlayer(player);
+
+            // Пересчитываем боевую силу, так как уровни дружбы могут давать микро-баффы характеристик
+            const newPower = await recalculateAndSaveCombatPower(userId, serverId, gameId);
+
+            // Синхронизируем новую силу в кэше и обновляем ZSET Лидерборд
+            player.combat_power = newPower;
+            await Cache.setPlayer(player);
+            await global.redisClient.zAdd(`lb:${serverId}:combat_power`, { score: parseInt(newPower), value: String(userId) });
+
+            // Собираем game_data структуру обратно под формат твоего фронтенда
+            const rootFields = ['id', 'user_id', 'server_id', 'nickname', 'level', 'combat_power', 'resources', 'idle_timestamps'];
+            const returnedGameData = {};
+            Object.entries(player).forEach(([key, val]) => {
+                if (!rootFields.includes(key) && !['gameId', 'deviceId', 'sessionId', 'partnerId', 'username'].includes(key)) {
+                    returnedGameData[key] = val;
+                }
+            });
+
+            return {
+                success: true,
+                combat_power: newPower,
+                inventory: player.inventory,
+                heroes: returnedGameData.heroes
+            };
+
+        } catch (cacheErr) {
+            console.warn('[AffinityDB:GiveGift] Сбой Redis, проваливаюсь в Postgres Fallback:', cacheErr);
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    // ЭШЕЛОН 2: ТВОЙ ОРИГИНАЛЬНЫЙ SQL FALLBACK С ТРАНЗАКЦИЕЙ И СУБД
+    // ------------------------------------------------------------------------
+    const client = await global.pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        const { rows } = await client.query(
+            `SELECT game_data, resources FROM player_server_profiles WHERE user_id = $1 AND server_id = $2 FOR UPDATE;`,
+            [userId, serverId]
+        );
+        if (rows.length === 0) throw new Error("Профиль не найден");
+
+        let gameData = rows[0].game_data;
+        let inventory = gameData.inventory || {};
+        let heroes = gameData.heroes || [];
+
+        const hero = heroes.find(h => h.instance_id === heroInstId);
+        if (!hero) throw new Error("Герой не найден");
+
+        if (hero.affinity_level === undefined) hero.affinity_level = 0;
+        if (hero.affinity_exp === undefined) hero.affinity_exp = 0;
+
+        const maxLevelLimit = affinityConfig.max_level || 10;
+        if (hero.affinity_level >= maxLevelLimit) throw new Error("Достигнут максимальный уровень дружбы");
+
+        // Проверяем наличие предметов в инвентаре
+        for (const [itemId, count] of Object.entries(giftPack)) {
+            const amount = parseInt(count) || 0;
+            if ((parseInt(inventory[itemId]) || 0) < amount) {
+                throw new Error(`Недостаточно предметов в инвентаре: ${itemId}`);
+            }
+        }
+
+        // Вызываем ту же самую чистую бизнес-логику расчета
+        const { newLevel, newExp } = calculateAffinityUp(
+            hero.affinity_level,
+            hero.affinity_exp,
+            giftPack,
+            affinityConfig
+        );
+
+        // Списываем предметы из SQL-объекта
+        Object.entries(giftPack).forEach(([itemId, count]) => {
+            inventory[itemId] = (parseInt(inventory[itemId]) || 0) - (parseInt(count) || 0);
+            if (inventory[itemId] <= 0) delete inventory[itemId];
+        });
+
+        hero.affinity_level = newLevel;
+        hero.affinity_exp = newExp;
+
+        gameData.heroes = heroes;
+        gameData.inventory = inventory;
+
+        const updateQuery = `UPDATE player_server_profiles SET game_data = $3 WHERE user_id = $1 AND server_id = $2;`;
+        await client.query(updateQuery, [userId, serverId, JSON.stringify(gameData)]);
+        await client.query('COMMIT');
+
+        const newPower = await recalculateAndSaveCombatPower(userId, serverId, gameId);
+
+        const finalQuery = `SELECT game_data FROM player_server_profiles WHERE user_id = $1 AND server_id = $2;`;
+        const { rows: finalRows } = await global.pool.query(finalQuery, [userId, serverId]);
+
+        return {
+            success: true,
+            combat_power: newPower,
+            inventory: finalRows[0].game_data.inventory,
+            heroes: finalRows[0].game_data.heroes
+        };
+    } catch (e) {
+        await client.query('ROLLBACK');
+        console.error("Ошибка при прокачке аффинити в SQL:", e);
+        return { error: true, message: e.message };
+    } finally {
+        client.release();
+    }
+}
+
+
+/**
+ * СЛУЖЕБНАЯ: Расчет стоимости и уровней аффинити на основе переданных подарков
+ * @param {number} currentLevel - текущий уровень дружбы героя
+ * @param {number} currentExp - текущий опыт дружбы героя
+ * @param {object} giftPack - отправленные подарки из req.body {"gift_item_id": количество}
+ * @param {object} affinityConfig - конфиг стоимости уровней и опыта подарков из GameConfig
+ */
+function calculateAffinityUp(currentLevel, currentExp, giftPack, affinityConfig) {
+    const levelTable = affinityConfig.level_costs; // Массив стоимости уровней [0, 100, 200, 500...]
+    const itemTable = affinityConfig.gift_items;   // Мапа опыта предметов {"gift_book": 10, "gift_ring": 50}
+    const maxAffinityLimit = affinityConfig.max_level || 10;
+
+    let totalExpGained = 0;
+
+    // 1. Считаем, сколько всего опыта дают переданные игроком предметы
+    Object.entries(giftPack).forEach(([itemId, count]) => {
+        const amount = parseInt(count) || 0;
+        if (amount <= 0) return;
+
+        const expPerItem = itemTable[itemId] || 0;
+        totalExpGained += (expPerItem * amount);
+    });
+
+    let newLevel = currentLevel;
+    let newExp = currentExp + totalExpGained;
+
+    // 2. Крутим цикл повышения уровней, пока опыта хватает на следующий уровень
+    while (newLevel < maxAffinityLimit) {
+        const nextLevelCost = levelTable[newLevel + 1];
+        if (!nextLevelCost) break; // Если в конфиге нет цены для следующего уровня
+
+        if (newExp >= nextLevelCost) {
+            newExp -= nextLevelCost;
+            newLevel++;
+        } else {
+            break;
+        }
+    }
+
+    // 3. Защита от переполнения на максимальном уровне
+    if (newLevel >= maxAffinityLimit) {
+        newLevel = maxAffinityLimit;
+        newExp = 0;
+    }
+
+    return {
+        newLevel,
+        newExp,
+        totalExpGained
+    };
+}
+
 /**
  * Скармливание или удаление героя (например, для утилизации или как материал для звезд)
  */
@@ -1785,16 +2026,6 @@ async function savePlayerTeam(userId, serverId, gameId, teamKey, heroInstIds = [
     }
 }
 
-// Финальный полный экспорт сервисного файла управления героями
-module.exports = {
-    levelUpHero,
-    consumeHero,
-    upgradeHeroStars,
-    upgradePersonalItem,
-    changeHeroSkin,
-    manageHeroPet,
-    savePlayerTeam // ДОБАВЛЕНО
-};
 
 
 module.exports = {
@@ -1806,4 +2037,5 @@ module.exports = {
     changeHeroSkin,
     manageHeroPet,
     savePlayerTeam
+    giveGiftToHero
 };
